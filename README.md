@@ -7,7 +7,7 @@ Experimental HTTP2 implementation for running on constrained devices
 1. Clone this repo
 
 ```
-git clone -b echo-example https://github.com/niclabs/two.git
+git clone -b echo-example --recursive https://github.com/niclabs/two.git
 ```
 
 2. Make sure you have [RIOT dependencies](https://github.com/RIOT-OS/RIOT/wiki/Introduction#compiling-riot) installed for your target platform, or [Vagrant](https://www.vagrantup.com) configured if you want to avoid the trouble (we include a Vagrantfile for a quickstart).
