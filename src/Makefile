@@ -2,6 +2,10 @@
 APPLICATION = two
 
 # If no BOARD is found in the environment, use this default:
+ifeq ($(ENV),iotlab)
+  BOARD ?= iotlab-m3
+endif
+
 BOARD ?= native
 
 # This has to be the absolute path to the RIOT base directory:
@@ -49,3 +53,8 @@ ifeq ($(BOARD),native)
 endif
 
 include $(RIOTBASE)/Makefile.include
+
+# For iot-lab
+ifeq ($(ENV),iotlab)
+  include $(CURDIR)//Makefile.iotlab
+endif

@@ -1,0 +1,63 @@
+.PHONY: deps submit flash
+
+# Experiment parameters
+IOTLAB_SITE			?= grenoble
+IOTLAB_NODES		?= 2
+IOTLAB_DURATION		?= 5
+IOTLAB_ARCHI		?= m3:at86rf231
+IOTLAB_NAME			?= $(APPLICATION)
+IOTLAB_ID			?= $(shell iotlab-experiment get -l --state Running | \
+						 			jq -r 'last(.items[] | select(.name=="$(IOTLAB_NAME)").id) // empty')
+
+IOTLAB_TYPE   		 = $(firstword $(subst :, ,$(IOTLAB_ARCHI)))
+IOTLAB_RESOURCES	?= $(if $(IOTLAB_ID),$(shell iotlab-experiment get -ri -i $(IOTLAB_ID) | \
+													jq -r '.items[].$(IOTLAB_SITE).$(IOTLAB_TYPE)'))
+
+# Authentication parameters
+IOTLAB_CONFIG		?= $(HOME)/.iotlabrc
+IOTLAB_USER         ?= $(shell cut -f 1 -d : $(IOTLAB_CONFIG))
+
+# Debugging
+IOTLAB_DEBUG_PORT   ?= 3333
+IOTLAB_DEBUG_NODE   ?= $(shell iotlab-experiment get -i $(IOTLAB_ID) -r | jq -r .items[0].network_address)
+
+# For ssh
+IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iotlab.info"
+
+# List of dependencies
+DEPENDENCIES = iotlab-auth jq
+
+ifneq (,$(findstring m3,$(IOTLAB_ARCHI)))
+	BINARY := $(ELFFILE)
+else
+	BINARY := $(HEXFILE)
+endif
+
+ifeq ($(BOARD),iotlab-m3)
+	IOTLAB_ARCHI = m3:at86rf231
+endif
+
+$(IOTLAB_CONFIG): 
+	iotlab-auth -u $(IOTLAB_USER)
+
+# Check configuration dependencies
+deps: 
+	$(foreach cmd,$(DEPENDENCIES),\
+		$(if $(shell which $(cmd)),,$(error "No $(cmd) in PATH")))
+
+submit: deps $(IOTLAB_CONFIG) all
+ifeq (,$(IOTLAB_ID))
+	$(info No experiment found, submitting)
+	$(eval IOTLAB_ID := $(shell iotlab-experiment submit \
+						-n $(APPLICATION) \
+						-d $(IOTLAB_DURATION) \
+						-l $(IOTLAB_NODES),archi=$(IOTLAB_ARCHI)+site=$(IOTLAB_SITE) | \
+						 jq .id))
+	$(Q)iotlab-experiment wait -i $(IOTLAB_ID)
+else
+	$(info Found experiment running with id $(IOTLAB_ID))
+endif
+
+# Override flash command
+flash: submit
+	$(Q)iotlab-node --update $(BINARY) -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
