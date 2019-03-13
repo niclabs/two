@@ -14,7 +14,7 @@ IOTLAB_RESOURCES	?= $(if $(IOTLAB_ID),$(shell iotlab-experiment get -ri -i $(IOT
 													jq -r '.items[].$(IOTLAB_SITE).$(IOTLAB_TYPE)'))
 
 # Authentication parameters
-IOTLAB_CONFIG		?= $(HOME)/.iotlabrc
+IOTLAB_CONFIG		 = $(HOME)/.iotlabrc
 IOTLAB_USER         ?= $(shell cut -f 1 -d : $(IOTLAB_CONFIG))
 
 # Debugging
