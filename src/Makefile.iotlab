@@ -1,4 +1,4 @@
-.PHONY: deps submit flash
+.PHONY: deps submit flash term
 
 # Experiment parameters
 IOTLAB_SITE			?= grenoble
@@ -72,6 +72,15 @@ else
 	$(info Found experiment running with id $(IOTLAB_ID))
 endif
 
-# Override flash command
+# Override flash and term commands
 flash: submit
 	$(Q)iotlab-node --update $(BINARY) -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
+
+term: submit
+	$(Q)ssh -t $(IOTLAB_AUTH) "iotlab-experiment get -r > /dev/null || \
+	                                	iotlab-auth -u $(IOTLAB_USER)"
+
+	$(Q)ssh -t $(IOTLAB_AUTH) \
+		"tmux attach -t $(IOTLAB_NAME)-$(IOTLAB_ID) || \
+		 tmux new -s $(IOTLAB_NAME)-$(IOTLAB_ID) \
+		 'serial_aggregator -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)'"
