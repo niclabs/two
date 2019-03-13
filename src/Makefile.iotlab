@@ -32,7 +32,7 @@ IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iot-lab.info"
 
 # Alias resource selection by default
 IOTLAB_NODES_LIST	= "$(IOTLAB_NODES),archi=$(IOTLAB_ARCHI)+site=$(IOTLAB_SITE)"
-ifdef IOTLAB_RESOURCES
+ifneq (,$(IOTLAB_RESOURCES))
 	IOTLAB_NODES_LIST = "$(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)"
 endif 
 
