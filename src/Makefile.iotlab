@@ -53,6 +53,12 @@ deps:
 	$(foreach cmd,$(DEPENDENCIES),\
 		$(if $(shell which $(cmd)),,$(error "No $(cmd) in PATH")))
 
+
+check-exp: deps $(IOTLAB_CONFIG)
+ifeq (,$(IOTLAB_ID))
+	$(error No experiment running)
+endif
+
 submit: deps $(IOTLAB_CONFIG) all
 ifeq (,$(IOTLAB_ID))
 	$(info No experiment found, submitting)
@@ -76,7 +82,7 @@ endif
 flash: submit
 	$(Q)iotlab-node --update $(BINARY) -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
 
-term: submit
+term: check-exp
 	$(Q)ssh -t $(IOTLAB_AUTH) "iotlab-experiment get -r > /dev/null || \
 	                                	iotlab-auth -u $(IOTLAB_USER)"
 
