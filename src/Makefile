@@ -56,5 +56,5 @@ include $(RIOTBASE)/Makefile.include
 
 # For iot-lab
 ifeq ($(ENV),iotlab)
-  include $(CURDIR)//Makefile.iotlab
+  include $(CURDIR)/../Makefile.iotlab
 endif
