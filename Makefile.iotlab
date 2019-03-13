@@ -12,7 +12,7 @@ IOTLAB_ID			?= $(shell iotlab-experiment get -l --state Running | \
 IOTLAB_TYPE   		 = $(firstword $(subst :, ,$(IOTLAB_ARCHI)))
 IOTLAB_RESOURCES	?= $(if $(IOTLAB_ID),$(shell iotlab-experiment get -ri -i $(IOTLAB_ID) | \
 													jq -r '.items[].$(IOTLAB_SITE).$(IOTLAB_TYPE)'))
-IOTLAB_WAIT		?= 60
+IOTLAB_WAIT			?= 60
 
 # Authentication parameters
 IOTLAB_CONFIG		 = $(HOME)/.iotlabrc
