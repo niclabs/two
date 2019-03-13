@@ -108,6 +108,6 @@ debug: deps $(IOTLAB_CONFIG) experiment-check
 	$(Q)iotlab-node --debug-start -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(DEBUG_TYPE),$(DEBUG_NODE)
 	@echo "Debug started on node $(IOTLAB_DEBUG_NODE)"
 	$(Q)ssh -f -L $(IOTLAB_DEBUG_PORT):$(IOTLAB_DEBUG_NODE):3333 $(IOTLAB_AUTH) "sleep 5"; \
-		 $(GDB) -ex "target remote localhost:3333" $(BINARY)
-	$(Q)iotlab-node --debug-stop -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(DEBUG_TYPE),$(DEBUG_NODE)
+		 $(GDB) -ex "target remote localhost:3333" $(BINARY); \
+		 iotlab-node --debug-stop -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(DEBUG_TYPE),$(DEBUG_NODE)
 	@echo "Debug stopped on node $(IOTLAB_DEBUG_NODE)"
