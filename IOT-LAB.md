@@ -4,7 +4,7 @@ The [IoT-Lab](https://www.iot-lab.info) is an open large scale testbed for testi
 
 ## Requirements
 
-* A valid account for the FIT IoT-LAB (registration there is open for everyone)
+* A valid account for the FIT IoT-LAB ([registration](https://www.iot-lab.info/testbed/signup) is open for everyone)
 * [IoT-Lab cli-tools](https://github.com/iot-lab/cli-tools).
 * The tool [jq](https://stedolan.github.io/jq/) for JSON processing
 
