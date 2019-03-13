@@ -24,6 +24,13 @@ IOTLAB_DEBUG_NODE   ?= $(shell iotlab-experiment get -i $(IOTLAB_ID) -r | jq -r 
 # For ssh
 IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iotlab.info"
 
+# Alias resource selection by default
+IOTLAB_NODES_LIST	= "$(IOTLAB_NODES),archi=$(IOTLAB_ARCHI)+site=$(IOTLAB_SITE)"
+ifdef IOTLAB_RESOURCES
+	IOTLAB_NODES_LIST = "$(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)"
+endif 
+
+
 # List of dependencies
 DEPENDENCIES = iotlab-auth jq
 
@@ -51,7 +58,7 @@ ifeq (,$(IOTLAB_ID))
 	$(eval IOTLAB_ID := $(shell iotlab-experiment submit \
 						-n $(APPLICATION) \
 						-d $(IOTLAB_DURATION) \
-						-l $(IOTLAB_NODES),archi=$(IOTLAB_ARCHI)+site=$(IOTLAB_SITE) | \
+						-l $(IOTLAB_NODES_LIST) | \
 						 jq .id))
 	$(Q)iotlab-experiment wait -i $(IOTLAB_ID)
 else
