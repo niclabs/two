@@ -82,7 +82,7 @@ endif
 flash: submit
 	$(Q)iotlab-node --update $(BINARY) -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
 
-term: check-exp
+term: deps $(IOTLAB_CONFIG) check-exp
 	$(Q)ssh -t $(IOTLAB_AUTH) "iotlab-experiment get -r > /dev/null || \
 	                                	iotlab-auth -u $(IOTLAB_USER)"
 
