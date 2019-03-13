@@ -12,6 +12,7 @@ IOTLAB_ID			?= $(shell iotlab-experiment get -l --state Running | \
 IOTLAB_TYPE   		 = $(firstword $(subst :, ,$(IOTLAB_ARCHI)))
 IOTLAB_RESOURCES	?= $(if $(IOTLAB_ID),$(shell iotlab-experiment get -ri -i $(IOTLAB_ID) | \
 													jq -r '.items[].$(IOTLAB_SITE).$(IOTLAB_TYPE)'))
+IOTLAB_WAIT		?= 60
 
 # Authentication parameters
 IOTLAB_CONFIG		 = $(HOME)/.iotlabrc
@@ -65,7 +66,8 @@ ifeq (,$(IOTLAB_ID))
 						-d $(IOTLAB_DURATION) \
 						-l $(IOTLAB_NODES_LIST) | \
 						 jq .id))
-	$(Q)iotlab-experiment wait -i $(IOTLAB_ID)
+	$(if $(shell iotlab-experiment wait -i $(IOTLAB_ID) --timeout $(IOTLAB_WAIT)),, \
+		$(error Failed to launch experiment $(shell iotlab-experiment stop -i $(IOTLAB_ID) | jq -r .id)))
 else
 	$(info Found experiment running with id $(IOTLAB_ID))
 endif
