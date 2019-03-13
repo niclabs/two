@@ -3,7 +3,7 @@
 # Experiment parameters
 IOTLAB_SITE			?= grenoble
 IOTLAB_NODES		?= 2
-IOTLAB_DURATION		?= 5
+IOTLAB_DURATION		?= 30
 IOTLAB_ARCHI		?= m3:at86rf231
 IOTLAB_NAME			?= $(APPLICATION)
 IOTLAB_ID			?= $(shell iotlab-experiment get -l --state Running | \
