@@ -23,7 +23,7 @@ IOTLAB_DEBUG_PORT   ?= 3333
 IOTLAB_DEBUG_NODE   ?= $(shell iotlab-experiment get -i $(IOTLAB_ID) -r | jq -r .items[0].network_address)
 
 # For ssh
-IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iotlab.info"
+IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iot-lab.info"
 
 # Alias resource selection by default
 IOTLAB_NODES_LIST	= "$(IOTLAB_NODES),archi=$(IOTLAB_ARCHI)+site=$(IOTLAB_SITE)"
