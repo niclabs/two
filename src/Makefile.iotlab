@@ -55,6 +55,11 @@ deps:
 submit: deps $(IOTLAB_CONFIG) all
 ifeq (,$(IOTLAB_ID))
 	$(info No experiment found, submitting)
+	$(if $(Q),,$(info "iotlab-experiment submit \
+						-n $(APPLICATION) \
+						-d $(IOTLAB_DURATION) \
+						-l $(IOTLAB_NODES_LIST)"))
+
 	$(eval IOTLAB_ID := $(shell iotlab-experiment submit \
 						-n $(APPLICATION) \
 						-d $(IOTLAB_DURATION) \
