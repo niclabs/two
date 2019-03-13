@@ -57,6 +57,8 @@ deps:
 check-exp: deps $(IOTLAB_CONFIG)
 ifeq (,$(IOTLAB_ID))
 	$(error No experiment running)
+else 
+	$(info Found experiment running with id $(IOTLAB_ID))
 endif
 
 submit: deps $(IOTLAB_CONFIG) all
