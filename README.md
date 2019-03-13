@@ -29,7 +29,7 @@ make all
 
 ## Building and testing with IoT-Lab
 
-See [IOT-LAB.md] for information.
+See [IOT-LAB.md](IOT-LAB.md) for information.
 
 ### tl;dr
 
