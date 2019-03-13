@@ -1,4 +1,4 @@
-.PHONY: deps check-exp submit stop flash term debug
+.PHONY: deps experiment-check experiment-submit experiment-stop
 
 # Experiment parameters
 IOTLAB_SITE			?= grenoble
@@ -59,14 +59,14 @@ deps:
 		$(if $(shell which $(cmd)),,$(error "No $(cmd) in PATH")))
 
 
-check-exp: deps $(IOTLAB_CONFIG)
+experiment-check: deps $(IOTLAB_CONFIG)
 ifeq (,$(IOTLAB_ID))
 	$(error No experiment running)
 else 
 	$(info Found experiment running with id $(IOTLAB_ID))
 endif
 
-submit: deps $(IOTLAB_CONFIG) all
+experiment-submit: deps $(IOTLAB_CONFIG) all
 ifeq (,$(IOTLAB_ID))
 	$(info No experiment found, submitting)
 	$(if $(Q),,$(info "iotlab-experiment submit \
@@ -85,14 +85,14 @@ else
 	$(info Found experiment running with id $(IOTLAB_ID))
 endif
 
-stop: deps check-exp
+experiment-stop: deps experiment-check
 	@iotlab-experiment stop -i $(IOTLAB_ID)
 
 # Override flash and term commands
-flash: submit
+flash: experiment-submit
 	$(Q)iotlab-node --update $(BINARY) -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
 
-term: deps $(IOTLAB_CONFIG) check-exp
+term: deps $(IOTLAB_CONFIG) experiment-check
 	$(Q)ssh -t $(IOTLAB_AUTH) "iotlab-experiment get -r > /dev/null || \
 	                                	iotlab-auth -u $(IOTLAB_USER)"
 
@@ -101,7 +101,7 @@ term: deps $(IOTLAB_CONFIG) check-exp
 		 tmux new -s $(IOTLAB_NAME)-$(IOTLAB_ID) \
 		 'serial_aggregator -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)'"
 
-debug: deps $(IOTLAB_CONFIG) check-exp
+debug: deps $(IOTLAB_CONFIG) experiment-check
 	$(eval DEBUG_TYPE := $(IOTLAB_TYPE))
 	$(eval DEBUG_NODE := $(shell echo $(IOTLAB_DEBUG_NODE) | sed 's/$(DEBUG_TYPE)-\([0-9]*\).*/\1/'))
 
