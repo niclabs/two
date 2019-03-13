@@ -1,4 +1,4 @@
-.PHONY: deps check-exp submit stop flash term 
+.PHONY: deps check-exp submit stop flash term debug
 
 # Experiment parameters
 IOTLAB_SITE			?= grenoble
@@ -20,7 +20,12 @@ IOTLAB_USER         ?= $(shell cut -f 1 -d : $(IOTLAB_CONFIG))
 
 # Debugging
 IOTLAB_DEBUG_PORT   ?= 3333
-IOTLAB_DEBUG_NODE   ?= $(shell iotlab-experiment get -i $(IOTLAB_ID) -r | jq -r .items[0].network_address)
+
+ifdef PORT
+	IOTLAB_DEBUG_NODE = $(IOTLAB_TYPE)-$(PORT).$(IOTLAB_SITE).iot-lab.info
+endif
+IOTLAB_DEBUG_NODE   ?= $(if $(IOTLAB_ID),$(shell iotlab-experiment get -i $(IOTLAB_ID) -r | \
+													jq -r .items[0].network_address))
 
 # For ssh
 IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iot-lab.info"
@@ -95,3 +100,14 @@ term: deps $(IOTLAB_CONFIG) check-exp
 		"tmux attach -t $(IOTLAB_NAME)-$(IOTLAB_ID) || \
 		 tmux new -s $(IOTLAB_NAME)-$(IOTLAB_ID) \
 		 'serial_aggregator -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)'"
+
+debug: deps $(IOTLAB_CONFIG) check-exp
+	$(eval DEBUG_TYPE := $(IOTLAB_TYPE))
+	$(eval DEBUG_NODE := $(shell echo $(IOTLAB_DEBUG_NODE) | sed 's/$(DEBUG_TYPE)-\([0-9]*\).*/\1/'))
+
+	$(Q)iotlab-node --debug-start -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(DEBUG_TYPE),$(DEBUG_NODE)
+	@echo "Debug started on node $(IOTLAB_DEBUG_NODE)"
+	$(Q)ssh -f -L $(IOTLAB_DEBUG_PORT):$(IOTLAB_DEBUG_NODE):3333 $(IOTLAB_AUTH) "sleep 5"; \
+		 $(GDB) -ex "target remote localhost:3333" $(BINARY)
+	$(Q)iotlab-node --debug-stop -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(DEBUG_TYPE),$(DEBUG_NODE)
+	@echo "Debug stopped on node $(IOTLAB_DEBUG_NODE)"
