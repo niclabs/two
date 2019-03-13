@@ -19,7 +19,7 @@ IOTLAB_CONFIG		 = $(HOME)/.iotlabrc
 IOTLAB_USER         ?= $(shell cut -f 1 -d : $(IOTLAB_CONFIG))
 
 # Debugging
-IOTLAB_DEBUG_PORT   ?= 3333
+IOTLAB_DEBUG_PORT    = 3333
 
 ifdef PORT
 	IOTLAB_DEBUG_NODE = $(IOTLAB_TYPE)-$(PORT).$(IOTLAB_SITE).iot-lab.info
