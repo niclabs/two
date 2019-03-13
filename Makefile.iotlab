@@ -90,6 +90,7 @@ experiment-stop: deps experiment-check
 
 # Override flash and term commands
 flash: experiment-submit
+	$(info Flashing nodes ...)
 	$(Q)iotlab-node --update $(BINARY) -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
 
 term: deps $(IOTLAB_CONFIG) experiment-check
