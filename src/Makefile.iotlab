@@ -1,4 +1,4 @@
-.PHONY: deps submit flash term
+.PHONY: deps check-exp submit stop flash term 
 
 # Experiment parameters
 IOTLAB_SITE			?= grenoble
@@ -77,6 +77,9 @@ ifeq (,$(IOTLAB_ID))
 else
 	$(info Found experiment running with id $(IOTLAB_ID))
 endif
+
+stop: deps check-exp
+	@iotlab-experiment stop -i $(IOTLAB_ID)
 
 # Override flash and term commands
 flash: submit
