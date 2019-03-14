@@ -121,18 +121,12 @@ static void *_server_thread(void *args)
 
 static int echo_send(char *addr_str, char *port_str, char *msg)
 {
-    struct sockaddr_in6 src, dst;
+    struct sockaddr_in6 dst;
     uint16_t port;
 
     int sock;
-
-    src.sin6_family = AF_INET6;
-    dst.sin6_family = AF_INET6;
-
     int res;
     char buf[64];
-
-    memset(&src.sin6_addr, 0, sizeof(src.sin6_addr));
 
     // parse destination address
     if (inet_pton(AF_INET6, addr_str, &dst.sin6_addr) != 1) {
@@ -140,6 +134,7 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
         return 1;
     }
 
+    dst.sin6_family = AF_INET6;
     // parse port
     port = atoi(port_str);
     if (port == 0) {
