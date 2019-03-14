@@ -38,10 +38,15 @@ USEMODULE += ipv6_addr
 USEMODULE += netdev_default
 
 # Include lwip and dependencies
+USEMODULE += lwip
 USEMODULE += lwip_netdev
 USEMODULE += lwip_ipv6_autoconfig
 USEMODULE += lwip_tcp
 USEMODULE += lwip_sock_tcp
+
+# Include posix dependencies
+USEMODULE += posix_sockets
+USEMODULE += posix_time
 
 # Add also the shell, some shell commands
 USEMODULE += shell
