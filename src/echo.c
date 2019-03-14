@@ -135,7 +135,7 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
     memset(&src.sin6_addr, 0, sizeof(src.sin6_addr));
 
     // parse destination address
-    if (inet_pton(AF_INET6, addr_str, &dst.sin6_addr) <= 0) {
+    if (inet_pton(AF_INET6, addr_str, &dst.sin6_addr) != 1) {
         puts("Unable to parse destination address");
         return 1;
     }
