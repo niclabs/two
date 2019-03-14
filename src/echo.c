@@ -142,6 +142,10 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
 
     // parse port
     port = atoi(port_str);
+    if (port == 0) {
+        puts("Error: invalid port specified");
+        return 1;
+    }
     dst.sin6_port = htons(port);
 
     if ((sock = socket(AF_INET6, SOCK_STREAM, 0)) < 0) {
