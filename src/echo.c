@@ -129,9 +129,14 @@ static void *_server_thread(void *args)
             perror("receive");
         }
 
+
+        if (close(sock) < 0) {
+            perror("close");
+            return NULL;
+        }
         printf("TCP connection to [%s]:%u reset, starting to accept again\n",
                client_addr, client_port);
-        close(sock);
+        
     }
     return NULL;
 }
