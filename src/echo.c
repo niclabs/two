@@ -90,7 +90,8 @@ static void *_server_thread(void *args)
 
         printf("TCP Client [%s]: %u connected\n", client_addr, client_port);
 
-        while ((res = recv(server_sock, server_buf, sizeof(server_buf), 0)) >= 0) {
+        while ((res = read(sock, server_buf, sizeof(server_buf))) >= 0)
+        {
             printf("Received TCP data from client [%s]:%u:\n",
                    client_addr, client_port);
 
@@ -102,8 +103,9 @@ static void *_server_thread(void *args)
                 puts("\"");
 
                 // Write data back
-                if (write(sock, &server_buf, res) < 0) {
-                    puts("Errored on write, finished server loop");
+                if (write(sock, &server_buf, res) < 0)
+                {
+                    perror("server write");
                     break;
                 }
             }
@@ -216,14 +218,16 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
     }
 
     // Send msg
-    if (send(sock, msg, strlen(msg), 0) < 0) {
-        puts("Error sending message");
+    if (write(sock, msg, sizeof(msg)) < 0)
+    {
+        perror("client send");
         return 1;
     }
 
     // Receive reply
-    if ((res = recv(sock, buf, sizeof(buf), 0)) < 0) {
-        puts("Error receiving message");
+    if ((res = read(sock, buf, sizeof(buf))) < 0)
+    {
+        perror("client recv");
         return 1;
     }
 
