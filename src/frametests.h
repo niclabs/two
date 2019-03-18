@@ -1,0 +1,8 @@
+//
+// Created by maite on 18-03-19.
+//
+
+#ifndef SETTINGSFRAME_FRAMETESTS_H
+#define SETTINGSFRAME_FRAMETESTS_H
+
+#endif //SETTINGSFRAME_FRAMETESTS_H
