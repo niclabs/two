@@ -240,7 +240,7 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
     printf("Success: connected to TCP server on port %" PRIu16 "\n", port);
 
     // Send msg
-    if (write(sock, msg, sizeof(msg)) < 0)
+    if (write(sock, msg, strlen(msg)) < 0)
     {
         perror("client send");
         return 1;
