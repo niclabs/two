@@ -79,7 +79,7 @@ static void *_server_thread(void *args)
         char client_addr[IPV6_ADDR_MAX_STR_LEN];
         uint16_t client_port;
 
-        if ((sock = accept(server_sock, (struct sockaddr *)&src, &src_len) < 0)) {
+        if ((sock = accept(server_sock, (struct sockaddr *)&src, &src_len)) < 0) {
             puts("Error during accept");
             continue;
         }
