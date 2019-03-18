@@ -76,7 +76,7 @@ static void *_server_thread(void *args)
         struct sockaddr_in6 src;
         socklen_t src_len = sizeof(struct sockaddr_in6);
 
-        char client_addr[IPV6_ADDR_MAX_STR_LEN];
+        char client_addr[INET6_ADDRSTRLEN];
         uint16_t client_port;
 
         if ((sock = accept(server_sock, (struct sockaddr *)&src, &src_len)) < 0) {
