@@ -1,4 +1,4 @@
-TOPTARGETS := all clean term flash debug
+TOPTARGETS := all clean term
 
 SUBDIRS := src
 
