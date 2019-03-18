@@ -16,7 +16,7 @@
 
 #include "thread.h"
 
-#define ENABLE_DEBUG  (1)
+#define ENABLE_DEBUG (1)
 #define SERVER_MSG_QUEUE_SIZE (8)
 #define SERVER_BUFFER_SIZE (64)
 
@@ -38,7 +38,8 @@ static void *_server_thread(void *args)
 
     // parse port
     port = atoi((char *)args);
-    if (port == 0) {
+    if (port == 0)
+    {
         puts("Error: invalid port specified");
         return NULL;
     }
@@ -49,29 +50,33 @@ static void *_server_thread(void *args)
     server_addr.sin6_port = htons(port);
 
     // Check if socket type is supported
-    if (server_sock < 0) {
-        puts("Error initializing socket");
+    if (server_sock < 0)
+    {
+        perror("Error initializing socket");
         server_sock = 0;
         return NULL;
     }
 
     // Bind socket to address
-    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    {
         server_sock = -1;
-        puts("Error binding socket");
+        perror("Error in bind");
         return NULL;
     }
 
     // Start listening
-    if (listen(server_sock, 4) < 0) {
+    if (listen(server_sock, 4) < 0)
+    {
         server_sock = -1;
-        puts("Error listening in socket");
+        perror("Error in listen");
         return NULL;
     }
 
     printf("Success: started TCP server on port %" PRIu16 "\n", port);
 
-    while (1) {
+    while (1)
+    {
         int sock, res;
         struct sockaddr_in6 src;
         socklen_t src_len = sizeof(struct sockaddr_in6);
@@ -79,8 +84,9 @@ static void *_server_thread(void *args)
         char client_addr[INET6_ADDRSTRLEN];
         uint16_t client_port;
 
-        if ((sock = accept(server_sock, (struct sockaddr *)&src, &src_len)) < 0) {
-            puts("Error during accept");
+        if ((sock = accept(server_sock, (struct sockaddr *)&src, &src_len)) < 0)
+        {
+            perror("accept");
             continue;
         }
 
@@ -95,9 +101,11 @@ static void *_server_thread(void *args)
             printf("Received TCP data from client [%s]:%u:\n",
                    client_addr, client_port);
 
-            if (res > 0) {
+            if (res > 0)
+            {
                 printf("Received: \"");
-                for (int i = 0; i < res; i++) {
+                for (int i = 0; i < res; i++)
+                {
                     printf("%c", server_buf[i]);
                 }
                 puts("\"");
@@ -109,15 +117,18 @@ static void *_server_thread(void *args)
                     break;
                 }
             }
-            else {
+            else
+            {
                 puts("Disconnected");
                 break;
             }
         }
-        if (res < 0) {
+
+        if (res < 0)
+        {
             perror("receive");
         }
-        
+
         printf("TCP connection to [%s]:%u reset, starting to accept again\n",
                client_addr, client_port);
         close(sock);
@@ -135,7 +146,8 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
     char buf[64];
 
     // parse destination address
-    if (inet_pton(AF_INET6, addr_str, &dst.sin6_addr) != 1) {
+    if (inet_pton(AF_INET6, addr_str, &dst.sin6_addr) != 1)
+    {
         puts("Unable to parse destination address");
         return 1;
     }
@@ -143,79 +155,84 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
     dst.sin6_family = AF_INET6;
     // parse port
     port = atoi(port_str);
-    if (port == 0) {
+    if (port == 0)
+    {
         puts("Error: invalid port specified");
         return 1;
     }
     dst.sin6_port = htons(port);
 
-    if ((sock = socket(AF_INET6, SOCK_STREAM, 0)) < 0) {
+    if ((sock = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
+    {
         perror("Error initializing socket");
         return 1;
     }
 
-    if (connect(sock, (struct sockaddr *)&dst, sizeof(dst)) < 0) {
+    if (connect(sock, (struct sockaddr *)&dst, sizeof(dst)) < 0)
+    {
         perror("Error in connect");
-        #if ENABLE_DEBUG
+#if ENABLE_DEBUG
         /*
          * this switch is unneeded since perror dumps the string for errno
          * but it is useful for debugging
          */
         printf("errno is ");
-        switch (errno) {
-            case EACCES:
-                puts("EACCESS");
-                break;
-            case EPERM:
-                puts("EPERM");
-                break;
-            case EADDRINUSE:
-                puts("EADDRINUSE");
-                break;
-            case EAFNOSUPPORT:
-                puts("EAFNOSUPPORT");
-                break;
-            case EAGAIN:
-                puts("EAGAIN");
-                break;
-            case EALREADY:
-                puts("EALREADY");
-                break;
-            case EBADF:
-                puts("EBADF");
-                break;
-            case ECONNREFUSED:
-                puts("ECONNREFUSED");
-                break;
-            case EFAULT:
-                puts("EFAULT");
-                break;
-            case EINPROGRESS:
-                puts("EINPROGRESS");
-                break;
-            case EINTR:
-                puts("EINTR");
-                break;
-            case EISCONN:
-                puts("EISCONN");
-                break;
-            case ENETUNREACH:
-                puts("ENETUNREACH");
-                break;
-            case ENOTSOCK:
-                puts("ENOTSOCK");
-                break;
-            case ETIMEDOUT:
-                puts("ETIMEDOUT");
-                break;
-            default:
-                printf("unknown error: %d", errno);
-                puts("");
-                break;
+        switch (errno)
+        {
+        case EACCES:
+            puts("EACCESS");
+            break;
+        case EPERM:
+            puts("EPERM");
+            break;
+        case EADDRINUSE:
+            puts("EADDRINUSE");
+            break;
+        case EAFNOSUPPORT:
+            puts("EAFNOSUPPORT");
+            break;
+        case EAGAIN:
+            puts("EAGAIN");
+            break;
+        case EALREADY:
+            puts("EALREADY");
+            break;
+        case EBADF:
+            puts("EBADF");
+            break;
+        case ECONNREFUSED:
+            puts("ECONNREFUSED");
+            break;
+        case EFAULT:
+            puts("EFAULT");
+            break;
+        case EINPROGRESS:
+            puts("EINPROGRESS");
+            break;
+        case EINTR:
+            puts("EINTR");
+            break;
+        case EISCONN:
+            puts("EISCONN");
+            break;
+        case ENETUNREACH:
+            puts("ENETUNREACH");
+            break;
+        case ENOTSOCK:
+            puts("ENOTSOCK");
+            break;
+        case ETIMEDOUT:
+            puts("ETIMEDOUT");
+            break;
+        default:
+            printf("unknown error: %d", errno);
+            puts("");
+            break;
         }
-        #endif
+#endif
         return 1;
     }
+    printf("Success: connected to TCP server on port %" PRIu16 "\n", port);
 
     // Send msg
     if (write(sock, msg, sizeof(msg)) < 0)
@@ -232,7 +249,8 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
     }
 
     // Print reply message
-    for (int i = 0; i < res; i++) {
+    for (int i = 0; i < res; i++)
+    {
         printf("%c", buf[i]);
     }
     puts("");
@@ -244,14 +262,16 @@ static int echo_send(char *addr_str, char *port_str, char *msg)
 static int echo_start_server(char *port_str)
 {
     /* check if server is already running */
-    if (server_sock >= 0) {
+    if (server_sock >= 0)
+    {
         puts("Error: server already running");
         return 1;
     }
     /* start server (which means registering pktdump for the chosen port) */
     if (thread_create(server_stack, sizeof(server_stack), THREAD_PRIORITY_MAIN - 1,
                       THREAD_CREATE_STACKTEST,
-                      _server_thread, port_str, "Echo server") <= KERNEL_PID_UNDEF) {
+                      _server_thread, port_str, "Echo server") <= KERNEL_PID_UNDEF)
+    {
         server_sock = -1;
         puts("error initializing thread");
         return 1;
@@ -261,30 +281,38 @@ static int echo_start_server(char *port_str)
 
 int echo_cmd(int argc, char **argv)
 {
-    if (argc < 2) {
+    if (argc < 2)
+    {
         printf("usage: %s [send|server]\n", argv[0]);
         return 1;
     }
 
-    if (strcmp(argv[1], "server") == 0) {
-        if (argc < 3) {
+    if (strcmp(argv[1], "server") == 0)
+    {
+        if (argc < 3)
+        {
             printf("usage: %s server [start|stop]\n", argv[0]);
             return 1;
         }
-        if (strcmp(argv[2], "start") == 0) {
-            if (argc < 4) {
+        if (strcmp(argv[2], "start") == 0)
+        {
+            if (argc < 4)
+            {
                 printf("usage %s server start <port>\n", argv[0]);
                 return 1;
             }
             return echo_start_server(argv[3]);
         }
-        else {
+        else
+        {
             puts("error: invalid command");
             return 1;
         }
     }
-    else if (strcmp(argv[1], "send") == 0) {
-        if (argc < 5) {
+    else if (strcmp(argv[1], "send") == 0)
+    {
+        if (argc < 5)
+        {
             printf("usage: %s send <addr> <port> <msg>]\n",
                    argv[0]);
             return 1;
@@ -292,7 +320,8 @@ int echo_cmd(int argc, char **argv)
 
         return echo_send(argv[2], argv[3], argv[4]);
     }
-    else {
+    else
+    {
         puts("error: invalid command");
         return 1;
     }
