@@ -1,6 +1,6 @@
 # two
 
-Experimental HTTP2 implementation for running on constrained devices
+Experimental HTTP2 implementation for constrained devices
 
 ## Building and testing
 
