@@ -1,0 +1,211 @@
+# Generic GCC Makefile based on
+# https://github.com/mbcrawfo/GenericMakefile/blob/master/c/Makefile
+
+# Some configuration variables
+APPDIR			?= $(CURDIR)
+SRCDIR			?= $(APPDIR)/src
+BUILD_DIR		?= $(APPDIR)/.build
+BINDIR			?= $(APPDIR)/bin
+
+# Make all paths absolute.
+override APPDIR         := $(abspath $(APPDIR))
+override SRCDIR         := $(abspath $(SRCDIR))
+override BUILD_DIR      := $(abspath $(BUILD_DIR))
+override BINDIR	        := $(abspath $(BINDIR))
+
+# Shell used in this makefile
+# bash is used for 'echo -en'
+SHELL = /bin/bash
+
+# General compiler flags
+CFLAGS += -std=c99 -Wall -Wextra -g
+
+# Quiet option, to output compile and link commands
+QUIET ?= 1
+ifeq ($(QUIET),1)
+  Q=@
+  MAKEFLAGS += --no-print-directory
+else
+  Q=
+endif
+
+# get host operating system
+OS := $(shell uname -s)
+
+# Set this to 1 to enable code in RIOT that does safety checking
+# which is not needed in a production environment but helps in the
+# development process:
+DEVELHELP ?= 0
+ifeq ($(DEVELHELP),1)
+  CFLAGS += -DDEVELHELP
+endif
+
+# Fail on warnings. Can be overridden by `make WERROR=0`.
+WERROR ?= 1
+export WERROR
+ifeq ($(WERROR),1)
+  CFLAGS += -Werror
+endif
+
+WPEDANTIC ?= 0
+export WPEDANTIC
+ifeq ($(WPEDANTIC),1)
+  CFLAGS += -Wpedantic
+endif
+
+# Include path
+INCLUDES += -I $(SRCDIR)
+
+
+# Define release and debug compiler and linker flags
+release: export CFLAGS := $(CFLAGS) -D NDEBUG
+debug: export CFLAGS := $(CFLAGS) -D DEBUG
+
+# Build and output paths
+release: export BUILD_DIR := $(BUILD_DIR)/$(OS)
+debug: export BUILD_DIR := $(BUILD_DIR)/$(OS)
+
+# Find all source files in the source directory, sorted by most
+# recently modified
+ifeq ($(OS),Darwin)
+	SOURCES = $(shell find $(SRCDIR) -name '*.c' | sort -k 1nr | cut -f2-)
+else
+	SOURCES = $(shell find $(SRCDIR) -name '*.c' -printf '%T@\t%p\n' \
+						| sort -k 1nr | cut -f2-)
+endif
+
+# fallback in case the above fails
+rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
+						$(filter $(subst *,%,$2), $d))
+ifeq ($(SOURCES),)
+	SOURCES := $(call rwildcard, $(SRCDIR), *.c)
+endif
+
+
+# Set the object file names, with the source directory stripped
+# from the path, and the build path prepended in its place
+OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(BUILD_DIR)/%.o)
+# Set the dependency files that will be used to add header dependencies
+DEPS = $(OBJECTS:.o=.d)
+
+
+# Macros for timing compilation
+ifeq ($(OS),Darwin)
+	CUR_TIME = awk 'BEGIN{srand(); print srand()}'
+	TIME_FILE = $(dir $@).$(notdir $@)_time
+	START_TIME = $(CUR_TIME) > $(TIME_FILE)
+	END_TIME = read st < $(TIME_FILE) ; \
+		$(RM) $(TIME_FILE) ; \
+		st=$$((`$(CUR_TIME)` - $$st)) ; \
+		echo $$st
+else
+	TIME_FILE = $(dir $@).$(notdir $@)_time
+	START_TIME = date '+%s' > $(TIME_FILE)
+	END_TIME = read st < $(TIME_FILE) ; \
+		$(RM) $(TIME_FILE) ; \
+		st=$$((`date '+%s'` - $$st - 86400)) ; \
+		echo `date -u -d @$$st '+%H:%M:%S'`
+endif
+
+
+# Version macros
+# Comment/remove this section to remove versioning
+USE_VERSION := false
+# If this isn't a git repo or the repo has no tags, git describe will return non-zero
+ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
+	USE_VERSION := true
+	VERSION := $(shell git describe --tags --long --dirty --always | \
+		sed 's/v\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)-\?.*-\([0-9]*\)-\(.*\)/\1 \2 \3 \4 \5/g')
+	VERSION_MAJOR := $(word 1, $(VERSION))
+	VERSION_MINOR := $(word 2, $(VERSION))
+	VERSION_PATCH := $(word 3, $(VERSION))
+	VERSION_REVISION := $(word 4, $(VERSION))
+	VERSION_HASH := $(word 5, $(VERSION))
+	VERSION_STRING := \
+		"$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(VERSION_REVISION)-$(VERSION_HASH)"
+	override CFLAGS := $(CFLAGS) \
+		-D VERSION_MAJOR=$(VERSION_MAJOR) \
+		-D VERSION_MINOR=$(VERSION_MINOR) \
+		-D VERSION_PATCH=$(VERSION_PATCH) \
+		-D VERSION_REVISION=$(VERSION_REVISION) \
+		-D VERSION_HASH=\"$(VERSION_HASH)\"
+endif
+
+
+# Check application name
+APPLICATION := $(strip $(APPLICATION))
+ifeq (, $(APPLICATION))
+	$(error An application name must be specified as APPLICATION.)
+endif
+
+# Define the binary file
+BINFILE ?= $(BINDIR)/$(APPLICATION)
+
+# Standard, non-optimized release build
+.PHONY: release
+release: dirs
+ifeq ($(USE_VERSION), true)
+	@echo "Beginning release build v$(VERSION_STRING)"
+else
+	@echo "Beginning release build"
+endif
+	@$(START_TIME)
+	@$(MAKE) all --no-print-directory
+	@echo -n "Total build time: "
+	@$(END_TIME)
+
+# Debug build for gdb debugging
+.PHONY: debug
+debug: dirs
+ifeq ($(USE_VERSION), true)
+	@echo "Beginning debug build v$(VERSION_STRING)"
+else
+	@echo "Beginning debug build"
+endif
+	@$(START_TIME)
+	@$(MAKE) all --no-print-directory
+	@echo -n "Total build time: "
+	@$(END_TIME)
+
+# Create the directories used in the build
+.PHONY: dirs
+dirs:
+	@echo "Creating directories"
+	@mkdir -p $(dir $(OBJECTS))
+	@mkdir -p $(BINDIR)
+
+
+# Removes all build files
+.PHONY: clean
+clean:
+	@echo "Deleting $(BINFILE) symlink"
+	@$(RM) $(APPLICATION)
+	@echo "Deleting directories"
+	@$(RM) -r $(BUILD_DIR)
+	@$(RM) -r $(BINDIR)
+
+# Main rule, checks the executable and symlinks to the output
+all: $(BINDIR)/$(APPLICATION)
+
+# Link the executable
+$(BINDIR)/$(APPLICATION): $(OBJECTS)
+	@echo "Linking: $@"
+	@$(START_TIME)
+	$(Q)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@echo -en "\t Link time: "
+	@$(END_TIME)
+
+
+
+# Add dependency files, if they exist
+-include $(DEPS)
+
+# Source file rules
+# After the first compilation they will be joined with the rules from the
+# dependency files to provide header dependencies
+$(BUILD_DIR)/%.o: $(SRCDIR)/%.c
+	@echo "Compiling: $< -> $@"
+	@$(START_TIME)
+	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
+	@echo -en "\t Compile time: "
+	@$(END_TIME)
