@@ -19,6 +19,7 @@ IOTLAB_CONFIG		 = $(HOME)/.iotlabrc
 IOTLAB_USER         ?= $(shell cut -f 1 -d : $(IOTLAB_CONFIG))
 
 # Debugging
+IOTLAB_DEBUG_GUI	?= 0
 IOTLAB_DEBUG_PORT    = 3333
 
 ifneq (,$(PORT))
@@ -26,6 +27,18 @@ ifneq (,$(PORT))
 endif
 IOTLAB_DEBUG_NODE   ?= $(if $(IOTLAB_ID),$(shell iotlab-experiment get -i $(IOTLAB_ID) -r | \
 													jq -r .items[0].network_address))
+
+DEBUGGER_ARGS		:= -ex "target remote localhost:3333"
+DEBUGGER			 = $(GDB) $(DEBUGGER_ARGS)
+ifeq (1,$(IOTLAB_DEBUG_GUI))
+    ifneq (,$(shell which gdbgui))
+        # Check os
+        ifeq ($(shell uname -s),Darwin)
+            DEBUGGER_ARGS := --init-eval-command="set startup-with-shell off" $(DEBUGGER_ARGS)
+        endif
+	    DEBUGGER = gdbgui --gdb $(GDB) --gdb-args '$(DEBUGGER_ARGS)'
+    endif
+endif
 
 # For ssh
 IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iot-lab.info"
@@ -109,6 +122,6 @@ debug: deps $(IOTLAB_CONFIG) experiment-check
 	$(Q)iotlab-node --debug-start -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(DEBUG_TYPE),$(DEBUG_NODE)
 	@echo "Debug started on node $(IOTLAB_DEBUG_NODE)"
 	$(Q)ssh -f -L $(IOTLAB_DEBUG_PORT):$(IOTLAB_DEBUG_NODE):3333 $(IOTLAB_AUTH) "sleep 5"; \
-		 $(GDB) -ex "target remote localhost:3333" $(BINARY); \
+		 $(DEBUGGER) $(BINARY); \
 		 iotlab-node --debug-stop -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(DEBUG_TYPE),$(DEBUG_NODE)
 	@echo "Debug stopped on node $(IOTLAB_DEBUG_NODE)"
