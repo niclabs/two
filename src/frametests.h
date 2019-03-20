@@ -10,6 +10,7 @@
 
 int frameHeaderEncodeDecodeTest(int argc, char **argv);
 int settingEncodeDecodeTest(int argc, char **argv);
+int frameEncodeDecodeTest(int argc, char **argv);
 
 
 //int echo_server(int argc, char **argv);

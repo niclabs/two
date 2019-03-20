@@ -15,3 +15,6 @@ uint16_t bytesToUint16(uint8_t* bytes);
 uint32_t bytesToUint32_24(uint8_t* bytes);
 
 uint32_t bytesToUint32_31(uint8_t* bytes);
+
+
+int appendByteArrays(uint8_t* dest, uint8_t* array1, uint8_t* array2, int size1, int size2);

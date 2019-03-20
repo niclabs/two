@@ -15,6 +15,7 @@
 static const shell_command_t shell_commands[] = {
     {"frameheadertests", "Frame Header Tests", frameHeaderEncodeDecodeTest},
     {"settingstests", "Settings Tests", settingEncodeDecodeTest},
+    {"frametests", "Frame Tests", frameEncodeDecodeTest},
     {NULL, NULL, NULL}};
 static char line_buf[SHELL_DEFAULT_BUFSIZE];
 int main(void) {
