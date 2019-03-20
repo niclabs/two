@@ -52,6 +52,11 @@ ifeq ($(BOARD),native)
   USEMODULE += lwip_ethernet
 endif
 
+CFLAGS += -DSO_REUSE
+CFLAGS += -DLWIP_SO_RCVTIMEO
+#CFLAGS += -DLWIP_SOCK_TCP_ACCEPT_TIMEOUT=500
+#CFLAGS += -DPOSIX_SETSOCKOPT
+
 include $(RIOTBASE)/Makefile.include
 
 # For iot-lab
