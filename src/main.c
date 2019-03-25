@@ -101,6 +101,8 @@ int main(void)
 
     while (1)
     {
+        // TODO: move loop outside main()
+
         /* Block until input arrives on one or more active sockets. */
         read_fd_set = active_fd_set;
         if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
@@ -137,6 +139,8 @@ int main(void)
                         FD_SET(new, &active_fd_set);
                         clients++;
                         fprintf(stderr, "Acepted\n");
+
+                        // TODO: call handler to notify of new connection
                     }
                     else
                     {
@@ -147,6 +151,7 @@ int main(void)
                 }
                 else
                 {
+                    // TODO: call handler to notify of pending data
                     /* Data arriving on an already-connected socket. */
                     if (read_from_client(i) < 0)
                     {
