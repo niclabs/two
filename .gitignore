@@ -54,6 +54,8 @@ dkms.conf
 # RIOT directories
 RIOT/
 src/bin/
+bin/
+.build/
 
 # Application specific files
 .vagrant
