@@ -50,6 +50,11 @@ else
     USEMODULE += lwip_tcp
     USEMODULE += lwip_sock_tcp
 
+    # Include posix dependencies
+    USEMODULE += posix_sockets
+    USEMODULE += posix_time
+
+
     # Add also the shell, some shell commands
     USEMODULE += shell
     USEMODULE += shell_commands
