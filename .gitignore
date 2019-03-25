@@ -51,6 +51,11 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+
+# OS X Files
+.DS_Store
+._.DS_Store
+
 # RIOT directories
 RIOT/
 src/bin/
