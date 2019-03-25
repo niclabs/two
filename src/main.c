@@ -3,7 +3,7 @@
  * Based on https://www.gnu.org/software/libc/manual/html_node/Server-Example.html
  * 
  * @author Felipe Lalanne <flalanne@niclabs.cl>
- */ 
+ */
 
 #include <stdio.h>
 #include <errno.h>
@@ -13,11 +13,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/select.h>
 
-#define PORT 8888
-#define MAXMSG 128
+#define PORT (8888)
+#define MAX_BUF_SIZE (128)
+#define MAX_CLIENTS (1)
 
 int make_socket(uint16_t port)
 {
@@ -56,10 +56,10 @@ int make_socket(uint16_t port)
 
 int read_from_client(int fd)
 {
-    char buffer[MAXMSG];
+    char buffer[MAX_BUF_SIZE];
     int nbytes;
 
-    nbytes = read(fd, buffer, MAXMSG);
+    nbytes = read(fd, buffer, MAX_BUF_SIZE);
     if (nbytes < 0)
     {
         /* Read error. */
@@ -85,10 +85,11 @@ int main(void)
     char client_addr_str[INET6_ADDRSTRLEN];
     struct sockaddr_in6 client_addr;
     socklen_t size;
+    int clients = 0;
 
     /* Create the socket and set it up to accept connections. */
     sock = make_socket(PORT);
-    if (listen(sock, 1) < 0)
+    if (listen(sock, MAX_CLIENTS) < 0)
     {
         perror("listen");
         exit(EXIT_FAILURE);
@@ -124,14 +125,25 @@ int main(void)
                     {
                         perror("accept");
                         exit(EXIT_FAILURE);
-                    }
+                    };
 
                     inet_ntop(AF_INET6, &client_addr.sin6_addr, client_addr_str, sizeof(client_addr_str));
                     fprintf(stderr,
-                            "Server: connect from host %s, port %u.\n",
+                            "Server: connect from host %s, port %u. ",
                             client_addr_str,
                             client_addr.sin6_port);
-                    FD_SET(new, &active_fd_set);
+                    if (clients < MAX_CLIENTS)
+                    {
+                        FD_SET(new, &active_fd_set);
+                        clients++;
+                        fprintf(stderr, "Acepted\n");
+                    }
+                    else
+                    {
+                        // Reject new connection
+                        close(new);
+                        fprintf(stderr, "Rejected\n");
+                    }
                 }
                 else
                 {
@@ -140,6 +152,7 @@ int main(void)
                     {
                         close(i);
                         FD_CLR(i, &active_fd_set);
+                        clients--;
                     }
                 }
             }
