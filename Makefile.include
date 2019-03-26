@@ -58,8 +58,8 @@ INCLUDES += -I $(SRCDIR)
 
 
 # Define release and debug compiler and linker flags
-release: export CFLAGS := $(CFLAGS) -D NDEBUG
-debug: export CFLAGS := $(CFLAGS) -D DEBUG
+release: export CFLAGS := $(CFLAGS) -DENABLE_DEBUG=0
+debug: export CFLAGS := $(CFLAGS) -DENABLE_DEBUG=1
 
 # Build and output paths
 release: export BUILD_DIR := $(BUILD_DIR)/$(OS)
