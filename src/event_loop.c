@@ -80,7 +80,7 @@ int unregister_handler(event_handler_t *event)
 event_handler_t * find_handler(int fd) {
     event_handler_t * match = NULL;
 
-    for (int i = 0; i < MAX_NO_OF_HANDLES && match != NULL; i++) {
+    for (int i = 0; i < MAX_NO_OF_HANDLES && match == NULL; i++) {
         if (registered_handlers[i].is_used && registered_handlers[i].fd == fd) {
             match = &registered_handlers[i].event;
         }
