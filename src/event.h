@@ -7,18 +7,18 @@
 #define EVENT_H
 
 /* Event interactions */
-typedef int (*handle_getter_t)(void *instance);
-typedef void (*event_handler_t)(void *instance);
+typedef int (*get_fd_cb_t)(void *instance);
+typedef void (*handle_event_cb_t)(void *instance);
 
 
 typedef struct {
     void *instance;
-    handle_getter_t get_handle;
-    event_handler_t handle_event;
-} event_t;
+    get_fd_cb_t get_fd;
+    handle_event_cb_t handle;
+} event_handler_t;
 
 
-int register_event(event_t *event);
-int unregister_event(event_t *event);
+int register_handler(event_handler_t *event);
+int unregister_handler(event_handler_t *event);
 
 #endif

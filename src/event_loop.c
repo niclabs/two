@@ -16,12 +16,12 @@ static int active_fd_set_is_init = 0;
 /* Bind an event to its file descriptor */
 typedef struct {
     int is_used;
-    event_t event;
+    event_handler_t event;
     int fd;
-} event_registration;
-static event_registration registered_events[MAX_NO_OF_HANDLES];
+} handler_registration;
+static handler_registration registered_handlers[MAX_NO_OF_HANDLES];
 
-int register_event(event_t *event)
+int register_handler(event_handler_t *event)
 {
     assert(NULL != event);
 
@@ -31,13 +31,13 @@ int register_event(event_t *event)
         active_fd_set_is_init = 1;
     }
 
-    int fd = event->get_handle(event->instance);
+    int fd = event->get_fd(event->instance);
     int is_registered = -1;
     if (!FD_ISSET(fd, &active_fd_set)) {
         // Look for a free entry in the registered event array
         for (int i = 0; (i < MAX_NO_OF_HANDLES) && (is_registered < 0); i++) {
-            if (registered_events[i].is_used == 0) {
-                event_registration *free_entry = &registered_events[i];
+            if (registered_handlers[i].is_used == 0) {
+                handler_registration *free_entry = &registered_handlers[i];
 
                 free_entry->event = *event;
                 free_entry->fd = fd;
@@ -53,7 +53,7 @@ int register_event(event_t *event)
     return is_registered;
 }
 
-int unregister_event(event_t *event)
+int unregister_handler(event_handler_t *event)
 {
     assert(NULL != event);
 
@@ -63,12 +63,12 @@ int unregister_event(event_t *event)
         active_fd_set_is_init = 1;        // And reset counter
     }
 
-    int fd = event->get_handle(event->instance);
+    int fd = event->get_fd(event->instance);
     int node_removed = -1;
     if (FD_ISSET(fd, &active_fd_set)) {
         for (int i = 0; (i < MAX_NO_OF_HANDLES) && (node_removed < 0); i++) {
-            if (registered_events[i].is_used && registered_events[i].fd == fd) {
-                registered_events[i].is_used = 0;
+            if (registered_handlers[i].is_used && registered_handlers[i].fd == fd) {
+                registered_handlers[i].is_used = 0;
                 close(fd);
                 FD_CLR(fd, &active_fd_set);
             }
@@ -77,12 +77,12 @@ int unregister_event(event_t *event)
     return node_removed;
 }
 
-event_t * find_event(int fd) {
-    event_t * match = NULL;
+event_handler_t * find_event(int fd) {
+    event_handler_t * match = NULL;
 
     for (int i = 0; i < MAX_NO_OF_HANDLES && match != NULL; i++) {
-        if (registered_events[i].is_used && registered_events[i].fd == fd) {
-            match = &registered_events[i].event;
+        if (registered_handlers[i].is_used && registered_handlers[i].fd == fd) {
+            match = &registered_handlers[i].event;
         }
     }
     return match;
@@ -104,9 +104,9 @@ void handle_events(void) {
         for (int i = 0; i < FD_SETSIZE; ++i) {
             if (FD_ISSET(i, &read_fd_set))
             {
-                event_t * signalled_event = find_event(i);
+                event_handler_t * signalled_event = find_event(i);
                 if (signalled_event != NULL) {
-                    signalled_event->handle_event(signalled_event->instance);
+                    signalled_event->handle(signalled_event->instance);
                 }
             }
         }
