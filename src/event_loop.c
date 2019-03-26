@@ -77,7 +77,7 @@ int unregister_handler(event_handler_t *event)
     return node_removed;
 }
 
-event_handler_t * find_event(int fd) {
+event_handler_t * find_handler(int fd) {
     event_handler_t * match = NULL;
 
     for (int i = 0; i < MAX_NO_OF_HANDLES && match != NULL; i++) {
@@ -104,7 +104,7 @@ void handle_events(void) {
         for (int i = 0; i < FD_SETSIZE; ++i) {
             if (FD_ISSET(i, &read_fd_set))
             {
-                event_handler_t * signalled_event = find_event(i);
+                event_handler_t * signalled_event = find_handler(i);
                 if (signalled_event != NULL) {
                     signalled_event->handle(signalled_event->instance);
                 }
