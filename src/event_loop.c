@@ -1,9 +1,9 @@
 /**
  * Implementation of reactor pattern with select() calls
  * as an event-loop
- * 
+ *
  * Based on https://github.com/adamtornhill/PatternsInC/tree/master/5_Reactor
- * 
+ *
  * @author Felipe Lalanne <flalanne@niclabs.cl>
  */
 #include <stdio.h>
@@ -24,7 +24,7 @@ static fd_set active_fd_set;
 static int active_fd_set_is_init = 0;
 
 /**
- * List item definition for a list of 
+ * List item definition for a list of
  * handlers
  */
 typedef struct {
@@ -64,13 +64,12 @@ int register_handler(event_handler_t *event)
     assert(NULL != event);
 
     // First call
-    if (active_fd_set_is_init  == 0) {
+    if (active_fd_set_is_init == 0) {
         FD_ZERO(&active_fd_set); // Initialize the set of active handles
         active_fd_set_is_init = 1;
     }
 
     int fd = event->get_fd(event->instance);
-    int is_registered = -1;
     if (!FD_ISSET(fd, &active_fd_set)) {
         // Look for a free entry in the registered event array
         int free_slot = find_free_handler();
@@ -85,7 +84,6 @@ int register_handler(event_handler_t *event)
             return 0;
         }
     }
-    }
 
     return -1;
 }
@@ -97,7 +95,7 @@ int unregister_handler(event_handler_t *event)
     // First call
     if (active_fd_set_is_init < 0) {
         FD_ZERO(&active_fd_set);    // Initialize the set of active handles
-        active_fd_set_is_init = 1;        // And reset counter
+        active_fd_set_is_init = 1;  // And reset counter
     }
 
     int fd = event->get_fd(event->instance);
@@ -109,7 +107,7 @@ int unregister_handler(event_handler_t *event)
                 close(fd);
                 FD_CLR(fd, &active_fd_set);
             }
-        }       
+        }
     }
     return node_removed;
 }
@@ -121,17 +119,15 @@ void handle_events(void)
     for (;;) {
         /* Block until input arrives on one or more active sockets. */
         read_fd_set = active_fd_set;
-        if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
-        {
+        if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
             ERROR("Error in select: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
 
         /* Service all the sockets with input pending. */
         for (int i = 0; i < FD_SETSIZE; ++i) {
-            if (FD_ISSET(i, &read_fd_set))
-            {
-                event_handler_t * signalled_event = find_handler(i);
+            if (FD_ISSET(i, &read_fd_set)) {
+                event_handler_t *signalled_event = find_handler(i);
                 if (signalled_event != NULL) {
                     signalled_event->handle(signalled_event->instance);
                 }
