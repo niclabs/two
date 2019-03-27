@@ -9,23 +9,19 @@ void log_printf(level_t level, ...) {
 
     va_list args;
     va_start(args, level);
-
-    char * fmt = va_arg(args, char *);
     switch(level) {
         case DEBUG:
-            fprintf(stderr, "[DEBUG] ");
+            vfprintf(stderr, "[DEBUG] %s", args);
             break;
         case INFO:
-            fprintf(stderr, "[INFO] ");
+            vfprintf(stderr, "[INFO] %s", args);
             break;
         case WARN:
-            fprintf(stderr, "[WARN] ");
+            vfprintf(stderr, "[WARN] %s", args);
             break;
         case ERROR:
-            fprintf(stderr, "[ERROR] ");
+            vfprintf(stderr, "[ERROR] %s", args);
             break;
     }
-
-    vfprintf(stderr, fmt, args);
     va_end(args);
 }
