@@ -1,6 +1,7 @@
 /**
- * @author Felipe Lalanne <flalanne@niclabs.cl>
+ * Event-loop (reactor pattern) API. 
  * 
+ * @author Felipe Lalanne <flalanne@niclabs.cl>
  */
 #ifndef EVENT_LOOP_H
 #define EVENT_LOOP_H

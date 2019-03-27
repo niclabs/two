@@ -1,3 +1,11 @@
+/**
+ * Implementation of reactor pattern with select() calls
+ * as an event-loop
+ * 
+ * Based on https://github.com/adamtornhill/PatternsInC/tree/master/5_Reactor
+ * 
+ * @author Felipe Lalanne <flalanne@niclabs.cl>
+ */
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -15,12 +23,17 @@
 static fd_set active_fd_set;
 static int active_fd_set_is_init = 0;
 
-/* Bind an event to its file descriptor */
+/**
+ * List item definition for a list of 
+ * handlers
+ */
 typedef struct {
     int fd;
     int is_used;
     event_handler_t event;
 } handler_list_entry_t;
+
+// List of registered handlers
 static handler_list_entry_t registered_handlers_list[MAX_NO_OF_HANDLES];
 
 int register_handler(event_handler_t *event)
@@ -89,7 +102,6 @@ event_handler_t * find_handler(int fd) {
     }
     return match;
 }
-
 
 void handle_events(void) {
     fd_set read_fd_set;

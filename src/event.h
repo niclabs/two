@@ -1,5 +1,5 @@
 /**
- * Manage generic I/O events
+ * API for managing generic I/O events
  *
  * @author Felipe Lalanne <flalanne@niclabs.cl>
  */

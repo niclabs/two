@@ -1,3 +1,8 @@
+/**
+ * Implementation of logging API log_printf() function
+ * 
+ * @author Felipe Lalanne <flalanne@niclabs.cl>
+ */
 #include <stdio.h>
 #include <stdarg.h>
 
