@@ -104,7 +104,6 @@ int unregister_handler(event_handler_t *event)
         for (int i = 0; (i < MAX_NO_OF_HANDLES) && (node_removed < 0); i++) {
             if (registered_handlers_list[i].is_used && registered_handlers_list[i].fd == fd) {
                 registered_handlers_list[i].is_used = 0;
-                close(fd);
                 FD_CLR(fd, &active_fd_set);
             }
         }
