@@ -119,8 +119,8 @@ void handle_events(void)
         /* Block until input arrives on one or more active sockets. */
         read_fd_set = active_fd_set;
         if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
-            ERROR("Error in select: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
+            ERROR("In select(): %s\n", strerror(errno));
+            break;
         }
 
         /* Service all the sockets with input pending. */
