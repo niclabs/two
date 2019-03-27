@@ -15,6 +15,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "logging.h"
 #include "event_loop.h"
 
 #define PORT (8888)
@@ -86,7 +87,7 @@ void on_recv(void *instance)
     nbytes = read(fd, buffer, MAX_BUF_SIZE);
     if (nbytes < 0) {
         /* Read error. */
-        perror("read");
+        ERROR("Error in read(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
     else if (nbytes == 0) {
@@ -98,11 +99,12 @@ void on_recv(void *instance)
             s->clients[slot].is_used = 0;
             unregister_handler(&client->handler);
         }
+        INFO("Client disconnected\n");
         return;
     }
     else {
         /* Data read. */
-        fprintf(stderr, "Server: got message: '%.*s'\n", nbytes - 1, buffer);
+        INFO("Received message: '%.*s'\n", nbytes - 1, buffer);
     }
 }
 
@@ -130,13 +132,12 @@ void on_new_client(void *instance)
                      (struct sockaddr *)&addr,
                      &addr_size);
     if (new < 0) {
-        perror("accept");
+        ERROR("Error in accept(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     inet_ntop(AF_INET6, &addr.sin6_addr, addr_str, sizeof(addr_str));
-    fprintf(stderr,
-            "Server: connect from host %s, port %u. ",
+    INFO("Received connection from host [%s]:%u\n",
             addr_str,
             addr.sin6_port);
 
@@ -150,12 +151,12 @@ void on_new_client(void *instance)
         register_handler(&client->handler);
 
 
-        fprintf(stderr, "Accepted\n");
+        INFO("Connection from host [%s]:%u accepted.\n", addr_str, addr.sin6_port);
     }
     else {
         // Reject new connection
         close(new);
-        fprintf(stderr, "Rejected\n");
+        WARN("Maximum number of clients reached. Connection from host [%s]:%u rejected.\n", addr_str, addr.sin6_port);
     }
 }
 
@@ -167,7 +168,7 @@ server_t *create_server(uint16_t port)
     /* Create the socket. */
     sock = socket(AF_INET6, SOCK_STREAM, 0);
     if (sock < 0) {
-        perror("socket");
+        ERROR("Error in socket(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -177,13 +178,13 @@ server_t *create_server(uint16_t port)
     memset(&addr.sin6_addr, 0, sizeof(addr.sin6_addr));
 
     if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        perror("bind");
+        ERROR("Error in bind(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     /* avoid waiting port close time to use server immediately */
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&option, sizeof(option)) < 0) {
-        perror("setsockopt");
+        ERROR("Error in setsockopt(). %s\n", strerror(errno));
         close(sock);
         exit(EXIT_FAILURE);
     }
@@ -199,7 +200,7 @@ server_t *create_server(uint16_t port)
 void server_listen(server_t *server)
 {
     if (listen(server->sock, MAX_NO_OF_CLIENTS) < 0) {
-        perror("listen");
+        ERROR("Error in listen(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -215,6 +216,7 @@ int main(void)
     // Start listening for events
     server_listen(s);
 
+    INFO("Server started, waiting for connections ...\n");
     // Start event-loop
     handle_events();
 }
