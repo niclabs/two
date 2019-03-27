@@ -22,7 +22,7 @@ typedef struct client {
 struct server
 {
     int fd;
-    int created;
+    int bound;
     event_handler_t handler;
     client_t clients[MAX_NO_OF_CLIENTS];
 };
@@ -177,7 +177,7 @@ static void on_new_client(void *instance)
 
 server_t *server_create(uint16_t port)
 {
-    assert(server_g.created == 0);
+    assert(server_g.bound == 0);
 
     int sock = -1, option = 1;
     struct sockaddr_in6 addr;
@@ -213,14 +213,14 @@ server_t *server_create(uint16_t port)
     event_handler_t h = {.instance = s, .get_fd = get_server_socket, .handle = on_new_client};
     s->fd = sock;
     s->handler = h;
-    s->created = 1;
+    s->bound = 1;
 
     return s;
 }
 
 void server_listen(server_t * server) {
     assert(server != NULL);
-    assert(server->created == 1);
+    assert(server->bound == 1);
 
     // Register server handler
     register_handler(&server->handler);
@@ -251,5 +251,6 @@ void server_destroy(server_t * server) {
 
     // Close server socket
     close(server->fd);
+    server->bound = 0;
     INFO("Server stopped successfully.\n");
 }
