@@ -93,7 +93,7 @@ void on_recv(void *instance)
     if (nbytes < 0)
     {
         /* Read error. */
-        ERROR("Error in read(). %s\n", strerror(errno));
+        ERROR("In read(): %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
     else if (nbytes == 0)
@@ -142,7 +142,7 @@ void on_new_client(void *instance)
                      &addr_size);
     if (new < 0)
     {
-        ERROR("Error in accept(). %s\n", strerror(errno));
+        ERROR("In accept(): %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -180,7 +180,7 @@ server_t *create_server(uint16_t port)
     sock = socket(AF_INET6, SOCK_STREAM, 0);
     if (sock < 0)
     {
-        ERROR("Error in socket(). %s\n", strerror(errno));
+        ERROR("In socket(): %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -191,16 +191,16 @@ server_t *create_server(uint16_t port)
 
     if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-        ERROR("Error in bind(). %s\n", strerror(errno));
+        ERROR("In bind(): %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     /* avoid waiting port close time to use server immediately */
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&option, sizeof(option)) < 0)
     {
-        ERROR("Error in setsockopt(). %s\n", strerror(errno));
+        ERROR("In setsockopt(): %s\n", strerror(errno));
         close(sock);
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE); 
     }
 
     server_t *s = &server;
@@ -215,7 +215,7 @@ void server_listen(server_t *server)
 {
     if (listen(server->sock, MAX_NO_OF_CLIENTS) < 0)
     {
-        ERROR("Error in listen(). %s\n", strerror(errno));
+        ERROR("In listen(): %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
