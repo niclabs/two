@@ -1,0 +1,136 @@
+/**
+ * Client API implementation
+ *
+ * @author Felipe Lalanne <flalanne@niclabs.cl>
+ */
+#include <string.h>
+#include <assert.h>
+#include <errno.h>
+#include <unistd.h>
+
+#include <arpa/inet.h>
+
+#include "logging.h"
+#include "client.h"
+#include "context.h"
+
+#define MAX_BUF_SIZE (256)
+#define HTTP2_PREFACE "HELLO!"
+
+struct client {
+    enum client_state {
+        IDLE,
+        OPEN,
+        CONNECTED
+    } state;
+    struct sockaddr_in6 dst;
+    client_ctx_t ctx;
+};
+
+client_t client_g;
+
+/**
+ * handle_event callback for client handler
+ */
+static void on_client_receive(void *instance)
+{
+    client_t *client = instance;
+    int fd = client->ctx.fd;
+
+    char buffer[MAX_BUF_SIZE];
+    int nbytes;
+
+    nbytes = read(fd, buffer, MAX_BUF_SIZE);
+    if (nbytes < 0) {
+        /* Read error. */
+        ERROR("In read(): %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    else if (nbytes == 0) {
+        client_destroy(client);
+        return;
+    }
+    else {
+        /* Data read. */
+        INFO("Received message: '%.*s'\n", nbytes - 1, buffer);
+    }
+}
+
+static void on_client_connect(client_t *client)
+{
+    int fd = client->ctx.fd;
+
+    if (write(fd, HTTP2_PREFACE, strlen(HTTP2_PREFACE)) < 0) {
+        ERROR("Error in sending preface: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+}
+
+client_t *client_create(char *addr, uint16_t port)
+{
+    assert(client_g.state == IDLE);
+
+    int sock;
+    struct sockaddr_in6 dst;
+
+    // parse destination address
+    if (inet_pton(AF_INET6, addr, &dst.sin6_addr) != 1) {
+        ERROR("Unable to parse destination address: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    dst.sin6_family = AF_INET6;
+    dst.sin6_port = htons(port);
+
+    if ((sock = socket(AF_INET6, SOCK_STREAM, 0)) < 0) {
+        ERROR("In socket(): %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    client_t *c = &client_g;
+    c->ctx.fd = sock;
+    c->dst = dst;
+    c->state = OPEN;
+
+    return c;
+}
+
+void client_connect(client_t *client)
+{
+    assert(client != NULL);
+    assert(client->state == OPEN);
+
+    if (connect(client->ctx.fd, (struct sockaddr *)&client->dst, sizeof(client->dst)) < 0) {
+        ERROR("Error in connect %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    client->state = CONNECTED;
+
+    // Call client
+    on_client_connect(client);
+}
+
+void client_request(client_t *client, char *endpoint)
+{
+    assert(client != NULL);
+    assert(client->state == CONNECTED);
+
+    int fd = client->ctx.fd;
+    
+    if (write(fd, endpoint, strlen(endpoint)) < 0) {
+        ERROR("Error in sending request: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // Wait to receive message
+    on_client_receive(client);
+}
+
+void client_destroy(client_t *client) {
+    assert(client != NULL);
+    
+    int fd = client->ctx.fd;
+    close(fd);
+    client->state = IDLE;
+}
