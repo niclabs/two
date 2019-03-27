@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -6,6 +7,7 @@
 #include <sys/select.h>
 
 #include "event_loop.h"
+#include "logging.h"
 
 #define MAX_NO_OF_HANDLES 32
 
@@ -96,8 +98,8 @@ void handle_events(void) {
         read_fd_set = active_fd_set;
         if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
         {
-            perror("select");
-            exit(EXIT_FAILURE); // TODO: should we exit here?
+            ERROR("Error in select: %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
         }
 
         /* Service all the sockets with input pending. */
