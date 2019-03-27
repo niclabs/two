@@ -7,7 +7,6 @@
 #define SERVER_H
 
 #include <stdlib.h>
-#include <sys/types.h>
 
 /* ADT definition of server */
 typedef struct server server_t;
