@@ -15,11 +15,11 @@ static int active_fd_set_is_init = 0;
 
 /* Bind an event to its file descriptor */
 typedef struct {
+    int fd;
     int is_used;
     event_handler_t event;
-    int fd;
-} handler_registration;
-static handler_registration registered_handlers[MAX_NO_OF_HANDLES];
+} handler_list_entry_t;
+static handler_list_entry_t registered_handlers_list[MAX_NO_OF_HANDLES];
 
 int register_handler(event_handler_t *event)
 {
@@ -36,8 +36,8 @@ int register_handler(event_handler_t *event)
     if (!FD_ISSET(fd, &active_fd_set)) {
         // Look for a free entry in the registered event array
         for (int i = 0; (i < MAX_NO_OF_HANDLES) && (is_registered < 0); i++) {
-            if (registered_handlers[i].is_used == 0) {
-                handler_registration *free_entry = &registered_handlers[i];
+            if (registered_handlers_list[i].is_used == 0) {
+                handler_list_entry_t *free_entry = &registered_handlers_list[i];
 
                 free_entry->event = *event;
                 free_entry->fd = fd;
@@ -67,8 +67,8 @@ int unregister_handler(event_handler_t *event)
     int node_removed = -1;
     if (FD_ISSET(fd, &active_fd_set)) {
         for (int i = 0; (i < MAX_NO_OF_HANDLES) && (node_removed < 0); i++) {
-            if (registered_handlers[i].is_used && registered_handlers[i].fd == fd) {
-                registered_handlers[i].is_used = 0;
+            if (registered_handlers_list[i].is_used && registered_handlers_list[i].fd == fd) {
+                registered_handlers_list[i].is_used = 0;
                 close(fd);
                 FD_CLR(fd, &active_fd_set);
             }
@@ -81,8 +81,8 @@ event_handler_t * find_handler(int fd) {
     event_handler_t * match = NULL;
 
     for (int i = 0; i < MAX_NO_OF_HANDLES && match == NULL; i++) {
-        if (registered_handlers[i].is_used && registered_handlers[i].fd == fd) {
-            match = &registered_handlers[i].event;
+        if (registered_handlers_list[i].is_used && registered_handlers_list[i].fd == fd) {
+            match = &registered_handlers_list[i].event;
         }
     }
     return match;
