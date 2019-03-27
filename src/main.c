@@ -22,13 +22,15 @@
 #define MAX_BUF_SIZE (128)
 #define MAX_NO_OF_CLIENTS (1)
 
-typedef struct {
+typedef struct
+{
     int sock;
     int is_used;
     event_handler_t handler;
 } client_t;
 
-typedef struct {
+typedef struct
+{
     int sock;
     event_handler_t handler;
 
@@ -37,13 +39,14 @@ typedef struct {
 
 static server_t server;
 
-
 static int find_client(server_t *server, client_t *client)
 {
     int client_slot = -1;
 
-    for (int i = 0; i < MAX_NO_OF_CLIENTS && client_slot < 0; i++) {
-        if (client->is_used == 1 && client == &server->clients[i]) {
+    for (int i = 0; i < MAX_NO_OF_CLIENTS && client_slot < 0; i++)
+    {
+        if (client->is_used == 1 && client == &server->clients[i])
+        {
             client_slot = i;
         }
     }
@@ -54,8 +57,10 @@ static int find_client(server_t *server, client_t *client)
 static int find_free_slot(server_t *server)
 {
     int slot = -1;
-    for (int i = 0; i < MAX_NO_OF_CLIENTS && slot < 0; i++) {
-        if (server->clients[i].is_used == 0) {
+    for (int i = 0; i < MAX_NO_OF_CLIENTS && slot < 0; i++)
+    {
+        if (server->clients[i].is_used == 0)
+        {
             slot = i;
         }
     }
@@ -85,24 +90,28 @@ void on_recv(void *instance)
     int nbytes;
 
     nbytes = read(fd, buffer, MAX_BUF_SIZE);
-    if (nbytes < 0) {
+    if (nbytes < 0)
+    {
         /* Read error. */
         ERROR("Error in read(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
-    else if (nbytes == 0) {
+    else if (nbytes == 0)
+    {
         // close socket and unregister
         server_t *s = &server;
         int slot = find_client(s, client);
 
-        if (slot >= 0) {
+        if (slot >= 0)
+        {
             s->clients[slot].is_used = 0;
             unregister_handler(&client->handler);
         }
         INFO("Client disconnected\n");
         return;
     }
-    else {
+    else
+    {
         /* Data read. */
         INFO("Received message: '%.*s'\n", nbytes - 1, buffer);
     }
@@ -110,7 +119,7 @@ void on_recv(void *instance)
 
 void create_client(int sock, client_t *client)
 {
-    event_handler_t h = { .instance = client, .get_fd = get_client_socket, .handle = on_recv };
+    event_handler_t h = {.instance = client, .get_fd = get_client_socket, .handle = on_recv};
     client->sock = sock;
     client->handler = h;
     client->is_used = 1;
@@ -131,29 +140,31 @@ void on_new_client(void *instance)
     int new = accept(handler->get_fd(server),
                      (struct sockaddr *)&addr,
                      &addr_size);
-    if (new < 0) {
+    if (new < 0)
+    {
         ERROR("Error in accept(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     inet_ntop(AF_INET6, &addr.sin6_addr, addr_str, sizeof(addr_str));
     INFO("Received connection from host [%s]:%u\n",
-            addr_str,
-            addr.sin6_port);
+         addr_str,
+         addr.sin6_port);
 
     // Check if number of client connections has been reached
     int slot = find_free_slot(server);
-    if (slot >= 0) {
+    if (slot >= 0)
+    {
         client_t *client = &server->clients[slot];
         create_client(new, client);
 
         // Register the client handler
         register_handler(&client->handler);
 
-
         INFO("Connection from host [%s]:%u accepted.\n", addr_str, addr.sin6_port);
     }
-    else {
+    else
+    {
         // Reject new connection
         close(new);
         WARN("Maximum number of clients reached. Connection from host [%s]:%u rejected.\n", addr_str, addr.sin6_port);
@@ -167,7 +178,8 @@ server_t *create_server(uint16_t port)
 
     /* Create the socket. */
     sock = socket(AF_INET6, SOCK_STREAM, 0);
-    if (sock < 0) {
+    if (sock < 0)
+    {
         ERROR("Error in socket(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
@@ -177,20 +189,22 @@ server_t *create_server(uint16_t port)
     addr.sin6_port = htons(port);
     memset(&addr.sin6_addr, 0, sizeof(addr.sin6_addr));
 
-    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
         ERROR("Error in bind(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     /* avoid waiting port close time to use server immediately */
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&option, sizeof(option)) < 0) {
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&option, sizeof(option)) < 0)
+    {
         ERROR("Error in setsockopt(). %s\n", strerror(errno));
         close(sock);
         exit(EXIT_FAILURE);
     }
 
     server_t *s = &server;
-    event_handler_t h = { .instance = s, .get_fd = get_server_socket, .handle = on_new_client };
+    event_handler_t h = {.instance = s, .get_fd = get_server_socket, .handle = on_new_client};
     s->sock = sock;
     s->handler = h;
 
@@ -199,7 +213,8 @@ server_t *create_server(uint16_t port)
 
 void server_listen(server_t *server)
 {
-    if (listen(server->sock, MAX_NO_OF_CLIENTS) < 0) {
+    if (listen(server->sock, MAX_NO_OF_CLIENTS) < 0)
+    {
         ERROR("Error in listen(). %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
