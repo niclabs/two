@@ -36,6 +36,29 @@ typedef struct {
 // List of registered handlers
 static handler_list_entry_t registered_handlers_list[MAX_NO_OF_HANDLES];
 
+event_handler_t *find_handler(int fd)
+{
+    event_handler_t *match = NULL;
+
+    for (int i = 0; i < MAX_NO_OF_HANDLES && match == NULL; i++) {
+        if (registered_handlers_list[i].is_used && registered_handlers_list[i].fd == fd) {
+            match = &registered_handlers_list[i].event;
+        }
+    }
+    return match;
+}
+
+int find_free_handler()
+{
+    int slot = -1;
+    for (int i = 0; i < MAX_NO_OF_HANDLES && slot < 0; i++) {
+        if (registered_handlers_list[i].is_used == 0) {
+            slot = i;
+        }
+    }
+    return slot;
+}
+
 int register_handler(event_handler_t *event)
 {
     assert(NULL != event);
@@ -50,22 +73,21 @@ int register_handler(event_handler_t *event)
     int is_registered = -1;
     if (!FD_ISSET(fd, &active_fd_set)) {
         // Look for a free entry in the registered event array
-        for (int i = 0; (i < MAX_NO_OF_HANDLES) && (is_registered < 0); i++) {
-            if (registered_handlers_list[i].is_used == 0) {
-                handler_list_entry_t *free_entry = &registered_handlers_list[i];
+        int free_slot = find_free_handler();
+        if (free_slot >= 0) {
+            handler_list_entry_t *free_entry = &registered_handlers_list[free_slot];
+            free_entry->event = *event;
+            free_entry->fd = fd;
+            free_entry->is_used = 1;
 
-                free_entry->event = *event;
-                free_entry->fd = fd;
-                free_entry->is_used = 1;
+            FD_SET(fd, &active_fd_set);
 
-                FD_SET(fd, &active_fd_set);
-
-                is_registered = 0;
-            }
+            return 0;
         }
     }
+    }
 
-    return is_registered;
+    return -1;
 }
 
 int unregister_handler(event_handler_t *event)
@@ -92,19 +114,10 @@ int unregister_handler(event_handler_t *event)
     return node_removed;
 }
 
-event_handler_t * find_handler(int fd) {
-    event_handler_t * match = NULL;
-
-    for (int i = 0; i < MAX_NO_OF_HANDLES && match == NULL; i++) {
-        if (registered_handlers_list[i].is_used && registered_handlers_list[i].fd == fd) {
-            match = &registered_handlers_list[i].event;
-        }
-    }
-    return match;
-}
-
-void handle_events(void) {
+void handle_events(void)
+{
     fd_set read_fd_set;
+
     for (;;) {
         /* Block until input arrives on one or more active sockets. */
         read_fd_set = active_fd_set;
