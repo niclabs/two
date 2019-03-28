@@ -15,7 +15,7 @@
 
 typedef struct client {
     int is_used;
-    client_ctx_t ctx;
+    context_t ctx;
     event_handler_t handler;
 } client_t;
 
@@ -52,7 +52,7 @@ static void client_destroy(client_t * client) {
     assert(client != NULL);
 
     unregister_handler(&client->handler);
-    client_ctx_destroy(&client->ctx);
+    context_destroy(&client->ctx);
     client->is_used = 0;
 
     INFO("Client disconnected\n");
@@ -103,8 +103,8 @@ static void on_client_receive(void *instance)
 static void client_init(int sock, client_t *client)
 {
     // Initialize client context
-    client_ctx_t ctx;
-    client_ctx_init(sock, &ctx);
+    context_t ctx;
+    context_init(sock, &ctx);
 
     // Initialize event handler
     event_handler_t h = {.instance = client, .get_fd = get_client_socket, .handle = on_client_receive};

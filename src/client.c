@@ -24,7 +24,7 @@ struct client {
         CONNECTED
     } state;
     struct sockaddr_in6 dst;
-    client_ctx_t ctx;
+    context_t ctx;
 };
 
 client_t client_g;

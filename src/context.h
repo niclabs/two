@@ -10,13 +10,13 @@
  * Client connection context (status, fd, etc.)
  * to be used either for server or client side implementation
  */
-typedef struct client_ctx {
+typedef struct context {
     int fd;
 
     // TODO: other http2 parameters go here
-} client_ctx_t;
+} context_t;
 
-void client_ctx_init(int fd, client_ctx_t * client);
-void client_ctx_destroy(client_ctx_t * client);
+void context_init(int fd, context_t * ctx);
+void context_destroy(context_t * ctx);
 
 #endif /* CONTEXT_H */
