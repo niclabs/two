@@ -30,16 +30,32 @@ client_t client_g;
 /**
  * handle_event callback for client handler
  */
-static void on_client_receive(void *instance)
+static void client_wait_receive(void *instance, int secs)
 {
     client_t *client = instance;
     int fd = client->ctx.fd;
+
+    struct timeval timeout;
+    timeout.tv_sec = secs;
+    timeout.tv_usec = 0;
+
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                   sizeof(timeout)) < 0) {
+        ERROR("Setting timeout: %s\n", strerror(errno));
+    }
 
     char buffer[MAX_BUF_SIZE];
     int nbytes;
 
     nbytes = read(fd, buffer, MAX_BUF_SIZE);
     if (nbytes < 0) {
+        if (errno == EAGAIN) {
+            // Received timeout
+            WARN("Read timeout. Terminating connection ...\n");
+            client_destroy(client);
+            return;
+        }
+
         /* Read error. */
         ERROR("In read(): %s\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -51,6 +67,14 @@ static void on_client_receive(void *instance)
     else {
         /* Data read. */
         INFO("Received message: '%.*s'\n", nbytes - 1, buffer);
+    }
+
+    // Unset timeout
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                   sizeof(timeout)) < 0) {
+        ERROR("Unsetting timeout: %s\n", strerror(errno));
     }
 }
 
@@ -115,14 +139,13 @@ void client_request(client_t *client, char *endpoint)
     assert(client->state == CONNECTED);
 
     int fd = client->ctx.fd;
-    
     if (write(fd, endpoint, strlen(endpoint)) < 0) {
         ERROR("Error in sending request: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    // Wait to receive message
-    on_client_receive(client);
+    // Wait 5 seconds to receive message
+    client_wait_receive(client, 5);
 }
 
 void client_destroy(client_t *client) {
