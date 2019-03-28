@@ -15,7 +15,7 @@
 #include "context.h"
 
 #define MAX_BUF_SIZE (256)
-#define HTTP2_PREFACE "HELLO!"
+#define PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 
 struct client {
     enum client_state {
@@ -60,7 +60,7 @@ static void on_client_connect(client_t *client)
 {
     int fd = client->ctx.fd;
 
-    if (write(fd, HTTP2_PREFACE, strlen(HTTP2_PREFACE)) < 0) {
+    if (write(fd, PREFACE, strlen(PREFACE)) < 0) {
         ERROR("Error in sending preface: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
