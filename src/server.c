@@ -5,12 +5,12 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "constants.h"
 #include "context.h"
 #include "server.h"
 #include "logging.h"
 #include "event_loop.h"
 
-#define MAX_BUF_SIZE (256)
 #define MAX_NO_OF_CLIENTS (1)
 
 typedef struct client {

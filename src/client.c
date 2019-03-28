@@ -10,12 +10,10 @@
 
 #include <arpa/inet.h>
 
+#include "constants.h"
 #include "logging.h"
 #include "client.h"
 #include "context.h"
-
-#define MAX_BUF_SIZE (256)
-#define PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 
 struct client {
     enum client_state {
