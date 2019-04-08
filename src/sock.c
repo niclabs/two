@@ -59,10 +59,15 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     assert(client->state == OPENED);
     (void)addr;
     (void)port;
-    
-    // TODO
+    /*if(connect(client->fd, ........)<0){//TODO
+	return -1; //TODO specify different types of error.
+    }
 
-    return -1;
+    else{
+        
+	return 0;
+    }*/
+	return -1
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
