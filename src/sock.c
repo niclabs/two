@@ -23,10 +23,15 @@ struct sock {
 
 int sock_create(sock_t * sock) {
     assert(sock->state == CLOSED);
-
-    // TODO
-
-    return -1;
+    sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
+    if(sock->fd<0){
+	return -1; //TODO specify different types of error.
+    }
+    else{
+	sock->state = OPENED;
+	return 0;
+    }
+    
 }
 
 int sock_listen(sock_t * server, uint16_t port) {
