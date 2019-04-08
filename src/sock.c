@@ -45,9 +45,14 @@ int sock_accept(sock_t * server, sock_t * client, int timeout) {
     assert(server->state == LISTENING);
     assert(client->state == OPENED);
     (void)timeout;
-    // TODO
-
-    return -1;
+    if(accept(server->fd, NULL, NULL)<0){
+	return -1; //TODO specify different types of error.
+    }
+    else{ //TODO include timeout.
+	server->state=CONNECTED; 
+        client->state=CONNECTED;
+	return 0;
+    }
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
