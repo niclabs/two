@@ -16,7 +16,7 @@ else
     # This has to be the absolute path to the RIOT base directory:
     RIOTBASE    ?= $(CURDIR)/RIOT
     APPDIR       = $(CURDIR)/src
-    BINDIRBASE   = $(CURDIR)/.build
+    BINDIRBASE   = $(CURDIR)/build
 
     # lwIP's memory management doesn't seem to work on non 32-bit platforms at the
     # moment.
