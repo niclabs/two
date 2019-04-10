@@ -1,8 +1,11 @@
 # Generic GCC Makefile based on
 # https://github.com/mbcrawfo/GenericMakefile/blob/master/c/Makefile
 
+# 'Makefile.include' directory, must be evaluated before other 'include'
+_basedir := $(dir $(lastword $(MAKEFILE_LIST)))
+
 # Some configuration variables
-APPDIR			?= $(CURDIR)
+APPDIR			?= $(_basedir)
 SRCDIR			?= $(APPDIR)/src
 BUILDDIR		?= $(APPDIR)/build
 BINDIR			?= $(APPDIR)/bin
