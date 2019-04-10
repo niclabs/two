@@ -4,7 +4,7 @@
 # Some configuration variables
 APPDIR			?= $(CURDIR)
 SRCDIR			?= $(APPDIR)/src
-BUILD_DIR		?= $(APPDIR)/.build
+BUILD_DIR		?= $(APPDIR)/build
 BINDIR			?= $(APPDIR)/bin
 
 # Make all paths absolute.
