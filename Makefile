@@ -11,7 +11,9 @@ QUIET ?= 1
 ifeq (,$(BOARD))
     # If no board is defined build code locally
 	include $(CURDIR)/Makefile.include
-    include $(CURDIR)/Makefile.unity
+
+    # Testing
+    include $(CURDIR)/tests/Makefile.include
 else 
     # Otherwise build for RIOT
     # This has to be the absolute path to the RIOT base directory:

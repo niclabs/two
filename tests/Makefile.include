@@ -12,13 +12,24 @@ endif
 
 .PHONY: test
 
-PATHU = unity/src/
-PATHS = src/
-PATHT = tests/
-PATHB = build/tests/
+APPDIR ?= $(CURDIR)/../
+
+PATHU  = $(APPDIR)/unity/src/
+PATHS = $(APPDIR)/src/
+PATHT = $(APPDIR)/tests/
+PATHB = $(APPDIR)/build/tests/
 PATHD = $(PATHB)depends/
 PATHO = $(PATHB)objs/
 PATHR = $(PATHB)results/
+
+# Make all paths absolute.
+override PATHU := $(abspath $(PATHU))/
+override PATHS := $(abspath $(PATHS))/
+override PATHT := $(abspath $(PATHT))/
+override PATHB := $(abspath $(PATHB))/
+override PATHD := $(abspath $(PATHD))/
+override PATHO := $(abspath $(PATHO))/
+override PATHR := $(abspath $(PATHR))/
 
 BUILD_PATHS = $(PATHB) $(PATHD) $(PATHO) $(PATHR) $(PATHU)
 
@@ -45,7 +56,7 @@ test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "\nDONE"
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
-	-./$< > $@ 2>&1
+	-$< > $@ 2>&1
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHU)unity.o #$(PATHD)test_%.d
 	$(LINK) -o $@ $^
