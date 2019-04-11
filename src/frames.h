@@ -51,10 +51,10 @@ typedef struct SettingsPair{
     uint32_t value;
 }settingspair_t; //48 bits -> 6 bytes
 
-typedef struct SettingsFrame{
+typedef struct SettingsPayload{
     settingspair_t* pairs;
     int count;
-}settingsframe_t; //32 bits -> 4 bytes
+}settingspayload_t; //32 bits -> 4 bytes
 
 typedef enum SettingFlag{
     SETTINGS_ACK_FLAG = 0x1
@@ -64,14 +64,14 @@ typedef enum SettingFlag{
 
 /*HEADERS FRAME*/
 
-typedef struct HeadersFrame{
+typedef struct HeadersPayload{
     uint8_t pad_length; // only if padded flag is set
     uint8_t exclusive_dependency:1; // only if priority flag is set
     uint32_t stream_dependency:31; // only if priority flag is set
     uint8_t wheight; // only if priority flag is set
     void* header_block_fragment; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
     void* padding; //only if padded flag is set. Size = pad_length
-}headersframe_t; //48+32+32 bits -> 14 bytes
+}headerspayoad_t; //48+32+32 bits -> 14 bytes
 
 typedef enum HeaderFlag{
     HEADERS_END_STREAM_FLAG = 0x1,//bit 0
@@ -96,8 +96,20 @@ int frameToBytes(frame_t* frame, uint8_t* bytes);
 
 /*settings methods*/
 int createListOfSettingsPair(uint16_t* ids, uint32_t* values, int count, settingspair_t* pair_list);
-int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingsframe_t* settings_frame, settingspair_t* pairs);
+int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingspayload_t* settings_frame, settingspair_t* pairs);
 int settingToBytes(settingspair_t* setting, uint8_t* byte_array);
-int settingsFrameToBytes(settingsframe_t* settings_frame, uint32_t count, uint8_t* byte_array);
-int bytesToSettingsPayload(uint8_t* bytes, int size, settingsframe_t* settings_frame, settingspair_t* pairs);
+int settingsFrameToBytes(settingspayload_t* settings_frame, uint32_t count, uint8_t* byte_array);
+
+int bytesToSettingsPayload(uint8_t* bytes, int size, settingspayload_t* settings_frame, settingspair_t* pairs);
+
 int createSettingsAckFrame(frame_t * frame, frameheader_t* frame_header);
+
+
+/*
+void* byteToPayloadDispatcher[10];
+byteToPayloadDispatcher[SETTINGS_TYPE] = &bytesToSettingsPayload;
+
+
+typedef* payloadTypeDispatcher[10];
+payloadTypeDispatcher[SETTINGS_TYPE] = &settingspayload_t
+*/

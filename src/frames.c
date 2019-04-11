@@ -61,11 +61,11 @@ int settingToBytes(settingspair_t* setting, uint8_t* bytes){
     return 6;
 }
 /*pass a settings frame to bytes*/
-int settingsFrameToBytes(settingsframe_t* settings_frame, uint32_t count, uint8_t* bytes){
+int settingsFrameToBytes(settingspayload_t* settings_payload, uint32_t count, uint8_t* bytes){
     for(uint32_t  i = 0; i< count; i++){
         //printf("%d\n",i);
         uint8_t setting_bytes[6];
-        int size = settingToBytes(settings_frame->pairs+i, setting_bytes);
+        int size = settingToBytes(settings_payload->pairs+i, setting_bytes);
         for(int j = 0; j<size; j++){
             bytes[i*6+j] = setting_bytes[j];
         }
@@ -75,7 +75,7 @@ int settingsFrameToBytes(settingsframe_t* settings_frame, uint32_t count, uint8_
 }
 
 /*transforms an array of bytes to a settings frame*/
-int bytesToSettingsPayload(uint8_t* bytes, int size, settingsframe_t* settings_frame, settingspair_t* pairs){
+int bytesToSettingsPayload(uint8_t* bytes, int size, settingspayload_t* settings_payload, settingspair_t* pairs){
     if(size%6!=0){
         printf("ERROR: settings payload wrong size\n");
         return -1;
@@ -87,8 +87,8 @@ int bytesToSettingsPayload(uint8_t* bytes, int size, settingsframe_t* settings_f
         pairs[i].value = bytesToUint32(bytes+(i*6)+2);
     }
 
-    settings_frame->pairs = pairs;
-    settings_frame->count = count;
+    settings_payload->pairs = pairs;
+    settings_payload->count = count;
     return (6*count);
 }
 
@@ -126,11 +126,11 @@ int bytesToFrame(uint8_t * bytes, int size, frame_t* frame){
                 printf("TODO: Reset Stream Frame. Not implemented yet.");
                 return -1;
             case SETTINGS_TYPE:{//Settings
-                settingsframe_t settings_frame;
+                settingspayload_t settings_payload;
                 settingspair_t pairs[frame_header.length/6];
-                int size = bytesToSettingsFrame(bytes+9,frame_header.length, &settings_frame, pairs);
+                int size = bytesToSettingsFrame(bytes+9,frame_header.length, &settings_payload, pairs);
                 frame->frame_header = frame_header;
-                frame->payload = (void*)&settings_frame;//TODO FIX this!!! assigning settings frame here but ussing it in upper layer...
+                frame->payload = (void*)&settings_payload;//TODO FIX this!!! assigning settings frame here but ussing it in upper layer...
                 return 9+size;
             }
             case PUSH_PROMISE_TYPE://Push promise
@@ -187,12 +187,12 @@ int frameToBytes(frame_t* frame, uint8_t* bytes){
 
             int frame_header_bytes_size = frameHeaderToBytes(frame_header, frame_header_bytes);
 
-            settingsframe_t *settings_frame = ((settingsframe_t *) (frame->payload));
+            settingspayload_t *settings_payload = ((settingspayload_t *) (frame->payload));
 
             
             uint8_t settings_bytes[length];
 
-            int size = settingsFrameToBytes(settings_frame, length / 6, settings_bytes);
+            int size = settingsFrameToBytes(settings_payload, length / 6, settings_bytes);
             int new_size = appendByteArrays(bytes, frame_header_bytes, settings_bytes, frame_header_bytes_size, size);
             //TODO delete frame_header_bytes and frame_header_bytes?
             //free(frame_header_bytes);
@@ -234,16 +234,16 @@ int createListOfSettingsPair(uint16_t* ids, uint32_t* values, int count, setting
 }
 
 
-int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingsframe_t* settings_frame, settingspair_t* pairs){
+int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingspayload_t* settings_payload, settingspair_t* pairs){
     frame_header->length = count*6;
     frame_header->type = 0x4;//settings;
     frame_header->flags = 0x0;
     frame_header->reserved = 0x0;
     frame_header->stream_id = 0;
     count = createListOfSettingsPair(ids, values, count, pairs);
-    settings_frame->count=count;
-    settings_frame->pairs= pairs;
-    frame->payload = (void*)settings_frame;
+    settings_payload->count=count;
+    settings_payload->pairs= pairs;
+    frame->payload = (void*)settings_payload;
     frame->frame_header = frame_header;
     return 0;
 }

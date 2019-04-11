@@ -25,11 +25,15 @@ uint8_t waiting_sett_ack;
 uint8_t send_local_settings(void){
   uint8_t rc;
   uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
-  frame_t *mysettings = createSettingsFrame(ids, &local_settings[1], 6);
+  frame_t mysettingframe;
+  frameheader_t mysettingframeheader;
+  settingspayload_t mysettings;
+  settingspair_t mypairs[6];
+  createSettingsFrame(ids, local_settings, 6, &mysettingframe, &mysettingframeheader, &mysettings, mypairs);//todo check return!=0?
   uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
-  int size_byte_mysettings = frameToBytes(mysettings, byte_mysettings);
+  int size_byte_mysettings = frameToBytes(&mysettingframe, byte_mysettings);
   /*Assuming that tcp_write returns the number of bytes written*/
-  if(!(rc = tcp_write(byte_mysettings))){
+  if(!(rc = tcp_write(byte_mysettings, size_byte_mysettings))){
     puts("Error in local settings sending");
     return rc;
   }
@@ -50,11 +54,11 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
     return 1;
   }
   /*spl is for setttings payload*/
-  settingsframe_t *spl = (settingsframe_t *)sframe->payload;
+  settingspayload_t *spl = (settingspayload_t *)sframe->payload;
   uint8_t i;
   for(i = 0; i < spl->count; i++){
     uint16_t id = spl->pairs[i].identifier;
-    if(id > 6 | id < 1){
+    if(id > 6 || id < 1){
       puts("Error: setting identifier not valid");
       return 1;
     }
@@ -80,13 +84,17 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
 * Output: A positive number if ACK settings were sent, 0 if not.
 */
 uint8_t send_settings_ack(void){
-  frame_t * ack_frame = createSettingsAckFrame();
+
+
+  frame_t ack_frame;
+  frameheader_t ack_frame_header;
+  createSettingsAckFrame(&ack_frame, &ack_frame_header);
   /*Settings ACK frame only has a header*/
   uint8_t byte_ack[9+0];
-  int size_byte_ack = frameToBytes(ack_frame, byte_ack);
+  int size_byte_ack = frameToBytes(&ack_frame, byte_ack);
   uint8_t rc;
   /*TODO: tcp_write*/
-  if(!(rc = tcp_write(byte_ack))){
+  if(!(rc = tcp_write(byte_ack, size_byte_ack))){
     puts("Error in Settings ACK sending");
     return rc;
   }
@@ -102,7 +110,7 @@ uint8_t send_settings_ack(void){
 */
 
 uint32_t read_setting_from(uint8_t place, uint8_t param){
-  if(param < 1 | param > 6){
+  if(param < 1 || param > 6){
     printf("Error: %u is not a valid setting parameter", param);
     return 0;
   }
@@ -132,9 +140,10 @@ uint8_t init_connection(void){
     uint8_t i = 0;
     /*We load the buffer with the ascii characters*/
     while(preface[i] != '\0'){
-      preface_buff[i++] = preface[i++];
+      i=i+1;//not sure if before of after assignment
+      preface_buff[i] = preface[i];
     }
-    if(!(rc = tcp_write(preface_buff))){
+    if(!(rc = tcp_write(preface_buff,24))){
       puts("Error in preface sending");
       return 1;
     }
@@ -149,4 +158,6 @@ uint8_t init_connection(void){
     /*TODO server wait for preface*/
 
   }
+
+  return 5;//fix this XD
 }

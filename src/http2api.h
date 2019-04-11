@@ -30,3 +30,6 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place);
 uint8_t send_settings_ack(void);
 uint32_t read_setting_from(uint8_t place, uint8_t param);
 uint8_t init_connection(void);
+
+
+int tcp_write(uint8_t *bytes, uint8_t length);//here just for the code to compile

@@ -77,12 +77,12 @@ int settingEncodeDecodeTest(int argc, char **argv){
     }
 
 
-    settingsframe_t frame_settings = {(settingspair_t *) &settings, count/2};
+    settingspayload_t frame_settings = {(settingspair_t *) &settings, count/2};
 
     uint8_t setting_frame_bytes[count/2*6];
     int size = settingsFrameToBytes(&frame_settings, count/2, setting_frame_bytes);
 
-    settingsframe_t decoded_settings;
+    settingspayload_t decoded_settings;
     settingspair_t pairs[count];
     size = bytesToSettingsPayload(setting_frame_bytes, 6*count/2, &decoded_settings, pairs);
 
@@ -116,7 +116,7 @@ int main(void) {
 */
 
 
-int checkEqualSettingsFrame(settingsframe_t* s1, settingsframe_t* s2, uint32_t size){
+int checkEqualSettingsFrame(settingspayload_t* s1, settingspayload_t* s2, uint32_t size){
     for(uint32_t i = 0; i < size/6; i++) {
         if (s1->pairs[i].identifier != s2->pairs[i].identifier) {
             printf("ERROR: Identifier in settings %d don't match\n", i);
@@ -156,11 +156,11 @@ int frameEncodeDecodeTest(int argc, char **argv){
     printf("\n");
     frame_t frame;
     frameheader_t frame_header;
-    settingsframe_t settings_frame;
+    settingspayload_t settings_payload;
     settingspair_t setting_pairs[count];
 
     int size;
-    size = createSettingsFrame(ids, values, count, &frame, &frame_header, &settings_frame, setting_pairs);
+    size = createSettingsFrame(ids, values, count, &frame, &frame_header, &settings_payload, setting_pairs);
 
     uint8_t bytes[frame.frame_header->length+9];
     size = frameToBytes(&frame, bytes);
@@ -194,16 +194,16 @@ int frameEncodeDecodeTest(int argc, char **argv){
     /*payload checking*/
     switch(decoded_frame_header.type){
         case 0x0:{
-            printf("Error: not implemented yet");
+            printf("Error: not implemented yet 0x0");
             return -1;
 
         }
         case 0x4: {
-            settingsframe_t payload;
+            settingspayload_t payload;
             settingspair_t pairs[decoded_frame_header.length/6];
             bytesToSettingsPayload(bytes+9, decoded_frame_header.length, &payload, pairs);
-            int check = checkEqualSettingsFrame((settingsframe_t *) (&payload),
-                                                (settingsframe_t *) (frame.payload), frame.frame_header->length);
+            int check = checkEqualSettingsFrame((settingspayload_t *) (&payload),
+                                                (settingspayload_t *) (frame.payload), frame.frame_header->length);
             if(check == -1){
                 return -1;
             }
