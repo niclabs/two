@@ -9,16 +9,6 @@
 #include "sock.h"
 #include "logging.h"
 
-struct sock {
-    int fd;
-    enum {
-        CLOSED,
-        OPENED,
-        LISTENING,
-        CONNECTED
-    } state;
-};
-
 
 int sock_create(sock_t * sock) {
     assert(sock->state == CLOSED);

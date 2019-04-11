@@ -10,9 +10,17 @@
 
 
 /**
- * Socket abstraction
+ * Socket typedef
  */
-typedef struct sock sock_t;
+typedef struct {
+    int fd;
+    enum {
+        CLOSED,
+        OPENED,
+        LISTENING,
+        CONNECTED
+    } state;
+} sock_t;
 
 /**
  * Initialize a new socket to act as either a server or a client
