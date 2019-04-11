@@ -46,19 +46,19 @@ int sock_accept(sock_t * server, sock_t * client) {
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
-    
+    struct sockaddr_in6 sin6;
+    struct in6_addr address;
+    inet_pton(AF_INET6, addr, &address);
+    sin6.sin6_port=port;
+    sin6.sin6_family=AF_INET6;
+    sin6.sin6_addr=address;
     assert(client->state == SOCK_OPENED);
-    (void)addr;
-    (void)port;
-    /*if(connect(client->fd, ........)<0){//TODO
-	return -1; //TODO specify different types of error.
+    if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6))<0){
+	    return -1; //TODO specify different types of error.
     }
-
-    else{
-        
-	return 0;
-    }*/
-	return -1;
+    else{   
+	    return 0;
+    }
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
