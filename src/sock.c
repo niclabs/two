@@ -57,6 +57,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 	    return -1; //TODO specify different types of error.
     }
     else{   
+        client->state=SOCK_CONNECTED;
 	    return 0;
     }
 }
