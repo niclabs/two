@@ -58,7 +58,7 @@ test: $(BUILD_PATHS) $(RESULTS)
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
 	$(Q)-$< > $@ 2>&1
 
-$(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHU)unity.o #$(PATHD)test_%.d
+$(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
 	$(Q)$(LINK) -o $@ $^
 
 $(PATHO)%.o:: $(PATHT)%.c
