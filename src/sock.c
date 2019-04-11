@@ -5,6 +5,7 @@
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "sock.h"
 #include "logging.h"
@@ -45,6 +46,7 @@ int sock_accept(sock_t * server, sock_t * client) {
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
+    
     assert(client->state == SOCK_OPENED);
     (void)addr;
     (void)port;
