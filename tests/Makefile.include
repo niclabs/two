@@ -2,11 +2,11 @@ ifeq ($(OS),Windows_NT)
   ifeq ($(shell uname -s),) # not in a bash-like shell
 	MKDIR = mkdir
   else # in a bash-like shell, like msys
-	MKDIR = $(Q)mkdir -p
+	MKDIR = mkdir -p
   endif
 	TARGET_EXTENSION=.exe
 else
-	MKDIR = $(Q)mkdir -p
+	MKDIR = mkdir -p
 	TARGET_EXTENSION=out
 endif
 
@@ -56,37 +56,37 @@ test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "\nDONE"
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
-	-$< > $@ 2>&1
+	$(Q)-$< > $@ 2>&1
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHU)unity.o #$(PATHD)test_%.d
-	$(LINK) -o $@ $^
+	$(Q)$(LINK) -o $@ $^
 
 $(PATHO)%.o:: $(PATHT)%.c
-	$(COMPILE) $(CFLAGS) $< -o $@
+	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
 
 $(PATHO)%.o:: $(PATHS)%.c
-	$(COMPILE) $(CFLAGS) $< -o $@
+	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
 
 $(PATHO)%.o:: $(PATHU)%.c $(PATHU)%.h
-	$(COMPILE) $(CFLAGS) $< -o $@
+	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
 
 $(PATHD)%.d:: $(PATHT)%.c
-	$(DEPEND) $@ $<
+	$(Q)$(DEPEND) $@ $<
 
 $(PATHB):
-	$(MKDIR) $(PATHB)
+	$(Q)$(MKDIR) $(PATHB)
 
 $(PATHD):
-	$(MKDIR) $(PATHD)
+	$(Q)$(MKDIR) $(PATHD)
 
 $(PATHO):
-	$(MKDIR) $(PATHO)
+	$(Q)$(MKDIR) $(PATHO)
 
 $(PATHR):
-	$(MKDIR) $(PATHR)
+	$(Q)$(MKDIR) $(PATHR)
 
 $(PATHU):
-	git clone https://github.com/ThrowTheSwitch/Unity.git unity
+	$(Q)git clone https://github.com/ThrowTheSwitch/Unity.git unity
 
 .PRECIOUS: $(PATHB)test_%.$(TARGET_EXTENSION)
 .PRECIOUS: $(PATHD)%.d
