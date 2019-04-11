@@ -23,8 +23,15 @@ int sock_create(sock_t * sock) {
 }
 
 int sock_listen(sock_t * server, uint16_t port) {
+    struct sockaddr_in6 sin6;
+    sin6.sin6_family=AF_INET6;
+    sin6.sin6_port=port;
+    sin6.sin6_addr=in6addr_any; 
     assert(server->state == SOCK_OPENED);
-    (void)port;
+    if(){
+
+
+    }
 
     // TODO
 
