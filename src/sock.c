@@ -14,11 +14,11 @@ int sock_create(sock_t * sock) {
     assert(sock->state == CLOSED);
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
     if(sock->fd <0){
-	return -1; //TODO specify different types of error.
+	    return -1; //TODO specify different types of error.
     }
     else{
-	sock->state = OPENED;
-	return 0;
+	    sock->state = OPENED;
+	    return 0;
     }  
 }
 
@@ -37,13 +37,13 @@ int sock_accept(sock_t * server, sock_t * client, int timeout) {
     (void)timeout;
     int clifd=accept(server->fd, NULL, NULL);
     if(clifd){
-	return -1; //TODO specify different types of error.
+	    return -1; //TODO specify different types of error.
     }
     else{ //TODO include timeout.
-	client->fd=clifd;
-	server->state=CONNECTED; 
+	    client->fd=clifd;
+	    server->state=CONNECTED; 
         client->state=CONNECTED;
-	return 0;
+	    return 0;
     }
 }
 
@@ -86,10 +86,10 @@ int sock_write(sock_t * sock, char * buf, int len) {
 int sock_destroy(sock_t * sock) {
     assert(sock->state != CLOSED);
     if(close(sock->fd)<0){
-	return -1;//TODO specify different types of error.
+	    return -1;//TODO specify different types of error.
     }
     else{
-	sock->state=CLOSED;
-	return 0;
+	    sock->state=CLOSED;
+	    return 0;
     } 
 }
