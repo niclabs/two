@@ -56,7 +56,7 @@ int sock_listen(sock_t * server, uint16_t port);
  * @return   0      if a new client was successfully accepted
  * @return  -1      on error (errno will be set appropriately)
  */
-int sock_accept(sock_t * server, sock_t * client, int timeout);
+int sock_accept(sock_t * server, sock_t * client);
 
 /**
  * Connect the client socket to the specified address and port. The socket must be initialized with
