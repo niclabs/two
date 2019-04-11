@@ -1,18 +1,11 @@
-
-//#include "frames.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-
 #include "frames.h"
-
-
 
 /*tests if trnasforming from frameHeader to bytes (and vice versa) works*/
 int frameHeaderEncodeDecodeTest(int argc, char **argv){
-
-
     if (argc < 6){
         printf("usage: %s <length> <type> <flags> <reserved> <stream_id>\n", argv[0]);
         return 1;
@@ -27,27 +20,29 @@ int frameHeaderEncodeDecodeTest(int argc, char **argv){
 
     printf("TEST: frameHeaderEncodeDecodeTest\n");
     frameheader_t frame_header = {length, type, flags, reserved, stream_id};
-    uint8_t* frame_bytes = (uint8_t*)malloc(9);
+    uint8_t frame_bytes[9];
     int frame_bytes_size = frameHeaderToBytes(&frame_header, frame_bytes);
-    frameheader_t* decoder_frame_header = bytesToFrameHeader(frame_bytes, frame_bytes_size);
+
+    frameheader_t decoder_frame_header;
+    bytesToFrameHeader(frame_bytes, frame_bytes_size, &decoder_frame_header);
     
-    if(frame_header.length!=decoder_frame_header->length){
+    if(frame_header.length!=decoder_frame_header.length){
         printf("ERROR: length don't match\n");
         return -1;
     }
-    if(frame_header.flags!=decoder_frame_header->flags){
+    if(frame_header.flags!=decoder_frame_header.flags){
         printf("ERROR: flags don't match\n");
         return -1;
     }
-    if(frame_header.type!=decoder_frame_header->type){
+    if(frame_header.type!=decoder_frame_header.type){
         printf("ERROR: type don't match\n");
         return -1;
     }
-    if(frame_header.stream_id!=decoder_frame_header->stream_id){
+    if(frame_header.stream_id!=decoder_frame_header.stream_id){
         printf("ERROR: stream_id don't match\n");
         return -1;
     }
-    if(frame_header.reserved!=decoder_frame_header->reserved){
+    if(frame_header.reserved!=decoder_frame_header.reserved){
         printf("ERROR: reserved don't match\n");
         return -1;
     }
@@ -84,22 +79,24 @@ int settingEncodeDecodeTest(int argc, char **argv){
 
     settingsframe_t frame_settings = {(settingspair_t *) &settings, count/2};
 
-    uint8_t *setting_frame_bytes = (uint8_t*)malloc(count/2*6);
+    uint8_t setting_frame_bytes[count/2*6];
     int size = settingsFrameToBytes(&frame_settings, count/2, setting_frame_bytes);
 
-    settingsframe_t *decoded_settings = bytesToSettingsFrame(setting_frame_bytes, 6*count/2);
+    settingsframe_t decoded_settings;
+    settingspair_t pairs[count];
+    size = bytesToSettingsFrame(setting_frame_bytes, 6*count/2, &decoded_settings, pairs);
 
     for (int i = 0; i < size/6; i++) {
-        if (decoded_settings->pairs[i].identifier != frame_settings.pairs[i].identifier) {
+        if (decoded_settings.pairs[i].identifier != frame_settings.pairs[i].identifier) {
             printf("ERROR: Identifier in settings %d don't match\n", i);
-            printf("found %d, ", decoded_settings->pairs[i].identifier);
+            printf("found %d, ", decoded_settings.pairs[i].identifier);
             printf("wanted %d.\n", frame_settings.pairs[i].identifier);
             return -1;
             //return false;
         }
-        if (decoded_settings->pairs[i].value != frame_settings.pairs[i].value) {
+        if (decoded_settings.pairs[i].value != frame_settings.pairs[i].value) {
             printf("ERROR: Value in settings %d don't match\n", i);
-            printf("found %d, ", decoded_settings->pairs[i].value);
+            printf("found %d, ", decoded_settings.pairs[i].value);
             printf("wanted %d.\n", frame_settings.pairs[i].value);
             return - 1;
             //return false;
@@ -149,52 +146,60 @@ int frameEncodeDecodeTest(int argc, char **argv){
 
 
     int count = (argc-1)/2;
-    uint16_t* ids = (uint16_t*)malloc(sizeof(uint16_t)*count);
-    uint32_t* values = (uint32_t*)malloc(sizeof(uint32_t)*count);
+    uint16_t ids[count];
+    uint32_t values[count];
+
     for (int i = 0; i < count; i++){
         ids[i] = (uint16_t)atoi(argv[2*i+1]);
         values[i] = (uint32_t)atoi(argv[2*i+1+1]);
     }
     printf("\n");
+    frame_t frame;
+    frameheader_t frame_header;
+    settingsframe_t settings_frame;
+    settingspair_t setting_pairs[count];
 
-    frame_t* frame = createSettingsFrame(ids, values, count);
-    uint8_t* bytes = (uint8_t*)malloc(frame->frame_header->length+9);
-    int size = frameToBytes(frame, bytes);
+    int size;
+    size = createSettingsFrame(ids, values, count, &frame, &frame_header, &settings_frame, setting_pairs);
 
-    frame_t* decoded_frame = bytesToFrame(bytes, size);
+    uint8_t bytes[frame.frame_header->length+9];
+    size = frameToBytes(&frame, bytes);
+
+    frame_t decoded_frame;
+    bytesToFrame(bytes, size, &decoded_frame);
 
     /*Header frame checking*/
-    if(frame->frame_header->length != decoded_frame->frame_header->length){
+    if(frame.frame_header->length != decoded_frame.frame_header->length){
         printf("ERROR: length don't match\n");
         return -1;
     }
-    if(frame->frame_header->flags != decoded_frame->frame_header->flags){
+    if(frame.frame_header->flags != decoded_frame.frame_header->flags){
         printf("ERROR: flags don't match\n");
         return -1;
     }
-    if(frame->frame_header->type != decoded_frame->frame_header->type){
+    if(frame.frame_header->type != decoded_frame.frame_header->type){
         printf("ERROR: type don't match\n");
         return -1;
     }
-    if(frame->frame_header->stream_id != decoded_frame->frame_header->stream_id){
+    if(frame.frame_header->stream_id != decoded_frame.frame_header->stream_id){
         printf("ERROR: stream_id don't match\n");
         return -1;
     }
-    if(frame->frame_header->reserved != decoded_frame->frame_header->reserved){
+    if(frame.frame_header->reserved != decoded_frame.frame_header->reserved){
         printf("ERROR: reserved don't match\n");
         return -1;
     }
 
     /*payload checking*/
-    switch(decoded_frame->frame_header->type){
+    switch(decoded_frame.frame_header->type){
         case 0x0:{
             printf("Error: not implemented yet");
             return -1;
 
         }
         case 0x4: {
-            int check = checkEqualSettingsFrame((settingsframe_t *) (decoded_frame->payload),
-                                                (settingsframe_t *) (frame->payload), frame->frame_header->length);
+            int check = checkEqualSettingsFrame((settingsframe_t *) (decoded_frame.payload),
+                                                (settingsframe_t *) (frame.payload), frame.frame_header->length);
             if(check == -1){
                 return -1;
             }

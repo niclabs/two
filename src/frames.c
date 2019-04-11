@@ -30,18 +30,17 @@ int frameHeaderToBytes(frameheader_t* frame_header, uint8_t* byte_array){
 }
 
 /*Transforms bytes to a FrameHeader*/
-frameheader_t* bytesToFrameHeader(uint8_t* bytes, int size ){
+int bytesToFrameHeader(uint8_t* byte_array, int size, frameheader_t* frame_header){
     if(size < 9){
         printf("ERROR: frameHeader size too small, %d\n", size);
-        return NULL;
+        return -1;
     }
-    frameheader_t* frame_header = (frameheader_t*) malloc(sizeof(frameheader_t));
-    frame_header->length = bytesToUint32_24(bytes);
-    frame_header->type = (uint8_t)(bytes[3]);
-    frame_header->flags = (uint8_t)(bytes[4]);
-    frame_header->stream_id = bytesToUint32_31(bytes+5);
-    frame_header->reserved = (uint8_t)((bytes[5])>>7);
-    return frame_header;
+    frame_header->length = bytesToUint32_24(byte_array);
+    frame_header->type = (uint8_t)(byte_array[3]);
+    frame_header->flags = (uint8_t)(byte_array[4]);
+    frame_header->stream_id = bytesToUint32_31(byte_array+5);
+    frame_header->reserved = (uint8_t)((byte_array[5])>>7);
+    return 0;
 }
 
 
@@ -65,32 +64,32 @@ int settingToBytes(settingspair_t* setting, uint8_t* bytes){
 int settingsFrameToBytes(settingsframe_t* settings_frame, uint32_t count, uint8_t* bytes){
     for(uint32_t  i = 0; i< count; i++){
         //printf("%d\n",i);
-        uint8_t* setting_bytes = (uint8_t*)malloc(6);
+        uint8_t setting_bytes[6];
         int size = settingToBytes(settings_frame->pairs+i, setting_bytes);
         for(int j = 0; j<size; j++){
             bytes[i*6+j] = setting_bytes[j];
         }
-        free(setting_bytes);
+        
     }
     return 6*count;
 }
 
 /*transforms an array of bytes to a settings frame*/
-settingsframe_t* bytesToSettingsFrame(uint8_t* bytes, int size){
+int bytesToSettingsFrame(uint8_t* bytes, int size, settingsframe_t* settings_frame, settingspair_t* pairs){
     if(size%6!=0){
         printf("ERROR: settings payload wrong size\n");
-        return NULL;
+        return -1;
     }
     int count = size / 6;
-    settingspair_t* settings = (settingspair_t*)malloc(sizeof(settingspair_t)*6);
+    
     for(int i = 0; i< count; i++){
-        settings[i] =  (settingspair_t){bytesToUint16(bytes+(i*6)), bytesToUint32(bytes+(i*6)+2)};
-        //printf("id %d, val %d\n", settings[i].identifier, settings[i].value);
-        //printf("bytes id %u, %u\n",bytes[6*i], bytes[6*i+1]);
+        pairs[i].identifier = bytesToUint16(bytes+(i*6));
+        pairs[i].value = bytesToUint32(bytes+(i*6)+2);
     }
-    settingsframe_t* frame = (settingsframe_t*)malloc(sizeof(settingsframe_t));
-    frame->pairs = settings;
-    return frame;
+
+    settings_frame->pairs = pairs;
+    settings_frame->count = count;
+    return (6*count);
 }
 
 
@@ -103,58 +102,61 @@ uint8_t getLengthFromBytes(uint8_t * bytes, uint8_t bytes_length){
 }
 */
 
-
-frame_t* bytesToFrame(uint8_t * bytes, int size){
-    frameheader_t *frame_header= bytesToFrameHeader(bytes, size);
-    if(frame_header){
-        if(size<(9+(int)frame_header->length)){
+/*
+int bytesToFrame(uint8_t * bytes, int size, frame_t* frame){
+    frameheader_t frame_header;
+    int not_ok = bytesToFrameHeader(bytes, size, &frame_header);
+    if(!not_ok){
+        if(size<(9+(int)frame_header.length)){
             printf("FramePayload is still not complete");
-            return NULL;
+            return -1;
         }
-        switch(frame_header->type){
-            case 0x0://Data
+
+        switch(frame_header.type){
+            case DATA_TYPE://Data
                 printf("TODO: Data Frame. Not implemented yet.");
-                return NULL;
-            case 0x1://Header
+                return -1;
+            case HEADERS_TYPE://Header
                 printf("TODO: Header Frame. Not implemented yet.");
-                return NULL;
-            case 0x2://Priority
+                return -1;
+            case PRIORITY_TYPE://Priority
                 printf("TODO: Priority Frame. Not implemented yet.");
-                return NULL;
-            case 0x3://RST_STREAM
+                return -1;
+            case RST_STREAM_TYPE://RST_STREAM
                 printf("TODO: Reset Stream Frame. Not implemented yet.");
-                return NULL;
-            case 0x4:{//Settings
-                settingsframe_t* settings_frame = bytesToSettingsFrame(bytes+9,frame_header->length);
-                frame_t* frame = (frame_t*)malloc(sizeof(frame_t));
+                return -1;
+            case SETTINGS_TYPE:{//Settings
+                settingsframe_t settings_frame;
+                settingspair_t pairs[frame_header.length/6];
+                int size = bytesToSettingsFrame(bytes+9,frame_header.length, &settings_frame, pairs);
                 frame->frame_header = frame_header;
-                frame->payload = (void*)settings_frame;
-                return frame;}
-            case 0x5://Push promise
+                frame->payload = (void*)&settings_frame;//TODO FIX this!!! assigning settings frame here but ussing it in upper layer...
+                return 9+size;
+            }
+            case PUSH_PROMISE_TYPE://Push promise
                 printf("TODO: Push promise frame. Not implemented yet.");
-                return NULL;
-            case 0x6://Ping
+                return -1;
+            case PING_TYPE://Ping
                 printf("TODO: Ping frame. Not implemented yet.");
-                return NULL;
-            case 0x7://Go Avaw
+                return -1;
+            case GOAWAY_TYPE://Go Avaw
                 printf("TODO: Go away frame. Not implemented yet.");
-                return NULL;
-            case 0x8://Window update
+                return -1;
+            case WINDOW_UPDATE_TYPE://Window update
                 printf("TODO: Window update frame. Not implemented yet.");
-                return NULL;
-            case 0x9://Continuation
+                return -1;
+            case CONTINUATION_TYPE://Continuation
                 printf("TODO: Continuation frame. Not implemented yet.");
-                return NULL;
+                return -1;
             default:
                 printf("Error: Type not found");
-                return NULL;
+                return -1;
         }
 
     }
-    return NULL;
-
-
+    return -1;
 }
+*/
 int frameToBytes(frame_t* frame, uint8_t* bytes){
     frameheader_t* frame_header = frame->frame_header;
     uint32_t length = frame_header->length;
@@ -174,18 +176,23 @@ int frameToBytes(frame_t* frame, uint8_t* bytes){
         case 0x3://RST_STREAM
             printf("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
-        case 0x4://Settings
-            if(length%6!=0){
+        case 0x4: {//Settings
+            if (length % 6 != 0) {
                 printf("Error: length not divisible by 6, %d", length);
                 return -1;
             }
-            uint8_t* frame_header_bytes = (uint8_t*)malloc(sizeof(uint8_t)*9);;
+            
+            uint8_t frame_header_bytes[9];
+
+
             int frame_header_bytes_size = frameHeaderToBytes(frame_header, frame_header_bytes);
 
-            settingsframe_t* settings_frame = ((settingsframe_t*)(frame->payload));
+            settingsframe_t *settings_frame = ((settingsframe_t *) (frame->payload));
 
-            uint8_t* settings_bytes = (uint8_t*)malloc(sizeof(uint8_t)*length);
-            int size = settingsFrameToBytes(settings_frame, length/6, settings_bytes);
+            
+            uint8_t settings_bytes[length];
+
+            int size = settingsFrameToBytes(settings_frame, length / 6, settings_bytes);
             int new_size = appendByteArrays(bytes, frame_header_bytes, settings_bytes, frame_header_bytes_size, size);
             //TODO delete frame_header_bytes and frame_header_bytes?
             //free(frame_header_bytes);
@@ -194,6 +201,7 @@ int frameToBytes(frame_t* frame, uint8_t* bytes){
             //free(frame_header_byte_array);
 
             return new_size;
+        }
         case 0x5://Push promise
             printf("TODO: Push promise frame. Not implemented yet.");
             return -1;
@@ -225,49 +233,41 @@ int createListOfSettingsPair(uint16_t* ids, uint32_t* values, int count, setting
     return count;
 }
 
-frameheader_t* createFrameHeader(uint32_t length, uint8_t type, uint8_t flags, uint8_t reserved, uint32_t stream_id){
-    frameheader_t* frame_header = (frameheader_t*)malloc(sizeof(frameheader_t));
-    frame_header->length = length;
-    frame_header->type = type;
-    frame_header->flags = flags;
-    frame_header->reserved = reserved;
-    frame_header->stream_id = stream_id;
-    return frame_header;
-}
 
-
-frame_t* createFrame(frameheader_t* frame_header, void* payload){
-    frame_t* frame = (frame_t*)malloc(sizeof(frame_t));
+int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingsframe_t* settings_frame, settingspair_t* pairs){
+    frame_header->length = count*6;
+    frame_header->type = 0x4;//settings;
+    frame_header->flags = 0x0;
+    frame_header->reserved = 0x0;
+    frame_header->stream_id = 0;
+    count = createListOfSettingsPair(ids, values, count, pairs);
+    settings_frame->count=count;
+    settings_frame->pairs= pairs;
+    frame->payload = (void*)settings_frame;
     frame->frame_header = frame_header;
-    frame->payload = payload;
-    return frame;
+    return 0;
+}
+int createSettingsAckFrame(frame_t * frame, frameheader_t* frame_header){
+    frame_header->length = 0;
+    frame_header->type = 0x4;//settings;
+    frame_header->flags = setFlag(0x0, SETTINGS_ACK_FLAG);
+    frame_header->reserved = 0x0;
+    frame_header->stream_id = 0;
+    frame->frame_header = frame_header;
+    frame->payload = NULL;
+    return 0;
 }
 
-frame_t* createSettingsFrame(uint16_t* ids, uint32_t* values, int count){
 
-    int length = count*6; //&
 
-    int type = 0x4;//settings
-    int flags = 0x0;
-    int reserved = 0x0;
-    int stream_id = 0;
-    frameheader_t *frame_header = createFrameHeader(length, type, flags, reserved, stream_id);
-    settingspair_t *settings_pairs = (settingspair_t*)malloc(sizeof(settingspair_t)*count);
-    count = createListOfSettingsPair(ids, values, count, settings_pairs);
-    settingsframe_t* settings_frame = (settingsframe_t*)malloc(sizeof(settingsframe_t));
-    settings_frame->pairs = settings_pairs;
-    settings_frame->count = count;
-    frame_t *frame = createFrame(frame_header,(void*)settings_frame);
-    return frame;
+int isFlagSet(uint8_t flags, uint8_t queried_flag){
+    if((queried_flag&flags) >0){
+        return 1;
+    }
+    return 0;
 }
 
-frame_t* createSettingsAckFrame(void){
-    int length = 0;
-    int type = 0x4;//settings
-    int flags = 0x1;//ack
-    int reserved = 0x0;
-    int stream_id = 0;
-    frameheader_t *frame_header = createFrameHeader(length, type, flags, reserved, stream_id);
-    frame_t *frame = createFrame(frame_header,NULL);
-    return frame;
+uint8_t setFlag(uint8_t flags, uint8_t flag_to_set){
+    uint8_t new_flag = flags|flag_to_set;
+    return new_flag;
 }
