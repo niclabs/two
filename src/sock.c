@@ -11,7 +11,6 @@
 
 
 int sock_create(sock_t * sock) {
-    assert(sock->state == CLOSED);
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
     if(sock->fd <0){
 	    return -1; //TODO specify different types of error.
@@ -33,7 +32,6 @@ int sock_listen(sock_t * server, uint16_t port) {
 
 int sock_accept(sock_t * server, sock_t * client, int timeout) {
     assert(server->state == LISTENING);
-    //assert(client->state == CLOSED);//see if this is necessary.
     (void)timeout;
     int clifd=accept(server->fd, NULL, NULL);
     if(clifd){
