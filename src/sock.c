@@ -93,8 +93,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 
 int sock_destroy(sock_t * sock) {
     assert(sock->state != CLOSED);
-    int cls = close(sock->fd);
-    if(cls<0){
+    if(close(sock->fd)<0){
 	return -1;//TODO specify different types of error.
     }
     else{
