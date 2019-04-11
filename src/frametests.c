@@ -84,7 +84,7 @@ int settingEncodeDecodeTest(int argc, char **argv){
 
     settingsframe_t decoded_settings;
     settingspair_t pairs[count];
-    size = bytesToSettingsFrame(setting_frame_bytes, 6*count/2, &decoded_settings, pairs);
+    size = bytesToSettingsPayload(setting_frame_bytes, 6*count/2, &decoded_settings, pairs);
 
     for (int i = 0; i < size/6; i++) {
         if (decoded_settings.pairs[i].identifier != frame_settings.pairs[i].identifier) {
@@ -165,40 +165,44 @@ int frameEncodeDecodeTest(int argc, char **argv){
     uint8_t bytes[frame.frame_header->length+9];
     size = frameToBytes(&frame, bytes);
 
-    frame_t decoded_frame;
-    bytesToFrame(bytes, size, &decoded_frame);
+    frameheader_t decoded_frame_header;
+    bytesToFrameHeader(bytes, size, &decoded_frame_header);
 
     /*Header frame checking*/
-    if(frame.frame_header->length != decoded_frame.frame_header->length){
+    if(frame.frame_header->length != decoded_frame_header.length){
         printf("ERROR: length don't match\n");
         return -1;
     }
-    if(frame.frame_header->flags != decoded_frame.frame_header->flags){
+    if(frame.frame_header->flags != decoded_frame_header.flags){
         printf("ERROR: flags don't match\n");
         return -1;
     }
-    if(frame.frame_header->type != decoded_frame.frame_header->type){
+    if(frame.frame_header->type != decoded_frame_header.type){
         printf("ERROR: type don't match\n");
         return -1;
     }
-    if(frame.frame_header->stream_id != decoded_frame.frame_header->stream_id){
+    if(frame.frame_header->stream_id != decoded_frame_header.stream_id){
         printf("ERROR: stream_id don't match\n");
         return -1;
     }
-    if(frame.frame_header->reserved != decoded_frame.frame_header->reserved){
+    if(frame.frame_header->reserved != decoded_frame_header.reserved){
         printf("ERROR: reserved don't match\n");
         return -1;
     }
 
+
     /*payload checking*/
-    switch(decoded_frame.frame_header->type){
+    switch(decoded_frame_header.type){
         case 0x0:{
             printf("Error: not implemented yet");
             return -1;
 
         }
         case 0x4: {
-            int check = checkEqualSettingsFrame((settingsframe_t *) (decoded_frame.payload),
+            settingsframe_t payload;
+            settingspair_t pairs[decoded_frame_header.length/6];
+            bytesToSettingsPayload(bytes+9, decoded_frame_header.length, &payload, pairs);
+            int check = checkEqualSettingsFrame((settingsframe_t *) (&payload),
                                                 (settingsframe_t *) (frame.payload), frame.frame_header->length);
             if(check == -1){
                 return -1;
