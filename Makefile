@@ -1,22 +1,20 @@
 APPLICATION = two
 
-# Comment this out to disable code in RIOT that does safety checking
-# which is not needed in a production environment but helps in the
-# development process:
-CFLAGS += -DDEVELHELP
-
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
 
 ifeq (,$(BOARD))
     # If no board is defined build code locally
 	include $(CURDIR)/Makefile.include
+
+    # Testing
+    include $(CURDIR)/tests/Makefile.include
 else 
     # Otherwise build for RIOT
     # This has to be the absolute path to the RIOT base directory:
     RIOTBASE    ?= $(CURDIR)/RIOT
     APPDIR       = $(CURDIR)/src
-    BINDIRBASE   = $(CURDIR)/.build
+    BINDIRBASE   = $(CURDIR)/build
 
     # lwIP's memory management doesn't seem to work on non 32-bit platforms at the
     # moment.
