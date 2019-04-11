@@ -25,17 +25,20 @@ int sock_create(sock_t * sock) {
 int sock_listen(sock_t * server, uint16_t port) {
     struct sockaddr_in6 sin6;
     sin6.sin6_family=AF_INET6;
-    sin6.sin6_port=port;
+    sin6.sin6_port=htons(port);
     sin6.sin6_addr=in6addr_any; 
     assert(server->state == SOCK_OPENED);
-    if(){
-
-
+    if(bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6))<0){
+        return -1;
     }
-
-    // TODO
-
-    return -1;
+    else{
+        if(listen(server->fd, 1)<0){
+            return -1;
+        }
+        else{
+            return 0;
+        }
+    }
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
