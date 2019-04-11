@@ -31,13 +31,11 @@ int sock_listen(sock_t * server, uint16_t port) {
     if(bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6))<0){
         return -1;
     }
+    else if (listen(server->fd, 1)<0){
+       return -1;
+    }
     else{
-        if(listen(server->fd, 1)<0){
-            return -1;
-        }
-        else{
-            return 0;
-        }
+        return 0;
     }
 }
 
