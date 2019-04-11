@@ -32,7 +32,6 @@ int sock_listen(sock_t * server, uint16_t port) {
 
 int sock_accept(sock_t * server, sock_t * client) {
     assert(server->state == LISTENING);
-    (void)timeout;
     int clifd=accept(server->fd, NULL, NULL);
     if(clifd){
 	    return -1; //TODO specify different types of error.
