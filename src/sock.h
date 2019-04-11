@@ -15,10 +15,10 @@
 typedef struct {
     int fd;
     enum {
-        CLOSED,
-        OPENED,
-        LISTENING,
-        CONNECTED
+        SOCK_CLOSED,
+        SOCK_OPENED,
+        SOCK_LISTENING,
+        SOCK_CONNECTED
     } state;
 } sock_t;
 
