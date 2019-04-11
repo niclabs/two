@@ -1,16 +1,19 @@
 # Generic GCC Makefile based on
 # https://github.com/mbcrawfo/GenericMakefile/blob/master/c/Makefile
 
+# 'Makefile.include' directory, must be evaluated before other 'include'
+_basedir := $(dir $(lastword $(MAKEFILE_LIST)))
+
 # Some configuration variables
-APPDIR			?= $(CURDIR)
+APPDIR			?= $(_basedir)
 SRCDIR			?= $(APPDIR)/src
-BUILD_DIR		?= $(APPDIR)/.build
+BUILDDIR		?= $(APPDIR)/build
 BINDIR			?= $(APPDIR)/bin
 
 # Make all paths absolute.
 override APPDIR         := $(abspath $(APPDIR))
 override SRCDIR         := $(abspath $(SRCDIR))
-override BUILD_DIR      := $(abspath $(BUILD_DIR))
+override BUILDDIR      := $(abspath $(BUILDDIR))
 override BINDIR	        := $(abspath $(BINDIR))
 
 # Shell used in this makefile
@@ -31,14 +34,6 @@ endif
 
 # get host operating system
 OS := $(shell uname -s)
-
-# Set this to 1 to enable code in RIOT that does safety checking
-# which is not needed in a production environment but helps in the
-# development process:
-DEVELHELP ?= 0
-ifeq ($(DEVELHELP),1)
-  CFLAGS += -DDEVELHELP
-endif
 
 # Fail on warnings. Can be overridden by `make WERROR=0`.
 WERROR ?= 1
@@ -62,8 +57,8 @@ release: export CFLAGS := $(CFLAGS) -DLEVEL=INFO
 debug: export CFLAGS := $(CFLAGS) -DLEVEL=DEBUG
 
 # Build and output paths
-release: export BUILD_DIR := $(BUILD_DIR)/$(OS)
-debug: export BUILD_DIR := $(BUILD_DIR)/$(OS)
+release: export BUILDDIR := $(BUILDDIR)/$(OS)
+debug: export BUILDDIR := $(BUILDDIR)/$(OS)
 
 # Find all source files in the source directory, sorted by most
 # recently modified
@@ -84,7 +79,7 @@ endif
 
 # Set the object file names, with the source directory stripped
 # from the path, and the build path prepended in its place
-OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(BUILD_DIR)/%.o)
+OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
 # Set the dependency files that will be used to add header dependencies
 DEPS = $(OBJECTS:.o=.d)
 
@@ -181,7 +176,7 @@ clean:
 	@echo "Deleting $(BINFILE) symlink"
 	@$(RM) $(APPLICATION)
 	@echo "Deleting directories"
-	@$(RM) -r $(BUILD_DIR)
+	@$(RM) -r $(BUILDDIR)
 	@$(RM) -r $(BINDIR)
 
 # Main rule, checks the executable and symlinks to the output
@@ -203,7 +198,7 @@ $(BINDIR)/$(APPLICATION): $(OBJECTS)
 # Source file rules
 # After the first compilation they will be joined with the rules from the
 # dependency files to provide header dependencies
-$(BUILD_DIR)/%.o: $(SRCDIR)/%.c
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	@echo "Compiling: $< -> $@"
 	@$(START_TIME)
 	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@

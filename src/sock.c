@@ -67,7 +67,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
         
 	return 0;
     }*/
-	return -1
+	return -1;
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
