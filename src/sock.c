@@ -33,7 +33,7 @@ int sock_listen(sock_t * server, uint16_t port) {
 
 int sock_accept(sock_t * server, sock_t * client, int timeout) {
     assert(server->state == LISTENING);
-    assert(client->state == CLOSED);//see if this is necessary.
+    //assert(client->state == CLOSED);//see if this is necessary.
     (void)timeout;
     int clifd=accept(server->fd, NULL, NULL);
     if(clifd){
