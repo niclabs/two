@@ -75,7 +75,7 @@ int settingsFrameToBytes(settingsframe_t* settings_frame, uint32_t count, uint8_
 }
 
 /*transforms an array of bytes to a settings frame*/
-int bytesToSettingsFrame(uint8_t* bytes, int size, settingsframe_t* settings_frame, settingspair_t* pairs){
+int bytesToSettingsPayload(uint8_t* bytes, int size, settingsframe_t* settings_frame, settingspair_t* pairs){
     if(size%6!=0){
         printf("ERROR: settings payload wrong size\n");
         return -1;

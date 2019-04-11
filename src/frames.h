@@ -92,12 +92,12 @@ uint8_t setFlag(uint8_t flags, uint8_t flag_to_set);
 
 /*frame methods*/
 int frameToBytes(frame_t* frame, uint8_t* bytes);
-int bytesToFrame(uint8_t * bytes, int size, frame_t* frame);
+//int bytesToFrame(uint8_t * bytes, int size, frame_t* frame);
 
 /*settings methods*/
 int createListOfSettingsPair(uint16_t* ids, uint32_t* values, int count, settingspair_t* pair_list);
 int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingsframe_t* settings_frame, settingspair_t* pairs);
 int settingToBytes(settingspair_t* setting, uint8_t* byte_array);
 int settingsFrameToBytes(settingsframe_t* settings_frame, uint32_t count, uint8_t* byte_array);
-int bytesToSettingsFrame(uint8_t* bytes, int size, settingsframe_t* settings_frame, settingspair_t* pairs);
+int bytesToSettingsPayload(uint8_t* bytes, int size, settingsframe_t* settings_frame, settingspair_t* pairs);
 int createSettingsAckFrame(frame_t * frame, frameheader_t* frame_header);
