@@ -21,7 +21,7 @@ uint8_t waiting_sett_ack;
 * Output: 0 if settings were sent. 1 if not.
 */
 uint8_t send_local_settings(void){
-  uint8_t rc;
+  int rc;
   uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
   frame_t mysettingframe;
   frameheader_t mysettingframeheader;
@@ -70,7 +70,7 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
         puts("Error: setting identifier not valid");
         return 1;
       }
-      remote_settings[id] = spl->pairs[i].value;
+      remote_settings[--id] = spl->pairs[i].value;
     }
     return 0;
   }
@@ -82,7 +82,7 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
         puts("Error: setting identifier not valid");
         return 1;
       }
-      local_settings[id] = spl->pairs[i].value;
+      local_settings[--id] = spl->pairs[i].value;
     }
     return 0;
   }
@@ -96,24 +96,22 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
 * Function: send_settings_ack
 * Sends an ACK settings frame to endpoint
 * Input: void
-* Output: A positive number if ACK settings were sent, 0 if not.
+* Output: 0 if sent was successfully made, 1 if not.
 */
 uint8_t send_settings_ack(void){
-
-
   frame_t ack_frame;
   frameheader_t ack_frame_header;
-  createSettingsAckFrame(&ack_frame, &ack_frame_header);
-  /*Settings ACK frame only has a header*/
-  uint8_t byte_ack[9+0];
-  int size_byte_ack = frameToBytes(&ack_frame, byte_ack);
   uint8_t rc;
+  createSettingsAckFrame(&ack_frame, &ack_frame_header);
+  uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
+  int size_byte_ack = frameToBytes(&ack_frame, byte_ack);
   /*TODO: tcp_write*/
-  if(!(rc = tcp_write(byte_ack, size_byte_ack))){
+  rc = tcp_write(byte_ack, size_byte_ack)
+  if(rc != size_byte_ack){
     puts("Error in Settings ACK sending");
-    return rc;
+    return 1;
   }
-  return rc;
+  return 0;
 }
 
 /*
@@ -130,10 +128,10 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
     return 0;
   }
   if(place == LOCAL){
-    return local_settings[param];
+    return local_settings[--param];
   }
   else if(place == REMOTE){
-    return remote_settings[param];
+    return remote_settings[--param];
   }
   else{
     puts("Error: not a valid table to read from");
