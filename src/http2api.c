@@ -2,14 +2,12 @@
 /*
 * This API assumes the existence of a TCP connection between Server and Client,
 * and two methods to use this TCP connection that are tcp_write and tcp_write
-* The methods starting with "server" and "client" are of server and client side
-* respectively.
 */
 
 /*--- Global Variables ---*/
-uint32_t remote_settings[7];
-uint32_t local_settings[7];
-uint32_t local_cache[7];
+uint32_t remote_settings[6];
+uint32_t local_settings[6];
+uint32_t local_cache[6];
 uint8_t client;
 uint8_t server;
 uint8_t waiting_sett_ack;
@@ -20,7 +18,7 @@ uint8_t waiting_sett_ack;
 * Function: send_local_settings
 * Sends local settings to endpoint
 * Input: void
-* Output: A positive number if settings were sent. 0 if not.
+* Output: 0 if settings were sent. 1 if not.
 */
 uint8_t send_local_settings(void){
   uint8_t rc;
@@ -29,15 +27,22 @@ uint8_t send_local_settings(void){
   frameheader_t mysettingframeheader;
   settingspayload_t mysettings;
   settingspair_t mypairs[6];
-  createSettingsFrame(ids, local_settings, 6, &mysettingframe, &mysettingframeheader, &mysettings, mypairs);//todo check return!=0?
+  /*rc must be 0*/
+  rc = createSettingsFrame(ids, local_settings, 6, &mysettingframe,
+                            &mysettingframeheader, &mysettings, mypairs);
+  if(!rc){
+    puts("Error in Settings Frame creation");
+    return 1;
+    }
   uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
   int size_byte_mysettings = frameToBytes(&mysettingframe, byte_mysettings);
   /*Assuming that tcp_write returns the number of bytes written*/
-  if(!(rc = tcp_write(byte_mysettings, size_byte_mysettings))){
+  rc = tcp_write(byte_mysettings, size_byte_mysettings);
+  if(rc != size_byte_mysettings){
     puts("Error in local settings sending");
-    return rc;
+    return 1;
   }
-  return rc;
+  return 0;
 }
 
 /*
@@ -56,25 +61,35 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
   /*spl is for setttings payload*/
   settingspayload_t *spl = (settingspayload_t *)sframe->payload;
   uint8_t i;
-  for(i = 0; i < spl->count; i++){
-    uint16_t id = spl->pairs[i].identifier;
-    if(id > 6 || id < 1){
-      puts("Error: setting identifier not valid");
-      return 1;
-    }
-    if(place == REMOTE){
+  uint16_t id;
+  if(place == REMOTE){
+    /*Update remote table*/
+    for(i = 0; i < spl->count; i++){
+      id = spl->pairs[i].identifier;
+      if(id < 1 || id > 6){
+        puts("Error: setting identifier not valid");
+        return 1;
+      }
       remote_settings[id] = spl->pairs[i].value;
     }
-    else if(place == LOCAL){
+    return 0;
+  }
+  else if(place == LOCAL){
+    /*Update local table*/
+    for(i = 0; i < spl->count; i++){
+      id = spl->pairs[i].identifier;
+      if(id < 1 || id > 6){
+        puts("Error: setting identifier not valid");
+        return 1;
+      }
       local_settings[id] = spl->pairs[i].value;
     }
-    else{
-      puts("Error: Not a valid table to update");
-      return 1;
-    }
+    return 0;
   }
-  return 0;
-
+  else{
+    puts("Error: Not a valid table to update");
+    return 1;
+  }
 }
 
 /*
