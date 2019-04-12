@@ -5,14 +5,63 @@
 */
 
 /*--- Global Variables ---*/
-uint32_t remote_settings[6];
-uint32_t local_settings[6];
-uint32_t local_cache[6];
-uint8_t client;
-uint8_t server;
-uint8_t waiting_sett_ack;
+static uint32_t remote_settings[6];
+static uint32_t local_settings[6];
+static uint32_t local_cache[6];
+static uint8_t client = 0;
+static uint8_t server = 0;
+static uint8_t waiting_sett_ack = 0;
 
 /*-----------------------*/
+/*
+* Function: init_server
+* Initialize variables for server
+* Input: void
+* Output: 0 if initialize were made. 1 if not.
+*/
+uint8_t init_server(void){
+  if(client){
+    puts("Error: this is a client process");
+    return 1;
+  }
+  if(server){
+    puts("Error: server was already initalized");
+    return 1
+  }
+  remote_settings[0] = local_settings[0] = DEFAULT_HTS;
+  remote_settings[1] = local_settings[1] = DEFAULT_EP;
+  remote_settings[2] = local_settings[2] = DEFAULT_MCS;
+  remote_settings[3] = local_settings[3] = DEFAULT_IWS;
+  remote_settings[4] = local_settings[4] = DEFAULT_MFS
+  remote_settings[5] = local_settings[5] = DEFAULT_MHLS;
+  server = 1;
+  return 0;
+}
+
+/*
+* Function: init_client
+* Initialize variables for client
+* Input: void
+* Output: void
+*/
+uint8_t init_client(void){
+  if(server){
+    puts("Error: this is a server process");
+    return 1;
+  }
+  if(client){
+    puts("Error: client was already initalized");
+    return 1;
+  }
+  remote_settings[0] = local_settings[0] = DEFAULT_HTS;
+  remote_settings[1] = local_settings[1] = DEFAULT_EP;
+  remote_settings[2] = local_settings[2] = DEFAULT_MCS;
+  remote_settings[3] = local_settings[3] = DEFAULT_IWS;
+  remote_settings[4] = local_settings[4] = DEFAULT_MFS
+  remote_settings[5] = local_settings[5] = DEFAULT_MHLS;
+  client = 1;
+  return 0;
+}
 
 /*
 * Function: send_local_settings

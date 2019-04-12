@@ -8,7 +8,7 @@ remote_setting: array used to store the remote conf. settings. First slot is not
 local_settings: array used to store the local conf. settings. First slot is not used.
 local_cache: array used to store possible changes on local settings. First slot is not used.
 client: boolean that indicates if the current process is client.
-server: boolean that indicates if the curren process is server.
+server: boolean that indicates if the current process is server.
 waiting_sett_ack: bool that indicates if the current process is waiting for settings ack.
 
 ========== **Methods** ====================
@@ -21,6 +21,8 @@ read_setting_from: read a setting parameter from one of the settings tables.
 
 
 ---- **Connection methods** -----
+init_server: initialize the server variable and settings tables
+init_client: initalize the client variable and settings tables
 init_connection: initialize a HTTP/2 connection with prior knowledge.
 
 ---- **Frames methods** ----
