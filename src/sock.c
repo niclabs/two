@@ -35,6 +35,7 @@ int sock_listen(sock_t * server, uint16_t port) {
        return -1;
     }
     else{
+	server->state= SOCK_LISTENING;
         return 0;
     }
 }
