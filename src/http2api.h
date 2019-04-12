@@ -40,3 +40,4 @@ uint8_t init_connection(void);
 
 
 int tcp_write(uint8_t *bytes, uint8_t length);//here just for the code to compile
+int tcp_read(uint8_t *bytes, uint8_t length);//here just for the code to compile

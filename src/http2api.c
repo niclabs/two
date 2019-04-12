@@ -26,13 +26,13 @@ uint8_t init_server(void){
   }
   if(server){
     puts("Error: server was already initalized");
-    return 1
+    return 1;
   }
   remote_settings[0] = local_settings[0] = DEFAULT_HTS;
   remote_settings[1] = local_settings[1] = DEFAULT_EP;
   remote_settings[2] = local_settings[2] = DEFAULT_MCS;
   remote_settings[3] = local_settings[3] = DEFAULT_IWS;
-  remote_settings[4] = local_settings[4] = DEFAULT_MFS
+  remote_settings[4] = local_settings[4] = DEFAULT_MFS;
   remote_settings[5] = local_settings[5] = DEFAULT_MHLS;
   server = 1;
   return 0;
@@ -57,7 +57,7 @@ uint8_t init_client(void){
   remote_settings[1] = local_settings[1] = DEFAULT_EP;
   remote_settings[2] = local_settings[2] = DEFAULT_MCS;
   remote_settings[3] = local_settings[3] = DEFAULT_IWS;
-  remote_settings[4] = local_settings[4] = DEFAULT_MFS
+  remote_settings[4] = local_settings[4] = DEFAULT_MFS;
   remote_settings[5] = local_settings[5] = DEFAULT_MHLS;
   client = 1;
   return 0;
@@ -155,7 +155,7 @@ uint8_t send_settings_ack(void){
   uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
   int size_byte_ack = frameToBytes(&ack_frame, byte_ack);
   /*TODO: tcp_write*/
-  rc = tcp_write(byte_ack, size_byte_ack)
+  rc = tcp_write(byte_ack, size_byte_ack);
   if(rc != size_byte_ack){
     puts("Error in Settings ACK sending");
     return 1;
@@ -194,32 +194,46 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
 * Output: 0 if connection was made successfully. 1 if not.
 */
 uint8_t init_connection(void){
-  uint8_t preface_buff[24];
   uint8_t rc;
+  char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   if(client){
+    uint8_t preface_buff[24];
     puts("Client sends preface");
-    char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
     uint8_t i = 0;
     /*We load the buffer with the ascii characters*/
     while(preface[i] != '\0'){
-      i=i+1;//not sure if before of after assignment
       preface_buff[i] = preface[i];
+      i++;
     }
-    if(!(rc = tcp_write(preface_buff,24))){
+    rc = tcp_write(preface_buff,24);
+    if(rc != 24){
       puts("Error in preface sending");
       return 1;
     }
-    if(!(rc = send_local_settings())){
+    if(rc = send_local_settings()){
       puts("Error in local settings sending");
       return 1;
     }
     return 0;
   }
   else if(server){
+    uint8_t preface_buff[25];
+    preface_buff[24] = '\0';
+    uint8_t read_bytes = 0;
     puts("Server waits for preface");
-    /*TODO server wait for preface*/
-
+    /*We read the first 24 byes*/
+    while(read_bytes < 24){
+      /*Assuming that tcp_read returns the number of bytes read*/
+      read_bytes = read_bytes + tcp_read(preface_buff, 24 - read_bytes);
+    }
+    if(strcmp(preface, preface_buff) != 0){
+      puts("Error in preface receiving");
+      return 1;
+    }
+    if(rc = send_local_settings()){
+      puts("Error in local settings sending");
+      return 1;
+    }
+    return 0;
   }
-
-  return 5;//fix this XD
 }
