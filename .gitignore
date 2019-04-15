@@ -64,3 +64,7 @@ build/
 # Application specific files
 .vagrant
 .vscode
+
+# Other temporary files
+.release_time
+.debug_time
