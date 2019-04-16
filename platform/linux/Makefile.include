@@ -1,39 +1,11 @@
 # Generic GCC Makefile based on
 # https://github.com/mbcrawfo/GenericMakefile/blob/master/c/Makefile
-
-# 'Makefile.include' directory, must be evaluated before other 'include'
-_basedir := $(dir $(lastword $(MAKEFILE_LIST)))
-
-# Some configuration variables
-APPDIR			?= $(_basedir)
-SRCDIR			?= $(APPDIR)/src
-BUILDDIR		?= $(APPDIR)/build
-BINDIR			?= $(APPDIR)/bin
-
-# Make all paths absolute.
-override APPDIR         := $(abspath $(APPDIR))
-override SRCDIR         := $(abspath $(SRCDIR))
-override BUILDDIR      := $(abspath $(BUILDDIR))
-override BINDIR	        := $(abspath $(BINDIR))
-
 # Shell used in this makefile
 # bash is used for 'echo -en'
 SHELL = /bin/bash
 
 # General compiler flags
 CFLAGS += -std=c99 -Wall -Wextra -g
-
-# Quiet option, to output compile and link commands
-QUIET ?= 1
-ifeq ($(QUIET),1)
-  Q=@
-  MAKEFLAGS += --no-print-directory
-else
-  Q=
-endif
-
-# get host operating system
-OS := $(shell uname -s)
 
 # Fail on warnings. Can be overridden by `make WERROR=0`.
 WERROR ?= 1
@@ -51,14 +23,9 @@ endif
 # Include path
 INCLUDES += -I $(SRCDIR)
 
-
 # Define release and debug compiler and linker flags
 release: export CFLAGS := $(CFLAGS) -DLEVEL=INFO
 debug: export CFLAGS := $(CFLAGS) -DLEVEL=DEBUG
-
-# Build and output paths
-release: export BUILDDIR := $(BUILDDIR)/$(OS)
-debug: export BUILDDIR := $(BUILDDIR)/$(OS)
 
 # Find all source files in the source directory, sorted by most
 # recently modified
@@ -79,7 +46,7 @@ endif
 
 # Set the object file names, with the source directory stripped
 # from the path, and the build path prepended in its place
-OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
+OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(TARGETDIR)/%.o)
 # Set the dependency files that will be used to add header dependencies
 DEPS = $(OBJECTS:.o=.d)
 
@@ -102,39 +69,8 @@ else
 		echo `date -u -d @$$st '+%H:%M:%S'`
 endif
 
-
-# Version macros
-# Comment/remove this section to remove versioning
-USE_VERSION := false
-# If this isn't a git repo or the repo has no tags, git describe will return non-zero
-ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
-	USE_VERSION := true
-	VERSION := $(shell git describe --tags --long --dirty --always | \
-		sed 's/v\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)-\?.*-\([0-9]*\)-\(.*\)/\1 \2 \3 \4 \5/g')
-	VERSION_MAJOR := $(word 1, $(VERSION))
-	VERSION_MINOR := $(word 2, $(VERSION))
-	VERSION_PATCH := $(word 3, $(VERSION))
-	VERSION_REVISION := $(word 4, $(VERSION))
-	VERSION_HASH := $(word 5, $(VERSION))
-	VERSION_STRING := \
-		"$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(VERSION_REVISION)-$(VERSION_HASH)"
-	override CFLAGS := $(CFLAGS) \
-		-D VERSION_MAJOR=$(VERSION_MAJOR) \
-		-D VERSION_MINOR=$(VERSION_MINOR) \
-		-D VERSION_PATCH=$(VERSION_PATCH) \
-		-D VERSION_REVISION=$(VERSION_REVISION) \
-		-D VERSION_HASH=\"$(VERSION_HASH)\"
-endif
-
-
-# Check application name
-APPLICATION := $(strip $(APPLICATION))
-ifeq (, $(APPLICATION))
-	$(error An application name must be specified as APPLICATION.)
-endif
-
 # Define the binary file
-BINFILE ?= $(BINDIR)/$(APPLICATION)
+BINFILE ?= $(TARGETDIR)/$(APPLICATION)
 
 # Standard, non-optimized release build
 .PHONY: release
@@ -151,7 +87,7 @@ endif
 
 # Debug build for gdb debugging
 .PHONY: debug
-debug: dirs
+debug: 
 ifeq ($(USE_VERSION), true)
 	@echo "Beginning debug build v$(VERSION_STRING)"
 else
@@ -162,35 +98,23 @@ endif
 	@echo -n "Total build time: "
 	@$(END_TIME)
 
-# Create the directories used in the build
+# # Create the directories used in the build
 .PHONY: dirs
 dirs:
-	@echo "Creating directories"
-	@mkdir -p $(dir $(OBJECTS))
-	@mkdir -p $(BINDIR)
-
-
-# Removes all build files
-.PHONY: clean
-clean:
-	@echo "Deleting $(BINFILE) symlink"
-	@$(RM) $(APPLICATION)
-	@echo "Deleting directories"
-	@$(RM) -r $(BUILDDIR)
-	@$(RM) -r $(BINDIR)
+# 	@echo "Creating directories"
+# 	@mkdir -p $(dir $(OBJECTS))
+# 	@mkdir -p $(TARGETDIR)
 
 # Main rule, checks the executable and symlinks to the output
-all: $(BINDIR)/$(APPLICATION)
+all: dirs $(BINFILE)
 
 # Link the executable
-$(BINDIR)/$(APPLICATION): $(OBJECTS)
+$(BINFILE): $(OBJECTS)
 	@echo "Linking: $@"
 	@$(START_TIME)
 	$(Q)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	@echo -en "\t Link time: "
 	@$(END_TIME)
-
-
 
 # Add dependency files, if they exist
 -include $(DEPS)
@@ -198,7 +122,7 @@ $(BINDIR)/$(APPLICATION): $(OBJECTS)
 # Source file rules
 # After the first compilation they will be joined with the rules from the
 # dependency files to provide header dependencies
-$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+$(TARGETDIR)/%.o: $(SRCDIR)/%.c
 	@echo "Compiling: $< -> $@"
 	@$(START_TIME)
 	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
