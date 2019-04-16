@@ -94,7 +94,7 @@ $(PATHR):
 	$(Q)$(MKDIR) $(PATHR)
 
 $(PATHU):
-	$(Q)git clone https://github.com/ThrowTheSwitch/Unity.git unity
+	$(Q)git clone https://github.com/ThrowTheSwitch/Unity.git $(DEPSDIR)/unity
 
 .PRECIOUS: $(PATHB)test_%.$(TARGET_EXTENSION)
 .PRECIOUS: $(PATHD)%.d
