@@ -1,5 +1,5 @@
 language: c
 script: 
   - make # check compilation
-  - make test # run tests
+  - make --debug=v test # run tests
 compiler: gcc
