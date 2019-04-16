@@ -1,27 +1,31 @@
 # Generic GCC Makefile based on
 # https://github.com/mbcrawfo/GenericMakefile/blob/master/c/Makefile
-
-# 'Makefile.include' directory, must be evaluated before other 'include'
-_basedir := $(dir $(lastword $(MAKEFILE_LIST)))
+PLATFORM ?= linux
 
 # Some configuration variables
-APPDIR			?= $(_basedir)
-SRCDIR			?= $(APPDIR)/src
-BUILDDIR		?= $(APPDIR)/build
-BINDIR			?= $(APPDIR)/bin
+BASEDIR			?= $(dir $(lastword $(MAKEFILE_LIST)))
+BUILDDIR		?= $(BASEDIR)/build
+TARGETDIR		?= $(BUILDDIR)/$(PLATFORM)
+DEPSDIR			?= $(BASEDIR)/deps
+PLATFORMDIR		?= $(BASEDIR)/platform
+SRCDIR			?= $(BASEDIR)/src
+TESTSDIR		?= $(BASEDIR)/tests
 
 # Make all paths absolute.
-override APPDIR         := $(abspath $(APPDIR))
+override BASEDIR        := $(abspath $(BASEDIR))
+override BUILDDIR       := $(abspath $(BUILDDIR))
+override TARGETDIR      := $(abspath $(TARGETDIR))
+override DEPSDIR        := $(abspath $(DEPSDIR))
+override PLATFORMDIR    := $(abspath $(PLATFORMDIR))
 override SRCDIR         := $(abspath $(SRCDIR))
-override BUILDDIR      := $(abspath $(BUILDDIR))
-override BINDIR	        := $(abspath $(BINDIR))
+override TESTSDIR       := $(abspath $(TESTSDIR))
 
 # Shell used in this makefile
 # bash is used for 'echo -en'
 SHELL = /bin/bash
 
-# General compiler flags
-CFLAGS += -std=c99 -Wall -Wextra -g
+# Target OS dependent CFLAGS
+CFLAGS += -D__$(PLATFORM)
 
 # Quiet option, to output compile and link commands
 QUIET ?= 1
@@ -35,73 +39,8 @@ endif
 # get host operating system
 OS := $(shell uname -s)
 
-# Fail on warnings. Can be overridden by `make WERROR=0`.
-WERROR ?= 1
-export WERROR
-ifeq ($(WERROR),1)
-  CFLAGS += -Werror
-endif
-
-WPEDANTIC ?= 0
-export WPEDANTIC
-ifeq ($(WPEDANTIC),1)
-  CFLAGS += -Wpedantic
-endif
-
-# Include path
-INCLUDES += -I $(SRCDIR)
-
-
-# Define release and debug compiler and linker flags
-release: export CFLAGS := $(CFLAGS) -DLEVEL=INFO
-debug: export CFLAGS := $(CFLAGS) -DLEVEL=DEBUG
-
-# Build and output paths
-release: export BUILDDIR := $(BUILDDIR)/$(OS)
-debug: export BUILDDIR := $(BUILDDIR)/$(OS)
-
-# Find all source files in the source directory, sorted by most
-# recently modified
-ifeq ($(OS),Darwin)
-	SOURCES = $(shell find $(SRCDIR) -name '*.c' | sort -k 1nr | cut -f2-)
-else
-	SOURCES = $(shell find $(SRCDIR) -name '*.c' -printf '%T@\t%p\n' \
-						| sort -k 1nr | cut -f2-)
-endif
-
-# fallback in case the above fails
-rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
-						$(filter $(subst *,%,$2), $d))
-ifeq ($(SOURCES),)
-	SOURCES := $(call rwildcard, $(SRCDIR), *.c)
-endif
-
-
-# Set the object file names, with the source directory stripped
-# from the path, and the build path prepended in its place
-OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
-# Set the dependency files that will be used to add header dependencies
-DEPS = $(OBJECTS:.o=.d)
-
-
-# Macros for timing compilation
-ifeq ($(OS),Darwin)
-	CUR_TIME = awk 'BEGIN{srand(); print srand()}'
-	TIME_FILE = $(dir $@).$(notdir $@)_time
-	START_TIME = $(CUR_TIME) > $(TIME_FILE)
-	END_TIME = read st < $(TIME_FILE) ; \
-		$(RM) $(TIME_FILE) ; \
-		st=$$((`$(CUR_TIME)` - $$st)) ; \
-		echo $$st
-else
-	TIME_FILE = $(dir $@).$(notdir $@)_time
-	START_TIME = date '+%s' > $(TIME_FILE)
-	END_TIME = read st < $(TIME_FILE) ; \
-		$(RM) $(TIME_FILE) ; \
-		st=$$((`date '+%s'` - $$st - 86400)) ; \
-		echo `date -u -d @$$st '+%H:%M:%S'`
-endif
-
+# git command
+GIT ?= git
 
 # Version macros
 # Comment/remove this section to remove versioning
@@ -129,78 +68,42 @@ endif
 
 # Check application name
 APPLICATION := $(strip $(APPLICATION))
-ifeq (, $(APPLICATION))
-	$(error An application name must be specified as APPLICATION.)
+ifeq (,$(APPLICATION))
+  $(error An application name must be specified as APPLICATION.)
 endif
+##################
+# Begin targets
+#################
+# Export all variables
+export
 
-# Define the binary file
-BINFILE ?= $(BINDIR)/$(APPLICATION)
+# Create build directories
+ALLDIRS := $(TARGETDIR) $(DEPSDIR)
 
-# Standard, non-optimized release build
-.PHONY: release
-release: dirs
-ifeq ($(USE_VERSION), true)
-	@echo "Beginning release build v$(VERSION_STRING)"
-else
-	@echo "Beginning release build"
-endif
-	@$(START_TIME)
-	@$(MAKE) all --no-print-directory
-	@echo -n "Total build time: "
-	@$(END_TIME)
-
-# Debug build for gdb debugging
-.PHONY: debug
-debug: dirs
-ifeq ($(USE_VERSION), true)
-	@echo "Beginning debug build v$(VERSION_STRING)"
-else
-	@echo "Beginning debug build"
-endif
-	@$(START_TIME)
-	@$(MAKE) all --no-print-directory
-	@echo -n "Total build time: "
-	@$(END_TIME)
-
-# Create the directories used in the build
-.PHONY: dirs
-dirs:
-	@echo "Creating directories"
-	@mkdir -p $(dir $(OBJECTS))
-	@mkdir -p $(BINDIR)
-
+$(ALLDIRS):
+	@echo "Creating $@"
+	@mkdir -p $@
 
 # Removes all build files
 .PHONY: clean
 clean:
-	@echo "Deleting $(BINFILE) symlink"
-	@$(RM) $(APPLICATION)
-	@echo "Deleting directories"
-	@$(RM) -r $(BUILDDIR)
-	@$(RM) -r $(BINDIR)
+	@echo "Delete build files"
+	@$(RM) -r $(BUILDDIR)/*
 
-# Main rule, checks the executable and symlinks to the output
-all: $(BINDIR)/$(APPLICATION)
+# Test target
+test: $(ALLDIRS) $(TESTSDIR)
+	@$(MAKE) -C $(TESTSDIR) $@
 
-# Link the executable
-$(BINDIR)/$(APPLICATION): $(OBJECTS)
-	@echo "Linking: $@"
-	@$(START_TIME)
-	$(Q)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	@echo -en "\t Link time: "
-	@$(END_TIME)
+# Catch all other rules
+.DEFAULT:
+    # Create directories manually since .DEFAULT cannot call dependenci
+	$(foreach dir,$(ALLDIRS),\
+		$(if $(wildcard $(dir)),,\
+			$(info Creating $(dir))\
+			$(shell mkdir -p $(dir))\
+		)\
+	)
+	@$(MAKE) -f $(PLATFORMDIR)/$(PLATFORM)/Makefile.include $@
 
-
-
-# Add dependency files, if they exist
--include $(DEPS)
-
-# Source file rules
-# After the first compilation they will be joined with the rules from the
-# dependency files to provide header dependencies
-$(BUILDDIR)/%.o: $(SRCDIR)/%.c
-	@echo "Compiling: $< -> $@"
-	@$(START_TIME)
-	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
-	@echo -en "\t Compile time: "
-	@$(END_TIME)
+# Target OS must define 'all' Makefile target
+.DEFAULT_GOAL := all

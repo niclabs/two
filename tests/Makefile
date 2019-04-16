@@ -1,3 +1,7 @@
+# Shell used in this makefile
+# bash is used for 'echo -en'
+SHELL = /bin/bash
+
 ifeq ($(OS),Windows_NT)
   ifeq ($(shell uname -s),) # not in a bash-like shell
 	MKDIR = mkdir
@@ -12,12 +16,16 @@ endif
 
 .PHONY: test
 
-APPDIR ?= $(CURDIR)/../
+BASEDIR		?= $(CURDIR)/..
+BUILDDIR	?= $(BASEDIR)/build
+DEPSDIR		?= $(BASEDIR)/deps
+SRCDIR		?= $(BASEDIR)/src
+TESTSDIR	?= $(BASEDIR)/tests
 
-PATHU  = $(APPDIR)/unity/src/
-PATHS = $(APPDIR)/src/
-PATHT = $(APPDIR)/tests/
-PATHB = $(APPDIR)/build/tests/
+PATHU = $(DEPSDIR)/unity/src/
+PATHS = $(SRCDIR)
+PATHT = $(TESTSDIR)
+PATHB = $(BUILDDIR)/tests/
 PATHD = $(PATHB)depends/
 PATHO = $(PATHB)objs/
 PATHR = $(PATHB)results/
