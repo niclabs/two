@@ -77,12 +77,14 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 
 int sock_write(sock_t * sock, char * buf, int len) {
     assert(sock->state == SOCK_CONNECTED);
-    (void)buf;
-    (void)len;
-
-    // TODO
-
-    return -1;
+    bzero(buf, BUF_LEN);
+   	fgets(buf,len,stdin); //store message in buf.
+    //from where it is received? FILE *stream?
+   	if ((write(sock->fd, buf, len)<0)){
+     	   return -1;
+    }
+    // message (len bytes) written from buf to sock.
+    return 0;
 }
 
 int sock_destroy(sock_t * sock) {
