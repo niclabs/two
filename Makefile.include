@@ -91,8 +91,8 @@ clean:
 	@$(RM) -r $(BUILDDIR)/*
 
 # Test target
-test: $(ALLDIRS) $(TESTSDIR)/Makefile.include
-	@$(MAKE) -f $(TESTSDIR)/Makefile.include $@
+test: $(ALLDIRS) $(TESTSDIR)
+	@$(MAKE) -C $(TESTSDIR) $@
 
 # Catch all other rules
 .DEFAULT:
