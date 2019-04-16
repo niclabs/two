@@ -69,7 +69,7 @@ endif
 # Check application name
 APPLICATION := $(strip $(APPLICATION))
 ifeq (,$(APPLICATION))
-    $(error An application name must be specified as APPLICATION.)
+  $(error An application name must be specified as APPLICATION.)
 endif
 ##################
 # Begin targets
@@ -96,9 +96,9 @@ test: $(ALLDIRS) $(TESTSDIR)/Makefile.include
 
 # Catch all other rules
 .DEFAULT:
-    ifeq ($(wildcard $(PLATFORMDIR)/$(PLATFORM)/Makefile.include),)
-        $(error No such file $(PLATFORMDIR)/$(PLATFORM)/Makefile.include))
-    endif 
+  ifeq ($(wildcard $(PLATFORMDIR)/$(PLATFORM)/Makefile.include),)
+    $(error No such file $(PLATFORMDIR)/$(PLATFORM)/Makefile.include))
+  endif 
 	
     # Create directories manually
 	$(foreach dir,$(ALLDIRS),\
