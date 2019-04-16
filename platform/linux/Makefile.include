@@ -5,7 +5,7 @@
 SHELL = /bin/bash
 
 # General compiler flags
-CFLAGS += -std=c99 -Wall -Wextra -g
+CFLAGS += -std=c99 -Wall -Wextra
 
 # Fail on warnings. Can be overridden by `make WERROR=0`.
 WERROR ?= 1
@@ -25,7 +25,7 @@ INCLUDES += -I $(SRCDIR)
 
 # Define release and debug compiler and linker flags
 release: export CFLAGS := $(CFLAGS) -DLEVEL=INFO
-debug: export CFLAGS := $(CFLAGS) -DLEVEL=DEBUG
+debug: export CFLAGS := $(CFLAGS) -g -DLEVEL=DEBUG
 
 # Find all source files in the source directory, sorted by most
 # recently modified
