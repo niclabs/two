@@ -96,11 +96,7 @@ test: $(ALLDIRS) $(TESTSDIR)
 
 # Catch all other rules
 .DEFAULT:
-  ifeq ($(wildcard $(PLATFORMDIR)/$(PLATFORM)/Makefile.include),)
-    $(error No such file $(PLATFORMDIR)/$(PLATFORM)/Makefile.include))
-  endif 
-	
-    # Create directories manually
+    # Create directories manually since .DEFAULT cannot call dependenci
 	$(foreach dir,$(ALLDIRS),\
 		$(if $(wildcard $(dir)),,\
 			$(info Creating $(dir))\
