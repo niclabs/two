@@ -6,7 +6,7 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include <stdlib.h>
+#include <stdint.h>
 
 /* ADT definition of server */
 typedef struct client client_t;

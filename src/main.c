@@ -4,6 +4,7 @@
  *
  * @author Felipe Lalanne <flalanne@niclabs.cl>
  */
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <signal.h>
