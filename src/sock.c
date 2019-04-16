@@ -10,16 +10,16 @@
 #include "sock.h"
 #include "logging.h"
 
+#define BUF_LEN 256
+#define BACKLOAD 1
 
 int sock_create(sock_t * sock) {
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
     if(sock->fd <0){
 	    return -1; //TODO specify different types of error.
     }
-    else{
-	    sock->state = SOCK_OPENED;
-	    return 0;
-    }  
+	sock->state = SOCK_OPENED;
+	return 0;
 }
 
 int sock_listen(sock_t * server, uint16_t port) {
@@ -31,13 +31,11 @@ int sock_listen(sock_t * server, uint16_t port) {
     if(bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6))<0){
         return -1;
     }
-    else if (listen(server->fd, 1)<0){
+    else if (listen(server->fd, BACKLOAD)<0){
        return -1;
     }
-    else{
 	server->state= SOCK_LISTENING;
-        return 0;
-    }
+    return 0;
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
@@ -46,12 +44,10 @@ int sock_accept(sock_t * server, sock_t * client) {
     if(clifd){
 	    return -1; //TODO specify different types of error.
     }
-    else{ 
-	    client->fd=clifd;
-	    server->state=SOCK_CONNECTED; 
-        client->state=SOCK_CONNECTED;
-	    return 0;
-    }
+	client->fd=clifd;
+	server->state=SOCK_CONNECTED; 
+    client->state=SOCK_CONNECTED;
+	return 0;
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
@@ -65,21 +61,18 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6))<0){
 	    return -1; //TODO specify different types of error.
     }
-    else{   
-        client->state=SOCK_CONNECTED;
-	    return 0;
-    }
+    client->state=SOCK_CONNECTED;
+	return 0;
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     assert(sock->state == SOCK_CONNECTED);
-    (void)buf;
-    (void)len;
     (void)timeout;
-
-    // TODO
-
-    return -1;
+   	bzero(buf, BUF_LEN);
+   	if((read(sock->fd, buf, len))<0){
+        return -1;
+ 	} //message stored in buf.
+    return 0;
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
@@ -97,8 +90,6 @@ int sock_destroy(sock_t * sock) {
     if(close(sock->fd)<0){
 	    return -1;//TODO specify different types of error.
     }
-    else{
-	    sock->state=SOCK_CLOSED;
-	    return 0;
-    } 
+	sock->state=SOCK_CLOSED;
+	return 0;
 }
