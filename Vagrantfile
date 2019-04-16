@@ -3,8 +3,8 @@
 
 require 'fileutils'
 
-riot_vagrantfile = File.expand_path('RIOT/Vagrantfile')
-RIOTBASE ||= "RIOT/"
+riot_vagrantfile = File.expand_path('deps//RIOT/Vagrantfile')
+RIOTBASE ||= "deps/RIOT/"
 
 if File.exists?(riot_vagrantfile)
     load riot_vagrantfile
