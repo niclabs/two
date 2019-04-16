@@ -16,6 +16,12 @@ endif
 
 .PHONY: test
 
+BASEDIR		?= $(CURDIR)/..
+BUILDDIR	?= $(BASEDIR)/build
+DEPSDIR		?= $(BASEDIR)/deps
+SRCDIR		?= $(BASEDIR)/src
+TESTSDIR	?= $(BASEDIR)/tests
+
 PATHU = $(DEPSDIR)/unity/src/
 PATHS = $(SRCDIR)
 PATHT = $(TESTSDIR)
