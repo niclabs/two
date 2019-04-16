@@ -63,3 +63,7 @@ $(RIOTBASE)/Makefile.include:
 	$(GIT) clone -b $(RIOT_GIT_BRANCH) $(RIOT_GIT_REPO) $(RIOTBASE)
 
 include $(RIOTBASE)/Makefile.include
+
+ifeq ($(ENV),iotlab)
+	include $(CURDIR)/Makefile.iotlab
+endif
