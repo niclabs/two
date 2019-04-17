@@ -146,7 +146,7 @@ int update_settings_table(settingspayload_t *spl, uint8_t place){
 int send_settings_ack(void){
   frame_t ack_frame;
   frameheader_t ack_frame_header;
-  uint8_t rc;
+  int rc;
   createSettingsAckFrame(&ack_frame, &ack_frame_header);
   uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
   int size_byte_ack = frameToBytes(&ack_frame, byte_ack);
@@ -190,7 +190,7 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
 * Output: 0 if connection was made successfully. -1 if not.
 */
 int init_connection(void){
-  uint8_t rc;
+  int rc;
   char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   if(client){
     uint8_t preface_buff[24];
@@ -206,7 +206,7 @@ int init_connection(void){
       puts("Error in preface sending");
       return -1;
     }
-    if((rc = send_local_settings())){
+    if((rc = send_local_settings()) < 0){
       puts("Error in local settings sending");
       return -1;
     }
@@ -215,7 +215,7 @@ int init_connection(void){
   else if(server){
     uint8_t preface_buff[25];
     preface_buff[24] = '\0';
-    uint8_t read_bytes = 0;
+    int read_bytes = 0;
     puts("Server waits for preface");
     /*We read the first 24 byes*/
     while(read_bytes < 24){
@@ -226,7 +226,7 @@ int init_connection(void){
       puts("Error in preface receiving");
       return -1;
     }
-    if((rc = send_local_settings())){
+    if((rc = send_local_settings()) < 0){
       puts("Error in local settings sending");
       return -1;
     }
@@ -244,7 +244,7 @@ int init_connection(void){
 int wait(void){
   uint8_t buff_read[MAX_BUFFER_SIZE];
   uint8_t buff_write[MAX_BUFFER_SIZE];
-  uint8_t read_bytes;
+  int read_bytes;
   int rc = init_connection();
   while(1){
     read_bytes = 0;

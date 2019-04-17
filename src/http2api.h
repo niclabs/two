@@ -38,7 +38,3 @@ int send_settings_ack(void);
 uint32_t read_setting_from(uint8_t place, uint8_t param);
 int init_connection(void);
 int wait(void);
-
-
-int tcp_write(uint8_t *bytes, uint8_t length);//here just for the code to compile
-int tcp_read(uint8_t *bytes, uint8_t length);//here just for the code to compile
