@@ -30,7 +30,7 @@ int sock_listen(sock_t * server, uint16_t port) {
     sin6.sin6_family=AF_INET6;
     sin6.sin6_port=htons(port);
     sin6.sin6_addr=in6addr_any; 
-    assert(server->state == SOCK_OPENED);
+    //assert(server->state == SOCK_OPENED);
     if(bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6))<0){
         perror("Error on binding");
         return -1;
@@ -44,7 +44,7 @@ int sock_listen(sock_t * server, uint16_t port) {
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
-    assert(server->state == SOCK_LISTENING);
+    //assert(server->state == SOCK_LISTENING);
     int clifd=accept(server->fd, NULL, NULL);
     if(clifd){
         perror("Error on accept");
@@ -72,7 +72,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     sin6.sin6_port=port;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_addr=address;
-    assert(client->state == SOCK_OPENED);
+    //assert(client->state == SOCK_OPENED);
     if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6))<0){
         perror("Error on connect");
 	    return -1; 
@@ -82,7 +82,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
-    assert(sock->state == SOCK_CONNECTED);
+    //assert(sock->state == SOCK_CONNECTED);
     (void)timeout; //add timeout to read function.
     ssize_t n;
     const char *p = buf;
@@ -99,7 +99,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    assert(sock->state == SOCK_CONNECTED);
+    //assert(sock->state == SOCK_CONNECTED);
     ssize_t n;
     const char *p = buf;
     while(len>0){
@@ -115,7 +115,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 }
 
 int sock_destroy(sock_t * sock) {
-    assert(sock->state != SOCK_CLOSED);
+    //assert(sock->state != SOCK_CLOSED);
     if(close(sock->fd)<0){
         perror("Error destroying socket");
 	    return -1;
