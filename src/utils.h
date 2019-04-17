@@ -1,11 +1,11 @@
-uint8_t* uint32toByteArray(uint32_t x);
+int uint32toByteArray(uint32_t x, uint8_t* bytes);
 
-uint8_t* uint32_31toByteArray(uint32_t x);
+int uint32_31toByteArray(uint32_t x, uint8_t* bytes);
 
-uint8_t* uint32_24toByteArray(uint32_t x);
+int uint32_24toByteArray(uint32_t x, uint8_t* bytes);
 
 
-uint8_t* uint16toByteArray(uint16_t x);
+int uint16toByteArray(uint16_t x, uint8_t* bytes);
 
 //byte to numbers
 uint32_t bytesToUint32(uint8_t* bytes);

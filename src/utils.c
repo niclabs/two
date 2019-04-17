@@ -6,40 +6,36 @@
 //TODO check big endian or little endian...
 
 //number to uint8_t*
-uint8_t* uint32toByteArray(uint32_t x){
-    uint8_t* bytes = (uint8_t*)malloc(sizeof(uint8_t)*4);
+int uint32toByteArray(uint32_t x, uint8_t* bytes){
     bytes[0] = (x >> 24) & 0xFF;
     bytes[1] = (x >> 16)  & 0xFF;
     bytes[2] = (x >> 8)  & 0xFF;
     bytes[3] = (x >> 0) & 0xFF;
-    return bytes;
+    return 0;
 }
 
-uint8_t* uint32_31toByteArray(uint32_t x){
-    uint8_t* bytes = (uint8_t*)malloc(sizeof(uint8_t)*4);
+int uint32_31toByteArray(uint32_t x, uint8_t* bytes){
     bytes[0] = (x >> 24) & 0xFF;
     uint8_t first_byte = (uint8_t)(((uint8_t)bytes[0])<<1)>>1; //remove first bit
     bytes[0] = first_byte;
     bytes[1] = (x >> 16)  & 0xFF;
     bytes[2] = (x >> 8)  & 0xFF;
     bytes[3] = (x >> 0) & 0xFF;
-    return bytes;
+    return 0;
 }
 
-uint8_t* uint32_24toByteArray(uint32_t x){
-    uint8_t* bytes = (uint8_t*)malloc(sizeof(uint8_t)*3);
+int uint32_24toByteArray(uint32_t x, uint8_t* bytes){
     bytes[0] = (x >> 16)  & 0xFF;
     bytes[1] = (x >> 8)  & 0xFF;
     bytes[2] = (x >> 0) & 0xFF;
-    return bytes;
+    return 0;
 }
 
 
-uint8_t* uint16toByteArray(uint16_t x){
-    uint8_t* bytes = (uint8_t*)malloc(sizeof(uint8_t)*2);
+int uint16toByteArray(uint16_t x, uint8_t* bytes){
     bytes[0] = (x >> 8)  & 0xFF;
     bytes[1] = (x >> 0)  & 0xFF;
-    return bytes;
+    return 0;
 }
 
 //byte to numbers

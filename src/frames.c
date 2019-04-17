@@ -1,35 +1,35 @@
 
 #include "frames.h"
 
-/*pass a frame header to an array of bytes*/
+/*
+* Function: frameHeaderToBytes
+* Pass a frame header to an array of bytes
+* Input: pointer to frameheader, array of bytes
+* Output: 0 if bytes were read correctly, (-1 if any error reading)
+*/
 int frameHeaderToBytes(frameheader_t* frame_header, uint8_t* byte_array){
-
-
-    uint8_t* length_bytes = uint32_24toByteArray(frame_header->length);
-    uint8_t* stream_id_bytes = uint32_31toByteArray(frame_header->stream_id);
-
+    uint8_t length_bytes[3];
+    uint32_24toByteArray(frame_header->length, length_bytes);
+    uint8_t stream_id_bytes[4];
+    uint32_31toByteArray(frame_header->stream_id, stream_id_bytes);
     for(int i =0; i<3;i++){
         byte_array[0+i] = length_bytes[i];   //length 24
-
     }
-    free(length_bytes);
     byte_array[3] = (uint8_t)frame_header->type; //type 8
-
     byte_array[4] = (uint8_t)frame_header->flags; //flags 8
-
-    
     for(int i =0; i<4;i++){
         byte_array[5+i] = stream_id_bytes[i];//stream_id 31
     }
-    free(stream_id_bytes);
     byte_array[5] = byte_array[5]|(frame_header->reserved<<7); // reserved 1
-
-
-
-    return 9;
+    return 0;
 }
 
-/*Transforms bytes to a FrameHeader*/
+/*
+* Function: bytesToFrameHeader
+* Transforms bytes to a FrameHeader
+* Input:  array of bytes, size ob bytes to read,pointer to frameheader
+* Output: 0 if bytes were written correctly, -1 if byte size is <9
+*/
 int bytesToFrameHeader(uint8_t* byte_array, int size, frameheader_t* frame_header){
     if(size < 9){
         printf("ERROR: frameHeader size too small, %d\n", size);
@@ -45,19 +45,24 @@ int bytesToFrameHeader(uint8_t* byte_array, int size, frameheader_t* frame_heade
 
 
 
-/*pass a settingPair to bytes*/
-int settingToBytes(settingspair_t* setting, uint8_t* bytes){
-    uint8_t* identifier_bytes = uint16toByteArray(setting->identifier);
 
-    uint8_t* value_bytes = uint32toByteArray(setting->value);
+/*
+* Function: bytesToFrameHeader
+* Pass a settingPair to bytes
+* Input:  settingPair, pointer to bytes
+* Output: 0 if bytes were written correctly, -1 if byte size is <9
+*/
+int settingToBytes(settingspair_t* setting, uint8_t* bytes){
+    uint8_t identifier_bytes[4];
+    uint16toByteArray(setting->identifier, identifier_bytes);
+    uint8_t value_bytes[2];
+    uint32toByteArray(setting->value, value_bytes);
     for(int i = 0; i<2; i++){
         bytes[i] = identifier_bytes[i];
     }
-    free(identifier_bytes);
     for(int i = 0; i<4; i++){
         bytes[2+i] = value_bytes[i];
     }
-    free(value_bytes);
     return 6;
 }
 /*pass a settings frame to bytes*/
@@ -194,11 +199,6 @@ int frameToBytes(frame_t* frame, uint8_t* bytes){
 
             int size = settingsFrameToBytes(settings_payload, length / 6, settings_bytes);
             int new_size = appendByteArrays(bytes, frame_header_bytes, settings_bytes, frame_header_bytes_size, size);
-            //TODO delete frame_header_bytes and frame_header_bytes?
-            //free(frame_header_bytes);
-            //free(settings_bytes);
-            //free(frame_header_bytes);
-            //free(frame_header_byte_array);
 
             return new_size;
         }
