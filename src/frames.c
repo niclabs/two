@@ -43,14 +43,11 @@ int bytesToFrameHeader(uint8_t* byte_array, int size, frameheader_t* frame_heade
     return 0;
 }
 
-
-
-
 /*
-* Function: bytesToFrameHeader
+* Function: settingToBytes
 * Pass a settingPair to bytes
 * Input:  settingPair, pointer to bytes
-* Output: 0 if bytes were written correctly, -1 if byte size is <9
+* Output: size of written bytes
 */
 int settingToBytes(settingspair_t* setting, uint8_t* bytes){
     uint8_t identifier_bytes[4];
@@ -65,7 +62,13 @@ int settingToBytes(settingspair_t* setting, uint8_t* bytes){
     }
     return 6;
 }
-/*pass a settings frame to bytes*/
+
+/*
+* Function: settingsFrameToBytes
+* pass a settings payload to bytes
+* Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
+* Output: size of written bytes
+*/
 int settingsFrameToBytes(settingspayload_t* settings_payload, uint32_t count, uint8_t* bytes){
     for(uint32_t  i = 0; i< count; i++){
         //printf("%d\n",i);
@@ -73,13 +76,17 @@ int settingsFrameToBytes(settingspayload_t* settings_payload, uint32_t count, ui
         int size = settingToBytes(settings_payload->pairs+i, setting_bytes);
         for(int j = 0; j<size; j++){
             bytes[i*6+j] = setting_bytes[j];
-        }
-        
+        } 
     }
     return 6*count;
 }
 
-/*transforms an array of bytes to a settings frame*/
+/*
+* Function: settingsFrameToBytes
+* pass a settings payload to bytes
+* Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
+* Output: size of written bytes
+*/
 int bytesToSettingsPayload(uint8_t* bytes, int size, settingspayload_t* settings_payload, settingspair_t* pairs){
     if(size%6!=0){
         printf("ERROR: settings payload wrong size\n");
@@ -97,70 +104,11 @@ int bytesToSettingsPayload(uint8_t* bytes, int size, settingspayload_t* settings
     return (6*count);
 }
 
-
 /*
-uint8_t getTypeFromBytes(uint8_t * bytes, uint8_t bytes_length){
-
-}
-uint8_t getLengthFromBytes(uint8_t * bytes, uint8_t bytes_length){
-
-}
-*/
-
-/*
-int bytesToFrame(uint8_t * bytes, int size, frame_t* frame){
-    frameheader_t frame_header;
-    int not_ok = bytesToFrameHeader(bytes, size, &frame_header);
-    if(!not_ok){
-        if(size<(9+(int)frame_header.length)){
-            printf("FramePayload is still not complete");
-            return -1;
-        }
-
-        switch(frame_header.type){
-            case DATA_TYPE://Data
-                printf("TODO: Data Frame. Not implemented yet.");
-                return -1;
-            case HEADERS_TYPE://Header
-                printf("TODO: Header Frame. Not implemented yet.");
-                return -1;
-            case PRIORITY_TYPE://Priority
-                printf("TODO: Priority Frame. Not implemented yet.");
-                return -1;
-            case RST_STREAM_TYPE://RST_STREAM
-                printf("TODO: Reset Stream Frame. Not implemented yet.");
-                return -1;
-            case SETTINGS_TYPE:{//Settings
-                settingspayload_t settings_payload;
-                settingspair_t pairs[frame_header.length/6];
-                int size = bytesToSettingsFrame(bytes+9,frame_header.length, &settings_payload, pairs);
-                frame->frame_header = frame_header;
-                frame->payload = (void*)&settings_payload;//TODO FIX this!!! assigning settings frame here but ussing it in upper layer...
-                return 9+size;
-            }
-            case PUSH_PROMISE_TYPE://Push promise
-                printf("TODO: Push promise frame. Not implemented yet.");
-                return -1;
-            case PING_TYPE://Ping
-                printf("TODO: Ping frame. Not implemented yet.");
-                return -1;
-            case GOAWAY_TYPE://Go Avaw
-                printf("TODO: Go away frame. Not implemented yet.");
-                return -1;
-            case WINDOW_UPDATE_TYPE://Window update
-                printf("TODO: Window update frame. Not implemented yet.");
-                return -1;
-            case CONTINUATION_TYPE://Continuation
-                printf("TODO: Continuation frame. Not implemented yet.");
-                return -1;
-            default:
-                printf("Error: Type not found");
-                return -1;
-        }
-
-    }
-    return -1;
-}
+* Function: frameToBytes
+* pass a complete Frame(of any type) to bytes
+* Input:  Frame pointer, pointer to bytes
+* Output: size of written bytes, -1 if any error
 */
 int frameToBytes(frame_t* frame, uint8_t* bytes){
     frameheader_t* frame_header = frame->frame_header;
@@ -225,6 +173,13 @@ int frameToBytes(frame_t* frame, uint8_t* bytes){
 
 }
 
+
+/*
+* Function: createListOfSettingsPair
+* Create a List Of SettingsPairs
+* Input:  pointer to ids array, pointer to values array, size of those arrays,  pointer to settings Pairs
+* Output: size of read setting pairs
+*/
 int createListOfSettingsPair(uint16_t* ids, uint32_t* values, int count, settingspair_t* settings_pairs){
     for (int i = 0; i < count; i++){
         settings_pairs[i].identifier = ids[i];
@@ -233,7 +188,12 @@ int createListOfSettingsPair(uint16_t* ids, uint32_t* values, int count, setting
     return count;
 }
 
-
+/*
+* Function: createSettingsFrame
+* Create a Frame of type sewttings with its payload
+* Input:  pointer to ids array, pointer to values array, size of those arrays,  pointer to frame, pointer to frameheader, pointer to settings payload, pointer to settings Pairs.
+* Output: 0 if setting frame was created
+*/
 int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingspayload_t* settings_payload, settingspair_t* pairs){
     frame_header->length = count*6;
     frame_header->type = 0x4;//settings;
@@ -247,6 +207,13 @@ int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* fra
     frame->frame_header = frame_header;
     return 0;
 }
+
+/*
+* Function: createSettingsAckFrame
+* Create a Frame of type sewttings with flag ack 
+* Input:  pointer to frame, pointer to frameheader
+* Output: 0 if setting frame was created
+*/
 int createSettingsAckFrame(frame_t * frame, frameheader_t* frame_header){
     frame_header->length = 0;
     frame_header->type = 0x4;//settings;
@@ -259,7 +226,12 @@ int createSettingsAckFrame(frame_t * frame, frameheader_t* frame_header){
 }
 
 
-
+/*
+* Function: isFlagSet
+* Tells if a flag is set in a flag byte.
+* Input:  flag byte to test, queried flag
+* Output: 1 if queried flag was set, 0 if not
+*/
 int isFlagSet(uint8_t flags, uint8_t queried_flag){
     if((queried_flag&flags) >0){
         return 1;
@@ -267,6 +239,13 @@ int isFlagSet(uint8_t flags, uint8_t queried_flag){
     return 0;
 }
 
+
+/*
+* Function: setFlag
+* Sets a flag in a flag byte.
+* Input: flag byte, flag to set
+* Output: flag byte with flag setted
+*/
 uint8_t setFlag(uint8_t flags, uint8_t flag_to_set){
     uint8_t new_flag = flags|flag_to_set;
     return new_flag;
