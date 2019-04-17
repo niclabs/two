@@ -84,18 +84,32 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     assert(sock->state == SOCK_CONNECTED);
     (void)timeout;
-   	if((read(sock->fd, buf, len))<0){//while to read all bytes
-        perror("Error reading from socket");
-        return -1;
- 	} 
+    ssize_t n;
+    const char *p = buf;
+    while(len>0){
+        n=read(sock->fd, buf, len);
+        if(n<0){
+            perror("Error reading from socket");
+            return -1; 
+        }
+        p += n;
+        len -= n;
+    }
     return 0;
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
     assert(sock->state == SOCK_CONNECTED);
-   	if ((write(sock->fd, buf, len)<0)){//while to write all bytes
-        perror("Error writing on socket");
-     	return -1;
+    ssize_t n;
+    const char *p = buf;
+    while(len>0){
+        n=write(sock->fd, buf, len);
+        if(n<0){
+            perror("Error writing on socket");
+            return -1;  
+        }   
+        p += n;
+        len -= n;
     }
     return 0;
 }
