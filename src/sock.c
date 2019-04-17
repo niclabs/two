@@ -85,14 +85,10 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 
 int sock_write(sock_t * sock, char * buf, int len) {
     assert(sock->state == SOCK_CONNECTED);
-    bzero(buf, BUF_LEN);
-   	fgets(buf,len,stdin); //store message in buf.
-    //from where it is received? FILE *stream?
    	if ((write(sock->fd, buf, len)<0)){
         perror("Error writing on socket");
      	return -1;
     }
-    // message (len bytes) written from buf to sock.
     return 0;
 }
 
