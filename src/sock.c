@@ -78,7 +78,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
    	if((read(sock->fd, buf, len))<0){
         perror("Error reading from socket");
         return -1;
- 	} //message stored in buf.
+ 	} 
     return 0;
 }
 
