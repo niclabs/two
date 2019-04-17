@@ -14,7 +14,6 @@
 
 #define BUF_LEN 256
 #define BACKLOAD 1
-#define EXIT_STATUS 0
 
 int sock_create(sock_t * sock) {
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
