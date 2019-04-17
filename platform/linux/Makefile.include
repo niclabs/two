@@ -98,15 +98,8 @@ endif
 	@echo -n "Total build time: "
 	@$(END_TIME)
 
-# # Create the directories used in the build
-.PHONY: dirs
-dirs:
-# 	@echo "Creating directories"
-# 	@mkdir -p $(dir $(OBJECTS))
-# 	@mkdir -p $(TARGETDIR)
-
 # Main rule, checks the executable and symlinks to the output
-all: dirs $(BINFILE)
+all: $(BINFILE)
 
 # Link the executable
 $(BINFILE): $(OBJECTS)
