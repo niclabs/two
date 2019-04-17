@@ -15,8 +15,13 @@
 #include "logging.h"
 
 #define BACKLOAD 1
+#ifdef test
+#define ASSERT(x) ((void)0)
+#else
+#define STR(x) #x
+#define ASSERT(x) if(!(x)) {printf("Assertion failed: (%s), file %s, function %s, line %d.\n", STR(x), __FILE__, __PRETTY_FUNCTION__, __LINE__); abort(); }
+#endif
 
-//change assertions for errors, create own macro.
 int sock_create(sock_t * sock) {
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
     if(sock->fd <0){
@@ -32,7 +37,7 @@ int sock_listen(sock_t * server, uint16_t port) {
     sin6.sin6_family=AF_INET6;
     sin6.sin6_port=htons(port);
     sin6.sin6_addr=in6addr_any; 
-    //assert(server->state == SOCK_OPENED);
+    ASSERT(server->state == SOCK_OPENED);
     if(bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6))<0){
         perror("Error on binding");
         return -1;
@@ -46,8 +51,8 @@ int sock_listen(sock_t * server, uint16_t port) {
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
-    //assert(server->state == SOCK_LISTENING);
     int clifd=accept(server->fd, NULL, NULL);
+    ASSERT(server->state == SOCK_LISTENING);
     if(clifd){
         perror("Error on accept");
 	    return -1; 
@@ -74,7 +79,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     sin6.sin6_port=port;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_addr=address;
-    //assert(client->state == SOCK_OPENED);
+    ASSERT(client->state == SOCK_OPENED);
     if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6))<0){
         perror("Error on connect");
 	    return -1; 
@@ -84,12 +89,12 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
-    //assert(sock->state == SOCK_CONNECTED);
     struct timeval time_o;
     char *p = buf;
     int time_taken=0;
     ssize_t n;
     clock_t t;
+    ASSERT(sock->state == SOCK_CONNECTED);
     time_o.tv_usec = 0;
     while(len>0){
         timeout=timeout-time_taken;
@@ -122,9 +127,9 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    //assert(sock->state == SOCK_CONNECTED);
     ssize_t n;
     const char *p = buf;
+    ASSERT(sock->state == SOCK_CONNECTED);
     while(len>0){
         n=write(sock->fd, buf, len);
         if(n<0){
@@ -138,7 +143,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 }
 
 int sock_destroy(sock_t * sock) {
-    //assert(sock->state != SOCK_CLOSED);
+    ASSERT(sock->state != SOCK_CLOSED);
     if(close(sock->fd)<0){
         perror("Error destroying socket");
 	    return -1;
