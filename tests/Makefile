@@ -43,10 +43,11 @@ BUILD_PATHS = $(PATHB) $(PATHD) $(PATHO) $(PATHR) $(PATHU)
 
 SRCT = $(wildcard $(PATHT)*.c)
 
-COMPILE=gcc -c
-LINK=gcc
+COMPILE=gcc -c -Wall -O0
+LINK=gcc 
 DEPEND=gcc -MM -MG -MF
 CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
+LDFLAGS += --coverage
 
 RESULTS = $(patsubst $(PATHT)test_%.c,$(PATHR)test_%.txt,$(SRCT) )
 
@@ -54,7 +55,7 @@ PASSED = `grep -s PASS $(PATHR)*.txt`
 FAIL = `grep -s FAIL $(PATHR)*.txt`
 IGNORE = `grep -s IGNORE $(PATHR)*.txt`
 
-test: $(BUILD_PATHS) $(RESULTS)
+test: $(BUILD_PATHS) $(RESULTS) $(COVERAGE)
 	@echo -e "-----------------------\nIGNORES:\n-----------------------"
 	@echo -e "$(IGNORE)"
 	@echo -e "-----------------------\nFAILURES:\n-----------------------"
@@ -67,10 +68,10 @@ $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
 	$(Q)$< > $@
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
-	$(Q)$(LINK) -o $@ $^
+	$(Q)$(LINK) $(LDFLAGS) -o $@ $^
 
 $(PATHO)%.o:: $(PATHT)%.c
-	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
+	$(Q)$(COMPILE) $(CFLAGS) -g -fprofile-arcs -ftest-coverage $< -o $@
 
 $(PATHO)%.o:: $(PATHS)%.c
 	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
