@@ -28,7 +28,7 @@ void test_sock_listen(void) {
     
     if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
     
-    int res = sock_listen(&sock, 10);
+    int res = sock_listen(&sock, 8888);
     TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_listen should return 0 on success");
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_LISTENING, "sock_listen set sock state to LISTENING");
 }
@@ -44,6 +44,7 @@ void test_sock_accept_unitialized_socket(void) {
 void test_sock_accept_unbound_socket(void) {
     sock_t sock;
     if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
+    if (sock_listen(&sock, 8888) < 0) return; // an issue independent of the test ocurred
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_accept on unbound socket should return error value");
