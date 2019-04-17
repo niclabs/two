@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -83,17 +85,34 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     //assert(sock->state == SOCK_CONNECTED);
-    (void)timeout; //add timeout to read function.
-    ssize_t n;
+    struct timeval time_o;
     const char *p = buf;
+    int time_taken=0;
+    ssize_t n;
+    clock_t t;
+    time_o.tv_usec = 0;
     while(len>0){
-        n=read(sock->fd, buf, len);
+        timeout=timeout-time_taken;
+        time_o.tv_sec = timeout;
+        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
+            perror("Error setting timeout");
+            return -1;
+        }
+        t=clock();
+        n=read(sock->fd, p, len);
+        t=clock()-t;
+        time_taken=(t/CLOCKS_PER_SEC); //in seconds.
         if(n<0){
             perror("Error reading from socket");
             return -1; 
         }
         p += n;
         len -= n;
+    }
+    time_o.tv_sec = 0;
+    time_o.tv_usec = 0;
+    if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
+        perror("Error unsetting timeout");
     }
     return 0;
 }
