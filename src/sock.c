@@ -86,7 +86,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     //assert(sock->state == SOCK_CONNECTED);
     struct timeval time_o;
-    const char *p = buf;
+    char *p = buf;
     int time_taken=0;
     ssize_t n;
     clock_t t;
