@@ -7,10 +7,10 @@
 /*--- Global Variables ---*/
 static uint32_t remote_settings[6];
 static uint32_t local_settings[6];
-static uint32_t local_cache[6];
+//static uint32_t local_cache[6];
 static uint8_t client = 0;
 static uint8_t server = 0;
-static uint8_t waiting_sett_ack = 0;
+//static uint8_t waiting_sett_ack = 0;
 
 /*-----------------------*/
 /*
@@ -210,7 +210,7 @@ uint8_t init_connection(void){
       puts("Error in preface sending");
       return 1;
     }
-    if(rc = send_local_settings()){
+    if((rc = send_local_settings())){
       puts("Error in local settings sending");
       return 1;
     }
@@ -226,14 +226,15 @@ uint8_t init_connection(void){
       /*Assuming that tcp_read returns the number of bytes read*/
       read_bytes = read_bytes + tcp_read(preface_buff, 24 - read_bytes);
     }
-    if(strcmp(preface, preface_buff) != 0){
+    if(strcmp(preface, (char*)preface_buff) != 0){
       puts("Error in preface receiving");
       return 1;
     }
-    if(rc = send_local_settings()){
+    if((rc = send_local_settings())){
       puts("Error in local settings sending");
       return 1;
     }
     return 0;
   }
+  return -1;
 }
