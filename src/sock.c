@@ -94,6 +94,10 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     while(len>0){
         timeout=timeout-time_taken;
         time_o.tv_sec = timeout;
+        if(timeout<0){
+            printf("Timeout exceeded in sock_read function.");
+            return -1;
+        }
         if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
             perror("Error setting timeout");
             return -1;
