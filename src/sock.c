@@ -83,7 +83,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     assert(sock->state == SOCK_CONNECTED);
-    (void)timeout;
+    (void)timeout; //add timeout to read function.
     ssize_t n;
     const char *p = buf;
     while(len>0){
