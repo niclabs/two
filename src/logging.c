@@ -12,7 +12,7 @@
 #include "logging.h"
 
 
-void log_printf(level_t level, const char * func, const char * file, int line, ...) {
+void logging_printf(level_t level, const char * func, const char * file, int line, ...) {
     if (level < LEVEL) return;
 
     char msg[256];

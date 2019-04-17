@@ -10,8 +10,8 @@
  * 
  * @author Felipe Lalanne <flalanne@niclabs.cl>
  */
-#ifndef LOG_H
-#define LOG_H
+#ifndef LOGGING_H
+#define LOGGING_H
 
 typedef enum {
     DEBUG,
@@ -41,19 +41,19 @@ typedef enum {
  * is equal or above the level defined by the variable 
  * LEVEL
  */
-void log_printf(level_t level, const char * func, const  char * file, int line, ...);
+void logging_printf(level_t level, const char * func, const  char * file, int line, ...);
 
 // Macro to print debugging messages
-#define DEBUG(...) log_printf(DEBUG, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define DEBUG(...) logging_printf(DEBUG, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 // Macro to print information messages
-#define INFO(...) log_printf(INFO, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define INFO(...) logging_printf(INFO, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 // Macro to print warning messages
-#define WARN(...) log_printf(WARN, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define WARN(...) logging_printf(WARN, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 // Macro to print error messages
-#define ERROR(...) log_printf(ERROR, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define ERROR(...) logging_printf(ERROR, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 
-#endif
+#endif /* LOGGING_H */
