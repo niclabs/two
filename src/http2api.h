@@ -28,15 +28,16 @@ typedef enum SettingsParameters{
 #define LOCAL 0
 #define REMOTE 1
 /*Definition of max buffer size*/
-#define MAX_BUFFER_SIZE 265
+#define MAX_BUFFER_SIZE 256
 
-uint8_t init_server(void);
-uint8_t init_client(void);
-uint8_t send_local_settings(void);
-uint8_t update_settings_table(frame_t* sframe, uint8_t place);
-uint8_t send_settings_ack(void);
+int init_server(void);
+int init_client(void);
+int send_local_settings(void);
+int update_settings_table(settingspayload_t *spl, uint8_t place);
+int send_settings_ack(void);
 uint32_t read_setting_from(uint8_t place, uint8_t param);
-uint8_t init_connection(void);
+int init_connection(void);
+int wait(void);
 
 
 int tcp_write(uint8_t *bytes, uint8_t length);//here just for the code to compile

@@ -1,4 +1,5 @@
-#include "http2api.h"
+#include "http2utils.h"
+
 /*
 * This API assumes the existence of a TCP connection between Server and Client,
 * and two methods to use this TCP connection that are tcp_write and tcp_write
@@ -17,16 +18,16 @@ static uint8_t server = 0;
 * Function: init_server
 * Initialize variables for server
 * Input: void
-* Output: 0 if initialize were made. 1 if not.
+* Output: 0 if initialize were made. -1 if not.
 */
-uint8_t init_server(void){
+int init_server(void){
   if(client){
     puts("Error: this is a client process");
-    return 1;
+    return -1;
   }
   if(server){
     puts("Error: server was already initalized");
-    return 1;
+    return -1;
   }
   remote_settings[0] = local_settings[0] = DEFAULT_HTS;
   remote_settings[1] = local_settings[1] = DEFAULT_EP;
@@ -42,16 +43,16 @@ uint8_t init_server(void){
 * Function: init_client
 * Initialize variables for client
 * Input: void
-* Output: void
+* Output: 0 if initialize were made. -1 if not.
 */
-uint8_t init_client(void){
+int init_client(void){
   if(server){
     puts("Error: this is a server process");
-    return 1;
+    return -1;
   }
   if(client){
     puts("Error: client was already initalized");
-    return 1;
+    return -1;
   }
   remote_settings[0] = local_settings[0] = DEFAULT_HTS;
   remote_settings[1] = local_settings[1] = DEFAULT_EP;
@@ -67,9 +68,9 @@ uint8_t init_client(void){
 * Function: send_local_settings
 * Sends local settings to endpoint
 * Input: void
-* Output: 0 if settings were sent. 1 if not.
+* Output: 0 if settings were sent. -1 if not.
 */
-uint8_t send_local_settings(void){
+int send_local_settings(void){
   int rc;
   uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
   frame_t mysettingframe;
@@ -81,15 +82,15 @@ uint8_t send_local_settings(void){
                             &mysettingframeheader, &mysettings, mypairs);
   if(!rc){
     puts("Error in Settings Frame creation");
-    return 1;
+    return -1;
     }
   uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
   int size_byte_mysettings = frameToBytes(&mysettingframe, byte_mysettings);
   /*Assuming that tcp_write returns the number of bytes written*/
   rc = tcp_write(byte_mysettings, size_byte_mysettings);
   if(rc != size_byte_mysettings){
-    puts("Error in local settings sending");
-    return 1;
+    puts("Error in local settings writing");
+    return -1;
   }
   return 0;
 }
@@ -99,26 +100,25 @@ uint8_t send_local_settings(void){
 * Updates the table where remote settings are stored
 * Input: -> sframe, it must be a SETTINGS frame
 *        -> place, must be LOCAL or REMOTE. It indicates which table to update.
-* Output: 0 if update was successfull, 1 if not
+* Output: 0 if update was successfull, -1 if not
 */
-uint8_t update_settings_table(frame_t* sframe, uint8_t place){
-  /*Esta parte no debería ir si cambiamos la forma de trabajar con los frames*/
-  if(sframe->frame_header->type != 0x4){
-    puts("Error: frame is not a SETTTINGS frame");
-    return 1;
-  }
+int update_settings_table(settingspayload_t *spl, uint8_t place){
   /*spl is for setttings payload*/
-  settingspayload_t *spl = (settingspayload_t *)sframe->payload;
   uint8_t i;
   uint16_t id;
+  int rc = 0;
+  /*Verify the values of settings*/
+  for(i = 0; i < spl->count; i++){
+    rc+=verify_setting(spl->pairs[i].identifier, spl->pairs[i].value);
+  }
+  if(rc != 0){
+    puts("Error: invalid setting found");
+    return -1;
+  }
   if(place == REMOTE){
     /*Update remote table*/
     for(i = 0; i < spl->count; i++){
       id = spl->pairs[i].identifier;
-      if(id < 1 || id > 6){
-        puts("Error: setting identifier not valid");
-        return 1;
-      }
       remote_settings[--id] = spl->pairs[i].value;
     }
     return 0;
@@ -127,17 +127,13 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
     /*Update local table*/
     for(i = 0; i < spl->count; i++){
       id = spl->pairs[i].identifier;
-      if(id < 1 || id > 6){
-        puts("Error: setting identifier not valid");
-        return 1;
-      }
       local_settings[--id] = spl->pairs[i].value;
     }
     return 0;
   }
   else{
     puts("Error: Not a valid table to update");
-    return 1;
+    return -1;
   }
 }
 
@@ -145,9 +141,9 @@ uint8_t update_settings_table(frame_t* sframe, uint8_t place){
 * Function: send_settings_ack
 * Sends an ACK settings frame to endpoint
 * Input: void
-* Output: 0 if sent was successfully made, 1 if not.
+* Output: 0 if sent was successfully made, -1 if not.
 */
-uint8_t send_settings_ack(void){
+int send_settings_ack(void){
   frame_t ack_frame;
   frameheader_t ack_frame_header;
   uint8_t rc;
@@ -158,7 +154,7 @@ uint8_t send_settings_ack(void){
   rc = tcp_write(byte_ack, size_byte_ack);
   if(rc != size_byte_ack){
     puts("Error in Settings ACK sending");
-    return 1;
+    return -1;
   }
   return 0;
 }
@@ -191,9 +187,9 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
 /*
 * Function: init_connection
 * Input: void
-* Output: 0 if connection was made successfully. 1 if not.
+* Output: 0 if connection was made successfully. -1 if not.
 */
-uint8_t init_connection(void){
+int init_connection(void){
   uint8_t rc;
   char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   if(client){
@@ -208,11 +204,11 @@ uint8_t init_connection(void){
     rc = tcp_write(preface_buff,24);
     if(rc != 24){
       puts("Error in preface sending");
-      return 1;
+      return -1;
     }
     if((rc = send_local_settings())){
       puts("Error in local settings sending");
-      return 1;
+      return -1;
     }
     return 0;
   }
@@ -224,17 +220,86 @@ uint8_t init_connection(void){
     /*We read the first 24 byes*/
     while(read_bytes < 24){
       /*Assuming that tcp_read returns the number of bytes read*/
-      read_bytes = read_bytes + tcp_read(preface_buff, 24 - read_bytes);
+      read_bytes = read_bytes + tcp_read(preface_buff+read_bytes, 24 - read_bytes);
     }
     if(strcmp(preface, (char*)preface_buff) != 0){
       puts("Error in preface receiving");
-      return 1;
+      return -1;
     }
     if((rc = send_local_settings())){
       puts("Error in local settings sending");
-      return 1;
+      return -1;
     }
     return 0;
   }
   return -1;
+}
+
+/*
+*
+*
+*
+*
+*/
+int wait(void){
+  uint8_t buff_read[MAX_BUFFER_SIZE];
+  uint8_t buff_write[MAX_BUFFER_SIZE];
+  uint8_t read_bytes;
+  int rc = init_connection();
+  while(1){
+    read_bytes = 0;
+    while(read_bytes < 9){
+      read_bytes = read_bytes + tcp_read(buff_read+read_bytes, 9 - read_bytes);
+    }
+    frameheader_t header;
+    int rc = bytesToFrameHeader(buff_read, 9, &header);
+    read_bytes = 0;
+    if(header.length > 256){
+      puts("Error: Payloadsize too big");
+      return -1;
+    }
+    while(read_bytes < header.length){
+      read_bytes = read_bytes + tcp_read(buff_read+read_bytes, header.length - read_bytes);
+    }
+    switch(header.type){
+        case DATA_TYPE://Data
+            printf("TODO: Data Frame. Not implemented yet.");
+            return -1;
+        case HEADERS_TYPE://Header
+            printf("TODO: Header Frame. Not implemented yet.");
+            return -1;
+        case PRIORITY_TYPE://Priority
+            printf("TODO: Priority Frame. Not implemented yet.");
+            return -1;
+        case RST_STREAM_TYPE://RST_STREAM
+            printf("TODO: Reset Stream Frame. Not implemented yet.");
+            return -1;
+        case SETTINGS_TYPE:{//Settings
+            settingspayload_t settings_payload;
+            settingspair_t pairs[header.length/6];
+            int size = bytesToSettingsPayload(buff_read,header.length, &settings_payload, pairs);
+            update_settings_table(&settings_payload, REMOTE);
+            /*TODO: que hacemos ademas de actualizar la tabla?*/
+            send_settings_ack();
+        }
+        case PUSH_PROMISE_TYPE://Push promise
+            printf("TODO: Push promise frame. Not implemented yet.");
+            return -1;
+        case PING_TYPE://Ping
+            printf("TODO: Ping frame. Not implemented yet.");
+            return -1;
+        case GOAWAY_TYPE://Go Avaw
+            printf("TODO: Go away frame. Not implemented yet.");
+            return -1;
+        case WINDOW_UPDATE_TYPE://Window update
+            printf("TODO: Window update frame. Not implemented yet.");
+            return -1;
+        case CONTINUATION_TYPE://Continuation
+            printf("TODO: Continuation frame. Not implemented yet.");
+            return -1;
+        default:
+            printf("Error: Type not found");
+            return -1;
+    }
+  }
 }
