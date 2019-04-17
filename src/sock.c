@@ -12,9 +12,9 @@
 #include "sock.h"
 #include "logging.h"
 
-#define BUF_LEN 256
 #define BACKLOAD 1
 
+//change assertions for errors, create own macro.
 int sock_create(sock_t * sock) {
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
     if(sock->fd <0){
@@ -35,7 +35,7 @@ int sock_listen(sock_t * server, uint16_t port) {
         perror("Error on binding");
         return -1;
     }
-    else if (listen(server->fd, BACKLOAD)<0){
+    if (listen(server->fd, BACKLOAD)<0){
         perror("Error on listening");
         return -1;
     }
@@ -59,7 +59,7 @@ int sock_accept(sock_t * server, sock_t * client) {
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
     struct sockaddr_in6 sin6;
     struct in6_addr address;
-    inet_pton(AF_INET6, addr, &address);
+    inet_pton(AF_INET6, addr, &address);//see verification
     sin6.sin6_port=port;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_addr=address;
@@ -75,7 +75,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     assert(sock->state == SOCK_CONNECTED);
     (void)timeout;
-   	if((read(sock->fd, buf, len))<0){
+   	if((read(sock->fd, buf, len))<0){//while to read all bytes
         perror("Error reading from socket");
         return -1;
  	} 
@@ -84,7 +84,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 
 int sock_write(sock_t * sock, char * buf, int len) {
     assert(sock->state == SOCK_CONNECTED);
-   	if ((write(sock->fd, buf, len)<0)){
+   	if ((write(sock->fd, buf, len)<0)){//while to write all bytes
         perror("Error writing on socket");
      	return -1;
     }
