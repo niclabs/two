@@ -41,7 +41,7 @@ int sock_create(sock_t * sock);
  * @return  0   if setting socket to act as a server succeeds
  * @return -1   on error (errno will be set appropriately)
  */
-int sock_listen(sock_t * server, uint16_t port);
+int sock_listen(sock_t * server, u_int16_t port);
 
 /**
  * Wait for connections on server socket. Server socket must be set to listen by calling
@@ -69,7 +69,7 @@ int sock_accept(sock_t * server, sock_t * client);
  * @return   0      if a new connection was successfully established
  * @return  -1      on error (errno will be set appropriately)
  */
-int sock_connect(sock_t * client, char * addr, uint16_t port);
+int sock_connect(sock_t * client, char * addr, u_int16_t port);
 
 /**
  * Read len bytes from the socket into the specified buffer. The method will wait for timeout seconds or until
