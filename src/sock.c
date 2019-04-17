@@ -59,7 +59,16 @@ int sock_accept(sock_t * server, sock_t * client) {
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
     struct sockaddr_in6 sin6;
     struct in6_addr address;
-    inet_pton(AF_INET6, addr, &address);//see verification
+    int inet_return= inet_pton(AF_INET6, addr, &address);
+    if(inet_return<1){
+        if(inet_return==0){
+            printf("Error converting IPv6 address to binary: your address does not contain a character string representing a valid network address in the specified family.");
+        }
+        if(inet_return==-1){
+            perror("Error converting IPv6 address to binary");
+        }
+        return -1;
+    }
     sin6.sin6_port=port;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_addr=address;
