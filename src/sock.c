@@ -94,7 +94,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     while(len>0){
         timeout=timeout-time_taken;
         time_o.tv_sec = timeout;
-        if(timeout<0){
+        if(timeout<=0){
             printf("Timeout exceeded in sock_read function.");
             return -1;
         }
