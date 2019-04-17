@@ -32,7 +32,7 @@ int sock_create(sock_t * sock) {
 	return 0;
 }
 
-int sock_listen(sock_t * server, uint16_t port) {
+int sock_listen(sock_t * server, u_int16_t port) {
     struct sockaddr_in6 sin6;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_port=htons(port);
@@ -63,7 +63,7 @@ int sock_accept(sock_t * server, sock_t * client) {
 	return 0;
 }
 
-int sock_connect(sock_t * client, char * addr, uint16_t port) {
+int sock_connect(sock_t * client, char * addr, u_int16_t port) {
     struct sockaddr_in6 sin6;
     struct in6_addr address;
     int inet_return= inet_pton(AF_INET6, addr, &address);
