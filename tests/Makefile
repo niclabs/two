@@ -64,7 +64,7 @@ test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "\nDONE"
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
-	$(Q)-$< > $@ 2>&1
+	$(Q)$< > $@
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
 	$(Q)$(LINK) -o $@ $^
