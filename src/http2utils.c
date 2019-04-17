@@ -1,5 +1,7 @@
 #include "http2utils.h"
 
+uint8_t buffer[MAX_BUFFER_SIZE];
+int size = 0;
 
 /* Function: verify_setting
 * Verifies a pair id/value setting is correct.
@@ -44,4 +46,25 @@ int verify_setting(uint16_t id, uint32_t value){
         }
         return 0;
   }
+}
+
+int tcp_write(uint8_t *bytes, uint8_t length){
+  if(size+length > MAX_BUFFER_SIZE){
+    return -1;
+  }
+  memcpy(buffer+size, bytes, length);
+  size += length;
+  return length;
+}
+
+int tcp_read(uint8_t *bytes, uint8_t length){
+  if(length > size){
+    length = size;
+  }
+  /*Write to caller*/
+  memcpy(bytes, buffer, length);
+  size = size - length;
+  /*Move the rest of the data on buffer*/
+  memcpy(buffer, buffer+length, size);
+  return length;
 }

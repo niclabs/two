@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "frames.h"
-#include "utils.h"
 
 /*Default settings values*/
 #define DEFAULT_HTS 4096
