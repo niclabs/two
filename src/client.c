@@ -43,7 +43,7 @@ static void client_wait_receive(void *instance, int secs)
 
     if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
                    sizeof(timeout)) < 0) {
-        ERROR("Setting timeout: %s\n", strerror(errno));
+        ERROR("Setting timeout");
     }
 
     char buffer[MAX_BUF_SIZE];
@@ -53,13 +53,13 @@ static void client_wait_receive(void *instance, int secs)
     if (nbytes < 0) {
         if (errno == EAGAIN) {
             // Received timeout
-            WARN("Read timeout. Terminating connection ...\n");
+            WARN("Read timeout. Terminating connection");
             client_destroy(client);
             return;
         }
 
         /* Read error. */
-        ERROR("In read(): %s\n", strerror(errno));
+        ERROR("In read()");
         exit(EXIT_FAILURE);
     }
     else if (nbytes == 0) {
@@ -68,7 +68,7 @@ static void client_wait_receive(void *instance, int secs)
     }
     else {
         /* Data read. */
-        INFO("Received message: '%.*s'\n", nbytes - 1, buffer);
+        INFO("Received message: '%.*s'", nbytes - 1, buffer);
     }
 
     // Unset timeout
@@ -76,7 +76,7 @@ static void client_wait_receive(void *instance, int secs)
     timeout.tv_usec = 0;
     if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
                    sizeof(timeout)) < 0) {
-        ERROR("Unsetting timeout: %s\n", strerror(errno));
+        ERROR("Unsetting timeout");
     }
 }
 
@@ -85,7 +85,7 @@ static void on_client_connect(client_t *client)
     int fd = client->ctx.fd;
 
     if (write(fd, PREFACE, strlen(PREFACE)) < 0) {
-        ERROR("Error in sending preface: %s\n", strerror(errno));
+        ERROR("Error in sending preface");
         exit(EXIT_FAILURE);
     }
 }
@@ -99,7 +99,7 @@ client_t *client_create(char *addr, uint16_t port)
 
     // parse destination address
     if (inet_pton(AF_INET6, addr, &dst.sin6_addr) != 1) {
-        ERROR("Unable to parse destination address: %s\n", strerror(errno));
+        ERROR("Unable to parse destination address");
         exit(EXIT_FAILURE);
     }
 
@@ -107,7 +107,7 @@ client_t *client_create(char *addr, uint16_t port)
     dst.sin6_port = htons(port);
 
     if ((sock = socket(AF_INET6, SOCK_STREAM, 0)) < 0) {
-        ERROR("In socket(): %s\n", strerror(errno));
+        ERROR("In socket()");
         exit(EXIT_FAILURE);
     }
 
@@ -125,7 +125,7 @@ void client_connect(client_t *client)
     assert(client->state == OPEN);
 
     if (connect(client->ctx.fd, (struct sockaddr *)&client->dst, sizeof(client->dst)) < 0) {
-        ERROR("Error in connect %s\n", strerror(errno));
+        ERROR("Error in connect");
         exit(EXIT_FAILURE);
     }
 
@@ -142,7 +142,7 @@ void client_request(client_t *client, char *endpoint)
 
     int fd = client->ctx.fd;
     if (write(fd, endpoint, strlen(endpoint)) < 0) {
-        ERROR("Error in sending request: %s\n", strerror(errno));
+        ERROR("Error in sending request");
         exit(EXIT_FAILURE);
     }
 
