@@ -24,7 +24,8 @@ typedef enum
     DEBUG,
     INFO,
     WARN,
-    ERROR
+    ERROR,
+    FATAL
 } level_t;
 
 #define LOGGING_MAX_MSG_LEN (256)
