@@ -248,12 +248,16 @@ int server_wait_preface(void){
 * Output: 0 if connection was made successfully. -1 if not.
 */
 int init_connection(void){
-  int rc;
   if(client){
-    rc = client_send_preface();
+    int rc = client_send_preface();
+    return rc;
   }
   else if(server){
-    rc = server_wait_preface();
+    int rc = server_wait_preface();
+    return rc;
+  }
+  else{
+    return -1;
   }
 }
 
@@ -318,8 +322,7 @@ int read_frame(uint8_t *buff_read, frameheader_t *header){
 */
 int wait(void){
   uint8_t buff_read[MAX_BUFFER_SIZE];
-  uint8_t buff_write[MAX_BUFFER_SIZE];
-  int read_bytes;
+  //uint8_t buff_write[MAX_BUFFER_SIZE];
   int rc = init_connection();
   if(rc){
     puts("Error in init connect");
@@ -328,6 +331,10 @@ int wait(void){
   while(1){
     frameheader_t header;
     rc = read_frame(buff_read, &header);
+    if(rc == -1){
+      puts("Error reading frame");
+      return -1;
+    }
     switch(header.type){
         case DATA_TYPE://Data
             printf("TODO: Data Frame. Not implemented yet.");
@@ -342,7 +349,12 @@ int wait(void){
             printf("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
         case SETTINGS_TYPE:{//Settings
-            read_settings_payload(buff_read, &header);
+            rc = read_settings_payload(buff_read, &header);
+            if(rc == -1){
+              puts("Error in read settings payload");
+              return -1;
+            }
+            break;
         }
         case PUSH_PROMISE_TYPE://Push promise
             printf("TODO: Push promise frame. Not implemented yet.");

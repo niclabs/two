@@ -15,7 +15,7 @@ int verify_setting(uint16_t id, uint32_t value){
   }
   switch(id){
     case HEADER_TABLE_SIZE:
-        if(value < 0){
+        if(value == 0){
           return -1;
         }
         return 0;
@@ -25,12 +25,12 @@ int verify_setting(uint16_t id, uint32_t value){
         }
         return -1;
     case MAX_CONCURRENT_STREAMS:
-        if(value < 0){
+        if(value == 0){
           return -1;
         }
         return 0;
     case INITIAL_WINDOW_SIZE:
-        if(value > 2147483647 || value < 0){
+        if(value > 2147483647){
           return -1;
         }
         return 0;
@@ -41,10 +41,12 @@ int verify_setting(uint16_t id, uint32_t value){
         return -1;
 
     case MAX_HEADER_LIST_SIZE:
-        if(value < 0){
+        if(value == 0){
           return -1;
         }
         return 0;
+      default:
+        return -1;
   }
 }
 
