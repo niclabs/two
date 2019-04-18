@@ -55,7 +55,7 @@ PASSED = `grep -s PASS $(PATHR)*.txt`
 FAIL = `grep -s FAIL $(PATHR)*.txt`
 IGNORE = `grep -s IGNORE $(PATHR)*.txt`
 
-test: $(BUILD_PATHS) $(RESULTS) $(COVERAGE)
+test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "-----------------------\nIGNORES:\n-----------------------"
 	@echo -e "$(IGNORE)"
 	@echo -e "-----------------------\nFAILURES:\n-----------------------"
