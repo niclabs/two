@@ -40,10 +40,6 @@ typedef enum
 #define LEVEL (INFO)
 #endif
 
-#ifndef LOGGING_EXIT_ON_ERROR
-#define LOGGING_EXIT_ON_ERROR (0)
-#endif
-
 #define LEVEL_STR(level) #level
 
 #define LOG(level, func, file, line, msg, ...)                                                                       \
