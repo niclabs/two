@@ -1,6 +1,6 @@
 #include <errno.h>
 
-#include "unity.h"
+#include "unit.h"
 #include "sock.h"
 
 void test_sock_create(void)
@@ -119,18 +119,18 @@ void test_sock_write_unconnected_socket(void) {
  
 int main(void)
 {
-    UNITY_BEGIN();
-    RUN_TEST(test_sock_create);
-    RUN_TEST(test_sock_listen_unitialized_socket);
-    RUN_TEST(test_sock_listen);
-    RUN_TEST(test_sock_accept_unitialized_socket);
-    RUN_TEST(test_sock_accept_unbound_socket);
-    RUN_TEST(test_sock_accept_null_client);
-    RUN_TEST(test_sock_connect_unitialized_client);
-    RUN_TEST(test_sock_connect_null_address);
-    RUN_TEST(test_sock_connect_ipv4_address);
-    RUN_TEST(test_sock_connect_bad_address);
-    RUN_TEST(test_sock_read_unconnected_socket);
-    RUN_TEST(test_sock_write_unconnected_socket);
-    return UNITY_END();
+    UNIT_TESTS_BEGIN();
+    UNIT_TEST(test_sock_create);
+    UNIT_TEST(test_sock_listen_unitialized_socket);
+    UNIT_TEST(test_sock_listen);
+    UNIT_TEST(test_sock_accept_unitialized_socket);
+    UNIT_TEST(test_sock_accept_unbound_socket);
+    UNIT_TEST(test_sock_accept_null_client);
+    UNIT_TEST(test_sock_connect_unitialized_client);
+    UNIT_TEST(test_sock_connect_null_address);
+    UNIT_TEST(test_sock_connect_ipv4_address);
+    UNIT_TEST(test_sock_connect_bad_address);
+    UNIT_TEST(test_sock_read_unconnected_socket);
+    UNIT_TEST(test_sock_write_unconnected_socket);
+    return UNIT_TESTS_END();
 }
