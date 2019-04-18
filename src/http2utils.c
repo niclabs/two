@@ -49,8 +49,9 @@ int verify_setting(uint16_t id, uint32_t value){
 }
 
 /*
-* Function: read_N_bytes
+* Function: read_n_bytes
 * Reads n bytes to buffer.
+* NOTE: THIS IS A BLOCKING FUNCTION
 * Input: -> buff_read: buffer where bytes are going to be written.
 *        -> n: number of bytes to read.
 * Output: The number of bytes written in buffer. -1 if error was found.
@@ -60,8 +61,8 @@ int read_n_bytes(uint8_t *buff_read, int n){
   int incoming_bytes;
   while(read_bytes < n){
     incoming_bytes = tcp_read(buff_read+read_bytes, n - read_bytes);
-    /* incoming_bytes equals zero means that connection is closed*/
-    if(!incoming_bytes){
+    /* incoming_bytes equals -1 means that there was an error*/
+    if(incoming_bytes == -1){
       puts("Error in read function");
       return -1;
     }

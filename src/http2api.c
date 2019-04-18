@@ -185,6 +185,62 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
 }
 
 /*
+* Function: client_send_preface
+* Client method: sends preface and settings to endpoint
+* Input: void
+* Output: 0 if sending was made, -1 if not.
+*/
+int client_send_preface(void){
+  char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+  uint8_t preface_buff[24];
+  puts("Client sends preface");
+  uint8_t i = 0;
+  /*We load the buffer with the ascii characters*/
+  while(preface[i] != '\0'){
+    preface_buff[i] = preface[i];
+    i++;
+  }
+  int rc = tcp_write(preface_buff,24);
+  if(rc != 24){
+    puts("Error in preface sending");
+    return -1;
+  }
+  if((rc = send_local_settings()) < 0){
+    puts("Error in local settings sending");
+    return -1;
+  }
+  return 0;
+}
+
+/*
+* Function: server_wait_preface
+* Server method: waits for preface to arrive and sends local settings to client
+* Input: void
+* Output: 0 if preface was received and settings sent. -1 if not.
+*/
+int server_wait_preface(void){
+  char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+  uint8_t preface_buff[25];
+  preface_buff[24] = '\0';
+  puts("Server waits for preface");
+  /*We read the first 24 byes*/
+  int rc = read_n_bytes(preface_buff, 24);
+  if(rc != 24){
+    puts("Error in reading preface");
+    return -1;
+  }
+  if(strcmp(preface, (char*)preface_buff) != 0){
+    puts("Error in preface receiving");
+    return -1;
+  }
+  if((rc = send_local_settings()) < 0){
+    puts("Error in local settings sending");
+    return -1;
+  }
+  return 0;
+}
+
+/*
 * Function: init_connection
 * Initializes HTTP2 connection between endpoints. If client, sends preface and
 * local settings. If server, waits for preface and sends local settings.
@@ -193,46 +249,39 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
 */
 int init_connection(void){
   int rc;
-  char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   if(client){
-    uint8_t preface_buff[24];
-    puts("Client sends preface");
-    uint8_t i = 0;
-    /*We load the buffer with the ascii characters*/
-    while(preface[i] != '\0'){
-      preface_buff[i] = preface[i];
-      i++;
-    }
-    rc = tcp_write(preface_buff,24);
-    if(rc != 24){
-      puts("Error in preface sending");
-      return -1;
-    }
-    if((rc = send_local_settings()) < 0){
-      puts("Error in local settings sending");
-      return -1;
-    }
-    return 0;
+    rc = client_send_preface();
   }
   else if(server){
-    uint8_t preface_buff[25];
-    preface_buff[24] = '\0';
-    puts("Server waits for preface");
-    /*We read the first 24 byes*/
-    rc = read_n_bytes(preface_buff, 24);
-    if(strcmp(preface, (char*)preface_buff) != 0){
-      puts("Error in preface receiving");
-      return -1;
-    }
-    if((rc = send_local_settings()) < 0){
-      puts("Error in local settings sending");
-      return -1;
-    }
-    return 0;
+    rc = server_wait_preface();
   }
-  return -1;
 }
 
+
+/*
+* Function: read_settings_payload
+* Given a buffer and a pointer to a header, operates a settings frame payload.
+* Input: -> buff_read: buffer where payload's data is written
+        -> header: pointer to a frameheader_t structure already built
+* Output: 0 if operations are done successfully, -1 if not.
+*/
+int read_settings_payload(uint8_t *buff_read, frameheader_t *header){
+  settingspayload_t settings_payload;
+  settingspair_t pairs[header->length/6];
+  int size = bytesToSettingsPayload(buff_read,header->length, &settings_payload, pairs);
+  if(size != header->length){
+    puts("Error in byte to settings payload coding");
+    return -1;
+  }
+  if(!update_settings_table(&settings_payload, REMOTE)){
+    send_settings_ack();
+    return 0;
+  }
+  else{
+    /*TODO: send protocol error*/
+    return -1;
+  }
+}
 
 /*
 * Function: read_frame
@@ -262,30 +311,6 @@ int read_frame(uint8_t *buff_read, frameheader_t *header){
     return -1;
   }
   return 0;
-}
-/*
-* Function: read_settings_payload
-* Given a buffer and a pointer to a header, operates a settings frame payload.
-* Input: -> buff_read: buffer where payload's data is written
-        -> header: pointer to a frameheader_t structure already built
-* Output: 0 if operations are done successfully, -1 if not.
-*/
-int read_settings_payload(uint8_t *buff_read, frameheader_t *header){
-  settingspayload_t settings_payload;
-  settingspair_t pairs[header->length/6];
-  int size = bytesToSettingsPayload(buff_read,header->length, &settings_payload, pairs);
-  if(size != header->length){
-    puts("Error in byte to settings payload coding");
-    return -1;
-  }
-  if(!update_settings_table(&settings_payload, REMOTE)){
-    send_settings_ack();
-    return 0;
-  }
-  else{
-    /*TODO: send protocol error*/
-    return -1;
-  }
 }
 
 /*
