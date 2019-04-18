@@ -37,10 +37,14 @@ void setUp(void) {
 void test_sock_create(void)
 {
     sock_t sock;
+    
+    // Set return value for socket
+    socket_fake.return_val = 123;
     sock_create(&sock);
     
     // Sock create should put the socket in opened state
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_OPENED, "sock_create should leave sock in 'OPENED' state");
+    TEST_ASSERT_EQUAL_MESSAGE(sock.fd, 123, "sock_create should set file descriptor in sock structure");
 
     // Close socket
     sock_destroy(&sock);
