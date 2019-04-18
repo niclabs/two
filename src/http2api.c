@@ -235,10 +235,55 @@ int init_connection(void){
   return -1;
 }
 
+
 /*
 *
 *
 *
+*/
+int read_frame(uint8_t *buff_read, frameheader_t *header){
+  int read_bytes = 0;
+  while(read_bytes < 9){
+    read_bytes = read_bytes + tcp_read(buff_read+read_bytes, 9 - read_bytes);
+  }
+  int rc = bytesToFrameHeader(buff_read, 9, header);
+  if(rc != 9){
+    puts("Error coding bytes to frame header");
+    return -1;
+  }
+  read_bytes = 0;
+  if(header->length > 256){
+    puts("Error: Payloadsize too big");
+    return -1;
+  }
+  while(read_bytes < header->length){
+    read_bytes = read_bytes + tcp_read(buff_read+read_bytes, header->length - read_bytes);
+  }
+  return 0;
+}
+/*
+*
+*
+*
+*/
+int read_settings_frame(uint8_t *buff_read, frameheader_t *header){
+  settingspayload_t settings_payload;
+  settingspair_t pairs[header->length/6];
+  int size = bytesToSettingsPayload(buff_read,header->length, &settings_payload, pairs);
+  if(size != header->length){
+    puts("Error in byte to settings payload coding");
+    return -1;
+  }
+  if(!update_settings_table(&settings_payload, REMOTE)){
+    send_settings_ack();
+    return 0;
+  }
+  else{
+    /*TODO: send protocol error*/
+    return -1;
+  }
+}
+/*
 *
 */
 int wait(void){
@@ -246,21 +291,13 @@ int wait(void){
   uint8_t buff_write[MAX_BUFFER_SIZE];
   int read_bytes;
   int rc = init_connection();
+  if(rc){
+    puts("Error in init connect");
+    return -1;
+  }
   while(1){
-    read_bytes = 0;
-    while(read_bytes < 9){
-      read_bytes = read_bytes + tcp_read(buff_read+read_bytes, 9 - read_bytes);
-    }
     frameheader_t header;
-    int rc = bytesToFrameHeader(buff_read, 9, &header);
-    read_bytes = 0;
-    if(header.length > 256){
-      puts("Error: Payloadsize too big");
-      return -1;
-    }
-    while(read_bytes < header.length){
-      read_bytes = read_bytes + tcp_read(buff_read+read_bytes, header.length - read_bytes);
-    }
+    rc = read_frame(buff_read, &header);
     switch(header.type){
         case DATA_TYPE://Data
             printf("TODO: Data Frame. Not implemented yet.");
@@ -275,12 +312,7 @@ int wait(void){
             printf("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
         case SETTINGS_TYPE:{//Settings
-            settingspayload_t settings_payload;
-            settingspair_t pairs[header.length/6];
-            int size = bytesToSettingsPayload(buff_read,header.length, &settings_payload, pairs);
-            update_settings_table(&settings_payload, REMOTE);
-            /*TODO: que hacemos ademas de actualizar la tabla?*/
-            send_settings_ack();
+            read_settings_frame(buff_read, &header);
         }
         case PUSH_PROMISE_TYPE://Push promise
             printf("TODO: Push promise frame. Not implemented yet.");
