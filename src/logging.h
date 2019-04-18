@@ -42,15 +42,15 @@ typedef enum
     {                                                                                                                \
         if (level >= LEVEL)                                                                                          \
         {                                                                                                            \
+            fprintf(stderr, "%s() in %s:%d [" LEVEL_STR(level) "]: " msg, func, file, line, ##__VA_ARGS__);          \
             switch (level)                                                                                           \
             {                                                                                                        \
             case DEBUG:                                                                                              \
             case INFO:                                                                                               \
             case WARN:                                                                                               \
-                fprintf(stderr, "%s() in %s:%d [" LEVEL_STR(level) "]: " msg "\n", func, file, line, ##__VA_ARGS__); \
+                fprintf(stderr, "\n");                                                                               \
                 break;                                                                                               \
             case ERROR:                                                                                              \
-                fprintf(stderr, "%s() in %s:%d [" LEVEL_STR(level) "]: " msg, func, file, line, ##__VA_ARGS__);      \
                 if (errno > 0)                                                                                       \
                 {                                                                                                    \
                     fprintf(stderr, " (%s)\n", strerror(errno));                                                      \
