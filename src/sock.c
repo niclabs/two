@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <string.h>
 #include <strings.h>
 #include <errno.h>
@@ -13,14 +12,9 @@
 
 #include "sock.h"
 #include "logging.h"
+#include "assert.h"
 
 #define BACKLOAD 1
-#ifdef test
-#define ASSERT(x) ((void)0)
-#else
-#define STR(x) #x
-#define ASSERT(x) if(!(x)) {printf("Assertion failed: (%s), file %s, function %s, line %d.\n", STR(x), __FILE__, __PRETTY_FUNCTION__, __LINE__); abort(); }
-#endif
 
 int sock_create(sock_t * sock) {
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
