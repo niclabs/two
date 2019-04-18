@@ -19,14 +19,14 @@ void cleanup(int signal)
 {
     (void)signal;
 
-    INFO("Ctrl-C received. Terminating.\n");
+    INFO("Ctrl-C received. Terminating");
 }
 
 void client_start(char * addr, char * port_str, char * endpoint) {
     uint16_t port = atoi(port_str);
     if (port == 0)
     {
-        ERROR("Invalid port specified\n");
+        ERROR("Invalid port specified");
         return;
     }
 
@@ -39,7 +39,7 @@ void server_start(char * port_str) {
     uint16_t port = atoi(port_str);
     if (port == 0)
     {
-        ERROR("Invalid port specified\n");
+        ERROR("Invalid port specified");
         return;
     }
 
