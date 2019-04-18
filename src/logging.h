@@ -58,8 +58,9 @@ typedef enum
             case ERROR:                                                                                              \
                 if (errno > 0)                                                                                       \
                 {                                                                                                    \
-                    fprintf(stderr, " (%s)\n", strerror(errno));                                                      \
+                    fprintf(stderr, " (%s)", strerror(errno));                                                      \
                 }                                                                                                    \
+                fprintf(stderr, "\n");                                                                               \
                 break;                                                                                               \
             case FATAL:                                                                                              \
                 exit(EXIT_FAILURE);                                                                                  \
