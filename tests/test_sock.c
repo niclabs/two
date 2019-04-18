@@ -50,6 +50,20 @@ void test_sock_create(void)
     sock_destroy(&sock);
 }
 
+void test_sock_create_fail_to_create_socket(void)
+{
+    sock_t sock;
+
+    // Set return value for socket
+    socket_fake.return_val = -1;
+    int res = sock_create(&sock);
+    
+    // Sock create should put the socket in opened state
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
+    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CLOSED, "sock_create should leave sock in 'CLOSED' state on error");
+}
+
 void test_sock_listen_unitialized_socket(void) {
     sock_t sock;
     int res = sock_listen(&sock, 8888);
@@ -156,6 +170,7 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_sock_create);
+    UNIT_TEST(test_sock_create_fail_to_create_socket);
     UNIT_TEST(test_sock_listen_unitialized_socket);
     UNIT_TEST(test_sock_listen);
     UNIT_TEST(test_sock_accept_unitialized_socket);
