@@ -14,11 +14,14 @@
 
 #define PORT (8888)
 
+sock_t server_sock;
+
 void cleanup(int signal)
 {
     (void)signal;
 
     INFO("Ctrl-C received. Terminating");
+    sock_destroy(&server_sock);
 }
 
 void client_start(char * addr, char * port_str, char * endpoint) {
@@ -45,7 +48,6 @@ void server_start(char * port_str) {
         return;
     }
 
-    sock_t server_sock;
     sock_create(&server_sock);
     sock_listen(&server_sock, port);
     
@@ -53,12 +55,13 @@ void server_start(char * port_str) {
     signal(SIGINT, cleanup);
 
     sock_t client_sock;
-    while (sock_accept(&server_sock, &client_sock) > 0) {
+    while (sock_accept(&server_sock, &client_sock) >= 0) {
+        INFO("Client connected");
         char buf[256];
-        if (sock_read(&client_sock, buf, 256, 0) <= 0) {
-            sock_destroy(&client_sock);
+        while (sock_read(&client_sock, buf, 256, 0) > 0) {
+            INFO("Received %s", buf);
         }
-        INFO("Received %s", buf);
+        sock_destroy(&client_sock);
     }
 
     // Cleanup after listen terminates
