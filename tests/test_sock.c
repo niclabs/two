@@ -2,6 +2,37 @@
 
 #include "unit.h"
 #include "sock.h"
+#include "fff.h"
+
+#include <sys/types.h>
+#include <sys/socket.h>
+
+DEFINE_FFF_GLOBALS;
+FAKE_VALUE_FUNC(int, socket, int, int, int);
+FAKE_VALUE_FUNC(int, bind, int, const struct sockaddr *, socklen_t);
+FAKE_VALUE_FUNC(int, listen, int, int);
+FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, read, int, void *, size_t *);
+FAKE_VALUE_FUNC(int, write, int, void *, size_t *);
+FAKE_VALUE_FUNC(int, close, int);
+
+/* List of fakes used by this unit tester */
+#define FFF_FAKES_LIST(FAKE) \
+    FAKE(socket)             \
+    FAKE(bind)               \
+    FAKE(listen)             \
+    FAKE(accept)             \
+    FAKE(read)               \
+    FAKE(write)              \
+    FAKE(close)
+
+void setUp(void) {
+    /* Register resets */
+  FFF_FAKES_LIST(RESET_FAKE);
+
+  /* reset common FFF internal structures */
+  FFF_RESET_HISTORY();
+}
 
 void test_sock_create(void)
 {
