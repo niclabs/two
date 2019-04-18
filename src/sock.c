@@ -1,5 +1,3 @@
-#include <string.h>
-#include <strings.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
