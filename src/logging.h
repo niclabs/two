@@ -27,8 +27,10 @@ typedef enum
 
 #ifndef ENABLE_DEBUG
 #define ENABLE_DEBUG (0)
+#define LOG_CONTEXT(func, file, line)
 #elif (ENABLE_DEBUG != 0)
 #define LEVEL (DEBUG)
+#define LOG_CONTEXT(func, file, line) fprintf(stderr, "%s() in %s:%d ", func, file, line)
 #endif
 
 #ifndef LEVEL
@@ -42,7 +44,8 @@ typedef enum
     {                                                                                                                \
         if (level >= LEVEL)                                                                                          \
         {                                                                                                            \
-            fprintf(stderr, "%s() in %s:%d [" LEVEL_STR(level) "]: " msg, func, file, line, ##__VA_ARGS__);          \
+            LOG_CONTEXT(func, file, line);                                                                           \
+            fprintf(stderr, "[" LEVEL_STR(level) "]: " msg, ##__VA_ARGS__);                                          \
             switch (level)                                                                                           \
             {                                                                                                        \
             case DEBUG:                                                                                              \
