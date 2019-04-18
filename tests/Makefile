@@ -46,7 +46,7 @@ SRCT = $(wildcard $(PATHT)*.c)
 COMPILE=gcc -c -Wall -O0
 LINK=gcc 
 DEPEND=gcc -MM -MG -MF
-CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
+CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST -DENABLE_DEBUG
 LDFLAGS += --coverage
 
 RESULTS = $(patsubst $(PATHT)test_%.c,$(PATHR)test_%.txt,$(SRCT) )
