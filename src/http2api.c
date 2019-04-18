@@ -186,6 +186,8 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
 
 /*
 * Function: init_connection
+* Initializes HTTP2 connection between endpoints. If client, sends preface and
+* local settings. If server, waits for preface and sends local settings.
 * Input: void
 * Output: 0 if connection was made successfully. -1 if not.
 */
@@ -215,13 +217,9 @@ int init_connection(void){
   else if(server){
     uint8_t preface_buff[25];
     preface_buff[24] = '\0';
-    int read_bytes = 0;
     puts("Server waits for preface");
     /*We read the first 24 byes*/
-    while(read_bytes < 24){
-      /*Assuming that tcp_read returns the number of bytes read*/
-      read_bytes = read_bytes + tcp_read(preface_buff+read_bytes, 24 - read_bytes);
-    }
+    rc = read_n_bytes(preface_buff, 24);
     if(strcmp(preface, (char*)preface_buff) != 0){
       puts("Error in preface receiving");
       return -1;
@@ -237,36 +235,42 @@ int init_connection(void){
 
 
 /*
-*
-*
-*
+* Function: read_frame
+* Build a header and writes the header's payload's bytes on buffer.
+* Input: -> buff_read: buffer where payload bytes are going to be stored.
+        -> header: pointer to the frameheader_t where header is going to be stored
+* Output: 0 if writing and building is done successfully. -1 if not.
 */
 int read_frame(uint8_t *buff_read, frameheader_t *header){
-  int read_bytes = 0;
-  while(read_bytes < 9){
-    read_bytes = read_bytes + tcp_read(buff_read+read_bytes, 9 - read_bytes);
+  int rc = read_n_bytes(buff_read, 9);
+  if(rc != 9){
+    puts("Error reading bytes from http");
+    return -1;
   }
-  int rc = bytesToFrameHeader(buff_read, 9, header);
+  rc = bytesToFrameHeader(buff_read, 9, header);
   if(rc != 9){
     puts("Error coding bytes to frame header");
     return -1;
   }
-  read_bytes = 0;
   if(header->length > 256){
-    puts("Error: Payloadsize too big");
+    puts("Error: Payload's size too big (>256)");
     return -1;
   }
-  while(read_bytes < header->length){
-    read_bytes = read_bytes + tcp_read(buff_read+read_bytes, header->length - read_bytes);
+  rc = read_n_bytes(buff_read, header->length);
+  if(rc != header->length){
+    puts("Error reading bytes from http");
+    return -1;
   }
   return 0;
 }
 /*
-*
-*
-*
+* Function: read_settings_payload
+* Given a buffer and a pointer to a header, operates a settings frame payload.
+* Input: -> buff_read: buffer where payload's data is written
+        -> header: pointer to a frameheader_t structure already built
+* Output: 0 if operations are done successfully, -1 if not.
 */
-int read_settings_frame(uint8_t *buff_read, frameheader_t *header){
+int read_settings_payload(uint8_t *buff_read, frameheader_t *header){
   settingspayload_t settings_payload;
   settingspair_t pairs[header->length/6];
   int size = bytesToSettingsPayload(buff_read,header->length, &settings_payload, pairs);
@@ -283,8 +287,9 @@ int read_settings_frame(uint8_t *buff_read, frameheader_t *header){
     return -1;
   }
 }
+
 /*
-*
+* Function: wait
 */
 int wait(void){
   uint8_t buff_read[MAX_BUFFER_SIZE];
@@ -312,7 +317,7 @@ int wait(void){
             printf("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
         case SETTINGS_TYPE:{//Settings
-            read_settings_frame(buff_read, &header);
+            read_settings_payload(buff_read, &header);
         }
         case PUSH_PROMISE_TYPE://Push promise
             printf("TODO: Push promise frame. Not implemented yet.");
