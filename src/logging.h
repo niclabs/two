@@ -46,7 +46,7 @@ typedef enum
 
 #define LEVEL_STR(level) #level
 
-#define LOG(level, func, file, line, fmt, ...)                                                                       \
+#define LOG(level, func, file, line, msg, ...)                                                                       \
     do                                                                                                               \
     {                                                                                                                \
         if (level >= LEVEL)                                                                                          \
@@ -56,7 +56,7 @@ typedef enum
             case DEBUG:                                                                                              \
             case INFO:                                                                                               \
             case WARN:                                                                                               \
-                fprintf(stderr, "%s() in %s:%d [" LEVEL_STR(level) "]: " fmt "\n", func, file, line, ##__VA_ARGS__); \
+                fprintf(stderr, "%s() in %s:%d [" LEVEL_STR(level) "]: " msg "\n", func, file, line, ##__VA_ARGS__); \
             case ERROR:                                                                                              \
                 if (errno > 0)                                                                                       \
                 {                                                                                                    \
