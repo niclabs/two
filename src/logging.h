@@ -14,6 +14,7 @@
 #define LOGGING_H
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <errno.h>
 
