@@ -44,9 +44,8 @@ typedef enum
 #define LOGGING_EXIT_ON_ERROR (0)
 #endif
 
-#define LOG(level, func, file, line, fmt, ...)                                                                   \
-    do                                                                                                           \
-    {                                                                                                            \
+#define LEVEL_STR(level) #level
+
         if (level >= LEVEL)                                                                                      \
         {                                                                                                        \
             char msg[256];                                                                                       \
