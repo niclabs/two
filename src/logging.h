@@ -28,7 +28,7 @@ typedef enum
 #ifndef ENABLE_DEBUG
 #define ENABLE_DEBUG (0)
 #define LOG_CONTEXT(func, file, line)
-#elif (ENABLE_DEBUG != 0)
+#else
 #define LEVEL (DEBUG)
 #define LOG_CONTEXT(func, file, line) fprintf(stderr, "%s() in %s:%d ", func, file, line)
 #endif
