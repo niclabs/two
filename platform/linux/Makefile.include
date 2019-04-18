@@ -23,9 +23,12 @@ endif
 # Include path
 INCLUDES += -I $(SRCDIR)
 
+ifneq ($(DEBUG),)
+	CFLAGS += -g -DENABLE_DEBUG
+endif
+
 # Define release and debug compiler and linker flags
-release: export CFLAGS := $(CFLAGS) -DLEVEL=INFO
-debug: export CFLAGS := $(CFLAGS) -g -DLEVEL=DEBUG
+debug: export DEBUG := 1
 
 # Find all source files in the source directory, sorted by most
 # recently modified
