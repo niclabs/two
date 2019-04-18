@@ -13,7 +13,14 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-typedef enum {
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <errno.h>
+
+typedef enum
+{
     DEBUG,
     INFO,
     WARN,
@@ -36,24 +43,46 @@ typedef enum {
 #define LOGGING_EXIT_ON_ERROR (0)
 #endif
 
-/**
- * Prints message to stderr only if the defined level 
- * is equal or above the level defined by the variable 
- * LEVEL
- */
-void logging_printf(level_t level, const char * func, const  char * file, int line, ...);
+#define LOG(level, func, file, line, fmt, ...)                                                                   \
+    do                                                                                                           \
+    {                                                                                                            \
+        if (level >= LEVEL)                                                                                      \
+        {                                                                                                        \
+            char msg[256];                                                                                       \
+            snprintf(msg, LOGGING_MAX_MSG_LEN, fmt, ##__VA_ARGS__);                                              \
+            switch (level)                                                                                       \
+            {                                                                                                    \
+            case DEBUG:                                                                                          \
+                fprintf(stderr, "[DEBUG] %s: %s() in %s:%d\n", msg, func, file, line);                           \
+                break;                                                                                           \
+            case INFO:                                                                                           \
+                fprintf(stderr, "[INFO] %s: %s() in %s:%d\n", msg, func, file, line);                            \
+                break;                                                                                           \
+            case WARN:                                                                                           \
+                fprintf(stderr, "[WARN] %s: %s() in %s:%d\n", msg, func, file, line);                            \
+                break;                                                                                           \
+            case ERROR:                                                                                          \
+                if (errno > 0)                                                                                   \
+                    fprintf(stderr, "[ERROR] %s (%s): %s() in %s:%d\n", msg, strerror(errno), func, file, line); \
+                else                                                                                             \
+                    fprintf(stderr, "[ERROR] %s: %s() in %s:%d\n", msg, func, file, line);                       \
+                if (LOGGING_EXIT_ON_ERROR)                                                                       \
+                    exit(EXIT_FAILURE);                                                                          \
+                break;                                                                                           \
+            }                                                                                                    \
+        }                                                                                                        \
+    } while (0);
 
 // Macro to print debugging messages
-#define DEBUG(...) logging_printf(DEBUG, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define DEBUG(...) LOG(DEBUG, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 // Macro to print information messages
-#define INFO(...) logging_printf(INFO, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define INFO(...) LOG(INFO, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 // Macro to print warning messages
-#define WARN(...) logging_printf(WARN, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define WARN(...) LOG(WARN, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 // Macro to print error messages
-#define ERROR(...) logging_printf(ERROR, __func__, __FILE__, __LINE__, __VA_ARGS__)
-
+#define ERROR(...) LOG(ERROR, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 #endif /* LOGGING_H */
