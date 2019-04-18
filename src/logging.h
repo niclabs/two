@@ -28,8 +28,6 @@ typedef enum
     FATAL
 } level_t;
 
-#define LOGGING_MAX_MSG_LEN (256)
-
 #ifndef ENABLE_DEBUG
 #define ENABLE_DEBUG (0)
 #elif (ENABLE_DEBUG != 0)
