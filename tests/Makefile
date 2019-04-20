@@ -55,18 +55,25 @@ endif
 
 RESULTS = $(patsubst $(PATHT)test_%.c,$(PATHR)test_%.txt,$(SRCT) )
 
-PASSED = `grep -s PASS $(PATHR)*.txt`
-FAIL = `grep -s FAIL $(PATHR)*.txt`
-IGNORE = `grep -s IGNORE $(PATHR)*.txt`
+PASSED = $(shell grep -s PASS $(PATHR)*.txt)
+PASSED_COUNT = $(strip $(shell echo -n $(PASSED) | wc -l))
+FAIL = $(shell grep -s FAIL $(PATHR)*.txt)
+FAIL_COUNT = $(strip $(shell echo -n $(FAIL) | wc -l))
+IGNORE = $(shell grep -s IGNORE $(PATHR)*.txt)
+IGNORE_COUNT = $(strip $(shell echo -n $(IGNORE) | wc -l))
 
 test: $(BUILD_PATHS) $(RESULTS)
-	@echo -e "-----------------------\nIGNORES:\n-----------------------"
+	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
 	@echo -e "$(IGNORE)"
-	@echo -e "-----------------------\nFAILURES:\n-----------------------"
+	@echo -e "-----------------------\nFAILURES: $(PASSED_COUNT)\n-----------------------"
 	@echo -e "$(FAIL)"
-	@echo -e "-----------------------\nPASSED:\n-----------------------"
+	@echo -e "-----------------------\nPASSED: $(FAIL_COUNT)\n-----------------------"
 	@echo -e "$(PASSED)"
 	@echo -e "\nDONE"
+
+    ifneq ($(FAIL),)
+		$(error Failed $(FAIL_COUNT) tests)
+    endif
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
 	$(Q)$< > $@
