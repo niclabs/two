@@ -7,6 +7,7 @@
 #define SOCK_H
 
 #include <stdlib.h>
+#include <sys/types.h>
 
 
 /**
