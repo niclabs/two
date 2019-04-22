@@ -40,7 +40,7 @@ void test_sock_create(void)
 {
     sock_t sock;
     
-    // Set return value for socket
+    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
     
@@ -56,7 +56,7 @@ void test_sock_create_fail_to_create_socket(void)
 {
     sock_t sock;
 
-    // Set return value for socket
+    // Set error return for socket()
     socket_fake.return_val = -1;
     int res = sock_create(&sock);
     
@@ -77,6 +77,7 @@ void test_sock_listen_unitialized_socket(void) {
 void test_sock_listen(void) {
     sock_t sock;
     
+    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
     
@@ -89,11 +90,14 @@ void test_sock_listen(void) {
 void test_sock_listen_error_return(void) {
     sock_t sock;
     
+    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
     
+    // Set error return value for listen()
     listen_fake.return_val = -1;
     errno = ENOTSOCK;
+
     int res = sock_listen(&sock, 8888);
     
     // Sock create should put the socket in opened state
