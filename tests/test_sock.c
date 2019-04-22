@@ -222,6 +222,8 @@ void test_sock_write_unconnected_socket(void) {
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_write should fail when reading from unconnected socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
 }
+
+// TODO: add more tests for read and write
  
 int main(void)
 {
