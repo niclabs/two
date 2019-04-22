@@ -231,6 +231,7 @@ int main(void)
     UNIT_TEST(test_sock_create);
     UNIT_TEST(test_sock_create_fail_to_create_socket);
     UNIT_TEST(test_sock_listen_unitialized_socket);
+    UNIT_TEST(test_sock_listen_error_return);
     UNIT_TEST(test_sock_listen);
     UNIT_TEST(test_sock_accept_unitialized_socket);
     UNIT_TEST(test_sock_accept_unbound_socket);
