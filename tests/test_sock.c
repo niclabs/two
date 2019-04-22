@@ -198,7 +198,11 @@ void test_sock_connect_bad_address(void) {
 void test_sock_read_unconnected_socket(void) {
     sock_t sock;
     char buf[256];
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
+    
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+    
     int res = sock_read(&sock, buf, 256, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_read should not fail when reading from unconnected socket");
@@ -208,7 +212,11 @@ void test_sock_read_unconnected_socket(void) {
 void test_sock_write_unconnected_socket(void) {
     sock_t sock;
     char buf[256];
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
+    
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
     int res = sock_write(&sock, buf, 256);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_write should not fail when reading from unconnected socket");
