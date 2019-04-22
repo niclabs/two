@@ -9,58 +9,22 @@
 static uint32_t remote_settings[6];
 static uint32_t local_settings[6];
 //static uint32_t local_cache[6];
-static uint8_t client = 0;
-static uint8_t server = 0;
 //static uint8_t waiting_sett_ack = 0;
 
 /*-----------------------*/
 /*
-* Function: init_server
-* Initialize variables for server
+* Function: init_settings_tables
+* Initialize default values of remote and local settings
 * Input: void
 * Output: 0 if initialize were made. -1 if not.
 */
-int init_server(void){
-  if(client){
-    puts("Error: this is a client process");
-    return -1;
-  }
-  if(server){
-    puts("Error: server was already initalized");
-    return -1;
-  }
+int init_settings_tables(void){
   remote_settings[0] = local_settings[0] = DEFAULT_HTS;
   remote_settings[1] = local_settings[1] = DEFAULT_EP;
   remote_settings[2] = local_settings[2] = DEFAULT_MCS;
   remote_settings[3] = local_settings[3] = DEFAULT_IWS;
   remote_settings[4] = local_settings[4] = DEFAULT_MFS;
   remote_settings[5] = local_settings[5] = DEFAULT_MHLS;
-  server = 1;
-  return 0;
-}
-
-/*
-* Function: init_client
-* Initialize variables for client
-* Input: void
-* Output: 0 if initialize were made. -1 if not.
-*/
-int init_client(void){
-  if(server){
-    puts("Error: this is a server process");
-    return -1;
-  }
-  if(client){
-    puts("Error: client was already initalized");
-    return -1;
-  }
-  remote_settings[0] = local_settings[0] = DEFAULT_HTS;
-  remote_settings[1] = local_settings[1] = DEFAULT_EP;
-  remote_settings[2] = local_settings[2] = DEFAULT_MCS;
-  remote_settings[3] = local_settings[3] = DEFAULT_IWS;
-  remote_settings[4] = local_settings[4] = DEFAULT_MFS;
-  remote_settings[5] = local_settings[5] = DEFAULT_MHLS;
-  client = 1;
   return 0;
 }
 
@@ -241,24 +205,27 @@ int server_wait_preface(void){
 }
 
 /*
-* Function: init_connection
-* Initializes HTTP2 connection between endpoints. If client, sends preface and
-* local settings. If server, waits for preface and sends local settings.
+* Function: server_init_connection
+* Initializes HTTP2 connection between endpoints.
+* If server, waits for preface and sends local settings.
 * Input: void
 * Output: 0 if connection was made successfully. -1 if not.
 */
-int init_connection(void){
-  if(client){
-    int rc = client_send_preface();
-    return rc;
-  }
-  else if(server){
-    int rc = server_wait_preface();
-    return rc;
-  }
-  else{
-    return -1;
-  }
+int server_init_connection(void){
+  int rc = server_wait_preface();
+  return rc;
+}
+
+/*
+* Function: client_init_connection
+* Initializes HTTP2 connection between endpoints. If client, sends preface and
+* local settings.
+* Input: void
+* Output: 0 if connection was made successfully. -1 if not.
+*/
+int client_init_connection(void){
+  int rc = client_send_preface();
+  return rc;
 }
 
 

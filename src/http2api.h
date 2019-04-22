@@ -29,11 +29,9 @@ typedef enum SettingsParameters{
 /*Definition of max buffer size*/
 #define MAX_BUFFER_SIZE 256
 
-int init_server(void);
-int init_client(void);
+int init_settings_tables(void);
 int send_local_settings(void);
-int update_settings_table(settingspayload_t *spl, uint8_t place);
 int send_settings_ack(void);
 uint32_t read_setting_from(uint8_t place, uint8_t param);
-int init_connection(void);
-int wait(void);
+int server_init_connection(void);
+int client_init_connection(void);
