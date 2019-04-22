@@ -137,7 +137,6 @@ void test_sock_accept_null_client(void) {
 
     // Set succesful return value for listen()
     listen_fake.return_val = 0;
-    int res = sock_listen(&sock, 8888);
     sock_listen(&sock, 8888);
 
     // Call accept with null client
