@@ -157,7 +157,12 @@ void test_sock_connect_unitialized_client(void) {
 
 void test_sock_connect_null_address(void) {
     sock_t sock;
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
+
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);    
+
+    // Call connect with NULL address
     int res = sock_connect(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_connect should not accept a null address");
