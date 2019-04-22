@@ -86,6 +86,22 @@ void test_sock_listen(void) {
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_LISTENING, "sock_listen set sock state to LISTENING");
 }
 
+void test_sock_listen_error_return(void) {
+    sock_t sock;
+    
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+    
+    listen_fake.return_val = -1;
+    errno = ENOTSOCK;
+    int res = sock_listen(&sock, 8888);
+    
+    // Sock create should put the socket in opened state
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
+    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CLOSED, "sock_listen should leave sock in 'CLOSED' state on error");
+}
+
 void test_sock_accept_unitialized_socket(void) {
     sock_t sock;
     int res = sock_accept(&sock, NULL);
