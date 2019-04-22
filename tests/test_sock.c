@@ -184,7 +184,11 @@ void test_sock_connect_ipv4_address(void) {
 
 void test_sock_connect_bad_address(void) {
     sock_t sock;
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
+    
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
     int res = sock_connect(&sock, "bad_address", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_connect should fail on bad address");
