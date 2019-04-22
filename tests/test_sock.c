@@ -112,8 +112,12 @@ void test_sock_accept_unitialized_socket(void) {
 
 void test_sock_accept_unbound_socket(void) {
     sock_t sock;
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
-    if (sock_listen(&sock, 8888) < 0) return; // an issue independent of the test ocurred
+
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // Call sock_accept without sock_listen first
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_accept on unbound socket should return error value");
