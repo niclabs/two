@@ -205,7 +205,7 @@ void test_sock_read_unconnected_socket(void) {
     
     int res = sock_read(&sock, buf, 256, 0);
 
-    TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_read should not fail when reading from unconnected socket");
+    TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_read should fail when reading from unconnected socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
 }
 
@@ -219,7 +219,7 @@ void test_sock_write_unconnected_socket(void) {
 
     int res = sock_write(&sock, buf, 256);
 
-    TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_write should not fail when reading from unconnected socket");
+    TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_write should fail when reading from unconnected socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
 }
  
