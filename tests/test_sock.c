@@ -26,6 +26,8 @@ FAKE_VALUE_FUNC(int, close, int);
     FAKE(write)              \
     FAKE(close)
 
+// TODO: a better way could be to use unity_fixtures 
+// https://github.com/ThrowTheSwitch/Unity/blob/199b13c099034e9a396be3df9b3b1db1d1e35f20/examples/example_2/test/TestProductionCode.c
 void setUp(void) {
     /* Register resets */
   FFF_FAKES_LIST(RESET_FAKE);
@@ -75,8 +77,10 @@ void test_sock_listen_unitialized_socket(void) {
 void test_sock_listen(void) {
     sock_t sock;
     
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
+    socket_fake.return_val = 123;
+    sock_create(&sock);
     
+    listen_fake.return_val = 0;
     int res = sock_listen(&sock, 8888);
     TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_listen should return 0 on success");
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_LISTENING, "sock_listen set sock state to LISTENING");
