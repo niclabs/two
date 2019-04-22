@@ -171,7 +171,11 @@ void test_sock_connect_null_address(void) {
 
 void test_sock_connect_ipv4_address(void) {
     sock_t sock;
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
+
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+    
     int res = sock_connect(&sock, "127.0.0.1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_connect should not accept ipv4 addresses");
