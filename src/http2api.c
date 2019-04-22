@@ -131,11 +131,13 @@ int read_frame(uint8_t *buff_read, frameheader_t *header){
     puts("Error reading bytes from http");
     return -1;
   }
+  /*Must be 0*/
   rc = bytesToFrameHeader(buff_read, 9, header);
-  if(rc != 9){
+  if(rc){
     puts("Error coding bytes to frame header");
     return -1;
   }
+  printf("Header lenght: %u \n", header->length);
   if(header->length > 256){
     puts("Error: Payload's size too big (>256)");
     return -1;
