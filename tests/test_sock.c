@@ -126,9 +126,17 @@ void test_sock_accept_unbound_socket(void) {
 
 void test_sock_accept_null_client(void) {
     sock_t sock;
-    if (sock_create(&sock) < 0) return; // an issue independent of the test ocurred
-    if (sock_listen(&sock, 8888) < 0) return; // an issue independent of the test ocurred
 
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // Set succesful return value for listen()
+    listen_fake.return_val = 0;
+    int res = sock_listen(&sock, 8888);
+    sock_listen(&sock, 8888);
+
+    // Call accept with null client
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(res, 0, "sock_accept with null client should return error value"); // TODO: should it?
