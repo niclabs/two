@@ -166,7 +166,7 @@ int send_local_settings(void){
   /*rc must be 0*/
   rc = createSettingsFrame(ids, local_settings, 6, &mysettingframe,
                             &mysettingframeheader, &mysettings, mypairs);
-  if(!rc){
+  if(rc){
     puts("Error in Settings Frame creation");
     return -1;
     }
@@ -217,7 +217,7 @@ int client_init_connection(void){
   int rc = init_settings_tables();
   char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   uint8_t preface_buff[24];
-  puts("Client sends preface");
+  puts("Client: sending preface...");
   uint8_t i = 0;
   /*We load the buffer with the ascii characters*/
   while(preface[i] != '\0'){
@@ -229,10 +229,12 @@ int client_init_connection(void){
     puts("Error in preface sending");
     return -1;
   }
+  puts("Client: sending local settings...");
   if((rc = send_local_settings()) < 0){
     puts("Error in local settings sending");
     return -1;
   }
+  puts("Client: init connection done");
   return 0;
 }
 
@@ -248,9 +250,10 @@ int server_init_connection(void){
   char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   uint8_t preface_buff[25];
   preface_buff[24] = '\0';
-  puts("Server waits for preface...");
+  puts("Server: waiting for preface...");
   /*We read the first 24 byes*/
   rc = read_n_bytes(preface_buff, 24);
+  puts("Server: 24 bytes read");
   if(rc != 24){
     puts("Error in reading preface");
     return -1;
@@ -260,10 +263,12 @@ int server_init_connection(void){
     return -1;
   }
   /*Server sends local settings to endpoint*/
+  puts("Server: sending local settings");
   if((rc = send_local_settings()) < 0){
     puts("Error in local settings sending");
     return -1;
   }
+  puts("Server: init connection done");
   return 0;
 }
 
