@@ -35,7 +35,7 @@ int verify_setting(uint16_t id, uint32_t value){
         }
         return 0;
     case MAX_FRAME_SIZE:
-        if(value < 16777215 && value > 16384){
+        if(value < 16777215 && value > 16383){
           return 0;
         }
         return -1;
@@ -45,8 +45,6 @@ int verify_setting(uint16_t id, uint32_t value){
           return -1;
         }
         return 0;
-      default:
-        return -1;
   }
 }
 

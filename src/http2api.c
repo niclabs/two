@@ -43,7 +43,7 @@ int update_settings_table(settingspayload_t *spl, uint8_t place){
   int rc = 0;
   /*Verify the values of settings*/
   for(i = 0; i < spl->count; i++){
-    rc+=verify_setting(spl->pairs[i].identifier, spl->pairs[i].value);
+    rc += verify_setting(spl->pairs[i].identifier, spl->pairs[i].value);
   }
   if(rc != 0){
     puts("Error: invalid setting found");
