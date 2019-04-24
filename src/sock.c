@@ -25,11 +25,11 @@ int sock_create(sock_t * sock) {
 }
 
 int sock_listen(sock_t * server, uint16_t port) {
+    ASSERT(server->state == SOCK_OPENED);
     struct sockaddr_in6 sin6;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_port=htons(port);
     sin6.sin6_addr=in6addr_any; 
-    ASSERT(server->state == SOCK_OPENED);
     if(bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6))<0){
         perror("Error on binding");
         return -1;
@@ -49,9 +49,11 @@ int sock_accept(sock_t * server, sock_t * client) {
         perror("Error on accept");
 	    return -1; 
     }
-	client->fd=clifd;
-	server->state=SOCK_CONNECTED; 
-    client->state=SOCK_CONNECTED;
+    if(client != NULL){
+        client->fd=clifd;
+	    server->state=SOCK_CONNECTED; 
+        client->state=SOCK_CONNECTED;
+    }
 	return 0;
 }
 
