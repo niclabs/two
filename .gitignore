@@ -68,3 +68,7 @@ build/
 # Other temporary files
 .release_time
 .debug_time
+
+# Vim files
+*.swp
+*~
