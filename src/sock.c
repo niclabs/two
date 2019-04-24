@@ -49,11 +49,13 @@ int sock_accept(sock_t * server, sock_t * client) {
         perror("Error on accept");
 	    return -1; 
     }
-    if(client != NULL){
-        client->fd=clifd;
-	    server->state=SOCK_CONNECTED; 
-        client->state=SOCK_CONNECTED;
+    if(client == NULL){
+        printf("Error on accept: client must be not NULL");
+        return -1;
     }
+    client->fd=clifd;
+	server->state=SOCK_CONNECTED; 
+    client->state=SOCK_CONNECTED;
 	return 0;
 }
 
