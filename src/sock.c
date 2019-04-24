@@ -63,6 +63,10 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     ASSERT(client->state == SOCK_OPENED);
     struct sockaddr_in6 sin6;
     struct in6_addr address;
+    if(addr==NULL){
+        printf("Error on connect: address given must not be NULL");
+        return -1;
+    }
     int inet_return= inet_pton(AF_INET6, addr, &address);
     if(inet_return<1){
         if(inet_return==0){
