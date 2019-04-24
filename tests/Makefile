@@ -68,9 +68,9 @@ IGNORE_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(IGNORE))))
 test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
 	@echo -e "$(IGNORE)"
-	@echo -e "-----------------------\nFAILURES: $(PASSED_COUNT)\n-----------------------"
+	@echo -e "-----------------------\nFAILURES: $(FAIL_COUNT)\n-----------------------"
 	@echo -e "$(FAIL)"
-	@echo -e "-----------------------\nPASSED: $(FAIL_COUNT)\n-----------------------"
+	@echo -e "-----------------------\nPASSED: $(PASSED_COUNT)\n-----------------------"
 	@echo -e "$(PASSED)"
 	@echo -e "\n$(if $(FAIL),FAILED,OK)"
 	$(Q)test -z "$(FAIL)"
