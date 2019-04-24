@@ -56,6 +56,7 @@ int sock_accept(sock_t * server, sock_t * client) {
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
+    ASSERT(client->state == SOCK_OPENED);
     struct sockaddr_in6 sin6;
     struct in6_addr address;
     int inet_return= inet_pton(AF_INET6, addr, &address);
@@ -71,7 +72,6 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     sin6.sin6_port=port;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_addr=address;
-    ASSERT(client->state == SOCK_OPENED);
     if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6))<0){
         perror("Error on connect");
 	    return -1; 
@@ -81,12 +81,12 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
+    ASSERT(sock->state == SOCK_CONNECTED);
     struct timeval time_o;
     char *p = buf;
     int time_taken=0;
     ssize_t n;
     clock_t t;
-    ASSERT(sock->state == SOCK_CONNECTED);
     time_o.tv_usec = 0;
     while(len>0){
         timeout=timeout-time_taken;
@@ -119,9 +119,9 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
+    ASSERT(sock->state == SOCK_CONNECTED);
     ssize_t n;
     const char *p = buf;
-    ASSERT(sock->state == SOCK_CONNECTED);
     while(len>0){
         n=write(sock->fd, buf, len);
         if(n<0){
