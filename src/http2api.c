@@ -137,9 +137,8 @@ int read_frame(uint8_t *buff_read, frameheader_t *header){
     puts("Error coding bytes to frame header");
     return -1;
   }
-  printf("Header lenght: %u \n", header->length);
   if(header->length > 256){
-    puts("Error: Payload's size too big (>256)");
+    printf("Error: Payload's size (%u) too big (>256)\n", header->length);
     return -1;
   }
   rc = read_n_bytes(buff_read, header->length);

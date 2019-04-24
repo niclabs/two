@@ -80,6 +80,7 @@ int tcp_write(uint8_t *bytes, uint8_t length){
   }
   memcpy(buffer+size, bytes, length);
   size += length;
+  printf("Write: buffer size is %u\n", size);
   return length;
 }
 
@@ -93,5 +94,6 @@ int tcp_read(uint8_t *bytes, uint8_t length){
   size = size - length;
   /*Move the rest of the data on buffer*/
   memcpy(buffer, buffer+length, size);
+  printf("Read: buffer size is %u\n", size);
   return length;
 }
