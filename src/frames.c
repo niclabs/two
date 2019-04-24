@@ -53,9 +53,9 @@ int bytesToFrameHeader(uint8_t* byte_array, int size, frameheader_t* frame_heade
 * Output: 0 if bytes were written correctly, -1 if byte size is <9
 */
 int settingToBytes(settingspair_t* setting, uint8_t* bytes){
-    uint8_t identifier_bytes[4];
+    uint8_t identifier_bytes[2];
     uint16toByteArray(setting->identifier, identifier_bytes);
-    uint8_t value_bytes[2];
+    uint8_t value_bytes[4];
     uint32toByteArray(setting->value, value_bytes);
     for(int i = 0; i<2; i++){
         bytes[i] = identifier_bytes[i];
