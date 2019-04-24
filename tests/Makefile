@@ -55,12 +55,15 @@ endif
 
 RESULTS = $(patsubst $(PATHT)test_%.c,$(PATHR)test_%.txt,$(SRCT) )
 
+null := 
+space = $(null) $(null)
+
 PASSED = $(shell grep -s PASS $(PATHR)*.txt)
-PASSED_COUNT = $(strip $(shell echo -n $(PASSED) | wc -l))
+PASSED_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(PASSED))))
 FAIL = $(shell grep -s FAIL $(PATHR)*.txt)
-FAIL_COUNT = $(strip $(shell echo -n $(FAIL) | wc -l))
+FAIL_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(FAIL))))
 IGNORE = $(shell grep -s IGNORE $(PATHR)*.txt)
-IGNORE_COUNT = $(strip $(shell echo -n $(IGNORE) | wc -l))
+IGNORE_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(IGNORE))))
 
 test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
