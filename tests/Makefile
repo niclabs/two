@@ -76,7 +76,7 @@ test: $(BUILD_PATHS) $(RESULTS)
 	$(Q)test -z "$(FAIL)"
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
-	$(Q)-$< > $@
+	$(Q)-trap '$(RM) $@' INT; $< > $@
 	$(Q)test -s $@ || ($(RM) $@ && false)  # if file size is zero then an error ocurred before the redirection
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
