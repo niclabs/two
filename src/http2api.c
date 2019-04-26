@@ -5,38 +5,35 @@
 * and two methods to use this TCP connection that are tcp_write and tcp_write
 */
 
-/*--- Global Variables ---*/
-static uint32_t remote_settings[6];
-static uint32_t local_settings[6];
-//static uint32_t local_cache[6];
-//static uint8_t waiting_sett_ack = 0;
-
 /*--------------Internal methods-----------------------*/
 
 /*
-* Function: init_settings_tables
-* Initialize default values of remote and local settings
-* Input: void
+* Function: init_variables
+* Initialize default variables of the current http2 connection
+* Input: -> st: pointer to a h2states_t struct where variables of the connection
+*           are going to be stored.
 * Output: 0 if initialize were made. -1 if not.
 */
-int init_settings_tables(void){
-  remote_settings[0] = local_settings[0] = DEFAULT_HTS;
-  remote_settings[1] = local_settings[1] = DEFAULT_EP;
-  remote_settings[2] = local_settings[2] = DEFAULT_MCS;
-  remote_settings[3] = local_settings[3] = DEFAULT_IWS;
-  remote_settings[4] = local_settings[4] = DEFAULT_MFS;
-  remote_settings[5] = local_settings[5] = DEFAULT_MHLS;
+int init_variables(h2states_t * st){
+  st->remote_settings[0] = st->local_settings[0] = DEFAULT_HTS;
+  st->remote_settings[1] = st->local_settings[1] = DEFAULT_EP;
+  st->remote_settings[2] = st->local_settings[2] = DEFAULT_MCS;
+  st->remote_settings[3] = st->local_settings[3] = DEFAULT_IWS;
+  st->remote_settings[4] = st->local_settings[4] = DEFAULT_MFS;
+  st->remote_settings[5] = st->local_settings[5] = DEFAULT_MHLS;
+  st->wait_setting_ack = 0;
   return 0;
 }
 
 /*
 * Function: update_remote_settings
 * Updates the table where remote settings are stored
-* Input: -> sframe, it must be a SETTINGS frame
-*        -> place, must be LOCAL or REMOTE. It indicates which table to update.
+* Input: -> sframe: it must be a SETTINGS frame
+*        -> place: must be LOCAL or REMOTE. It indicates which table to update.
+         -> st: pointer to h2states_t struct where settings table are stored.
 * Output: 0 if update was successfull, -1 if not
 */
-int update_settings_table(settingspayload_t *spl, uint8_t place){
+int update_settings_table(settingspayload_t *spl, uint8_t place, h2states_t *st){
   /*spl is for setttings payload*/
   uint8_t i;
   uint16_t id;
@@ -53,7 +50,7 @@ int update_settings_table(settingspayload_t *spl, uint8_t place){
     /*Update remote table*/
     for(i = 0; i < spl->count; i++){
       id = spl->pairs[i].identifier;
-      remote_settings[--id] = spl->pairs[i].value;
+      st->remote_settings[--id] = spl->pairs[i].value;
     }
     return 0;
   }
@@ -61,7 +58,7 @@ int update_settings_table(settingspayload_t *spl, uint8_t place){
     /*Update local table*/
     for(i = 0; i < spl->count; i++){
       id = spl->pairs[i].identifier;
-      local_settings[--id] = spl->pairs[i].value;
+      st->local_settings[--id] = spl->pairs[i].value;
     }
     return 0;
   }
@@ -98,17 +95,43 @@ int send_settings_ack(void){
 * Given a buffer and a pointer to a header, operates a settings frame payload.
 * Input: -> buff_read: buffer where payload's data is written
         -> header: pointer to a frameheader_t structure already built
+        -> st: pointer to h2states_t struct where connection variables are stored
 * Output: 0 if operations are done successfully, -1 if not.
 */
-int read_settings_payload(uint8_t *buff_read, frameheader_t *header){
+int read_settings_payload(uint8_t *buff_read, frameheader_t *header, h2states_t *st){
+  if(header->type != 0x4){
+    puts("Read settings payload error, header type is not SETTINGS");
+    return -1;
+  }
+  if(header->stream_id != 0){
+    puts("Protocol Error: stream id on SETTINGS FRAME is not zero");
+    return -1;
+  }
+  /*Check if ACK is set*/
+  if(isFlagSet(header->flags, SETTINGS_ACK_FLAG)){
+    if(header->length != 0){
+      puts("Frame Size Error: ACK flag is set, but payload size is not zero");
+      return -1;
+    }
+    else{
+      if(st->wait_setting_ack){
+        st->wait_setting_ack = 0;
+        return 0;
+      }
+      else{
+        puts("ACK received but not expected");
+        return 0;
+      }
+    }
+  }
   settingspayload_t settings_payload;
   settingspair_t pairs[header->length/6];
-  int size = bytesToSettingsPayload(buff_read,header->length, &settings_payload, pairs);
+  int size = bytesToSettingsPayload(buff_read, header->length, &settings_payload, pairs);
   if(size != header->length){
     puts("Error in byte to settings payload coding");
     return -1;
   }
-  if(!update_settings_table(&settings_payload, REMOTE)){
+  if(!update_settings_table(&settings_payload, REMOTE, st)){
     send_settings_ack();
     return 0;
   }
@@ -153,11 +176,11 @@ int read_frame(uint8_t *buff_read, frameheader_t *header){
 
 /*
 * Function: send_local_settings
-* Sends local settings to endpoint
-* Input: void
+* Sends local settings to endpoint.
+* Input: -> st: pointer to h2states_t struct where local settings are stored
 * Output: 0 if settings were sent. -1 if not.
 */
-int send_local_settings(void){
+int send_local_settings(h2states_t *st){
   int rc;
   uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
   frame_t mysettingframe;
@@ -165,7 +188,7 @@ int send_local_settings(void){
   settingspayload_t mysettings;
   settingspair_t mypairs[6];
   /*rc must be 0*/
-  rc = createSettingsFrame(ids, local_settings, 6, &mysettingframe,
+  rc = createSettingsFrame(ids, st->local_settings, 6, &mysettingframe,
                             &mysettingframeheader, &mysettings, mypairs);
   if(rc){
     puts("Error in Settings Frame creation");
@@ -179,6 +202,8 @@ int send_local_settings(void){
     puts("Error in local settings writing");
     return -1;
   }
+  /*Settings were sent, so we expect an ack*/
+  st->wait_setting_ack = 1;
   return 0;
 }
 
@@ -187,19 +212,20 @@ int send_local_settings(void){
 * Reads a setting parameter from local or remote table
 * Input: -> place: must be LOCAL or REMOTE. It indicates the table to read.
 *        -> param: it indicates which parameter to read from table.
+*        -> st: pointer to h2states_t struct where settings tables are stored.
 * Output: The value read from the table. 0 if nothing was read.
 */
 
-uint32_t read_setting_from(uint8_t place, uint8_t param){
+uint32_t read_setting_from(uint8_t place, uint8_t param, h2states_t *st){
   if(param < 1 || param > 6){
     printf("Error: %u is not a valid setting parameter", param);
     return 0;
   }
   if(place == LOCAL){
-    return local_settings[--param];
+    return st->local_settings[--param];
   }
   else if(place == REMOTE){
-    return remote_settings[--param];
+    return st->remote_settings[--param];
   }
   else{
     puts("Error: not a valid table to read from");
@@ -211,11 +237,12 @@ uint32_t read_setting_from(uint8_t place, uint8_t param){
 * Function: client_init_connection
 * Initializes HTTP2 connection between endpoints. Sends preface and local
 * settings.
-* Input: void
+* Input: -> st: pointer to h2states_t struct where variables of client are going
+*               to be stored.
 * Output: 0 if connection was made successfully. -1 if not.
 */
-int client_init_connection(void){
-  int rc = init_settings_tables();
+int client_init_connection(h2states_t *st){
+  int rc = init_variables(st);
   char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   uint8_t preface_buff[24];
   puts("Client: sending preface...");
@@ -231,7 +258,7 @@ int client_init_connection(void){
     return -1;
   }
   puts("Client: sending local settings...");
-  if((rc = send_local_settings()) < 0){
+  if((rc = send_local_settings(st)) < 0){
     puts("Error in local settings sending");
     return -1;
   }
@@ -243,11 +270,12 @@ int client_init_connection(void){
 * Function: server_init_connection
 * Initializes HTTP2 connection between endpoints. Waits for preface and sends
 * local settings.
-* Input: void
+* Input: -> st: pointer to h2states_t struct where variables of client are going
+*               to be stored.
 * Output: 0 if connection was made successfully. -1 if not.
 */
-int server_init_connection(void){
-  int rc = init_settings_tables();
+int server_init_connection(h2states_t *st){
+  int rc = init_variables(st);
   char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
   uint8_t preface_buff[25];
   preface_buff[24] = '\0';
@@ -265,7 +293,7 @@ int server_init_connection(void){
   }
   /*Server sends local settings to endpoint*/
   puts("Server: sending local settings");
-  if((rc = send_local_settings()) < 0){
+  if((rc = send_local_settings(st)) < 0){
     puts("Error in local settings sending");
     return -1;
   }
@@ -279,7 +307,7 @@ int server_init_connection(void){
 * Input: void
 * Output: 0 if no problem was found. -1 if error was found.
 */
-int receive_frame(void){
+int receive_frame(h2states_t *st){
   uint8_t buff_read[MAX_BUFFER_SIZE];
   //uint8_t buff_write[MAX_BUFFER_SIZE]
   int rc;
@@ -303,7 +331,7 @@ int receive_frame(void){
           printf("TODO: Reset Stream Frame. Not implemented yet.");
           return -1;
       case SETTINGS_TYPE:{//Settings
-          rc = read_settings_payload(buff_read, &header);
+          rc = read_settings_payload(buff_read, &header, st);
           if(rc == -1){
             puts("Error in read settings payload");
             return -1;
