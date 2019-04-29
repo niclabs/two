@@ -33,9 +33,9 @@ int sock_create(sock_t * sock) {
 }
 
 int sock_listen(sock_t * server, uint16_t port) {
-    if(server->state != SOCK_OPENED){
+    if((server->state != SOCK_OPENED) || (server->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_listen, %s, server state must be opened.\n", strerror(errno));
+        printf("Error in sock_listen, %s, server must be opened.\n", strerror(errno));
         return -1;
     }
     struct sockaddr_in6 sin6;
@@ -55,9 +55,9 @@ int sock_listen(sock_t * server, uint16_t port) {
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
-    if(server->state != SOCK_LISTENING){
+    if((server->state != SOCK_LISTENING) || (server->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_accept, %s, server state must be listening.\n", strerror(errno));
+        printf("Error in sock_accept, %s, server must be listening.\n", strerror(errno));
         return -1;
     }
     if(client == NULL){
@@ -77,7 +77,7 @@ int sock_accept(sock_t * server, sock_t * client) {
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
-    if(client->state != SOCK_OPENED){
+    if((client->state != SOCK_OPENED) || (client->fd<=0)){
         errno=EINVAL;
         printf("Error in sock_connect, %s, client state must be opened.\n", strerror(errno));
         return -1;
@@ -112,7 +112,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
-    if(sock->state != SOCK_CONNECTED){
+    if(sock->state != SOCK_CONNECTED || (sock->fd<=0)){
         errno=EINVAL;
         printf("Error in sock_read, %s, sock state must be connected.\n", strerror(errno));
         return -1;
@@ -156,7 +156,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    if(sock->state != SOCK_CONNECTED){
+    if(sock->state != SOCK_CONNECTED || (sock->fd<=0)){
         errno=EINVAL;
         printf("Error in sock_write, %s, sock state must be connected.\n", strerror(errno));
         return -1;
@@ -176,7 +176,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 }
 
 int sock_destroy(sock_t * sock) {
-    if(sock->state == SOCK_CLOSED){
+    if(sock->state == SOCK_CLOSED || (sock->fd<=0)){
         errno=EALREADY;
         perror("Error on sock_destroy");
         return -1;
