@@ -45,6 +45,8 @@ int verify_setting(uint16_t id, uint32_t value){
           return -1;
         }
         return 0;
+    default:
+        return -1;
   }
 }
 
