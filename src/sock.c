@@ -19,6 +19,7 @@ int sock_create(sock_t * sock) {
     if(sock->fd <0){
         errno=11;
         perror("Error creating socket");
+        sock->state=SOCK_CLOSED;
 	    return -1; 
     }
 	sock->state = SOCK_OPENED;
