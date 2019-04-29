@@ -54,14 +54,15 @@ int sock_accept(sock_t * server, sock_t * client) {
         printf("Error in sock_accept, %s, server state must be listening.\n", strerror(errno));
         return -1;
     }
+    if(client == NULL){
+        errno=22;
+        printf("Error on accept: %s, client must be not NULL.\n", strerror(errno));
+        return -1;
+    }
     int clifd=accept(server->fd, NULL, NULL);
     if(clifd<0){
         perror("Error on accept");
 	    return -1; 
-    }
-    if(client == NULL){
-        printf("Error on accept: client must be not NULL");
-        return -1;
     }
     client->fd=clifd;
 	server->state=SOCK_CONNECTED; 
@@ -113,8 +114,8 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     struct timeval time_o;
     char *p = buf;
     int time_taken=0;
-    ssize_t n;
-    clock_t t;
+    ssize_t bytes_read;
+    clock_t time_now, time_difference;
     time_o.tv_usec = 0;
     while(len>0){
         timeout=timeout-time_taken;
@@ -128,16 +129,16 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
             perror("Error setting timeout");
             return -1;
         }
-        t=clock();
-        n=read(sock->fd, p, len);
-        t=clock()-t;
-        time_taken=(t/CLOCKS_PER_SEC); //in seconds.
-        if(n<0){
+        time_now=clock();
+        bytes_read=read(sock->fd, p, len);
+        time_difference=clock()-time_now;
+        time_taken=(time_difference/CLOCKS_PER_SEC); //in seconds.
+        if(bytes_read<0){
             perror("Error reading from socket");
             return -1; 
         }
-        p += n;
-        len -= n;
+        p += bytes_read;
+        len -= bytes_read;
     }
     time_o.tv_sec = 0;
     time_o.tv_usec = 0;
