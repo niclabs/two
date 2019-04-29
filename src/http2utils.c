@@ -74,7 +74,7 @@ int read_n_bytes(uint8_t *buff_read, int n){
 }
 
 /* Toy write function*/
-int http_write(uint8_t *bytes, uint8_t length){
+int http_write(uint8_t *bytes, int length){
   if(size+length > MAX_BUFFER_SIZE){
     return -1;
   }
@@ -85,7 +85,7 @@ int http_write(uint8_t *bytes, uint8_t length){
 }
 
 /* Toy read function*/
-int http_read(uint8_t *bytes, uint8_t length){
+int http_read(uint8_t *bytes, int length){
   if(length > size){
     length = size;
   }
