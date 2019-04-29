@@ -44,9 +44,9 @@ BUILD_PATHS = $(PATHB) $(PATHD) $(PATHO) $(PATHR) $(PATHU)
 SRCT = $(wildcard $(PATHT)*.c)
 
 COMPILE=gcc -c -Wall -O0
-LINK=gcc 
+LINK=gcc
 DEPEND=gcc -MM -MG -MF
-CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST 
+CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
 LDFLAGS += --coverage
 
 ifneq ($(DEBUG),)
