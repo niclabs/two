@@ -33,7 +33,7 @@ int init_variables(h2states_t * st){
          -> st: pointer to h2states_t struct where settings table are stored.
 * Output: 0 if update was successfull, -1 if not
 */
-int update_settings_table(settingspayload_t *spl, uint8_t place, h2states_t *st){
+int update_settings_table(settings_payload_t *spl, uint8_t place, h2states_t *st){
   /*spl is for setttings payload*/
   uint8_t i;
   uint16_t id;
@@ -76,7 +76,7 @@ int update_settings_table(settingspayload_t *spl, uint8_t place, h2states_t *st)
 */
 int send_settings_ack(void){
   frame_t ack_frame;
-  frameheader_t ack_frame_header;
+    frame_header_t ack_frame_header;
   int rc;
   create_settings_ack_frame(&ack_frame, &ack_frame_header);
   uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
@@ -98,7 +98,7 @@ int send_settings_ack(void){
         -> st: pointer to h2states_t struct where connection variables are stored
 * Output: 0 if operations are done successfully, -1 if not.
 */
-int read_settings_payload(uint8_t *buff_read, frameheader_t *header, h2states_t *st){
+int read_settings_payload(uint8_t *buff_read, frame_header_t *header, h2states_t *st){
   if(header->type != 0x4){
     puts("Read settings payload error, header type is not SETTINGS");
     return -1;
@@ -124,8 +124,8 @@ int read_settings_payload(uint8_t *buff_read, frameheader_t *header, h2states_t 
       }
     }
   }
-  settingspayload_t settings_payload;
-  settingspair_t pairs[header->length/6];
+    settings_payload_t settings_payload;
+    settings_pair_t pairs[header->length/6];
   int size = bytes_to_settings_payload(buff_read, header->length, &settings_payload, pairs);
   if(size != header->length){
     puts("Error in byte to settings payload coding");
@@ -148,7 +148,7 @@ int read_settings_payload(uint8_t *buff_read, frameheader_t *header, h2states_t 
         -> header: pointer to the frameheader_t where header is going to be stored
 * Output: 0 if writing and building is done successfully. -1 if not.
 */
-int read_frame(uint8_t *buff_read, frameheader_t *header){
+int read_frame(uint8_t *buff_read, frame_header_t *header){
   int rc = read_n_bytes(buff_read, 9);
   if(rc != 9){
     puts("Error reading bytes from http");
@@ -184,9 +184,9 @@ int send_local_settings(h2states_t *st){
   int rc;
   uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
   frame_t mysettingframe;
-  frameheader_t mysettingframeheader;
-  settingspayload_t mysettings;
-  settingspair_t mypairs[6];
+    frame_header_t mysettingframeheader;
+    settings_payload_t mysettings;
+    settings_pair_t mypairs[6];
   /*rc must be 0*/
   rc = create_settings_frame(ids, st->local_settings, 6, &mysettingframe,
                             &mysettingframeheader, &mysettings, mypairs);
@@ -311,7 +311,7 @@ int receive_frame(h2states_t *st){
   uint8_t buff_read[MAX_BUFFER_SIZE];
   //uint8_t buff_write[MAX_BUFFER_SIZE]
   int rc;
-  frameheader_t header;
+    frame_header_t header;
   rc = read_frame(buff_read, &header);
   if(rc == -1){
     puts("Error reading frame");

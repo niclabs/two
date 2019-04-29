@@ -7,7 +7,7 @@
 * Input: pointer to frameheader, array of bytes
 * Output: 0 if bytes were read correctly, (-1 if any error reading)
 */
-int frame_header_to_bytes(frameheader_t *frame_header, uint8_t *byte_array){
+int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array){
     uint8_t length_bytes[3];
     uint32_24_to_byte_array(frame_header->length, length_bytes);
     uint8_t stream_id_bytes[4];
@@ -30,7 +30,7 @@ int frame_header_to_bytes(frameheader_t *frame_header, uint8_t *byte_array){
 * Input:  array of bytes, size ob bytes to read,pointer to frameheader
 * Output: 0 if bytes were written correctly, -1 if byte size is <9
 */
-int bytes_to_frame_header(uint8_t *byte_array, int size, frameheader_t *frame_header){
+int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header){
     if(size < 9){
         printf("ERROR: frameHeader size too small, %d\n", size);
         return -1;
@@ -49,7 +49,7 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frameheader_t *frame_he
 * Input:  settingPair, pointer to bytes
 * Output: size of written bytes
 */
-int setting_to_bytes(settingspair_t *setting, uint8_t *bytes){
+int setting_to_bytes(settings_pair_t *setting, uint8_t *bytes){
     uint8_t identifier_bytes[2];
     uint16_to_byte_array(setting->identifier, identifier_bytes);
     uint8_t value_bytes[4];
@@ -69,7 +69,7 @@ int setting_to_bytes(settingspair_t *setting, uint8_t *bytes){
 * Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
 * Output: size of written bytes
 */
-int settings_frame_to_bytes(settingspayload_t *settings_payload, uint32_t count, uint8_t *bytes){
+int settings_frame_to_bytes(settings_payload_t *settings_payload, uint32_t count, uint8_t *bytes){
     for(uint32_t  i = 0; i< count; i++){
         //printf("%d\n",i);
         uint8_t setting_bytes[6];
@@ -87,7 +87,7 @@ int settings_frame_to_bytes(settingspayload_t *settings_payload, uint32_t count,
 * Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
 * Output: size of written bytes
 */
-int bytes_to_settings_payload(uint8_t *bytes, int size, settingspayload_t *settings_payload, settingspair_t *pairs){
+int bytes_to_settings_payload(uint8_t *bytes, int size, settings_payload_t *settings_payload, settings_pair_t *pairs){
     if(size%6!=0){
         printf("ERROR: settings payload wrong size\n");
         return -1;
@@ -111,7 +111,7 @@ int bytes_to_settings_payload(uint8_t *bytes, int size, settingspayload_t *setti
 * Output: size of written bytes, -1 if any error
 */
 int frame_to_bytes(frame_t *frame, uint8_t *bytes){
-    frameheader_t* frame_header = frame->frame_header;
+    frame_header_t* frame_header = frame->frame_header;
     uint32_t length = frame_header->length;
     uint8_t type = frame_header->type;
 
@@ -140,7 +140,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
 
             int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
 
-            settingspayload_t *settings_payload = ((settingspayload_t *) (frame->payload));
+            settings_payload_t *settings_payload = ((settings_payload_t *) (frame->payload));
 
 
             uint8_t settings_bytes[length];
@@ -180,7 +180,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
 * Input:  pointer to ids array, pointer to values array, size of those arrays,  pointer to settings Pairs
 * Output: size of read setting pairs
 */
-int create_list_of_settings_pair(uint16_t *ids, uint32_t *values, int count, settingspair_t *settings_pairs){
+int create_list_of_settings_pair(uint16_t *ids, uint32_t *values, int count, settings_pair_t *settings_pairs){
     for (int i = 0; i < count; i++){
         settings_pairs[i].identifier = ids[i];
         settings_pairs[i].value = values[i];
@@ -194,8 +194,8 @@ int create_list_of_settings_pair(uint16_t *ids, uint32_t *values, int count, set
 * Input:  pointer to ids array, pointer to values array, size of those arrays,  pointer to frame, pointer to frameheader, pointer to settings payload, pointer to settings Pairs.
 * Output: 0 if setting frame was created
 */
-int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *frame, frameheader_t *frame_header,
-                          settingspayload_t *settings_payload, settingspair_t *pairs){
+int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *frame, frame_header_t *frame_header,
+                          settings_payload_t *settings_payload, settings_pair_t *pairs){
     frame_header->length = count*6;
     frame_header->type = 0x4;//settings;
     frame_header->flags = 0x0;
@@ -215,7 +215,7 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *f
 * Input:  pointer to frame, pointer to frameheader
 * Output: 0 if setting frame was created
 */
-int create_settings_ack_frame(frame_t *frame, frameheader_t *frame_header){
+int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header){
     frame_header->length = 0;
     frame_header->type = 0x4;//settings;
     frame_header->flags = set_flag(0x0, SETTINGS_ACK_FLAG);

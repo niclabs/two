@@ -19,11 +19,11 @@ int frame_header_encode_decode_test(int argc, char **argv){
 
 
     printf("TEST: frameHeaderEncodeDecodeTest\n");
-    frameheader_t frame_header = {length, type, flags, reserved, stream_id};
+    frame_header_t frame_header = {length, type, flags, reserved, stream_id};
     uint8_t frame_bytes[9];
     int frame_bytes_size = frame_header_to_bytes(&frame_header, frame_bytes);
 
-    frameheader_t decoder_frame_header;
+    frame_header_t decoder_frame_header;
     bytes_to_frame_header(frame_bytes, frame_bytes_size, &decoder_frame_header);
     
     if(frame_header.length!=decoder_frame_header.length){
@@ -70,20 +70,20 @@ int setting_encode_decode_test(int argc, char **argv){
     }
 
 
-    settingspair_t  settings[count/2];
+    settings_pair_t  settings[count/2];
     for (int i = 0; i < count/2; i++){
-        settingspair_t pair = {ids[i],values[i]};
+        settings_pair_t pair = {ids[i],values[i]};
         settings[i] = pair;
     }
 
 
-    settingspayload_t frame_settings = {(settingspair_t *) &settings, count/2};
+    settings_payload_t frame_settings = {(settings_pair_t *) &settings, count/2};
 
     uint8_t setting_frame_bytes[count/2*6];
     int size = settings_frame_to_bytes(&frame_settings, count/2, setting_frame_bytes);
 
-    settingspayload_t decoded_settings;
-    settingspair_t pairs[count];
+    settings_payload_t decoded_settings;
+    settings_pair_t pairs[count];
     size = bytes_to_settings_payload(setting_frame_bytes, 6*count/2, &decoded_settings, pairs);
 
     for (int i = 0; i < size/6; i++) {
@@ -116,7 +116,7 @@ int main(void) {
 */
 
 
-int check_equal_settings_frame(settingspayload_t *s1, settingspayload_t *s2, uint32_t size){
+int check_equal_settings_frame(settings_payload_t *s1, settings_payload_t *s2, uint32_t size){
     for(uint32_t i = 0; i < size/6; i++) {
         if (s1->pairs[i].identifier != s2->pairs[i].identifier) {
             printf("ERROR: Identifier in settings %d don't match\n", i);
@@ -155,9 +155,9 @@ int frame_encode_decode_test(int argc, char **argv){
     }
     printf("\n");
     frame_t frame;
-    frameheader_t frame_header;
-    settingspayload_t settings_payload;
-    settingspair_t setting_pairs[count];
+    frame_header_t frame_header;
+    settings_payload_t settings_payload;
+    settings_pair_t setting_pairs[count];
 
     int size;
     size = create_settings_frame(ids, values, count, &frame, &frame_header, &settings_payload, setting_pairs);
@@ -165,7 +165,7 @@ int frame_encode_decode_test(int argc, char **argv){
     uint8_t bytes[frame.frame_header->length+9];
     size = frame_to_bytes(&frame, bytes);
 
-    frameheader_t decoded_frame_header;
+    frame_header_t decoded_frame_header;
     bytes_to_frame_header(bytes, size, &decoded_frame_header);
 
     /*Header frame checking*/
@@ -199,11 +199,11 @@ int frame_encode_decode_test(int argc, char **argv){
 
         }
         case 0x4: {
-            settingspayload_t payload;
-            settingspair_t pairs[decoded_frame_header.length/6];
+            settings_payload_t payload;
+            settings_pair_t pairs[decoded_frame_header.length/6];
             bytes_to_settings_payload(bytes+9, decoded_frame_header.length, &payload, pairs);
-            int check = check_equal_settings_frame((settingspayload_t *) (&payload),
-                                                (settingspayload_t *) (frame.payload), frame.frame_header->length);
+            int check = check_equal_settings_frame((settings_payload_t *) (&payload),
+                                                (settings_payload_t *) (frame.payload), frame.frame_header->length);
             if(check == -1){
                 return -1;
             }

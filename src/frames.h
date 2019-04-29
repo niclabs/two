@@ -16,7 +16,7 @@ headersframe(type of frame that contains http headers)*/
 */
 
 /*FRAME TYPES*/
-typedef enum FrameType{
+typedef enum{
     DATA_TYPE = (uint8_t)0x0,
     HEADERS_TYPE = (uint8_t)0x1,
     PRIORITY_TYPE= (uint8_t)0x2,
@@ -30,33 +30,33 @@ typedef enum FrameType{
 }frame_type_t;
 
 /*FRAME HEADER*/
-typedef struct FrameHeader{
+typedef struct{
     uint32_t length:24;
     frame_type_t type;
     uint8_t flags;
     uint8_t reserved:1;
     uint32_t stream_id:31;
-}frameheader_t; //72 bits-> 9 bytes
+}frame_header_t; //72 bits-> 9 bytes
 
 /*FRAME*/
-typedef struct Frame{
-frameheader_t* frame_header;
+typedef struct{
+    frame_header_t* frame_header;
 void * payload;
 }frame_t;
 
 
 /*SETTINGS FRAME*/
-typedef struct SettingsPair{
+typedef struct{
     uint16_t identifier;
     uint32_t value;
-}settingspair_t; //48 bits -> 6 bytes
+}settings_pair_t; //48 bits -> 6 bytes
 
-typedef struct SettingsPayload{
-    settingspair_t* pairs;
+typedef struct{
+    settings_pair_t* pairs;
     int count;
-}settingspayload_t; //32 bits -> 4 bytes
+}settings_payload_t; //32 bits -> 4 bytes
 
-typedef enum SettingFlag{
+typedef enum{
     SETTINGS_ACK_FLAG = 0x1
 }setting_flag_t;
 
@@ -64,16 +64,16 @@ typedef enum SettingFlag{
 
 /*HEADERS FRAME*/
 
-typedef struct HeadersPayload{
+typedef struct{
     uint8_t pad_length; // only if padded flag is set
     uint8_t exclusive_dependency:1; // only if priority flag is set
     uint32_t stream_dependency:31; // only if priority flag is set
     uint8_t wheight; // only if priority flag is set
     void* header_block_fragment; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
     void* padding; //only if padded flag is set. Size = pad_length
-}headerspayload_t; //48+32+32 bits -> 14 bytes
+}headers_payload_t; //48+32+32 bits -> 14 bytes
 
-typedef enum HeaderFlag{
+typedef enum{
     HEADERS_END_STREAM_FLAG = 0x1,//bit 0
     HEADERS_END_HEADERS_FLAG = 0x4,//bit bit 2
     HEADERS_PADDED_FLAG = 0x8,//bit 3
@@ -83,8 +83,8 @@ typedef enum HeaderFlag{
 
 
 /*frame header methods*/
-int frame_header_to_bytes(frameheader_t* frame_header, uint8_t* byte_array);
-int bytes_to_frame_header(uint8_t* byte_array, int size, frameheader_t* frame_header);
+int frame_header_to_bytes(frame_header_t* frame_header, uint8_t* byte_array);
+int bytes_to_frame_header(uint8_t* byte_array, int size, frame_header_t* frame_header);
 
 /*flags methods*/
 int is_flag_set(uint8_t flags, uint8_t flag);
@@ -95,14 +95,14 @@ int frame_to_bytes(frame_t* frame, uint8_t* bytes);
 //int bytesToFrame(uint8_t * bytes, int size, frame_t* frame);
 
 /*settings methods*/
-int create_list_of_settings_pair(uint16_t* ids, uint32_t* values, int count, settingspair_t* pair_list);
-int create_settings_frame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingspayload_t* settings_frame, settingspair_t* pairs);
-int setting_to_bytes(settingspair_t* setting, uint8_t* byte_array);
-int settings_frame_to_bytes(settingspayload_t* settings_frame, uint32_t count, uint8_t* byte_array);
+int create_list_of_settings_pair(uint16_t* ids, uint32_t* values, int count, settings_pair_t* pair_list);
+int create_settings_frame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frame_header_t* frame_header, settings_payload_t* settings_frame, settings_pair_t* pairs);
+int setting_to_bytes(settings_pair_t* setting, uint8_t* byte_array);
+int settings_frame_to_bytes(settings_payload_t* settings_frame, uint32_t count, uint8_t* byte_array);
 
-int bytes_to_settings_payload(uint8_t* bytes, int size, settingspayload_t* settings_frame, settingspair_t* pairs);
+int bytes_to_settings_payload(uint8_t* bytes, int size, settings_payload_t* settings_frame, settings_pair_t* pairs);
 
-int create_settings_ack_frame(frame_t * frame, frameheader_t* frame_header);
+int create_settings_ack_frame(frame_t * frame, frame_header_t* frame_header);
 
 
 /*
@@ -111,5 +111,5 @@ byteToPayloadDispatcher[SETTINGS_TYPE] = &bytesToSettingsPayload;
 
 
 typedef* payloadTypeDispatcher[10];
-payloadTypeDispatcher[SETTINGS_TYPE] = &settingspayload_t
+payloadTypeDispatcher[SETTINGS_TYPE] = &settings_payload_t
 */
