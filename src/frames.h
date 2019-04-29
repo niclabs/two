@@ -5,8 +5,8 @@
 #include "utils.h"
 
 
-/*note the difference between 
-frameheader (data that identifies a frame of any type) and 
+/*note the difference between
+frameheader (data that identifies a frame of any type) and
 headersframe(type of frame that contains http headers)*/
 
 /*typedef struct ByteArray{
@@ -71,7 +71,7 @@ typedef struct HeadersPayload{
     uint8_t wheight; // only if priority flag is set
     void* header_block_fragment; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
     void* padding; //only if padded flag is set. Size = pad_length
-}headerspayoad_t; //48+32+32 bits -> 14 bytes
+}headerspayload_t; //48+32+32 bits -> 14 bytes
 
 typedef enum HeaderFlag{
     HEADERS_END_STREAM_FLAG = 0x1,//bit 0

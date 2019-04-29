@@ -4,7 +4,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "frames.h"
-#include "utils.h"
+
+/*Struct for storing HTTP2 states*/
+typedef struct H2States{
+  uint32_t remote_settings[6];
+  uint32_t local_settings[6];
+  /*uint32_t local_cache[6]; Could be implemented*/
+  uint8_t wait_setting_ack;
+}h2states_t;
 
 /*Default settings values*/
 #define DEFAULT_HTS 4096
@@ -28,16 +35,10 @@ typedef enum SettingsParameters{
 #define LOCAL 0
 #define REMOTE 1
 /*Definition of max buffer size*/
-#define MAX_BUFFER_SIZE 265
+#define MAX_BUFFER_SIZE 256
 
-uint8_t init_server(void);
-uint8_t init_client(void);
-uint8_t send_local_settings(void);
-uint8_t update_settings_table(frame_t* sframe, uint8_t place);
-uint8_t send_settings_ack(void);
-uint32_t read_setting_from(uint8_t place, uint8_t param);
-uint8_t init_connection(void);
-
-
-int tcp_write(uint8_t *bytes, uint8_t length);//here just for the code to compile
-int tcp_read(uint8_t *bytes, uint8_t length);//here just for the code to compile
+int send_local_settings(h2states_t *st);
+uint32_t read_setting_from(uint8_t place, uint8_t param, h2states_t *st);
+int client_init_connection(h2states_t *st);
+int server_init_connection(h2states_t *st);
+int receive_frame(h2states_t *st);

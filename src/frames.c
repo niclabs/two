@@ -21,7 +21,7 @@ int frameHeaderToBytes(frameheader_t* frame_header, uint8_t* byte_array){
         byte_array[5+i] = stream_id_bytes[i];//stream_id 31
     }
     byte_array[5] = byte_array[5]|(frame_header->reserved<<7); // reserved 1
-    return 0;
+    return 9;
 }
 
 /*
@@ -50,9 +50,9 @@ int bytesToFrameHeader(uint8_t* byte_array, int size, frameheader_t* frame_heade
 * Output: size of written bytes
 */
 int settingToBytes(settingspair_t* setting, uint8_t* bytes){
-    uint8_t identifier_bytes[4];
+    uint8_t identifier_bytes[2];
     uint16toByteArray(setting->identifier, identifier_bytes);
-    uint8_t value_bytes[2];
+    uint8_t value_bytes[4];
     uint32toByteArray(setting->value, value_bytes);
     for(int i = 0; i<2; i++){
         bytes[i] = identifier_bytes[i];
@@ -93,7 +93,7 @@ int bytesToSettingsPayload(uint8_t* bytes, int size, settingspayload_t* settings
         return -1;
     }
     int count = size / 6;
-    
+
     for(int i = 0; i< count; i++){
         pairs[i].identifier = bytesToUint16(bytes+(i*6));
         pairs[i].value = bytesToUint32(bytes+(i*6)+2);
@@ -134,7 +134,7 @@ int frameToBytes(frame_t* frame, uint8_t* bytes){
                 printf("Error: length not divisible by 6, %d", length);
                 return -1;
             }
-            
+
             uint8_t frame_header_bytes[9];
 
 
@@ -142,7 +142,7 @@ int frameToBytes(frame_t* frame, uint8_t* bytes){
 
             settingspayload_t *settings_payload = ((settingspayload_t *) (frame->payload));
 
-            
+
             uint8_t settings_bytes[length];
 
             int size = settingsFrameToBytes(settings_payload, length / 6, settings_bytes);
