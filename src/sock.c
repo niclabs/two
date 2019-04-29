@@ -125,7 +125,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
             printf("%s in sock_read function.\n", strerror(errno));
             return -1;
         }
-        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
+        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) { //what happens when timeout is 0?
             perror("Error setting timeout");
             return -1;
         }
@@ -150,7 +150,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    if(sock->state == SOCK_CONNECTED){
+    if(sock->state != SOCK_CONNECTED){
         errno=22;
         printf("Error in sock_write, %s, sock state must be connected.\n", strerror(errno));
         return -1;
