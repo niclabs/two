@@ -124,7 +124,7 @@ void handle_events(void)
         /* Block until input arrives on one or more active sockets. */
         read_fd_set = active_fd_set;
         if (select(max_fd + 1, &read_fd_set, NULL, NULL, NULL) < 0) {
-            ERROR("In select(): %s\n", strerror(errno));
+            ERROR("In select()");
             break;
         }
 

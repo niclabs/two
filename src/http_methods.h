@@ -17,17 +17,6 @@ HTTP/2
 int http_init_server(uint16_t port);
 
 /*
-* Set an internal server function to a specific path
-*
-* @param    fun_name   function name
-* @param    path       specific path
-*
-* @return   0          the action was successful
-* @return   -1         the action fail
-*/
-int http_set_function_to_path(char * fun_name, char * path);
-
-/*
 * Write in the socket with the client
 *
 * @param   buf   buffer with the data to writte
@@ -72,14 +61,3 @@ int http_client_connect(uint16_t port, char * ip);
 * @return    -1   failed to stop connection
 */
 int http_client_disconnect(void);
-
-/*
-* Given the content of the request made by the client, this function calls
-* the functions necessary to respond to the request
-*
-* @param    headers   Encoded request
-*
-* @return   0         the action was successful
-* @return   -1        the action fail
-*/
-int http_receive(char * headers);

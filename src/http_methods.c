@@ -3,15 +3,19 @@ This API contains the HTTP methods to be used by
 HTTP/2
 */
 
-#include <netinet/in.h>
+#include <string.h>
+#include <stdio.h>
+#include <signal.h>
+#include <stdint.h>
 
 #include "http_methods.h"
 #include "sock.h"
+#include "http2api.h"
 
 
 struct client_s{
   enum client_state {
-      EMPTY_CLIENT,
+      NOT_CLIENT,
       CREATED,
       CONNECTED
   } state;
@@ -20,7 +24,7 @@ struct client_s{
 
 struct server_s{
   enum server_state {
-    EMPTY_SERVER,
+    NOT_SERVER,
     LISTEN
   } state;
   sock_t * socket;
@@ -30,78 +34,84 @@ struct server_s{
 struct server_s server;
 struct client_s client;
 
+
 /************************************Server************************************/
 
+
 int http_init_server(uint16_t port){
-  struct server_s * sr= &server;
-  struct client_s * empty_client= &client;
-  empty_client->state=EMPTY_CLIENT;
 
-  sock_t * server_sock;
+  client.state=NOT_CLIENT;
 
-  if (sock_create(server_sock)<0){
+  sock_t server_sock;
+  server.socket=&server_sock;
+
+  int sc=sock_create(&server_sock);
+  if (sc<0){
     puts("Server could not be created");
     return -1;
   }
 
-  if (sock_listen(server_sock, port)<0){
+  int sl=sock_listen(&server_sock, port);
+  if (sl<0){
     puts("Partial error in server creation");
     return -1;
   }
 
-  sr->state=CREATED;
-  sr->socket=server_sock;
+  server.state=LISTEN;
 
-  sock_t * client_sock;
+  sock_t client_sock;
 
-  if (sock_accept(sr->socket, client_sock)<0){
+  int sa=sock_accept(&server_sock, &client_sock);
+  if (sa<0){
     puts("Not client found");
-    return 0;
+    return -1;
   }
 
   struct client_s * cl= &server.client_connect;
   cl->state=CONNECTED;
-  cl->socket=client_sock;
+  cl->socket=&client_sock;
 
-  if(server_init_connection()<0){
-    puts("");
+  h2states_t server_state;
+  if(server_init_connection(&server_state)<0){
+    puts("Problems sending server data");
+    return -1;
   }
 
   return 0;
 }
 
-int http_set_function_to_path(char * callback, char * path){
-  //TODO callback(argc,argv)
-  return -1;
-}
+
 
 /************************************Client************************************/
 
 
 int http_client_connect(uint16_t port, char * ip){
   struct client_s * cl= &client;
-  struct server_s * sr= &server;
-  sr->state=EMPTY_CLIENT;
+  server.state=NOT_SERVER;
 
-  sock_t * sock;
+  sock_t sock;
+  cl->socket=&sock;
 
-  if (sock_create(sock)<0){
+  int sc=sock_create(&sock);
+  if (sc<0){
     puts("Client could not be created");
     return -1;
   }
 
-  cl->socket=sock;
   cl->state=CREATED;
 
-  if (sock_connect(sock, ip, port)<0){
+  int scn=sock_connect(&sock, ip, port);
+  if (scn<0){
     puts("Client could not be connected");
     return -1;
   }
 
   cl->state=CONNECTED;
 
-  if(client_init_connection()<0){
-    puts("");
+  h2states_t client_state;
+  if(client_init_connection(&client_state)<0){
+    puts("Problems sending client data");
+    return -1;
   }
 
   return 0;
@@ -114,7 +124,8 @@ int http_client_disconnect(void){
     return 0;
   }
 
-  if (sock_destroy(client.socket)<0){
+  int sd=sock_destroy(client.socket);
+  if (sd<0){
     puts("Client could not be disconnected");
     return -1;
   }
@@ -122,41 +133,30 @@ int http_client_disconnect(void){
   return 0;
 }
 
-int http_receive(char * headers){
-  //TODO decod headers
-  return -1;
-}
 
-int get_receive(char * path, char * headers){
-  // buscar respuesta correspondiente a path
-  // codificar respuesta
-  // enviar respuesta a socket
-  return -1;
-}
 
 /******************************************************************************/
 
 
 int http_write(char * buf, int len){
-  if (client.state==EMPTY_CLIENT && server.state==EMPTY_CLIENT){
+  if (client.state==NOT_CLIENT && server.state==NOT_SERVER){
     puts("Could not write");
     return -1;
   }
 
-  sock_t * sock;
+  int wr=0;
 
-  if (client.state==EMPTY_CLIENT && server.state==CREATED){
-    sock = server.socket;
+  if (client.state==NOT_CLIENT && server.state==LISTEN){
+    wr= sock_write(server.socket, buf, len);
   }
-  if (server.state==EMPTY_CLIENT){
+  else if (server.state==NOT_SERVER){
     if (client.state != CONNECTED){
       puts("Client not connected");
       return -1;
     }
-    sock = client.socket;
+    wr= sock_write(client.socket, buf, len);
   }
 
-  int wr= sock_write(sock, buf, len);
   if (wr<=0){
     puts("Could not write");
     return wr;
@@ -166,25 +166,24 @@ int http_write(char * buf, int len){
 
 
 int http_read(char * buf, int len){
-  if (client.state==EMPTY_CLIENT && server.state==EMPTY_CLIENT){
+  if (client.state==NOT_CLIENT && server.state==NOT_SERVER){
     puts("Could not read");
     return -1;
   }
 
-  sock_t * sock;
+  int rd=0;
 
-  if (client.state==EMPTY_CLIENT && server.state==CREATED){
-    sock = server.socket;
+  if (client.state==NOT_CLIENT && server.state==LISTEN){
+    rd = sock_read(server.socket, buf, len, 0);
   }
-  if (server.state==EMPTY_CLIENT){
+  else if (server.state==NOT_SERVER){
     if (client.state != CONNECTED){
       puts("Client not connected");
       return -1;
     }
-    sock = client.socket;
+    rd = sock_read(client.socket, buf, len, 0);
   }
 
-  int rd =  sock_read(sock, buf, len, 0);
   if (rd<=0){
     puts("Could not read");
     return rd;

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/niclabs/two.svg?branch=develop)](https://travis-ci.com/niclabs/two)
+
 # two
 
 Experimental HTTP2 implementation for constrained devices

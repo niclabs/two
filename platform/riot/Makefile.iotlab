@@ -1,11 +1,11 @@
-.PHONY: deps experiment-check experiment-submit experiment-stop
+.PHONY: iotlab-running iotlab-submit iotlab-stop iotlab-reset
 
 # Experiment parameters
 IOTLAB_SITE			?= grenoble
 IOTLAB_NODES		?= 2
 IOTLAB_DURATION		?= 30
 IOTLAB_ARCHI		?= m3:at86rf231
-IOTLAB_NAME			?= $(APPLICATION)
+IOTLAB_NAME			?= $(IOTLAB_TYPE)-exp
 IOTLAB_ID			?= $(shell iotlab-experiment get -l --state Running | \
 						 			jq -r 'last(.items[] | select(.name=="$(IOTLAB_NAME)").id) // empty')
 
@@ -46,49 +46,39 @@ IOTLAB_AUTH			=  "$(IOTLAB_USER)@$(IOTLAB_SITE).iot-lab.info"
 # Alias resource selection by default
 IOTLAB_NODES_LIST	= "$(IOTLAB_NODES),archi=$(IOTLAB_ARCHI)+site=$(IOTLAB_SITE)"
 ifneq (,$(IOTLAB_RESOURCES))
-	IOTLAB_NODES_LIST = "$(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)"
+	IOTLAB_NODES_LIST = $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
 endif 
 
-
 # List of dependencies
-DEPENDENCIES = iotlab-auth jq
+DEPS += iotlab-auth jq
 
+# For RIOT
 ifneq (,$(findstring m3,$(IOTLAB_ARCHI)))
-	BINARY := $(ELFFILE)
+	BINARY ?= $(ELFFILE)
 else
-	BINARY := $(HEXFILE)
-endif
-
-ifeq ($(BOARD),iotlab-m3)
-	IOTLAB_ARCHI = m3:at86rf231
+	BINARY ?= $(HEXFILE)
 endif
 
 $(IOTLAB_CONFIG): 
 	iotlab-auth -u $(IOTLAB_USER)
 
-# Check configuration dependencies
-deps: 
-	$(foreach cmd,$(DEPENDENCIES),\
-		$(if $(shell which $(cmd)),,$(error "No $(cmd) in PATH")))
-
-
-experiment-check: deps $(IOTLAB_CONFIG)
+iotlab-running: deps $(IOTLAB_CONFIG)
 ifeq (,$(IOTLAB_ID))
 	$(error No experiment running)
 else 
 	$(info Found experiment running with id $(IOTLAB_ID))
 endif
 
-experiment-submit: deps $(IOTLAB_CONFIG) all
+iotlab-submit: deps $(IOTLAB_CONFIG)
 ifeq (,$(IOTLAB_ID))
 	$(info No experiment found, submitting)
 	$(if $(Q),,$(info "iotlab-experiment submit \
-						-n $(APPLICATION) \
+						-n $(IOTLAB_NAME) \
 						-d $(IOTLAB_DURATION) \
 						-l $(IOTLAB_NODES_LIST)"))
 
 	$(eval IOTLAB_ID := $(shell iotlab-experiment submit \
-						-n $(APPLICATION) \
+						-n $(IOTLAB_NAME) \
 						-d $(IOTLAB_DURATION) \
 						-l $(IOTLAB_NODES_LIST) | \
 						 jq .id))
@@ -98,15 +88,20 @@ else
 	$(info Found experiment running with id $(IOTLAB_ID))
 endif
 
-experiment-stop: deps experiment-check
-	@iotlab-experiment stop -i $(IOTLAB_ID)
+iotlab-stop: deps iotlab-running
+	$(Q)iotlab-experiment stop -i $(IOTLAB_ID)
+
+iotlab-reset: deps iotlab-running
+	# TODO: this doesn't work if IOTLAB_TYPE=a8
+	iotlab-node --reset -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
 
 # Override flash and term commands
-flash: experiment-submit
+flash: all iotlab-submit
 	$(info Flashing nodes ...)
+	$(if $(BINARY),,$(error "A binary file must be defined in the BINARY variable to flash nodes"))
 	$(Q)iotlab-node --update $(BINARY) -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)
 
-term: deps $(IOTLAB_CONFIG) experiment-check
+term: deps $(IOTLAB_CONFIG) iotlab-running
 	$(Q)ssh -t $(IOTLAB_AUTH) "iotlab-experiment get -r > /dev/null || \
 	                                	iotlab-auth -u $(IOTLAB_USER)"
 
@@ -115,7 +110,7 @@ term: deps $(IOTLAB_CONFIG) experiment-check
 		 tmux new -s $(IOTLAB_NAME)-$(IOTLAB_ID) \
 		 'serial_aggregator -i $(IOTLAB_ID) -l $(IOTLAB_SITE),$(IOTLAB_TYPE),$(IOTLAB_RESOURCES)'"
 
-debug: deps $(IOTLAB_CONFIG) experiment-check
+debug: deps $(IOTLAB_CONFIG) iotlab-running
 	$(eval DEBUG_TYPE := $(IOTLAB_TYPE))
 	$(eval DEBUG_NODE := $(shell echo $(IOTLAB_DEBUG_NODE) | sed 's/$(DEBUG_TYPE)-\([0-9]*\).*/\1/'))
 

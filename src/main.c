@@ -4,55 +4,68 @@
  *
  * @author Felipe Lalanne <flalanne@niclabs.cl>
  */
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <signal.h>
 
 #include "logging.h"
-#include "server.h"
-#include "client.h"
+#include "sock.h"
 
 #define PORT (8888)
+
+sock_t server_sock;
 
 void cleanup(int signal)
 {
     (void)signal;
 
-    INFO("Ctrl-C received. Terminating.\n");
+    INFO("Ctrl-C received. Terminating");
+    sock_destroy(&server_sock);
 }
 
 void client_start(char * addr, char * port_str, char * endpoint) {
     uint16_t port = atoi(port_str);
     if (port == 0)
     {
-        ERROR("Invalid port specified\n");
+        ERROR("Invalid port specified");
         return;
     }
 
-    client_t * client = client_create(addr, port);
-    client_connect(client);
-    client_request(client, endpoint);
+    sock_t client_sock;
+    sock_create(&client_sock);
+    if (sock_connect(&client_sock, addr, port)) {
+        sock_write(&client_sock, endpoint, strlen(endpoint));
+    }
+    sock_destroy(&client_sock);
 }
 
 void server_start(char * port_str) {
     uint16_t port = atoi(port_str);
     if (port == 0)
     {
-        ERROR("Invalid port specified\n");
+        ERROR("Invalid port specified");
         return;
     }
 
-    /* Create the socket and set it up to accept connections. */
-    server_t * server = server_create(port);
-
+    sock_create(&server_sock);
+    sock_listen(&server_sock, port);
+    
     // Trap Ctrl-C
     signal(SIGINT, cleanup);
 
-    // Start listening for connections
-    server_listen(server);
+    sock_t client_sock;
+    while (sock_accept(&server_sock, &client_sock) >= 0) {
+        INFO("Client connected");
+        char buf[256];
+        while (sock_read(&client_sock, buf, 256, 0) > 0) {
+            INFO("Received %s", buf);
+        }
+        sock_destroy(&client_sock);
+    }
 
     // Cleanup after listen terminates
-    server_destroy(server);
+    sock_destroy(&server_sock);
 }
 
 int main(int argc, char **argv)

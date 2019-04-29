@@ -1,0 +1,126 @@
+# Generic GCC Makefile based on
+# https://github.com/mbcrawfo/GenericMakefile/blob/master/c/Makefile
+# Shell used in this makefile
+# bash is used for 'echo -en'
+SHELL = /bin/bash
+
+# General compiler flags
+CFLAGS += -std=c99 -Wall -Wextra
+
+# Fail on warnings. Can be overridden by `make WERROR=0`.
+WERROR ?= 1
+export WERROR
+ifeq ($(WERROR),1)
+  CFLAGS += -Werror
+endif
+
+WPEDANTIC ?= 0
+export WPEDANTIC
+ifeq ($(WPEDANTIC),1)
+  CFLAGS += -Wpedantic
+endif
+
+# Include path
+INCLUDES += -I $(SRCDIR)
+
+ifneq ($(DEBUG),)
+	CFLAGS += -g -DENABLE_DEBUG
+endif
+
+# Define release and debug compiler and linker flags
+debug: export DEBUG := 1
+
+# Find all source files in the source directory, sorted by most
+# recently modified
+ifeq ($(OS),Darwin)
+	SOURCES = $(shell find $(SRCDIR) -name '*.c' | sort -k 1nr | cut -f2-)
+else
+	SOURCES = $(shell find $(SRCDIR) -name '*.c' -printf '%T@\t%p\n' \
+						| sort -k 1nr | cut -f2-)
+endif
+
+# fallback in case the above fails
+rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
+						$(filter $(subst *,%,$2), $d))
+ifeq ($(SOURCES),)
+	SOURCES := $(call rwildcard, $(SRCDIR), *.c)
+endif
+
+
+# Set the object file names, with the source directory stripped
+# from the path, and the build path prepended in its place
+OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(TARGETDIR)/%.o)
+# Set the dependency files that will be used to add header dependencies
+DEPS = $(OBJECTS:.o=.d)
+
+
+# Macros for timing compilation
+ifeq ($(OS),Darwin)
+	CUR_TIME = awk 'BEGIN{srand(); print srand()}'
+	TIME_FILE = $(dir $@).$(notdir $@)_time
+	START_TIME = $(CUR_TIME) > $(TIME_FILE)
+	END_TIME = read st < $(TIME_FILE) ; \
+		$(RM) $(TIME_FILE) ; \
+		st=$$((`$(CUR_TIME)` - $$st)) ; \
+		echo $$st
+else
+	TIME_FILE = $(dir $@).$(notdir $@)_time
+	START_TIME = date '+%s' > $(TIME_FILE)
+	END_TIME = read st < $(TIME_FILE) ; \
+		$(RM) $(TIME_FILE) ; \
+		st=$$((`date '+%s'` - $$st - 86400)) ; \
+		echo `date -u -d @$$st '+%H:%M:%S'`
+endif
+
+# Define the binary file
+BINFILE ?= $(TARGETDIR)/$(APPLICATION)
+
+# Standard, non-optimized release build
+.PHONY: release
+release: dirs
+ifeq ($(USE_VERSION), true)
+	@echo "Beginning release build v$(VERSION_STRING)"
+else
+	@echo "Beginning release build"
+endif
+	@$(START_TIME)
+	@$(MAKE) all --no-print-directory
+	@echo -n "Total build time: "
+	@$(END_TIME)
+
+# Debug build for gdb debugging
+.PHONY: debug
+debug: 
+ifeq ($(USE_VERSION), true)
+	@echo "Beginning debug build v$(VERSION_STRING)"
+else
+	@echo "Beginning debug build"
+endif
+	@$(START_TIME)
+	@$(MAKE) all --no-print-directory
+	@echo -n "Total build time: "
+	@$(END_TIME)
+
+# Main rule, checks the executable and symlinks to the output
+all: $(BINFILE)
+
+# Link the executable
+$(BINFILE): $(OBJECTS)
+	@echo "Linking: $@"
+	@$(START_TIME)
+	$(Q)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@echo -en "\t Link time: "
+	@$(END_TIME)
+
+# Add dependency files, if they exist
+-include $(DEPS)
+
+# Source file rules
+# After the first compilation they will be joined with the rules from the
+# dependency files to provide header dependencies
+$(TARGETDIR)/%.o: $(SRCDIR)/%.c
+	@echo "Compiling: $< -> $@"
+	@$(START_TIME)
+	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
+	@echo -en "\t Compile time: "
+	@$(END_TIME)

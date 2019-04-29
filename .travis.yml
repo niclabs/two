@@ -1,0 +1,8 @@
+language: c
+script: 
+  - QUIET=0 make # check compilation
+  - QUIET=0 make test # run tests
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -a '-o build/tests/objs/'
+compiler: gcc

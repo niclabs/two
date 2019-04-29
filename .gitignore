@@ -56,11 +56,19 @@ dkms.conf
 .DS_Store
 ._.DS_Store
 
-# RIOT directories
-RIOT/
+# build directories
+deps/
 bin/
 build/
 
 # Application specific files
 .vagrant
 .vscode
+
+# Other temporary files
+.release_time
+.debug_time
+
+# Vim files
+*.swp
+*~

@@ -1,3 +1,7 @@
+# Shell used in this makefile
+# bash is used for 'echo -en'
+SHELL = /bin/bash
+
 ifeq ($(OS),Windows_NT)
   ifeq ($(shell uname -s),) # not in a bash-like shell
 	MKDIR = mkdir
@@ -12,12 +16,16 @@ endif
 
 .PHONY: test
 
-APPDIR ?= $(CURDIR)/../
+BASEDIR		?= $(CURDIR)/..
+BUILDDIR	?= $(BASEDIR)/build
+DEPSDIR		?= $(BASEDIR)/deps
+SRCDIR		?= $(BASEDIR)/src
+TESTSDIR	?= $(BASEDIR)/tests
 
-PATHU  = $(APPDIR)/unity/src/
-PATHS = $(APPDIR)/src/
-PATHT = $(APPDIR)/tests/
-PATHB = $(APPDIR)/build/tests/
+PATHU = $(DEPSDIR)/unity/src/
+PATHS = $(SRCDIR)
+PATHT = $(TESTSDIR)
+PATHB = $(BUILDDIR)/tests/
 PATHD = $(PATHB)depends/
 PATHO = $(PATHB)objs/
 PATHR = $(PATHB)results/
@@ -35,34 +43,47 @@ BUILD_PATHS = $(PATHB) $(PATHD) $(PATHO) $(PATHR) $(PATHU)
 
 SRCT = $(wildcard $(PATHT)*.c)
 
-COMPILE=gcc -c
-LINK=gcc
+COMPILE=gcc -c -Wall -O0
+LINK=gcc 
 DEPEND=gcc -MM -MG -MF
-CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
+CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST 
+LDFLAGS += --coverage
+
+ifneq ($(DEBUG),)
+	CFLAGS += -DENABLE_DEBUG
+endif
 
 RESULTS = $(patsubst $(PATHT)test_%.c,$(PATHR)test_%.txt,$(SRCT) )
 
-PASSED = `grep -s PASS $(PATHR)*.txt`
-FAIL = `grep -s FAIL $(PATHR)*.txt`
-IGNORE = `grep -s IGNORE $(PATHR)*.txt`
+null := 
+space = $(null) $(null)
+
+PASSED = $(shell grep -s PASS $(PATHR)*.txt)
+PASSED_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(PASSED))))
+FAIL = $(shell grep -s FAIL $(PATHR)*.txt)
+FAIL_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(FAIL))))
+IGNORE = $(shell grep -s IGNORE $(PATHR)*.txt)
+IGNORE_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(IGNORE))))
 
 test: $(BUILD_PATHS) $(RESULTS)
-	@echo -e "-----------------------\nIGNORES:\n-----------------------"
+	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
 	@echo -e "$(IGNORE)"
-	@echo -e "-----------------------\nFAILURES:\n-----------------------"
+	@echo -e "-----------------------\nFAILURES: $(FAIL_COUNT)\n-----------------------"
 	@echo -e "$(FAIL)"
-	@echo -e "-----------------------\nPASSED:\n-----------------------"
+	@echo -e "-----------------------\nPASSED: $(PASSED_COUNT)\n-----------------------"
 	@echo -e "$(PASSED)"
-	@echo -e "\nDONE"
+	@echo -e "\n$(if $(FAIL),FAILED,OK)"
+	$(Q)test -z "$(FAIL)"
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
-	$(Q)-$< > $@ 2>&1
+	$(Q)-$< > $@
+	$(Q)test -s $@ || ($(RM) $@ && false)  # if file size is zero then an error ocurred before the redirection
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
-	$(Q)$(LINK) -o $@ $^
+	$(Q)$(LINK) $(LDFLAGS) -o $@ $^
 
 $(PATHO)%.o:: $(PATHT)%.c
-	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
+	$(Q)$(COMPILE) $(CFLAGS) -g -fprofile-arcs -ftest-coverage $< -o $@
 
 $(PATHO)%.o:: $(PATHS)%.c
 	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
@@ -86,7 +107,7 @@ $(PATHR):
 	$(Q)$(MKDIR) $(PATHR)
 
 $(PATHU):
-	$(Q)git clone https://github.com/ThrowTheSwitch/Unity.git unity
+	$(Q)git clone https://github.com/ThrowTheSwitch/Unity.git $(DEPSDIR)/unity
 
 .PRECIOUS: $(PATHB)test_%.$(TARGET_EXTENSION)
 .PRECIOUS: $(PATHD)%.d
