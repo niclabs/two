@@ -12,12 +12,18 @@
 #include "logging.h"
 #include "assert.h"
 
+#define EAGAIN 11
+#define EFAULT 14
+#define EINVAL 22
+#define ETIME 62
+#define EALREADY 114
+
 #define BACKLOAD 1
 
 int sock_create(sock_t * sock) {
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
     if(sock->fd <0){
-        errno=11;
+        errno=EAGAIN;
         perror("Error creating socket");
         sock->state=SOCK_CLOSED;
 	    return -1; 
@@ -28,7 +34,7 @@ int sock_create(sock_t * sock) {
 
 int sock_listen(sock_t * server, uint16_t port) {
     if(server->state != SOCK_OPENED){
-        errno=22;
+        errno=EINVAL;
         printf("Error in sock_listen, %s, server state must be opened.\n", strerror(errno));
         return -1;
     }
@@ -50,12 +56,12 @@ int sock_listen(sock_t * server, uint16_t port) {
 
 int sock_accept(sock_t * server, sock_t * client) {
     if(server->state != SOCK_LISTENING){
-        errno=22;
+        errno=EINVAL;
         printf("Error in sock_accept, %s, server state must be listening.\n", strerror(errno));
         return -1;
     }
     if(client == NULL){
-        errno=22;
+        errno=EINVAL;
         printf("Error on accept: %s, client must be not NULL.\n", strerror(errno));
         return -1;
     }
@@ -72,21 +78,21 @@ int sock_accept(sock_t * server, sock_t * client) {
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
     if(client->state != SOCK_OPENED){
-        errno=22;
+        errno=EINVAL;
         printf("Error in sock_connect, %s, client state must be opened.\n", strerror(errno));
         return -1;
     }
     struct sockaddr_in6 sin6;
     struct in6_addr address;
     if(addr==NULL){
-        errno=14;
+        errno=EFAULT;
         printf("Error in sock_connect: %s. Address given must not be NULL.\n", strerror(errno));
         return -1;
     }
     int inet_return= inet_pton(AF_INET6, addr, &address);
     if(inet_return<1){
         if(inet_return==0){
-            errno=14;
+            errno=EFAULT;
             perror("Error in sock_connect converting IPv6 address to binary");
         }
         if(inet_return==-1){
@@ -107,7 +113,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     if(sock->state != SOCK_CONNECTED){
-        errno=22;
+        errno=EINVAL;
         printf("Error in sock_read, %s, sock state must be connected.\n", strerror(errno));
         return -1;
     }
@@ -121,7 +127,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         timeout=timeout-time_taken;
         time_o.tv_sec = timeout;
         if(timeout<0){
-            errno=62;
+            errno=ETIME;
             printf("%s in sock_read function.\n", strerror(errno));
             return -1;
         }
@@ -151,7 +157,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 
 int sock_write(sock_t * sock, char * buf, int len) {
     if(sock->state != SOCK_CONNECTED){
-        errno=22;
+        errno=EINVAL;
         printf("Error in sock_write, %s, sock state must be connected.\n", strerror(errno));
         return -1;
     }
@@ -171,7 +177,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 
 int sock_destroy(sock_t * sock) {
     if(sock->state == SOCK_CLOSED){
-        errno=114;
+        errno=EALREADY;
         perror("Error on sock_destroy");
         return -1;
     }
