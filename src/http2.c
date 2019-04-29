@@ -78,9 +78,9 @@ int send_settings_ack(void){
   frame_t ack_frame;
   frameheader_t ack_frame_header;
   int rc;
-  createSettingsAckFrame(&ack_frame, &ack_frame_header);
+  create_settings_ack_frame(&ack_frame, &ack_frame_header);
   uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
-  int size_byte_ack = frameToBytes(&ack_frame, byte_ack);
+  int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
   /*TODO: tcp_write*/
   rc = tcp_write(byte_ack, size_byte_ack);
   if(rc != size_byte_ack){
@@ -108,7 +108,7 @@ int read_settings_payload(uint8_t *buff_read, frameheader_t *header, h2states_t 
     return -1;
   }
   /*Check if ACK is set*/
-  if(isFlagSet(header->flags, SETTINGS_ACK_FLAG)){
+  if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
     if(header->length != 0){
       puts("Frame Size Error: ACK flag is set, but payload size is not zero");
       return -1;
@@ -126,7 +126,7 @@ int read_settings_payload(uint8_t *buff_read, frameheader_t *header, h2states_t 
   }
   settingspayload_t settings_payload;
   settingspair_t pairs[header->length/6];
-  int size = bytesToSettingsPayload(buff_read, header->length, &settings_payload, pairs);
+  int size = bytes_to_settings_payload(buff_read, header->length, &settings_payload, pairs);
   if(size != header->length){
     puts("Error in byte to settings payload coding");
     return -1;
@@ -155,7 +155,7 @@ int read_frame(uint8_t *buff_read, frameheader_t *header){
     return -1;
   }
   /*Must be 0*/
-  rc = bytesToFrameHeader(buff_read, 9, header);
+  rc = bytes_to_frame_header(buff_read, 9, header);
   if(rc){
     puts("Error coding bytes to frame header");
     return -1;
@@ -188,14 +188,14 @@ int send_local_settings(h2states_t *st){
   settingspayload_t mysettings;
   settingspair_t mypairs[6];
   /*rc must be 0*/
-  rc = createSettingsFrame(ids, st->local_settings, 6, &mysettingframe,
+  rc = create_settings_frame(ids, st->local_settings, 6, &mysettingframe,
                             &mysettingframeheader, &mysettings, mypairs);
   if(rc){
     puts("Error in Settings Frame creation");
     return -1;
     }
   uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
-  int size_byte_mysettings = frameToBytes(&mysettingframe, byte_mysettings);
+  int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
   /*Assuming that tcp_write returns the number of bytes written*/
   rc = tcp_write(byte_mysettings, size_byte_mysettings);
   if(rc != size_byte_mysettings){

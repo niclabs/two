@@ -83,26 +83,26 @@ typedef enum HeaderFlag{
 
 
 /*frame header methods*/
-int frameHeaderToBytes(frameheader_t* frame_header, uint8_t* byte_array);
-int bytesToFrameHeader(uint8_t* byte_array, int size, frameheader_t* frame_header);
+int frame_header_to_bytes(frameheader_t* frame_header, uint8_t* byte_array);
+int bytes_to_frame_header(uint8_t* byte_array, int size, frameheader_t* frame_header);
 
 /*flags methods*/
-int isFlagSet(uint8_t flags, uint8_t flag);
-uint8_t setFlag(uint8_t flags, uint8_t flag_to_set);
+int is_flag_set(uint8_t flags, uint8_t flag);
+uint8_t set_flag(uint8_t flags, uint8_t flag_to_set);
 
 /*frame methods*/
-int frameToBytes(frame_t* frame, uint8_t* bytes);
+int frame_to_bytes(frame_t* frame, uint8_t* bytes);
 //int bytesToFrame(uint8_t * bytes, int size, frame_t* frame);
 
 /*settings methods*/
-int createListOfSettingsPair(uint16_t* ids, uint32_t* values, int count, settingspair_t* pair_list);
-int createSettingsFrame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingspayload_t* settings_frame, settingspair_t* pairs);
-int settingToBytes(settingspair_t* setting, uint8_t* byte_array);
-int settingsFrameToBytes(settingspayload_t* settings_frame, uint32_t count, uint8_t* byte_array);
+int create_list_of_settings_pair(uint16_t* ids, uint32_t* values, int count, settingspair_t* pair_list);
+int create_settings_frame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frameheader_t* frame_header, settingspayload_t* settings_frame, settingspair_t* pairs);
+int setting_to_bytes(settingspair_t* setting, uint8_t* byte_array);
+int settings_frame_to_bytes(settingspayload_t* settings_frame, uint32_t count, uint8_t* byte_array);
 
-int bytesToSettingsPayload(uint8_t* bytes, int size, settingspayload_t* settings_frame, settingspair_t* pairs);
+int bytes_to_settings_payload(uint8_t* bytes, int size, settingspayload_t* settings_frame, settingspair_t* pairs);
 
-int createSettingsAckFrame(frame_t * frame, frameheader_t* frame_header);
+int create_settings_ack_frame(frame_t * frame, frameheader_t* frame_header);
 
 
 /*
