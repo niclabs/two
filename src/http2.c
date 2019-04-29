@@ -2,7 +2,7 @@
 
 /*
 * This API assumes the existence of a TCP connection between Server and Client,
-* and two methods to use this TCP connection that are tcp_write and tcp_write
+* and two methods to use this TCP connection that are http_read and http_write
 */
 
 /*--------------Internal methods-----------------------*/
@@ -80,9 +80,9 @@ int send_settings_ack(void){
   int rc;
   create_settings_ack_frame(&ack_frame, &ack_frame_header);
   uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
-  int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
-  /*TODO: tcp_write*/
-  rc = tcp_write(byte_ack, size_byte_ack);
+  int size_byte_ack = frameToBytes(&ack_frame, byte_ack);
+  /*TODO: http_write*/
+  rc = http_write(byte_ack, size_byte_ack);
   if(rc != size_byte_ack){
     puts("Error in Settings ACK sending");
     return -1;
@@ -195,9 +195,9 @@ int send_local_settings(h2states_t *st){
     return -1;
     }
   uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
-  int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
-  /*Assuming that tcp_write returns the number of bytes written*/
-  rc = tcp_write(byte_mysettings, size_byte_mysettings);
+  int size_byte_mysettings = frameToBytes(&mysettingframe, byte_mysettings);
+  /*Assuming that http_write returns the number of bytes written*/
+  rc = http_write(byte_mysettings, size_byte_mysettings);
   if(rc != size_byte_mysettings){
     puts("Error in local settings writing");
     return -1;
@@ -252,7 +252,7 @@ int client_init_connection(h2states_t *st){
     preface_buff[i] = preface[i];
     i++;
   }
-  rc = tcp_write(preface_buff,24);
+  rc = http_write(preface_buff,24);
   if(rc != 24){
     puts("Error in preface sending");
     return -1;

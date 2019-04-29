@@ -51,7 +51,7 @@ int verify_setting(uint16_t id, uint32_t value){
 }
 
 /*
-* Function: read_n_bytes
+* Function: reahttp_bytes
 * Reads n bytes to buffer.
 * NOTE: THIS IS A BLOCKING FUNCTION
 * Input: -> buff_read: buffer where bytes are going to be written.
@@ -62,7 +62,7 @@ int read_n_bytes(uint8_t *buff_read, int n){
   int read_bytes = 0;
   int incoming_bytes;
   while(read_bytes < n){
-    incoming_bytes = tcp_read(buff_read+read_bytes, n - read_bytes);
+    incoming_bytes = http_read(buff_read+read_bytes, n - read_bytes);
     /* incoming_bytes equals -1 means that there was an error*/
     if(incoming_bytes == -1){
       puts("Error in read function");
@@ -74,7 +74,7 @@ int read_n_bytes(uint8_t *buff_read, int n){
 }
 
 /* Toy write function*/
-int tcp_write(uint8_t *bytes, uint8_t length){
+int http_write(uint8_t *bytes, uint8_t length){
   if(size+length > MAX_BUFFER_SIZE){
     return -1;
   }
@@ -85,7 +85,7 @@ int tcp_write(uint8_t *bytes, uint8_t length){
 }
 
 /* Toy read function*/
-int tcp_read(uint8_t *bytes, uint8_t length){
+int http_read(uint8_t *bytes, uint8_t length){
   if(length > size){
     length = size;
   }
