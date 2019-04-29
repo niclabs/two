@@ -74,11 +74,11 @@ test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "-----------------------\nPASSED: $(PASSED_COUNT)\n-----------------------"
 	@echo -e "$(subst $(space),$(nl),$(PASSED))"
 	@echo -e "\n$(if $(FAIL),FAILED,OK)"
-	$(Q)test -z "$(FAIL)"
+	@test -z "$(FAIL)"
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
 	$(Q)-trap '$(RM) $@' INT; $< > $@
-	$(Q)test -s $@ || ($(RM) $@ && false)  # if file size is zero then an error ocurred before the redirection
+	@test -s $@ || ($(RM) $@ && false)  # if file size is zero then an error ocurred before the redirection
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
 	$(Q)$(LINK) $(LDFLAGS) -o $@ $^
