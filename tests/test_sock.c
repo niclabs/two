@@ -194,6 +194,20 @@ void test_sock_accept_null_client(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
 }
 
+void test_sock_accept_not_connected_client(){
+    sock_t sock_server, sock_client;
+    socket_fake.return_val=123;
+    sock_create(&sock_server);
+    sock_create(&sock_client);
+
+    listen_fake.return_val=0;
+    sock_listen(&sock_server, 8888);
+    int res=sock_accept(&sock_server,&sock_client);
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept with not connected client should return error value"); 
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
+
+}
+
 void test_sock_connect(void){
     sock_t sock;
     // Set success return for socket() and connect()
@@ -298,6 +312,7 @@ int main(void)
     UNIT_TEST(test_sock_accept_unitialized_socket); 
     UNIT_TEST(test_sock_accept_unbound_socket); 
     UNIT_TEST(test_sock_accept_null_client);
+    UNIT_TEST(test_sock_accept_not_connected_client);
     UNIT_TEST(test_sock_accept);
     UNIT_TEST(test_sock_connect_unitialized_client);
     UNIT_TEST(test_sock_connect_null_address);
