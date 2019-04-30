@@ -313,6 +313,19 @@ void test_sock_destroy(void){
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_destroy should set errno on error");
  }
 
+ void test_sock_destroy_closed_sock(void){
+     sock_t sock;
+     socket_fake.return_val=123;
+     sock_create(&sock);
+     sock_destroy(&sock);
+     int res=sock_destroy(&sock);
+     close_fake.return_val=-1;
+     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is CLOSED");
+     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_destroy should set errno on error");
+
+
+ }
+
 // TODO: add more tests for read and write
  
 int main(void)
@@ -340,5 +353,6 @@ int main(void)
     UNIT_TEST(test_sock_write_unconnected_socket);
     UNIT_TEST(test_sock_destroy);
     UNIT_TEST(test_sock_destroy_null_sock);
+    UNIT_TEST(test_sock_destroy_closed_sock);
     return UNIT_TESTS_END();
 }
