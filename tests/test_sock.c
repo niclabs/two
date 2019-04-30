@@ -107,6 +107,24 @@ void test_sock_listen_error_return(void) {
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
 }
+void test_sock_accept(void){
+    sock_t sock_s, sock_c;
+    socket_fake.return_val=123;
+    sock_create(&sock_s);
+    sock_create(&sock_c);
+    
+    listen_fake.return_val = 0;
+    sock_listen(&sock_s, 8888);
+
+    connect_fake.return_val=0;
+    sock_connect(&sock_c, "::1", 8888);
+
+    accept_fake.return_val=0;
+    int res = sock_accept(&sock_s, &sock_c);
+    TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_accept should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(sock_s.state, SOCK_CONNECTED, "sock_accept set server state to CONNECTED");
+    TEST_ASSERT_EQUAL_MESSAGE(sock_c.state, SOCK_CONNECTED, "sock_accept set client state to CONNECTED");
+}
 
 void test_sock_accept_unitialized_socket(void) {
     sock_t sock;
@@ -150,7 +168,7 @@ void test_sock_accept_null_client(void) {
 
 void test_sock_connect(void){
     sock_t sock;
-    // Set success return for socket()
+    // Set success return for socket() and connect()
     socket_fake.return_val = 123;
     sock_create(&sock);
     connect_fake.return_val=0;
@@ -249,6 +267,7 @@ int main(void)
     UNIT_TEST(test_sock_accept_unitialized_socket); 
     UNIT_TEST(test_sock_accept_unbound_socket); 
     UNIT_TEST(test_sock_accept_null_client);
+    UNIT_TEST(test_sock_accept);
     UNIT_TEST(test_sock_connect_unitialized_client);
     UNIT_TEST(test_sock_connect_null_address);
     UNIT_TEST(test_sock_connect_ipv4_address); 
