@@ -80,7 +80,7 @@ void test_sock_listen_unitialized_socket(void) {
 void test_sock_listen(void) {
     sock_t sock;
     
-    // Set success return for socket()
+    // Set success return for socket() and listen()
     socket_fake.return_val = 123;
     sock_create(&sock);
     
