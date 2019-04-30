@@ -43,7 +43,6 @@ int sock_listen(sock_t * server, uint16_t port) {
         printf("Error in sock_listen, %s, server must valid and be opened.\n", strerror(errno));
         return -1;
     }
-  
     struct sockaddr_in6 sin6;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_port=htons(port);
@@ -61,14 +60,14 @@ int sock_listen(sock_t * server, uint16_t port) {
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
-    if((server->state != SOCK_LISTENING) || (server->fd<=0)){
+    if((server==NULL) || (server->state != SOCK_LISTENING) || (server->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_accept, %s, server must be listening.\n", strerror(errno));
+        printf("Error in sock_accept, %s, server must be valid and listening.\n", strerror(errno));
         return -1;
     }
-    if(client == NULL){
+    if((client == NULL) || (client->state!=SOCK_CONNECTED) || (client->fd<=0)){
         errno=EINVAL;
-        printf("Error on accept: %s, client must be not NULL.\n", strerror(errno));
+        printf("Error on accept: %s, client must be valid and CONNECTED.\n", strerror(errno));
         return -1;
     }
     int clifd=accept(server->fd, NULL, NULL);
