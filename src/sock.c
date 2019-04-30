@@ -21,6 +21,11 @@
 #define BACKLOAD 1
 
 int sock_create(sock_t * sock) {
+    if(sock==NULL){
+        errno=EINVAL;
+        perror("Error creating socket");
+        return -1;
+    }
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);  
     if(sock->fd <0){
         errno=EAGAIN;
