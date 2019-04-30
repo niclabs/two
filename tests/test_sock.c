@@ -105,6 +105,18 @@ void test_sock_listen(void) {
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_LISTENING, "sock_listen set sock state to LISTENING");
 }
 
+void test_sock_listen_bad_port(void){
+    sock_t sock;
+    socket_fake.return_val=123;
+    sock_create(&sock);
+
+    listen_fake.return_val=-1;
+
+    int res= sock_listen(&sock, -1);
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
+}
+
 void test_sock_listen_error_return(void) {
     sock_t sock;
     
@@ -122,6 +134,7 @@ void test_sock_listen_error_return(void) {
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
 }
+
 void test_sock_accept(void){
     sock_t sock_s, sock_c;
     socket_fake.return_val=123;
@@ -280,6 +293,7 @@ int main(void)
     UNIT_TEST(test_sock_listen_unitialized_socket); 
     UNIT_TEST(test_sock_listen_error_return);
     UNIT_TEST(test_sock_listen_null_socket);
+    UNIT_TEST(test_sock_listen_bad_port);
     UNIT_TEST(test_sock_listen);
     UNIT_TEST(test_sock_accept_unitialized_socket); 
     UNIT_TEST(test_sock_accept_unbound_socket); 
