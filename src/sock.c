@@ -181,7 +181,12 @@ int sock_write(sock_t * sock, char * buf, int len) {
 }
 
 int sock_destroy(sock_t * sock) {
-    if(sock->state == SOCK_CLOSED || (sock->fd<=0)){
+    if(sock==NULL || sock->fd<=0){
+        errno=EINVAL;
+        perror("Error on socket_destroy");
+        return -1;
+    }
+    if(sock->state == SOCK_CLOSED){
         errno=EALREADY;
         perror("Error on sock_destroy");
         return -1;
