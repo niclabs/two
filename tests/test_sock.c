@@ -296,6 +296,15 @@ void test_sock_write_unconnected_socket(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
 }
 
+void test_sock_destroy(){
+    sock_t sock;
+    socket_fake.return_val=123;
+    sock_create(&sock);
+    int res=sock_destroy(&sock);
+    TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_destroy should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CLOSED, "sock_destroy set sock state to CLOSED");
+}
+
 // TODO: add more tests for read and write
  
 int main(void)
@@ -321,5 +330,6 @@ int main(void)
     UNIT_TEST(test_sock_connect);
     UNIT_TEST(test_sock_read_unconnected_socket); 
     UNIT_TEST(test_sock_write_unconnected_socket);
+    UNIT_TEST(test_sock_destroy);
     return UNIT_TESTS_END();
 }
