@@ -38,11 +38,12 @@ int sock_create(sock_t * sock) {
 }
 
 int sock_listen(sock_t * server, uint16_t port) {
-    if((server->state != SOCK_OPENED) || (server->fd<=0)){
+    if((server==NULL) || (server->state != SOCK_OPENED) || (server->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_listen, %s, server must be opened.\n", strerror(errno));
+        printf("Error in sock_listen, %s, server must valid and be opened.\n", strerror(errno));
         return -1;
     }
+  
     struct sockaddr_in6 sin6;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_port=htons(port);
