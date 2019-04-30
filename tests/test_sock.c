@@ -326,7 +326,7 @@ void test_sock_destroy(void){
 
  }
 
-// TODO: add more tests for read and write
+// TODO: add more tests for connect, read and write
  
 int main(void)
 {
