@@ -15,6 +15,7 @@ FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
 FAKE_VALUE_FUNC(int, read, int, void *, size_t *);
 FAKE_VALUE_FUNC(int, write, int, void *, size_t *);
 FAKE_VALUE_FUNC(int, close, int);
+FAKE_VALUE_FUNC(int, connect, int, const struct sockaddr *, socklen_t);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE) \
@@ -24,7 +25,9 @@ FAKE_VALUE_FUNC(int, close, int);
     FAKE(accept)             \
     FAKE(read)               \
     FAKE(write)              \
-    FAKE(close)
+    FAKE(close)              \
+    FAKE(connect)
+
 
 // TODO: a better way could be to use unity_fixtures 
 // https://github.com/ThrowTheSwitch/Unity/blob/199b13c099034e9a396be3df9b3b1db1d1e35f20/examples/example_2/test/TestProductionCode.c
@@ -145,6 +148,18 @@ void test_sock_accept_null_client(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
 }
 
+void test_sock_connect(void){
+    sock_t sock;
+    // Set success return for socket()
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+    connect_fake.return_val=0;
+
+    int res = sock_connect(&sock, "::1", 0);
+    TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_connect should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CONNECTED, "sock_connect set sock state to CONNECTED");
+}
+
 void test_sock_connect_unitialized_client(void) {
     sock_t sock;
     int res = sock_connect(&sock, "::1", 0);
@@ -238,6 +253,7 @@ int main(void)
     UNIT_TEST(test_sock_connect_null_address);
     UNIT_TEST(test_sock_connect_ipv4_address); 
     UNIT_TEST(test_sock_connect_bad_address);
+    UNIT_TEST(test_sock_connect);
     UNIT_TEST(test_sock_read_unconnected_socket); 
     UNIT_TEST(test_sock_write_unconnected_socket);
     return UNIT_TESTS_END();
