@@ -86,6 +86,12 @@ void test_sock_listen_unitialized_socket(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
 }
 
+void test_sock_listen_null_socket(void){
+    int res=sock_listen(NULL, 8888);
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_listen on NULL socket should return error value");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
+}
+
 void test_sock_listen(void) {
     sock_t sock;
     
@@ -273,6 +279,7 @@ int main(void)
     UNIT_TEST(test_sock_create_null_sock);
     UNIT_TEST(test_sock_listen_unitialized_socket); 
     UNIT_TEST(test_sock_listen_error_return);
+    UNIT_TEST(test_sock_listen_null_socket);
     UNIT_TEST(test_sock_listen);
     UNIT_TEST(test_sock_accept_unitialized_socket); 
     UNIT_TEST(test_sock_accept_unbound_socket); 
