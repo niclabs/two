@@ -82,7 +82,7 @@ int sock_accept(sock_t * server, sock_t * client) {
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
-    if((client->state != SOCK_OPENED) || (client->fd<=0)){
+    if(client==NULL || (client->state != SOCK_OPENED) || (client->fd<=0)){
         errno=EINVAL;
         printf("Error in sock_connect, %s, client state must be opened.\n", strerror(errno));
         return -1;
