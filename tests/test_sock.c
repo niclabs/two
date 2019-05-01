@@ -223,7 +223,7 @@ void test_sock_connect(void){
 void test_sock_connect_null_client(void){
     connect_fake.return_val=-1;
     int res=sock_connect(NULL, "::1", 0);
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on unitialized socket should return error value");
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on null socket should return error value");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
 }
 
@@ -233,6 +233,16 @@ void test_sock_connect_unitialized_client(void) {
     int res = sock_connect(&sock, "::1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on unitialized socket should return error value");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
+}
+
+void test_sock_connect_bad_port(void){
+    sock_t sock;
+    socket_fake.return_val = 123;
+    sock_create(&sock); 
+    connect_fake.return_val=-1;
+    int res=sock_connect(&sock, "::1", -1);
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect with bad port should return error value");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
 }
 
@@ -350,6 +360,7 @@ int main(void)
     UNIT_TEST(test_sock_accept_unitialized_socket); 
     UNIT_TEST(test_sock_accept_unbound_socket); 
     UNIT_TEST(test_sock_accept_null_client);
+    UNIT_TEST(test_sock_connect_bad_port);
     UNIT_TEST(test_sock_accept_not_connected_client);
     UNIT_TEST(test_sock_accept);
     UNIT_TEST(test_sock_connect_null_client);
