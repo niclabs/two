@@ -220,8 +220,16 @@ void test_sock_connect(void){
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CONNECTED, "sock_connect set sock state to CONNECTED");
 }
 
+void test_sock_connect_null_client(void){
+    connect_fake.return_val=-1;
+    int res=sock_connect(NULL, "::1", 0);
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on unitialized socket should return error value");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
+}
+
 void test_sock_connect_unitialized_client(void) {
     sock_t sock;
+    connect_fake.return_val=-1;
     int res = sock_connect(&sock, "::1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on unitialized socket should return error value");
@@ -344,6 +352,7 @@ int main(void)
     UNIT_TEST(test_sock_accept_null_client);
     UNIT_TEST(test_sock_accept_not_connected_client);
     UNIT_TEST(test_sock_accept);
+    UNIT_TEST(test_sock_connect_null_client);
     UNIT_TEST(test_sock_connect_unitialized_client);
     UNIT_TEST(test_sock_connect_null_address);
     UNIT_TEST(test_sock_connect_ipv4_address); 
