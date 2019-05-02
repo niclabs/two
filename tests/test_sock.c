@@ -294,6 +294,24 @@ void test_sock_read_null_socket(void){
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
 }
 
+void test_sock_read_null_buffer(void) {
+    sock_t sock_server, sock_client;
+    socket_fake.return_val = 123;
+    sock_create(&sock_server);
+    sock_create(&sock_client);
+    listen_fake.return_val=0;
+    sock_listen(&sock_server, 0);
+    connect_fake.return_val=0;
+    sock_connect(&sock_client, "::1", 0);
+    accept_fake.return_val=0;
+    sock_accept(&sock_server, &sock_client);
+    read_fake.return_val=-1;
+    int res = sock_read(&sock_client, NULL, 256, 0);
+
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when buffer is NULL");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
+}
+
 void test_sock_read_unconnected_socket(void) {
     sock_t sock;
     char buf[256];
@@ -378,6 +396,7 @@ int main(void)
     UNIT_TEST(test_sock_connect_bad_address);
     UNIT_TEST(test_sock_connect);
     UNIT_TEST(test_sock_read_null_socket);
+    UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_unconnected_socket); 
     UNIT_TEST(test_sock_write_unconnected_socket);
     UNIT_TEST(test_sock_destroy);
