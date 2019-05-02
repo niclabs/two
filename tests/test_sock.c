@@ -344,7 +344,7 @@ void test_sock_destroy(void){
 
  }
 
-// TODO: add more tests for connect, read and write
+// TODO: add more tests for read and write
  
 int main(void)
 {
@@ -360,9 +360,9 @@ int main(void)
     UNIT_TEST(test_sock_accept_unitialized_socket); 
     UNIT_TEST(test_sock_accept_unbound_socket); 
     UNIT_TEST(test_sock_accept_null_client);
-    UNIT_TEST(test_sock_connect_bad_port);
     UNIT_TEST(test_sock_accept_not_connected_client);
     UNIT_TEST(test_sock_accept);
+    UNIT_TEST(test_sock_connect_bad_port);
     UNIT_TEST(test_sock_connect_null_client);
     UNIT_TEST(test_sock_connect_unitialized_client);
     UNIT_TEST(test_sock_connect_null_address);
