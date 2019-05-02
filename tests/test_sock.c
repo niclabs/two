@@ -286,6 +286,14 @@ void test_sock_connect_bad_address(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
 }
 
+void test_sock_read_null_socket(void){
+    char buf[256];
+    read_fake.return_val=-1;
+    int res=sock_read(NULL, buf, 256, 0);
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from NULL socket");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
+}
+
 void test_sock_read_unconnected_socket(void) {
     sock_t sock;
     char buf[256];
@@ -293,7 +301,7 @@ void test_sock_read_unconnected_socket(void) {
     // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+    read_fake.return_val=-1;
     int res = sock_read(&sock, buf, 256, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from unconnected socket");
@@ -369,6 +377,7 @@ int main(void)
     UNIT_TEST(test_sock_connect_ipv4_address); 
     UNIT_TEST(test_sock_connect_bad_address);
     UNIT_TEST(test_sock_connect);
+    UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_unconnected_socket); 
     UNIT_TEST(test_sock_write_unconnected_socket);
     UNIT_TEST(test_sock_destroy);
