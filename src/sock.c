@@ -142,6 +142,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         }
         time_now=clock();
         bytes_read=read(sock->fd, p, len);
+        fprintf(stderr,"Bytes read were %d", bytes_read);//MUST BE ERASED IN FUTURE
         time_difference=clock()-time_now;
         time_taken=(time_difference/CLOCKS_PER_SEC); //in seconds.
         if(bytes_read<0){
@@ -175,6 +176,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
     const char *p = buf;
     while(len>0){
         bytes_written=write(sock->fd, p, len);
+        fprintf(stderr,"Bytes written were %d", bytes_written);//MUST BE ERASED IN FUTURE
         if(bytes_written<0){
             perror("Error writing on socket");
             return -1;  
