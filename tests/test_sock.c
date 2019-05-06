@@ -127,13 +127,9 @@ void test_sock_accept(void){
     sock_t sock_s, sock_c;
     socket_fake.return_val=123;
     sock_create(&sock_s);
-    sock_create(&sock_c);
     
     listen_fake.return_val = 0;
     sock_listen(&sock_s, 8888);
-
-    connect_fake.return_val=0;
-    sock_connect(&sock_c, "::1", 8888);
 
     accept_fake.return_val=0;
     int res = sock_accept(&sock_s, &sock_c);
