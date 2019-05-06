@@ -105,18 +105,6 @@ void test_sock_listen(void) {
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_LISTENING, "sock_listen set sock state to LISTENING");
 }
 
-void test_sock_listen_bad_port(void){
-    sock_t sock;
-    socket_fake.return_val=123;
-    sock_create(&sock);
-
-    listen_fake.return_val=-1;
-
-    int res= sock_listen(&sock, -1);
-    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
-}
-
 void test_sock_listen_error_return(void) {
     sock_t sock;
     
@@ -194,20 +182,6 @@ void test_sock_accept_null_client(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
 }
 
-void test_sock_accept_not_connected_client(){
-    sock_t sock_server, sock_client;
-    socket_fake.return_val=123;
-    sock_create(&sock_server);
-    sock_create(&sock_client);
-
-    listen_fake.return_val=0;
-    sock_listen(&sock_server, 8888);
-    int res=sock_accept(&sock_server,&sock_client);
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept with not connected client should return error value"); 
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
-
-}
-
 void test_sock_connect(void){
     sock_t sock;
     // Set success return for socket() and connect()
@@ -233,16 +207,6 @@ void test_sock_connect_unitialized_client(void) {
     int res = sock_connect(&sock, "::1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on unitialized socket should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
-}
-
-void test_sock_connect_bad_port(void){
-    sock_t sock;
-    socket_fake.return_val = 123;
-    sock_create(&sock); 
-    connect_fake.return_val=-1;
-    int res=sock_connect(&sock, "::1", -1);
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect with bad port should return error value");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
 }
 
@@ -381,14 +345,11 @@ int main(void)
     UNIT_TEST(test_sock_listen_unitialized_socket); 
     UNIT_TEST(test_sock_listen_error_return);
     UNIT_TEST(test_sock_listen_null_socket);
-    UNIT_TEST(test_sock_listen_bad_port);
     UNIT_TEST(test_sock_listen);
     UNIT_TEST(test_sock_accept_unitialized_socket); 
     UNIT_TEST(test_sock_accept_unbound_socket); 
     UNIT_TEST(test_sock_accept_null_client);
-    UNIT_TEST(test_sock_accept_not_connected_client);
     UNIT_TEST(test_sock_accept);
-    UNIT_TEST(test_sock_connect_bad_port);
     UNIT_TEST(test_sock_connect_null_client);
     UNIT_TEST(test_sock_connect_unitialized_client);
     UNIT_TEST(test_sock_connect_null_address);
