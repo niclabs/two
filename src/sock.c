@@ -12,14 +12,9 @@
 #include "logging.h"
 #include "assert.h"
 
-#define EAGAIN 11
-#define EFAULT 14
-#define EINVAL 22
-#define ETIME 62
-#define EALREADY 114
-
 #define BACKLOAD 1
 
+//use logging.h to print errors.
 int sock_create(sock_t * sock) {
     if(sock==NULL){
         errno=EINVAL;
@@ -115,7 +110,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     client->state=SOCK_CONNECTED;
 	return 0;
 }
-
+//timeout of 0 should mean there is no timeout. 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     if(sock==NULL || (sock->state != SOCK_CONNECTED) || (sock->fd<=0)){
         errno=EINVAL;
