@@ -100,10 +100,11 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
         }
         return -1;
     }
-    sin6.sin6_port=port;
+    sin6.sin6_port=htons(port);
     sin6.sin6_family=AF_INET6;
     sin6.sin6_addr=address;
-    if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(struct sockaddr))<0){
+    int res=connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6));
+    if(res<0){
         perror("Error on connect");
 	    return -1; 
     }
@@ -142,7 +143,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         }
         time_now=clock();
         bytes_read=read(sock->fd, p, len);
-        fprintf(stderr,"Bytes read were %d", bytes_read);//MUST BE ERASED IN FUTURE
+        //fprintf(stderr,"Bytes read were %d", bytes_read);//MUST BE ERASED IN FUTURE
         time_difference=clock()-time_now;
         time_taken=(time_difference/CLOCKS_PER_SEC); //in seconds.
         if(bytes_read<0){
@@ -176,7 +177,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
     const char *p = buf;
     while(len>0){
         bytes_written=write(sock->fd, p, len);
-        fprintf(stderr,"Bytes written were %d", bytes_written);//MUST BE ERASED IN FUTURE
+        //fprintf(stderr,"Bytes written were %d", bytes_written);//MUST BE ERASED IN FUTURE
         if(bytes_written<0){
             perror("Error writing on socket");
             return -1;  
