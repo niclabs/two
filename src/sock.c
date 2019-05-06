@@ -171,16 +171,16 @@ int sock_write(sock_t * sock, char * buf, int len) {
         perror("Error in sock_write, buffer must not be NULL");
         return -1;
     }
-    ssize_t n;
+    ssize_t bytes_written;
     const char *p = buf;
     while(len>0){
-        n=write(sock->fd, buf, len);
-        if(n<0){
+        bytes_written=write(sock->fd, p, len);
+        if(bytes_written<0){
             perror("Error writing on socket");
             return -1;  
         }   
-        p += n;
-        len -= n;
+        p += bytes_written;
+        len -= bytes_written;
     }
     return 0;
 }
