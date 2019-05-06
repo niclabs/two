@@ -46,8 +46,6 @@ void test_sock_create(void)
     // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
-    // Sock create should put the socket in opened state
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_OPENED, "sock_create should leave sock in 'OPENED' state");
     TEST_ASSERT_EQUAL_MESSAGE(sock.fd, 123, "sock_create should set file descriptor in sock structure");
 
@@ -67,12 +65,8 @@ void test_sock_create_null_sock(void){
 void test_sock_create_fail_to_create_socket(void)
 {
     sock_t sock;
-
-    // Set error return for socket()
     socket_fake.return_val = -1;
     int res = sock_create(&sock);
-    
-    // Sock create should put the socket in opened state
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_create should set errno on error");
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CLOSED, "sock_create should leave sock in 'CLOSED' state on error");
@@ -94,8 +88,6 @@ void test_sock_listen_null_socket(void){
 
 void test_sock_listen(void) {
     sock_t sock;
-    
-    // Set success return for socket() and listen()
     socket_fake.return_val = 123;
     sock_create(&sock);
     
@@ -107,18 +99,12 @@ void test_sock_listen(void) {
 
 void test_sock_listen_error_return(void) {
     sock_t sock;
-    
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
-    // Set error return value for listen()
     listen_fake.return_val = -1;
     errno = ENOTSOCK;
 
     int res = sock_listen(&sock, 8888);
-    
-    // Sock create should put the socket in opened state
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
 }
@@ -148,12 +134,8 @@ void test_sock_accept_unitialized_socket(void) {
 
 void test_sock_accept_unbound_socket(void) {
     sock_t sock;
-
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
-
-    // Call sock_accept without sock_listen first
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept on unbound socket should return error value");
@@ -162,16 +144,10 @@ void test_sock_accept_unbound_socket(void) {
 
 void test_sock_accept_null_client(void) {
     sock_t sock;
-
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
-
-    // Set succesful return value for listen()
     listen_fake.return_val = 0;
     sock_listen(&sock, 8888);
-
-    // Call accept with null client
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept with null client should return error value"); 
@@ -180,11 +156,9 @@ void test_sock_accept_null_client(void) {
 
 void test_sock_connect(void){
     sock_t sock;
-    // Set success return for socket() and connect()
     socket_fake.return_val = 123;
     sock_create(&sock);
     connect_fake.return_val=0;
-
     int res = sock_connect(&sock, "::1", 0);
     TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_connect should return 0 on success");
     TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CONNECTED, "sock_connect set sock state to CONNECTED");
@@ -208,12 +182,8 @@ void test_sock_connect_unitialized_client(void) {
 
 void test_sock_connect_null_address(void) {
     sock_t sock;
-
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);    
-
-    // Call connect with NULL address
     int res = sock_connect(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should not accept a null address");
@@ -222,8 +192,6 @@ void test_sock_connect_null_address(void) {
 
 void test_sock_connect_ipv4_address(void) {
     sock_t sock;
-
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
     
@@ -235,8 +203,6 @@ void test_sock_connect_ipv4_address(void) {
 
 void test_sock_connect_bad_address(void) {
     sock_t sock;
-    
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -272,8 +238,6 @@ void test_sock_read_null_buffer(void) {
 void test_sock_read_unconnected_socket(void) {
     sock_t sock;
     char buf[256];
-    
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
     read_fake.return_val=-1;
@@ -281,6 +245,11 @@ void test_sock_read_unconnected_socket(void) {
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from unconnected socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
+}
+
+void test_sock_read(void){
+
+
 }
 
 void test_sock_write_null_socket(void){
@@ -309,8 +278,6 @@ void test_sock_write_null_buffer(void) {
 void test_sock_write_unconnected_socket(void) {
     sock_t sock;
     char buf[256];
-    
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -318,6 +285,10 @@ void test_sock_write_unconnected_socket(void) {
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from unconnected socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
+}
+
+void test_sock_write(void){
+
 }
 
 void test_sock_destroy(void){
@@ -346,11 +317,7 @@ void test_sock_destroy(void){
      close_fake.return_val=-1;
      TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is CLOSED");
      TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_destroy should set errno on error");
-
-
  }
-
-// TODO: add more tests for read and write
  
 int main(void)
 {
@@ -375,9 +342,11 @@ int main(void)
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_unconnected_socket); 
+    UNIT_TEST(test_sock_read);// TODO
     UNIT_TEST(test_sock_write_null_socket);
     UNIT_TEST(test_sock_write_null_buffer);
     UNIT_TEST(test_sock_write_unconnected_socket);
+    UNIT_TEST(test_sock_write);// TODO
     UNIT_TEST(test_sock_destroy);
     UNIT_TEST(test_sock_destroy_null_sock);
     UNIT_TEST(test_sock_destroy_closed_sock);
