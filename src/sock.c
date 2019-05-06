@@ -103,7 +103,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     sin6.sin6_port=port;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_addr=address;
-    if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6))<0){
+    if(connect(client->fd, (struct sockaddr*)&sin6, sizeof(struct sockaddr))<0){
         perror("Error on connect");
 	    return -1; 
     }
