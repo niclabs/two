@@ -161,9 +161,14 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    if(sock->state != SOCK_CONNECTED || (sock->fd<=0)){
+    if(sock==NULL || sock->state != SOCK_CONNECTED || (sock->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_write, %s, sock state must be connected.\n", strerror(errno));
+        printf("Error in sock_write, %s, socket must be valid and connected.\n", strerror(errno));
+        return -1;
+    }
+    if(buf==NULL){
+        errno=EINVAL;
+        perror("Error in sock_write, buffer must not be NULL");
         return -1;
     }
     ssize_t n;
