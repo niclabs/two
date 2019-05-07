@@ -77,9 +77,13 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, h2states_t *st
 */
 int send_settings_ack(void){
   frame_t ack_frame;
-    frame_header_t ack_frame_header;
+  frame_header_t ack_frame_header;
   int rc;
-  create_settings_ack_frame(&ack_frame, &ack_frame_header);
+  rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
+  if(rc){
+    puts("Error in Settings ACK creation!");
+    return -1;
+  }
   uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
   int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
   /*TODO: http_write*/
@@ -125,8 +129,8 @@ int read_settings_payload(uint8_t *buff_read, frame_header_t *header, h2states_t
       }
     }
   }
-    settings_payload_t settings_payload;
-    settings_pair_t pairs[header->length/6];
+  settings_payload_t settings_payload;
+  settings_pair_t pairs[header->length/6];
   int size = bytes_to_settings_payload(buff_read, header->length, &settings_payload, pairs);
   if(size != header->length){
     puts("Error in byte to settings payload coding");
