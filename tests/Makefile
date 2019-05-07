@@ -44,9 +44,9 @@ BUILD_PATHS = $(PATHB) $(PATHD) $(PATHO) $(PATHR) $(PATHU)
 SRCT = $(wildcard $(PATHT)*.c)
 
 COMPILE=gcc -c -Wall -O0
-LINK=gcc 
+LINK=gcc
 DEPEND=gcc -MM -MG -MF
-CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST 
+CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
 LDFLAGS += --coverage
 
 ifneq ($(DEBUG),)
@@ -55,28 +55,29 @@ endif
 
 RESULTS = $(patsubst $(PATHT)test_%.c,$(PATHR)test_%.txt,$(SRCT) )
 
-null := 
+null :=
 space = $(null) $(null)
+nl := \n
 
 PASSED = $(shell grep -s PASS $(PATHR)*.txt)
-PASSED_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(PASSED))))
+PASSED_COUNT = $(words $(PASSED))
 FAIL = $(shell grep -s FAIL $(PATHR)*.txt)
-FAIL_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(FAIL))))
+FAIL_COUNT = $(words $(FAIL))
 IGNORE = $(shell grep -s IGNORE $(PATHR)*.txt)
-IGNORE_COUNT = $(words $(subst \n,$(space),$(subst $(space),-,$(IGNORE))))
+IGNORE_COUNT = $(words $(IGNORE))
 
 test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
-	@echo -e "$(IGNORE)"
+	@echo -e "$(subst $(space),$(nl),$(IGNORE))"
 	@echo -e "-----------------------\nFAILURES: $(FAIL_COUNT)\n-----------------------"
-	@echo -e "$(FAIL)"
+	@echo -e "$(subst $(space),$(nl),$(FAIL))"
 	@echo -e "-----------------------\nPASSED: $(PASSED_COUNT)\n-----------------------"
-	@echo -e "$(PASSED)"
+	@echo -e "$(subst $(space),$(nl),$(PASSED))"
 	@echo -e "\n$(if $(FAIL),FAILED,OK)"
 	$(Q)test -z "$(FAIL)"
 
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
-	$(Q)-$< > $@
+	$(Q)-trap '$(RM) $@' INT; $< > $@
 	$(Q)test -s $@ || ($(RM) $@ && false)  # if file size is zero then an error ocurred before the redirection
 
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
