@@ -3,9 +3,10 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#include "logging.h"
+
 #include "http2api.h"
 #include "http_methods.h"
-
 
 
 int client_init_connection(h2states_t *st){

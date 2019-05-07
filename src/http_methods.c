@@ -14,10 +14,7 @@ HTTP/2
 #include "http_methods.h"
 #include "sock.h"
 #include "http2api.h"
-/*
-#include "sock.c"
-#include "http2api.c"
-*/
+
 
 
 struct client_s{
@@ -65,7 +62,6 @@ int http_init_server(uint16_t port){
   server.state=LISTEN;
 
   sock_t client_sock;
-  sleep(5);/*esto va aqui?*/
 
   if (sock_accept(&server_sock, &client_sock)<0){
     perror("Not client found");
@@ -163,11 +159,6 @@ int get_receive(char * path, char * headers){
 
 
 int http_write(char * buf, int len){
-  if (client.state==NOT_CLIENT && server.state==NOT_SERVER){
-    perror("Could not write");
-    return -1;
-  }
-
   int wr=0;
 
   if (client.state==NOT_CLIENT && server.state==LISTEN){
@@ -179,6 +170,9 @@ int http_write(char * buf, int len){
       return -1;
     }
     wr= sock_write(client.socket, buf, len);
+  } else {
+    perror("No server or client found");
+    return -1;
   }
 
   if (wr<=0){
@@ -190,11 +184,6 @@ int http_write(char * buf, int len){
 
 
 int http_read(char * buf, int len){
-  if (client.state==NOT_CLIENT && server.state==NOT_SERVER){
-    perror("Could not read");
-    return -1;
-  }
-
   int rd=0;
 
   if (client.state==NOT_CLIENT && server.state==LISTEN){
@@ -206,6 +195,9 @@ int http_read(char * buf, int len){
       return -1;
     }
     rd = sock_read(client.socket, buf, len, 0);
+  } else {
+    perror("No server or client found");
+    return -1;
   }
 
   if (rd<=0){
