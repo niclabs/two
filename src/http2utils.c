@@ -1,4 +1,5 @@
 #include "http2utils.h"
+#include "http_methods.h"
 
 uint8_t buffer[MAX_BUFFER_SIZE];
 int size = 0;
@@ -73,7 +74,9 @@ int read_n_bytes(uint8_t *buff_read, int n){
   return read_bytes;
 }
 
-/* Toy write function*/
+
+
+/* Toy write function
 int http_write(uint8_t *bytes, int length){
   if(size+length > MAX_BUFFER_SIZE){
     return -1;
@@ -84,16 +87,16 @@ int http_write(uint8_t *bytes, int length){
   return length;
 }
 
-/* Toy read function*/
+// Toy read function
 int http_read(uint8_t *bytes, int length){
   if(length > size){
     length = size;
   }
-  /*Write to caller*/
+  //Write to caller
   memcpy(bytes, buffer, length);
   size = size - length;
-  /*Move the rest of the data on buffer*/
+  //Move the rest of the data on buffer
   memcpy(buffer, buffer+length, size);
   printf("Read: buffer size is %u\n", size);
   return length;
-}
+}*/

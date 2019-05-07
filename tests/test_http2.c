@@ -109,7 +109,7 @@ void test_server_init_connection(void){
   TEST_ASSERT_MESSAGE(server.remote_settings[4] == init_vals[4], "MFS in local settings is not setted");
   TEST_ASSERT_MESSAGE(server.remote_settings[5] == init_vals[5], "MHLS in local settings is not setted");
   TEST_ASSERT_MESSAGE(http_write_fake.call_count == 0, "http_write must be called once");
-  TEST_ASSERT_MESSAGE(rc == 0, "return code of client_init_connection must be 0");
+  TEST_ASSERT_MESSAGE(rc==0, "return code of client_init_connection must be 0");
 }
 
 

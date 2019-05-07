@@ -26,7 +26,7 @@ int http_init_server(uint16_t port);
 * @return 0    if connection was closed on the other side
 * @return -1   on error
 */
-int http_write(char * buf, int len);
+int http_write(uint8_t * buf, int len);
 
 /*
 * Read the data from the socket with the client
@@ -38,7 +38,7 @@ int http_write(char * buf, int len);
 * @return   0      if connection was closed on the other side
 * @return  -1      on error
 */
-int http_read(char * buf, int len);
+int http_read(uint8_t * buf, int len);
 
 
 /*Client*/

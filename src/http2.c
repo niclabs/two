@@ -1,4 +1,5 @@
 #include "http2.h"
+#include "http_methods.h"
 
 /*
 * This API assumes the existence of a TCP connection between Server and Client,
