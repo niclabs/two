@@ -316,7 +316,7 @@ int receive_frame(h2states_t *st){
   uint8_t buff_read[MAX_BUFFER_SIZE];
   //uint8_t buff_write[MAX_BUFFER_SIZE]
   int rc;
-    frame_header_t header;
+  frame_header_t header;
   rc = read_frame(buff_read, &header);
   if(rc == -1){
     puts("Error reading frame");

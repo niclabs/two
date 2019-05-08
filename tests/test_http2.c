@@ -9,53 +9,53 @@ extern int send_settings_ack(void);
 extern int read_settings_payload(uint8_t *buff_read, frame_header_t *header, h2states_t *st);
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
  /*---------------- Mock functions ---------------------------*/
-//  uint8_t buffer[MAX_BUFFER_SIZE];
-//  int size = 0;
-//
-//  int read_n_bytes(uint8_t *buff_read, int n){
-//    int read_bytes = 0;
-//    int incoming_bytes;
-//    while(read_bytes < n){
-//      incoming_bytes = http_readfake(buff_read+read_bytes, n - read_bytes);
-//      /* incoming_bytes equals -1 means that there was an error*/
-//      if(incoming_bytes == -1){
-//        puts("Error in read function");
-//        return -1;
-//      }
-//      read_bytes = read_bytes + incoming_bytes;
-//    }
-//    return read_bytes;
-//  }
-//
-//  // Toy write function
-//  int http_writefake(uint8_t *bytes, int length){
-//    if(size+length > MAX_BUFFER_SIZE){
-//      return -1;
-//    }
-//    memcpy(buffer+size, bytes, length);
-//    size += length;
-//    printf("Write: buffer size is %u\n", size);
-//    return length;
-//  }
-//
-// // Toy read function
-// int http_readfake(uint8_t *bytes, int length){
-//   if(length > size){
-//       length = size;
-//   }
-//   //Write to caller
-//   memcpy(bytes, buffer, length);
-//   size = size - length;
-//   //Move the rest of the data on buffer
-//   memcpy(buffer, buffer+length, size);
-//   printf("Read: buffer size is %u\n", size);
-//   return length;
-// }
+
+ uint8_t buffer[MAX_BUFFER_SIZE];
+ int size = 0;
+
+ int read_n_bytes(uint8_t *buff_read, int n){
+   int read_bytes = 0;
+   int incoming_bytes;
+   while(read_bytes < n){
+     incoming_bytes = http_readfake(buff_read+read_bytes, n - read_bytes);
+     /* incoming_bytes equals -1 means that there was an error*/
+     if(incoming_bytes == -1){
+       puts("Error in read function");
+       return -1;
+     }
+     read_bytes = read_bytes + incoming_bytes;
+   }
+   return read_bytes;
+ }
+
+ // Toy write function
+ int http_writefake(uint8_t *bytes, int length){
+   if(size+length > MAX_BUFFER_SIZE){
+     return -1;
+   }
+   memcpy(buffer+size, bytes, length);
+   size += length;
+   printf("Write: buffer size is %u\n", size);
+   return length;
+ }
+
+// Toy read function
+int http_readfake(uint8_t *bytes, int length){
+  if(length > size){
+      length = size;
+  }
+  //Write to caller
+  memcpy(bytes, buffer, length);
+  size = size - length;
+  //Move the rest of the data on buffer
+  memcpy(buffer, buffer+length, size);
+  printf("Read: buffer size is %u\n", size);
+  return length;
+}
 
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, verify_setting, uint16_t, uint32_t);
-FAKE_VALUE_FUNC(int, read_n_bytes, uint8_t *, int);
 FAKE_VALUE_FUNC(int, http_write, uint8_t *, int);
 FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t*);
 FAKE_VALUE_FUNC(int, frame_to_bytes, frame_t*, uint8_t*);
@@ -66,7 +66,6 @@ FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*,
 
 #define FFF_FAKES_LIST(FAKE)         \
     FAKE(verify_setting)             \
-    FAKE(read_n_bytes)               \
     FAKE(http_write)                 \
     FAKE(create_settings_ack_frame)  \
     FAKE(frame_to_bytes)             \
@@ -221,6 +220,16 @@ void test_server_init_connection(void){
   create_settings_frame_fake.custom_fake = return_zero;
   frame_to_bytes_fake.custom_fake = return_24;
   http_write_fake.custom_fake = return_24;
+  char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+  uint8_t preface_buff[24];
+  uint8_t i = 0;
+  /*We load the fake buffer with the preface*/
+  while(preface[i] != '\0'){
+    preface_buff[i] = preface[i];
+    i++;
+  }
+  int wrc = http_writefake(preface_buff,24);
+  TEST_ASSERT_MESSAGE(wrc == 24, "Fake buffer not written");
   int rc = server_init_connection(&server);
   TEST_ASSERT_MESSAGE(server.local_settings[0] == init_vals[0], "HTS in local settings is not setted");
   TEST_ASSERT_MESSAGE(server.local_settings[1] == init_vals[1], "EP in local settings is not setted");
@@ -245,6 +254,6 @@ int main(void)
     UNIT_TEST(test_send_settings_ack);
     UNIT_TEST(test_send_local_settings);
     UNIT_TEST(test_client_init_connection);
-    //UNIT_TEST(test_server_init_connection);
+    UNIT_TEST(test_server_init_connection);
     return UNIT_TESTS_END();
 }
