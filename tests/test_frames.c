@@ -180,7 +180,7 @@ void test_create_list_of_settings_pair(void){
         values[i] = (uint32_t)i;
     }
     settings_pair_t  result_settings_pair[count];
-    create_list_of_settings_pair(ids, values, count, &result_settings_pair);
+    create_list_of_settings_pair(ids, values, count, result_settings_pair);
 
     for (int i = 0; i < count; i++){
         TEST_ASSERT_EQUAL(ids[i],result_settings_pair[i].identifier);
