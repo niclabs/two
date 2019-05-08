@@ -172,14 +172,6 @@ void test_uint16_to_byte_array_65535(void) {
     TEST_ASSERT_EQUAL(byte_array_expected[1], byte_array_result[1]);
 }
 
-void test_uint16_to_byte_array_65536(void) {
-    uint16_t test_65536 = 65536;//todo check this: large integer implicitly truncated to unsigned type
-    uint8_t byte_array_expected[2] = {0, 0};
-    uint8_t byte_array_result[2];
-    uint16_to_byte_array(test_65536, byte_array_result);
-    TEST_ASSERT_EQUAL(byte_array_expected[0], byte_array_result[0]);
-    TEST_ASSERT_EQUAL(byte_array_expected[1], byte_array_result[1]);
-}
 
 void test_bytes_to_uint32_0(void){
     uint8_t bytes[4] = {0,0,0,0};
@@ -298,7 +290,7 @@ int main(void)
     UNIT_TEST(test_uint32_24_to_byte_array_16777216);
     UNIT_TEST(test_uint32_24_to_byte_array_16777215);
 
-    UNIT_TEST(test_uint16_to_byte_array_65536);
+
     UNIT_TEST(test_uint16_to_byte_array_65535);
 
 

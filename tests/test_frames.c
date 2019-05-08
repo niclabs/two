@@ -323,7 +323,7 @@ void test_bytes_to_settings_payload(void){
 
     settings_payload_t result_settings_payload;
     settings_pair_t result_setting_pairs[count];
-    bytes_to_settings_payload(bytes, count*6, &result_settings_payload, &result_setting_pairs);
+    bytes_to_settings_payload(bytes, count*6, &result_settings_payload, result_setting_pairs);
 
 
 
@@ -401,7 +401,6 @@ void test_frame_to_bytes(void){
     TEST_ASSERT_EQUAL(9+count*6,size);
 
     for (int i = 0; i < size; i++){
-        printf("%d \n", i);
         TEST_ASSERT_EQUAL(expected_bytes[i],result_bytes[i]);
     }
 }
