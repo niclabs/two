@@ -43,7 +43,7 @@ BUILD_PATHS = $(PATHB) $(PATHD) $(PATHO) $(PATHR) $(PATHU)
 
 SRCT = $(wildcard $(PATHT)*.c)
 
-COMPILE=gcc -c -Wall -O0
+COMPILE=gcc -c -Wall -O0 -std=c99
 LINK=gcc
 DEPEND=gcc -MM -MG -MF
 CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
