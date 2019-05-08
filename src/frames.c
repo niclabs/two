@@ -147,7 +147,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
 
             int size = settings_frame_to_bytes(settings_payload, length / 6, settings_bytes);
             int new_size = append_byte_arrays(bytes, frame_header_bytes, settings_bytes, frame_header_bytes_size, size);
-
+            printf("size: %d\n", new_size);
             return new_size;
         }
         case 0x5://Push promise

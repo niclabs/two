@@ -173,7 +173,7 @@ void test_uint16_to_byte_array_65535(void) {
 }
 
 void test_uint16_to_byte_array_65536(void) {
-    uint16_t test_65536 = 65536;
+    uint16_t test_65536 = 65536;//todo check this: large integer implicitly truncated to unsigned type
     uint8_t byte_array_expected[2] = {0, 0};
     uint8_t byte_array_result[2];
     uint16_to_byte_array(test_65536, byte_array_result);
