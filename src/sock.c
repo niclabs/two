@@ -115,51 +115,39 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     if(sock==NULL || (sock->state != SOCK_CONNECTED) || (sock->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_read, %s, socket must be valid and CONNECTED.\n", strerror(errno));
+        DEBUG("Called sock_read with invalid socket");
         return -1;
     }
-    if(buf==NULL){
+
+    if(buf == NULL){
         errno=EINVAL;
-        perror("Error in sock_read, buffer must not be NULL");
+        DEBUG("Error: Called sock_read with null buffer");
         return -1;
     }
-    struct timeval time_o;
-    char *p = buf;
-    int time_taken=0;
-    ssize_t bytes_read;
-    clock_t time_now, time_difference;
-    time_o.tv_usec = 0;
-    while(len>0){
-        timeout=timeout-time_taken;
-        time_o.tv_sec = timeout;
-        if(timeout<0){
-            errno=ETIME;
-            printf("%s in sock_read function.\n", strerror(errno));
-            return -1;
-        }
-        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) { //what happens when timeout is 0?
-            perror("Error setting timeout");
-            return -1;
-        }
-        time_now=clock();
-        bytes_read=read(sock->fd, p, len);
-        //fprintf(stderr,"Bytes read were %d", bytes_read);//MUST BE ERASED IN FUTURE
-        time_difference=clock()-time_now;
-        time_taken=(time_difference/CLOCKS_PER_SEC); //in seconds.
-        if(bytes_read<0){
-            perror("Error reading from socket");
-            return -1;
-        }
-        p += bytes_read;
-        len -= bytes_read;
+
+    if (timeout < 0) {
+        errno = EINVAL;
+        DEBUG("Error: Called sock_read with timeout smaller than 0");
+        return -1;
     }
+
+    struct timeval time_o;
+    time_o.tv_sec = timeout;
+    time_o.tv_usec = 0;
+
+    if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
+        DEBUG("Error setting timeout: %s", strerror(errno));
+        return -1;
+    }
+
+    ssize_t bytes_read = read(sock->fd, buf, len);
     time_o.tv_sec = 0;
     time_o.tv_usec = 0;
     if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
-        perror("Error unsetting timeout");
+        DEBUG("Error unsetting timeout: %s", strerror(errno));
         return -1;
     }
-    return 0;
+    return bytes_read;
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
