@@ -120,7 +120,6 @@ void test_sock_accept(void){
     accept_fake.return_val=0;
     int res = sock_accept(&sock_s, &sock_c);
     TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_accept should return 0 on success");
-    TEST_ASSERT_EQUAL_MESSAGE(sock_s.state, SOCK_CONNECTED, "sock_accept set server state to CONNECTED");
     TEST_ASSERT_EQUAL_MESSAGE(sock_c.state, SOCK_CONNECTED, "sock_accept set client state to CONNECTED");
 }
 
