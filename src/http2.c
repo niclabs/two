@@ -218,13 +218,13 @@ int send_local_settings(h2states_t *st){
 * Input: -> place: must be LOCAL or REMOTE. It indicates the table to read.
 *        -> param: it indicates which parameter to read from table.
 *        -> st: pointer to h2states_t struct where settings tables are stored.
-* Output: The value read from the table. 0 if nothing was read.
+* Output: The value read from the table. -1 if nothing was read.
 */
 
 uint32_t read_setting_from(uint8_t place, uint8_t param, h2states_t *st){
   if(param < 1 || param > 6){
-    printf("Error: %u is not a valid setting parameter", param);
-    return 0;
+    printf("Error: %u is not a valid setting parameter\n", param);
+    return -1;
   }
   if(place == LOCAL){
     return st->local_settings[--param];
@@ -234,7 +234,7 @@ uint32_t read_setting_from(uint8_t place, uint8_t param, h2states_t *st){
   }
   else{
     puts("Error: not a valid table to read from");
-    return 0;
+    return -1;
   }
 }
 
