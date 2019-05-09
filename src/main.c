@@ -22,6 +22,7 @@ void cleanup(int signal)
 
     INFO("Ctrl-C received. Terminating");
     sock_destroy(&server_sock);
+    exit(0);
 }
 
 void client_start(char * addr, char * port_str, char * endpoint) {
@@ -34,7 +35,7 @@ void client_start(char * addr, char * port_str, char * endpoint) {
 
     sock_t client_sock;
     sock_create(&client_sock);
-    if (sock_connect(&client_sock, addr, port)) {
+    if (sock_connect(&client_sock, addr, port) == 0) {
         sock_write(&client_sock, endpoint, strlen(endpoint));
     }
     sock_destroy(&client_sock);
@@ -50,7 +51,7 @@ void server_start(char * port_str) {
 
     sock_create(&server_sock);
     sock_listen(&server_sock, port);
-    
+
     // Trap Ctrl-C
     signal(SIGINT, cleanup);
 
