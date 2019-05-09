@@ -55,24 +55,25 @@ int sock_listen(sock_t * server, uint16_t port) {
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
-    if((server==NULL) || (server->state != SOCK_LISTENING) || (server->fd<=0)){
+    if((server == NULL) || (server->state != SOCK_LISTENING) || (server->fd <= 0)) {
         errno=EINVAL;
-        printf("Error in sock_accept, %s, server must be valid and listening.\n", strerror(errno));
+        DEBUG("Error in sock_accept, server must be valid and listening.");
         return -1;
     }
-    if(client == NULL){
+
+    if(client == NULL) {
         errno=EINVAL;
-        printf("Error on accept: %s, client must be valid and CONNECTED.\n", strerror(errno));
+        DEBUG("Error in sock_accept, NULL client given");
         return -1;
     }
-    int clifd=accept(server->fd, NULL, NULL);
-    if(clifd<0){
-        perror("Error on accept");
+
+    int clifd = accept(server->fd, NULL, NULL);
+    if(clifd < 0) {
+        ERROR("Error on accept");
 	    return -1;
     }
-    client->fd=clifd;
-	server->state=SOCK_CONNECTED;
-    client->state=SOCK_CONNECTED;
+    client->fd = clifd;
+    client->state = SOCK_CONNECTED;
 	return 0;
 }
 
