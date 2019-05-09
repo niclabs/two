@@ -147,34 +147,39 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
         DEBUG("Error unsetting timeout: %s", strerror(errno));
         return -1;
-    }
+     }
     return bytes_read;
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    if(sock==NULL || sock->state != SOCK_CONNECTED || (sock->fd<=0)){
+    // Check that sock is correct state
+    if(sock==NULL || sock->state != SOCK_CONNECTED || (sock->fd<=0)) {
         errno=EINVAL;
-        printf("Error in sock_write, %s, socket must be valid and connected.\n", strerror(errno));
+        DEBUG("Error in sock_write, socket must be valid and connected.");
         return -1;
     }
-    if(buf==NULL){
+
+    if(buf==NULL) {
         errno=EINVAL;
-        perror("Error in sock_write, buffer must not be NULL");
+        DEBUG("Error in sock_write, buffer must not be NULL");
         return -1;
     }
+
     ssize_t bytes_written;
+    ssize_t bytes_written_total = 0;
     const char *p = buf;
-    while(len>0){
-        bytes_written=write(sock->fd, p, len);
-        //fprintf(stderr,"Bytes written were %d", bytes_written);//MUST BE ERASED IN FUTURE
-        if(bytes_written<0){
+    while(len>0) {
+        bytes_written = write(sock->fd, p, len);
+        if(bytes_written < 0) {
             perror("Error writing on socket");
             return -1;
         }
+
         p += bytes_written;
         len -= bytes_written;
+        bytes_written_total += bytes_written;
     }
-    return 0;
+    return bytes_written;
 }
 
 int sock_destroy(sock_t * sock) {
