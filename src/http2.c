@@ -86,7 +86,6 @@ int send_settings_ack(void){
   }
   uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
   int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
-  /*TODO: http_write*/
   rc = http_write(byte_ack, size_byte_ack);
   if(rc != size_byte_ack){
     puts("Error in Settings ACK sending");
@@ -96,14 +95,13 @@ int send_settings_ack(void){
 }
 
 /*
-* Function: read_settings_payload
-* Given a buffer and a pointer to a header, operates a settings frame payload.
-* Input: -> buff_read: buffer where payload's data is written
-        -> header: pointer to a frameheader_t structure already built
-        -> st: pointer to h2states_t struct where connection variables are stored
-* Output: 0 if operations are done successfully, -1 if not.
+* Function: check_for_settings_ack
+* Verifies the correctness of header and checks if frame settings is an ACK.
+* Input: -> header: settings frame's header to read
+*        -> st: pointer to h2states struct where connection variables are stored
+* Output: 0 if ACK was not setted. 1 if it was. -1 if error was found.
 */
-int read_settings_payload(uint8_t *buff_read, frame_header_t *header, h2states_t *st){
+int check_for_settings_ack(frame_header_t *header, h2states_t *st){
   if(header->type != 0x4){
     puts("Read settings payload error, header type is not SETTINGS");
     return -1;
@@ -121,22 +119,36 @@ int read_settings_payload(uint8_t *buff_read, frame_header_t *header, h2states_t
     else{
       if(st->wait_setting_ack){
         st->wait_setting_ack = 0;
-        return 0;
+        return 1;
       }
       else{
         puts("ACK received but not expected");
-        return 0;
+        return 1;
       }
     }
   }
-  settings_payload_t settings_payload;
-  settings_pair_t pairs[header->length/6];
-  int size = bytes_to_settings_payload(buff_read, header->length, &settings_payload, pairs);
+  else{
+    return 0;
+  }
+}
+
+/*
+* Function: read_settings_payload
+* Reads a settings payload from buffer and works with it.
+* Input: -> buff_read: buffer where payload's data is written
+        -> header: pointer to a frameheader_t structure already built with frame info
+        -> spl: pointer to settings_payload_t struct where data is gonna be written
+        -> pairs: pointer to settings_pair_t array where data is gonna be written
+        -> st: pointer to h2states_t struct where connection variables are stored
+* Output: 0 if operations are done successfully, -1 if not.
+*/
+int read_settings_payload(uint8_t *buff_read, frame_header_t *header, settings_payload_t *spl, settings_pair_t *pairs, h2states_t *st){
+  int size = bytes_to_settings_payload(buff_read, header->length, spl, pairs);
   if(size != header->length){
     puts("Error in byte to settings payload coding");
     return -1;
   }
-  if(!update_settings_table(&settings_payload, REMOTE, st)){
+  if(!update_settings_table(spl, REMOTE, st)){
     send_settings_ack();
     return 0;
   }
@@ -336,7 +348,17 @@ int receive_frame(h2states_t *st){
           printf("TODO: Reset Stream Frame. Not implemented yet.");
           return -1;
       case SETTINGS_TYPE:{//Settings
-          rc = read_settings_payload(buff_read, &header, st);
+          rc = check_for_settings_ack(&header, st);
+          if(rc < 0){
+            puts("Error was found in SETTINGS Header");
+            return -1;
+          }
+          else if(rc){ /*Frame was an ACK*/
+            return 0;
+          }
+          settings_payload_t spl;
+          settings_pair_t pairs[header.length/6];
+          rc = read_settings_payload(buff_read, &header, &spl, pairs, st);
           if(rc == -1){
             puts("Error in read settings payload");
             return -1;
