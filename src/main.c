@@ -10,21 +10,61 @@
 #include <signal.h>
 
 #include "logging.h"
-#include "sock.h"
+#include "http_methods.h"
 
 #define PORT (8888)
 
-sock_t server_sock;
+//sock_t server_sock;
 
 void cleanup(int signal)
 {
     (void)signal;
 
     INFO("Ctrl-C received. Terminating");
-    sock_destroy(&server_sock);
-    exit(0);
+    http_client_disconnect();
+    http_server_destroy();
 }
 
+int main(int argc, char **argv){
+    if (argc < 2){
+        fprintf(stderr, "usage: %s [server|client]\n", argv[0]);
+        return 1;
+    }
+
+    if (strcmp(argv[1], "server") == 0)
+    {
+        if (argc < 3)
+        {
+            fprintf(stderr, "usage: %s server <port> \n", argv[0]);
+            return 1;
+        }
+
+        uint16_t port = atoi(argv[2]);
+        http_init_server(port);
+    }
+    else if (strcmp(argv[1], "client") == 0)
+    {
+        if (argc < 3)
+        {
+            printf("usage: %s client <port> <addr>\n",
+                   argv[0]);
+            return 1;
+        }
+
+        uint16_t port = atoi(argv[2]);
+        http_client_connect(port, argv[3]);
+    }
+    else
+    {
+        fprintf(stderr, "usage: %s [server|client]\n", argv[0]);
+        return 1;
+    }
+    return 0;
+}
+
+
+
+/*
 void client_start(char * addr, char * port_str, char * endpoint) {
     uint16_t port = atoi(port_str);
     if (port == 0)
@@ -35,7 +75,7 @@ void client_start(char * addr, char * port_str, char * endpoint) {
 
     sock_t client_sock;
     sock_create(&client_sock);
-    if (sock_connect(&client_sock, addr, port) == 0) {
+    if (sock_connect(&client_sock, addr, port)) {
         sock_write(&client_sock, endpoint, strlen(endpoint));
     }
     sock_destroy(&client_sock);
@@ -68,6 +108,9 @@ void server_start(char * port_str) {
     // Cleanup after listen terminates
     sock_destroy(&server_sock);
 }
+
+
+
 
 int main(int argc, char **argv)
 {
@@ -104,3 +147,4 @@ int main(int argc, char **argv)
     }
     return 0;
 }
+*/

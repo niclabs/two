@@ -4,6 +4,7 @@ HTTP/2
 */
 
 #include <stdlib.h>
+#include <stdint.h>
 
 /*Server*/
 /*
@@ -16,16 +17,26 @@ HTTP/2
 */
 int http_init_server(uint16_t port);
 
+
+/*
+* Stop and destroy server if it is running
+*
+* @return   0       Server was successfully destroyed
+* @return   -1      Server wasn't destroyed
+*/
+int http_server_destroy(void);
+
+
 /*
 * Set an internal server function to a specific path
 *
-* @param    fun_name   function name
+* @param    callback   function name
 * @param    path       specific path
 *
 * @return   0          the action was successful
 * @return   -1         the action fail
 */
-int http_set_function_to_path(char * fun_name, char * path);
+int http_set_function_to_path(char * callback, char * path);
 
 
 /*Client*/

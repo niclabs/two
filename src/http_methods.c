@@ -7,14 +7,13 @@ HTTP/2
 #include <string.h>
 #include <stdio.h>
 #include <signal.h>
-#include <stdint.h>
 
 #include <unistd.h>
 
 #include "http_methods.h"
 #include "sock.h"
 #include "http2.h"
-
+#include "logging.h"
 
 
 struct client_s{
@@ -29,7 +28,8 @@ struct client_s{
 struct server_s{
   enum server_state {
     NOT_SERVER,
-    LISTEN
+    LISTEN,
+    CLIENT_CONNECT
   } state;
   sock_t * socket;
   struct client_s client_connect;
@@ -50,12 +50,12 @@ int http_init_server(uint16_t port){
   server.socket=&server_sock;
 
   if (sock_create(&server_sock)<0){
-    perror("Server could not be created");
+    ERROR("Server could not be created");
     return -1;
   }
 
   if (sock_listen(&server_sock, port)<0){
-    perror("Partial error in server creation");
+    ERROR("Partial error in server creation");
     return -1;
   }
 
@@ -63,18 +63,22 @@ int http_init_server(uint16_t port){
 
   sock_t client_sock;
 
+  printf("Server waiting for a client\n");
+
+
   if (sock_accept(&server_sock, &client_sock)<0){
-    perror("Not client found");
+    ERROR("Not client found");
     return -1;
   }
 
-  struct client_s * cl= &server.client_connect;
-  cl->state=CONNECTED;
-  cl->socket=&client_sock;
+  client.state=CONNECTED;
+  client.socket=&client_sock;
+
+  printf("Client found and connected\n");
 
   h2states_t server_state;
   if(server_init_connection(&server_state)<0){
-    perror("Problems sending server data");
+    ERROR("Problems sending server data");
     return -1;
   }
 
@@ -89,6 +93,32 @@ int http_set_function_to_path(char * callback, char * path){
 }
 
 
+int http_server_destroy(void){
+
+  if (server.state==NOT_SERVER){
+    WARN("Server not found");
+    return -1;
+  }
+
+  if (client.state==CONNECTED){
+    if (sock_destroy(client.socket)<0){
+      WARN("Client still connected");
+    }
+  }
+
+  if (sock_destroy(server.socket)<0){
+    ERROR("Error in server disconnection");
+    return -1;
+  }
+
+  server.state=NOT_SERVER;
+
+  printf("Server destroyed\n");
+
+  return 0;
+}
+
+
 /************************************Client************************************/
 
 
@@ -100,22 +130,24 @@ int http_client_connect(uint16_t port, char * ip){
   cl->socket=&sock;
 
   if (sock_create(&sock)<0){
-    perror("Error on client creation");
+    ERROR("Error on client creation");
     return -1;
   }
 
   cl->state=CREATED;
 
   if (sock_connect(&sock, ip, port)<0){
-    perror("Error on client connection");
+    ERROR("Error on client connection");
     return -1;
   }
+
+  printf("Client connected to server\n");
 
   cl->state=CONNECTED;
 
   h2states_t client_state;
   if(client_init_connection(&client_state)<0){
-    perror("Problems sending client data");
+    ERROR("Problems sending client data");
     return -1;
   }
 
@@ -130,9 +162,13 @@ int http_client_disconnect(void){
   }
 
   if (sock_destroy(client.socket)<0){
-    perror("Error in client disconnection");
+    ERROR("Error in client disconnection");
     return -1;
   }
+
+  client.state=NOT_CLIENT;
+
+  printf("Client disconnected\n");
 
   return 0;
 }
@@ -161,22 +197,21 @@ int get_receive(char * path, char * headers){
 int http_write(uint8_t * buf, int len){
   int wr=0;
 
-  if (client.state==NOT_CLIENT && server.state==LISTEN){
-    wr= sock_write(server.socket, (char *) buf, len);
-  }
-  else if (server.state==NOT_SERVER){
-    if (client.state != CONNECTED){
-      perror("Client not connected");
-      return -1;
-    }
+  if (client.state == CONNECTED){
     wr= sock_write(client.socket, (char *) buf, len);
   } else {
-    perror("No server or client found");
+    ERROR("No client connected found");
     return -1;
   }
 
   if (wr<=0){
-    perror("Could not write");
+    ERROR("Error in writing");
+    if (wr==0){
+      client.state=NOT_CLIENT;
+      if (server.state==CLIENT_CONNECT){
+        server.state=LISTEN;
+      }
+    }
     return wr;
   }
   return wr;
@@ -186,22 +221,21 @@ int http_write(uint8_t * buf, int len){
 int http_read( uint8_t * buf, int len){
   int rd=0;
 
-  if (client.state==NOT_CLIENT && server.state==LISTEN){
-    rd = sock_read(server.socket, (char *) buf, len, 0);
-  }
-  else if (server.state==NOT_SERVER){
-    if (client.state != CONNECTED){
-      perror("Client not connected");
-      return -1;
-    }
-    rd = sock_read(client.socket, (char *) buf, len, 0);
+  if (client.state == CONNECTED){
+    rd= sock_write(client.socket, (char *) buf, len);
   } else {
-    perror("No server or client found");
+    ERROR("No client connected found");
     return -1;
   }
 
   if (rd<=0){
-    perror("Could not read");
+    ERROR("Error in reading");
+    if (rd==0){
+      client.state=NOT_CLIENT;
+      if (server.state==CLIENT_CONNECT){
+        server.state=LISTEN;
+      }
+    }
     return rd;
   }
   return rd;
