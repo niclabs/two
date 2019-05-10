@@ -9,6 +9,15 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <stdint.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 
 /**
@@ -22,6 +31,7 @@ typedef struct {
         SOCK_LISTENING,
         SOCK_CONNECTED
     } state;
+    struct sockaddr_in6 sin6;
 } sock_t;
 
 /**
