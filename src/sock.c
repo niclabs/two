@@ -67,7 +67,8 @@ int sock_accept(sock_t * server, sock_t * client) {
         return -1;
     }
     struct sockaddr_in6 client_addr;
-    socklen_t * restrict client_len=sizeof(struct sockaddr_in6);
+    int length =sizeof(struct sockaddr_in6);
+    socklen_t * restrict client_len=(socklen_t * restrict)length;
     int clifd = accept(server->fd, (struct sockaddr *)&client_addr, client_len);
     if(clifd<0){
         perror("Error on accept");
