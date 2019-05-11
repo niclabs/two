@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include <string.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -66,8 +67,8 @@ int sock_accept(sock_t * server, sock_t * client) {
         return -1;
     }
     struct sockaddr_in6 client_addr;
-    int  client_len=sizeof(client_addr);
-    int clifd = accept(server->fd, (struct sockaddr *)&client_addr, &client_len);
+    int  client_len=sizeof(client_addr.sin6_addr);
+    int clifd = accept(server->fd, (struct sockaddr *)&client_addr.sin6_addr, &client_len);
     if(clifd<0){
         perror("Error on accept");
 	    return -1;
@@ -127,7 +128,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     char *p = buf;
     ssize_t bytes_read;
     while(len>0){ 
-        if(p=="" || p==NULL){
+        if(strcomp(p,"")==0 || p==NULL){
             break;
         }
         bytes_read=read(sock->fd, p, len);
@@ -155,7 +156,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
     ssize_t bytes_written;
     const char *p = buf;
     while(len>0){
-        if(p=="" || p==NULL){
+        if(strcomp(p,"")==0 || p==NULL){
             break;
         }
         bytes_written=write(sock->fd, p, len);
