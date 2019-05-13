@@ -182,7 +182,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
         len -= bytes_written;
         bytes_written_total += bytes_written;
     }
-    return bytes_written;
+    return bytes_written_total;
 }
 
 int sock_destroy(sock_t * sock) {
