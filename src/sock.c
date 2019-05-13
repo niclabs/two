@@ -14,17 +14,16 @@
 
 #define BACKLOAD 1
 
-//use logging.h to print errors.
 int sock_create(sock_t * sock) {
     if(sock==NULL){
         errno=EINVAL;
-        perror("Error creating socket");
+        DEBUG("Error creating socket, NULL socket given");
         return -1;
     }
     sock->fd=socket(AF_INET6, SOCK_STREAM, 0);
     if(sock->fd <0){
         errno=EAGAIN;
-        perror("Error creating socket");
+        ERROR("Error creating socket");
         sock->state=SOCK_CLOSED;
 	    return -1;
     }
@@ -35,7 +34,7 @@ int sock_create(sock_t * sock) {
 int sock_listen(sock_t * server, uint16_t port) {
     if((server==NULL) || (server->state != SOCK_OPENED) || (server->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_listen, %s, server must valid and be opened.\n", strerror(errno));
+        DEBUG("Error in sock_listen, server must valid and opened");
         return -1;
     }
     struct sockaddr_in6 sin6;
@@ -43,11 +42,11 @@ int sock_listen(sock_t * server, uint16_t port) {
     sin6.sin6_port=htons(port);
     sin6.sin6_addr=in6addr_any;
     if(bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6))<0){
-        perror("Error on binding");
+        ERROR("Error on binding");
         return -1;
     }
     if (listen(server->fd, BACKLOAD)<0){
-        perror("Error on listening");
+        ERROR("Error on listening");
         return -1;
     }
 	server->state= SOCK_LISTENING;
@@ -57,7 +56,7 @@ int sock_listen(sock_t * server, uint16_t port) {
 int sock_accept(sock_t * server, sock_t * client) {
     if((server == NULL) || (server->state != SOCK_LISTENING) || (server->fd <= 0)) {
         errno=EINVAL;
-        DEBUG("Error in sock_accept, server must be valid and listening.");
+        DEBUG("Error in sock_accept, server must be valid and listening");
         return -1;
     }
 
@@ -80,24 +79,24 @@ int sock_accept(sock_t * server, sock_t * client) {
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
     if(client==NULL || (client->state != SOCK_OPENED) || (client->fd<=0)){
         errno=EINVAL;
-        printf("Error in sock_connect, %s, client must be valid.\n", strerror(errno));
+        DEBUG("Error in sock_connect, client must be valid and opened");
         return -1;
     }
     struct sockaddr_in6 sin6;
     struct in6_addr address;
     if(addr==NULL){
         errno=EFAULT;
-        printf("Error in sock_connect: %s. Address given must not be NULL.\n", strerror(errno));
+        DEBUG("Error in sock_connect, NULL address given");
         return -1;
     }
     int inet_return= inet_pton(AF_INET6, addr, &address);
     if(inet_return<1){
         if(inet_return==0){
             errno=EFAULT;
-            perror("Error in sock_connect converting IPv6 address to binary");
+            ERROR("Error converting IPv6 address to binary");
         }
         if(inet_return==-1){
-            perror("Error converting IPv6 address to binary");
+            ERROR("Error converting IPv6 address to binary");
         }
         return -1;
     }
@@ -106,7 +105,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
     sin6.sin6_addr=address;
     int res=connect(client->fd, (struct sockaddr*)&sin6, sizeof(sin6));
     if(res<0){
-        perror("Error on connect");
+        ERROR("Error on connect");
 	    return -1;
     }
     client->state=SOCK_CONNECTED;
@@ -137,16 +136,20 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     time_o.tv_usec = 0;
 
     if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
-        DEBUG("Error setting timeout: %s", strerror(errno));
+        ERROR("Error setting timeout");
         return -1;
     }
 
     ssize_t bytes_read = read(sock->fd, buf, len);
-
+    if(bytes_read < 0) {
+        ERROR("Error reading from socket");
+        return -1;
+    }
+    
     time_o.tv_sec = 0;
     time_o.tv_usec = 0;
     if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
-        DEBUG("Error unsetting timeout: %s", strerror(errno));
+        ERROR("Error unsetting timeout");
         return -1;
      }
     return bytes_read;
@@ -174,10 +177,9 @@ int sock_write(sock_t * sock, char * buf, int len) {
         }
         bytes_written = write(sock->fd, p, len);
         if(bytes_written < 0) {
-            perror("Error writing on socket");
+            ERROR("Error writing on socket");
             return -1;
         }
-
         p += bytes_written;
         len -= bytes_written;
         bytes_written_total += bytes_written;
@@ -188,16 +190,16 @@ int sock_write(sock_t * sock, char * buf, int len) {
 int sock_destroy(sock_t * sock) {
     if(sock==NULL || sock->fd<=0){
         errno=EINVAL;
-        perror("Error on socket_destroy");
+        DEBUG("Error on socket_destroy, NULL socket given");
         return -1;
     }
     if(sock->state == SOCK_CLOSED){
         errno=EALREADY;
-        perror("Error on sock_destroy");
+        DEBUG("Error on sock_destroy, socket already closed");
         return -1;
     }
     if(close(sock->fd)<0){
-        perror("Error destroying socket");
+        ERROR("Error destroying socket");
 	    return -1;
     }
 	sock->state=SOCK_CLOSED;
