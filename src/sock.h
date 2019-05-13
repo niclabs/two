@@ -25,7 +25,6 @@ typedef struct {
         SOCK_LISTENING,
         SOCK_CONNECTED
     } state;
-    struct sockaddr_in6 sin6;
 } sock_t;
 
 /**
