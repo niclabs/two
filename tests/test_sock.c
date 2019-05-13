@@ -74,6 +74,7 @@ void test_sock_create_fail_to_create_socket(void)
 
 void test_sock_listen_unitialized_socket(void) {
     sock_t sock;
+    listen_fake.return_val = -1;
     int res = sock_listen(&sock, 8888);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_listen on unitialized socket should return error value");
@@ -81,6 +82,7 @@ void test_sock_listen_unitialized_socket(void) {
 }
 
 void test_sock_listen_null_socket(void){
+    listen_fake.return_val = -1;
     int res=sock_listen(NULL, 8888);
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_listen on NULL socket should return error value");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
@@ -126,6 +128,7 @@ void test_sock_accept(void){
 
 void test_sock_accept_unitialized_socket(void) {
     sock_t sock;
+    accept_fake.return_val=-1;
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept on unitialized socket should return error value");
@@ -136,6 +139,7 @@ void test_sock_accept_unbound_socket(void) {
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
+    accept_fake.return_val=-1;
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept on unbound socket should return error value");
@@ -148,6 +152,7 @@ void test_sock_accept_null_client(void) {
     sock_create(&sock);
     listen_fake.return_val = 0;
     sock_listen(&sock, 8888);
+    accept_fake.return_val=-1;
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept with null client should return error value");
@@ -184,6 +189,7 @@ void test_sock_connect_null_address(void) {
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
+    connect_fake.return_val=-1;
     int res = sock_connect(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should not accept a null address");
@@ -194,7 +200,7 @@ void test_sock_connect_ipv4_address(void) {
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-
+    connect_fake.return_val=-1;
     int res = sock_connect(&sock, "127.0.0.1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should not accept ipv4 addresses");
@@ -205,7 +211,7 @@ void test_sock_connect_bad_address(void) {
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-
+    connect_fake.return_val=-1;
     int res = sock_connect(&sock, "bad_address", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should fail on bad address");
@@ -257,6 +263,7 @@ void test_sock_read(void){
     sock_connect(&sock_client, "::1", 8888);
     sock_accept(&sock_server, &sock_client);
     sock_write(&sock_server, buf, 10);
+    read_fake.return_val=0;
     int res=sock_read(&sock_server, other_buf, 10, 0);
 
     TEST_ASSERT_EQUAL_MESSAGE(res, 10, "sock_read should have read 10 bytes");
@@ -266,7 +273,7 @@ void test_sock_read(void){
 
 void test_sock_write_null_socket(void){
     char buf[256];
-    read_fake.return_val=-1;
+    write_fake.return_val=-1;
     int res=sock_write(NULL, buf, 256);
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from NULL socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
@@ -280,7 +287,7 @@ void test_sock_write_null_buffer(void) {
     sock_listen(&sock_server, 0);
     accept_fake.return_val=0;
     sock_accept(&sock_server, &sock_client);
-    read_fake.return_val=-1;
+    write_fake.return_val=-1;
     int res = sock_write(&sock_server, NULL, 256);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when buffer is NULL");
@@ -292,7 +299,7 @@ void test_sock_write_unconnected_socket(void) {
     char buf[256];
     socket_fake.return_val = 123;
     sock_create(&sock);
-
+    write_fake.return_val=-1;
     int res = sock_write(&sock, buf, 256);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from unconnected socket");
@@ -307,6 +314,7 @@ void test_sock_write(void){
     sock_create(&sock_client);
     sock_connect(&sock_client, "::1", 8888);
     sock_accept(&sock_server, &sock_client);
+    write_fake.return_val=0;
     int res=sock_write(&sock_server, buf, 10);
 
     TEST_ASSERT_EQUAL_MESSAGE(res, 10, "sock_write should have written 10 bytes");
@@ -336,8 +344,8 @@ void test_sock_destroy(void){
      socket_fake.return_val=123;
      sock_create(&sock);
      sock_destroy(&sock);
-     int res=sock_destroy(&sock);
      close_fake.return_val=-1;
+     int res=sock_destroy(&sock);
      TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is CLOSED");
      TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_destroy should set errno on error");
  }
