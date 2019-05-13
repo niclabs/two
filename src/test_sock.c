@@ -248,8 +248,20 @@ void test_sock_read_unconnected_socket(void) {
 }
 
 void test_sock_read(void){
+    char buf[10]="Hola mundo";
+    char other_buf[10];
+    sock_t sock_server, sock_client;
+    sock_create(&sock_server);
+    sock_listen(&sock_server, 8888);
+    sock_create(&sock_client);
+    sock_connect(&sock_client, "::1", 8888);
+    sock_accept(&sock_server, &sock_client);
+    sock_write(&sock_server, buf, 10);
+    int res=sock_read(&sock_server, other_buf, 10, 0);
 
-
+    TEST_ASSERT_EQUAL_MESSAGE(res, 10, "sock_read should have read 10 bytes");
+    TEST_ASSERT_EQUAL_MESSAGE(errno, 0, "sock_read should not set errno on success");
+    TEST_ASSERT_EQUAL_STRING_MESSAGE(other_buf, buf, "sock_read should correctly store message from socket");
 }
 
 void test_sock_write_null_socket(void){
@@ -288,6 +300,17 @@ void test_sock_write_unconnected_socket(void) {
 }
 
 void test_sock_write(void){
+    char buf[10]="Hola mundo";
+    sock_t sock_server, sock_client;
+    sock_create(&sock_server);
+    sock_listen(&sock_server, 8888);
+    sock_create(&sock_client);
+    sock_connect(&sock_client, "::1", 8888);
+    sock_accept(&sock_server, &sock_client);
+    int res=sock_write(&sock_server, buf, 10);
+
+    TEST_ASSERT_EQUAL_MESSAGE(res, 10, "sock_write should have written 10 bytes");
+    TEST_ASSERT_EQUAL_MESSAGE(errno,0, "sock_write should not set errno on success");
 
 }
 
@@ -342,11 +365,11 @@ int main(void)
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_unconnected_socket);
-    UNIT_TEST(test_sock_read);// TODO
+    UNIT_TEST(test_sock_read);
     UNIT_TEST(test_sock_write_null_socket);
     UNIT_TEST(test_sock_write_null_buffer);
     UNIT_TEST(test_sock_write_unconnected_socket);
-    UNIT_TEST(test_sock_write);// TODO
+    UNIT_TEST(test_sock_write);
     UNIT_TEST(test_sock_destroy);
     UNIT_TEST(test_sock_destroy_null_sock);
     UNIT_TEST(test_sock_destroy_closed_sock);
