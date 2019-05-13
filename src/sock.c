@@ -169,6 +169,9 @@ int sock_write(sock_t * sock, char * buf, int len) {
     ssize_t bytes_written_total = 0;
     const char *p = buf;
     while(len>0) {
+        if(strcmp(p, "")==0 || p==NULL){
+            break;
+        }
         bytes_written = write(sock->fd, p, len);
         if(bytes_written < 0) {
             perror("Error writing on socket");
