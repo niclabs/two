@@ -222,7 +222,7 @@ int http_read( uint8_t * buf, int len){
   int rd=0;
 
   if (client.state == CONNECTED){
-    rd= sock_write(client.socket, (char *) buf, len);
+    rd = sock_read(client.socket, (char *) buf, len, 0);//Timeout 0, maybe needs to be changed (?)
   } else {
     ERROR("No client connected found");
     return -1;

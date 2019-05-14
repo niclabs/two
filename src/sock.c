@@ -151,7 +151,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
     if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
         ERROR("Error unsetting timeout");
         return -1;
-     }
+    }
     return bytes_read;
 }
 
@@ -172,7 +172,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
     ssize_t bytes_written_total = 0;
     const char *p = buf;
     while(len>0) {
-        if(strcmp(p, "")==0 || p==NULL){
+        if(p==NULL){
             break;
         }
         bytes_written = write(sock->fd, p, len);
