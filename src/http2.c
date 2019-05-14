@@ -299,17 +299,17 @@ int server_init_connection(h2states_t *st){
   puts("Server: waiting for preface...");
   /*We read the first 24 byes*/
   rc = read_n_bytes(preface_buff, 24);
-  puts("Server: 24 bytes read");
   if(rc != 24){
     puts("Error in reading preface");
     return -1;
   }
+  puts("Server: 24 bytes read");
   if(strcmp(preface, (char*)preface_buff) != 0){
     puts("Error in preface receiving");
     return -1;
   }
   /*Server sends local settings to endpoint*/
-  puts("Server: sending local settings");
+  puts("Server: sending local settings...");
   if((rc = send_local_settings(st)) < 0){
     puts("Error in local settings sending");
     return -1;
