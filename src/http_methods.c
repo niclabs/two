@@ -32,7 +32,6 @@ struct server_s{
     CLIENT_CONNECT
   } state;
   sock_t * socket;
-  struct client_s client_connect;
 };
 
 struct server_s server;
@@ -47,12 +46,14 @@ int http_init_server(uint16_t port){
   client.state=NOT_CLIENT;
 
   sock_t server_sock;
-  server.socket=&server_sock;
+  //server.socket=&server_sock;
 
   if (sock_create(&server_sock)<0){
-    ERROR("Server could not be created");
+    ERROR("Error in server creation");
     return -1;
   }
+
+  server.socket=&server_sock;
 
   if (sock_listen(&server_sock, port)<0){
     ERROR("Partial error in server creation");
@@ -222,7 +223,7 @@ int http_read( uint8_t * buf, int len){
   int rd=0;
 
   if (client.state == CONNECTED){
-    rd = sock_read(client.socket, (char *) buf, len, 0);//Timeout 0, maybe needs to be changed (?)
+    rd= sock_read(client.socket, (char *) buf, len, 0);
   } else {
     ERROR("No client connected found");
     return -1;
