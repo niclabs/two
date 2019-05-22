@@ -11,8 +11,6 @@ HTTP/2
 #include <unistd.h>
 
 #include "http_methods.h"
-#include "sock.h"
-#include "http2.h"
 #include "logging.h"
 
 

@@ -23,8 +23,8 @@ FAKE_VALUE_FUNC(int, sock_connect, sock_t *, char *, uint16_t);
 FAKE_VALUE_FUNC(int, sock_read, sock_t *, char *, int, int);
 FAKE_VALUE_FUNC(int, sock_write, sock_t *, char *, int);
 FAKE_VALUE_FUNC(int, sock_destroy, sock_t *);
-FAKE_VALUE_FUNC(int, client_init_connection, h2states_t *);
-FAKE_VALUE_FUNC(int, server_init_connection, h2states_t *);
+FAKE_VALUE_FUNC(int, client_init_connection, hstates_t *);
+FAKE_VALUE_FUNC(int, server_init_connection, hstates_t *);
 
 
 /* List of fakes used by this unit tester */
@@ -355,188 +355,6 @@ void test_http_client_disconnect_fail(void){
 }
 
 
-void test_http_write_server_success(void){
-  sock_create_fake.custom_fake=sock_create_custom_fake;
-  sock_listen_fake.custom_fake=sock_listen_custom_fake;
-  sock_accept_fake.custom_fake=sock_accept_custom_fake;
-  server_init_connection_fake.return_val=0;
-
-  http_init_server(12);
-
-  sock_write_fake.return_val=4;
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  buf=(uint8_t *)"hola";
-  int wr = http_write(buf,256);
-
-
-  TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-  TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
-  TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-  TEST_ASSERT_EQUAL((void *)server_init_connection, fff.call_history[3]);
-
-  TEST_ASSERT_EQUAL((void *)sock_write, fff.call_history[4]);
-
-  TEST_ASSERT_EQUAL(4, wr);
-}
-
-
-void test_http_write_client_success(void){
-  sock_create_fake.custom_fake=sock_create_custom_fake;
-  sock_connect_fake.custom_fake=sock_connect_custom_fake;
-  client_init_connection_fake.return_val=0;
-
-  http_client_connect(12,"::");
-
-  sock_write_fake.return_val=4;
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  buf=(uint8_t *)"hola";
-  int wr = http_write(buf,256);
-
-
-  TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-  TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-  TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
-
-  TEST_ASSERT_EQUAL((void *)sock_write, fff.call_history[3]);
-
-  TEST_ASSERT_EQUAL(4, wr);
-}
-
-
-void test_http_write_fail_sock_write(void){
-  sock_create_fake.custom_fake=sock_create_custom_fake;
-  sock_connect_fake.custom_fake=sock_connect_custom_fake;
-  client_init_connection_fake.return_val=0;
-
-  http_client_connect(12,"::");
-
-
-  sock_write_fake.return_val=0;
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  buf=(uint8_t *)"hola";
-  int wr = http_write(buf,256);
-
-
-  TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-  TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-  TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
-
-  TEST_ASSERT_EQUAL((void *)sock_write, fff.call_history[3]);
-
-  TEST_ASSERT_EQUAL_MESSAGE(0, wr,"Error in writing");
-}
-
-
-void test_http_write_fail_no_client_or_server(void){
-  sock_create_fake.return_val=-1;
-
-  http_client_connect(12,"::");
-  http_init_server(12);
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  buf=(uint8_t *)"hola";
-  int wr = http_write(buf,256);
-
-  TEST_ASSERT_EQUAL_MESSAGE(-1, wr, "No client connected found");
-}
-
-
-void test_http_read_server_success(void){
-  sock_create_fake.custom_fake=sock_create_custom_fake;
-  sock_listen_fake.custom_fake=sock_listen_custom_fake;
-  sock_accept_fake.custom_fake=sock_accept_custom_fake;
-  server_init_connection_fake.return_val=0;
-
-  http_init_server(12);
-
-  sock_read_fake.return_val=4;
-  sock_read_fake.custom_fake=sock_read_custom_fake;
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  int rd = http_read(buf,256);
-
-
-  TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-  TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
-  TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-  TEST_ASSERT_EQUAL((void *)server_init_connection, fff.call_history[3]);
-
-  TEST_ASSERT_EQUAL((void *)sock_read, fff.call_history[4]);
-
-  TEST_ASSERT_EQUAL(0, memcmp(buf,(uint8_t*)"hola",4));
-
-  TEST_ASSERT_EQUAL(4, rd);
-}
-
-
-void test_http_read_client_success(void){
-  sock_create_fake.custom_fake=sock_create_custom_fake;
-  sock_connect_fake.custom_fake=sock_connect_custom_fake;
-  client_init_connection_fake.return_val=0;
-
-
-  http_client_connect(12,"::");
-
-  sock_read_fake.return_val=4;
-  sock_read_fake.custom_fake=sock_read_custom_fake;
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  int rd = http_read(buf,256);
-
-
-  TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-  TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-  TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
-
-  TEST_ASSERT_EQUAL((void *)sock_read, fff.call_history[3]);
-
-  TEST_ASSERT_EQUAL(0, memcmp(buf,(uint8_t*)"hola",4));
-
-  TEST_ASSERT_EQUAL(4, rd);
-}
-
-
-
-void test_http_read_fail_sock_read(void){
-  sock_create_fake.custom_fake=sock_create_custom_fake;
-  sock_connect_fake.custom_fake=sock_connect_custom_fake;
-  client_init_connection_fake.return_val=0;
-
-  http_client_connect(12,"::");
-
-
-  sock_read_fake.return_val=0;
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  int rd = http_read(buf,256);
-
-  TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-  TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-  TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
-
-  TEST_ASSERT_EQUAL(fff.call_history[3], (void *)sock_read);
-
-  TEST_ASSERT_EQUAL_MESSAGE(0, rd, "Error in reading");
-}
-
-
-
-void test_http_read_fail_not_connected_client(void){
-  sock_create_fake.custom_fake=sock_create_custom_fake;
-  sock_connect_fake.return_val=-1;
-
-  http_client_connect(12,"::");
-
-  uint8_t * buf = (uint8_t*)malloc(256);
-  int rd = http_read(buf,256);
-
-  TEST_ASSERT_EQUAL_MESSAGE(-1, rd, "No client connected found");
-}
-
-
 int main(void){
   UNITY_BEGIN();
 
@@ -559,16 +377,6 @@ int main(void){
   RUN_TEST(test_http_client_disconnect_success_v1);
   RUN_TEST(test_http_client_disconnect_success_v2);
   RUN_TEST(test_http_client_disconnect_fail);
-
-  RUN_TEST(test_http_write_server_success);
-  RUN_TEST(test_http_write_client_success);
-  RUN_TEST(test_http_write_fail_sock_write);
-  RUN_TEST(test_http_write_fail_no_client_or_server);
-
-  RUN_TEST(test_http_read_server_success);
-  RUN_TEST(test_http_read_client_success);
-  RUN_TEST(test_http_read_fail_sock_read);
-  RUN_TEST(test_http_read_fail_not_connected_client);
 
   return UNITY_END();
 }

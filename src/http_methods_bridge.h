@@ -5,9 +5,10 @@ HTTP/2
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "sock.h"
 #include "http2.h"
 
-struct HTTP_STATES{
+typedef struct HTTP_STATES{
   uint8_t socket_state;
   sock_t * socket;
   h2states_t h2s;
@@ -23,7 +24,7 @@ struct HTTP_STATES{
 * @return 0    if connection was closed on the other side
 * @return -1   on error
 */
-int http_write(uint8_t * buf, int len, hstates_t hs);
+int http_write(uint8_t * buf, int len, hstates_t * hs);
 
 /*
 * Read the data from the socket with the client
@@ -35,4 +36,4 @@ int http_write(uint8_t * buf, int len, hstates_t hs);
 * @return   0      if connection was closed on the other side
 * @return  -1      on error
 */
-int http_read(uint8_t * buf, int len, hstates_t hs);
+int http_read(uint8_t * buf, int len, hstates_t * hs);
