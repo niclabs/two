@@ -63,8 +63,26 @@ int http_client_connect(uint16_t port, char * ip);
 */
 int http_client_disconnect(void);
 
-
+/*
+* Add a header and its value to the headers list
+*
+* @param    name      new headers name
+* @param    value     new headers value
+*
+* @return   0      successfully added pair
+* @return   -1     There was an error
+*/
 int http_add_header(char * name, char * value);
+
+/*
+* Search by a value of a header in the header list
+*
+* @param    header     Header name
+* @param    len        header name length
+*
+* @return              value finded
+*/
+char * http_grab_header(char * header, int len);
 
 
 #endif /* HTTP_METHODS_H */

@@ -99,6 +99,23 @@ int http_set_function_to_path(char * callback, char * path){
 }
 
 
+int http_add_header(char * name, char * value){
+  int i=global_state.table_index;
+
+  if (i==10){
+    ERROR("Headers list is full");
+    return -1;
+  }
+
+  strcpy(global_state.header_list[i].name, name);
+  strcpy(global_state.header_list[i].value, value);
+
+  global_state.table_index=i+1;
+
+  return 0;
+}
+
+
 int http_server_destroy(void){
   if (server.state==NOT_SERVER){
     WARN("Server not found");
@@ -167,6 +184,23 @@ int http_client_connect(uint16_t port, char * ip){
 }
 
 
+char * http_grab_header(char * header, int len){
+  int i=global_state.table_index;
+
+  if (i==-1){
+    ERROR("Headers list is empty");
+    return NULL;
+  }
+
+  int k;
+  for(k=0,k<=i)
+  memcmp(global_state.header_list[i].name, name);
+  memcmp(global_state.header_list[i].value, value);
+
+  return 0;
+}
+
+
 int http_client_disconnect(void){
 
   if (client.state==CONNECTED || global_state.socket_state==1){
@@ -181,11 +215,5 @@ int http_client_disconnect(void){
   global_state.socket_state=0;
   client.state=NOT_CLIENT;
 
-  return 0;
-}
-
-int http_add_header(char * name, char * value){
-  (void) name;
-  (void) value;
   return 0;
 }

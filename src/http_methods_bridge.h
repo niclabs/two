@@ -29,8 +29,9 @@ typedef struct HTTP_STATES{
 /*
 * Write in the socket with the client
 *
-* @param   buf   buffer with the data to writte
-* @param   len   buffer length
+* @param    buf   buffer with the data to writte
+* @param    len   buffer length
+* @param    hs    http states struct
 *
 * @return >0   number of bytes written
 * @return 0    if connection was closed on the other side
@@ -43,10 +44,11 @@ int http_write(uint8_t * buf, int len, hstates_t * hs);
 *
 * @param    buf   buffer where the data will be write
 * @param    len   buffer length
+* @param    hs    http states struct
 *
-* @return   >0     number of bytes read
-* @return   0      if connection was closed on the other side
-* @return  -1      on error
+* @return   >0    number of bytes read
+* @return   0     if connection was closed on the other side
+* @return   -1    on error
 */
 int http_read(uint8_t * buf, int len, hstates_t * hs);
 
@@ -54,11 +56,23 @@ int http_read(uint8_t * buf, int len, hstates_t * hs);
 * Given the content of the request made by the client, this function calls
 * the functions necessary to respond to the request
 *
-* @param    headers   Encoded request
+* @param     headers   Encoded request
 *
-* @return   0         the action was successful
-* @return   -1        the action fail
+* @return    0         the action was successful
+* @return    -1        the action fail
 */
 int http_receive(char * headers);
+
+/*
+* Empty the list of headers in hstates_t struct
+*
+* @param    hs        http states struct
+* @param    index     header index in headers list, invalid index to delete
+*                     the entire table
+*
+* @return    0        The list was emptied
+* @return    1        There was an error
+*/
+int http_clear_header_list(hstates_t * hs, int index);
 
 #endif /* HTTP_METHODS_H */
