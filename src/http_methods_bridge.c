@@ -83,7 +83,7 @@ int http_clear_header_list(hstates_t * hs, int index){
       ERROR("Problems deleting a header or its value");
       return -1;
     }
-    
+
     return 0;
   }
 

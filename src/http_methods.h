@@ -5,8 +5,8 @@
 #ifndef HTTP_METHODS_H
 #define HTTP_METHODS_H
 
-#include <stdlib.h>
-#include <stdint.h>
+#include "http_methods_bridge.h"
+
 
 
 /*Server*/
