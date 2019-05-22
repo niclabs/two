@@ -73,30 +73,3 @@ int read_n_bytes(uint8_t *buff_read, int n){
   }
   return read_bytes;
 }
-
-
-
-/* Toy write function
-int http_write(uint8_t *bytes, int length){
-  if(size+length > MAX_BUFFER_SIZE){
-    return -1;
-  }
-  memcpy(buffer+size, bytes, length);
-  size += length;
-  printf("Write: buffer size is %u\n", size);
-  return length;
-}
-
-// Toy read function
-int http_read(uint8_t *bytes, int length){
-  if(length > size){
-    length = size;
-  }
-  //Write to caller
-  memcpy(bytes, buffer, length);
-  size = size - length;
-  //Move the rest of the data on buffer
-  memcpy(buffer, buffer+length, size);
-  printf("Read: buffer size is %u\n", size);
-  return length;
-}*/
