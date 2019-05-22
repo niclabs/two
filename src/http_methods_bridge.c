@@ -18,7 +18,7 @@ HTTP/2
 int http_write(uint8_t * buf, int len, hstates_t hs){
   int wr=0;
 
-  if (hs.s==1){
+  if (hs.socket_state==1){
     wr= sock_write(hs.socket, (char *) buf, len);
   } else {
     ERROR("No client connected found");
@@ -39,7 +39,7 @@ int http_write(uint8_t * buf, int len, hstates_t hs){
 int http_read( uint8_t * buf, int len, hstates_t hs){
   int rd=0;
 
-  if (client.state == CONNECTED){
+  if (hs.socket_state==1){
     rd= sock_read(client.socket, (char *) buf, len, 0);
   } else {
     ERROR("No client connected found");

@@ -8,7 +8,7 @@ HTTP/2
 #include "http2.h"
 
 struct HTTP_STATES{
-  uint8_t s;
+  uint8_t socket_state;
   sock_t * socket;
   h2states_t h2s;
 } hstates_t;

@@ -43,7 +43,7 @@ hstates_t global_state;
 
 
 int http_init_server(uint16_t port){
-  global_state.s=0;
+  global_state.socket_state=0;
 
   client.state=NOT_CLIENT;
 
@@ -80,7 +80,7 @@ int http_init_server(uint16_t port){
   printf("Client found and connected\n");
 
   global_state.socket=&client_sock;
-  global_state.s=1;
+  global_state.socket_state=1;
   if(server_init_connection(&global_state)<0){
     ERROR("Problems sending server data");
     return -1;
@@ -98,23 +98,18 @@ int http_set_function_to_path(char * callback, char * path){
 
 
 int http_server_destroy(void){
-  if(global_state.s==0){
-    WARN("");
-    return -1;
-  }
-
   if (server.state==NOT_SERVER){
     WARN("Server not found");
     return -1;
   }
 
-  if (client.state==CONNECTED){
+  if (client.state==CONNECTED || global_state.socket_state==1){
     if (sock_destroy(client.socket)<0){
       WARN("Client still connected");
     }
   }
 
-  global_state.s=0;
+  global_state.socket_state=0;
 
   if (sock_destroy(server.socket)<0){
     ERROR("Error in server disconnection");
@@ -133,7 +128,7 @@ int http_server_destroy(void){
 
 
 int http_client_connect(uint16_t port, char * ip){
-  global_state.s=0;
+  global_state.socket_state=0;
 
   struct client_s * cl= &client;
   server.state=NOT_SERVER;
@@ -158,7 +153,7 @@ int http_client_connect(uint16_t port, char * ip){
   cl->state=CONNECTED;
 
   global_state.socket=&sock;
-  global_state.s=1;
+  global_state.socket_state=1;
 
   if(client_init_connection(&global_state)<0){
     ERROR("Problems sending client data");
@@ -171,19 +166,17 @@ int http_client_connect(uint16_t port, char * ip){
 
 int http_client_disconnect(void){
 
-  if (client.state==CREATED || global_state.s==0){
-    return 0;
+  if (client.state==CONNECTED || global_state.socket_state==1){
+      if (sock_destroy(client.socket)<0){
+      ERROR("Error in client disconnection");
+      return -1;
+    }
+
+    printf("Client disconnected\n");
   }
 
-  if (sock_destroy(client.socket)<0){
-    ERROR("Error in client disconnection");
-    return -1;
-  }
-
-  global_state.s=0;
+  global_state.socket_state=0;
   client.state=NOT_CLIENT;
-
-  printf("Client disconnected\n");
 
   return 0;
 }
