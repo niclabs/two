@@ -11,6 +11,7 @@ HTTP/2
 #include <unistd.h>
 
 #include "http_methods_bridge.h"
+#include "http_methods.h"
 #include "logging.h"
 
 
@@ -54,4 +55,20 @@ int http_read( uint8_t * buf, int len, hstates_t * hs){
   }
   return rd;
 
+}
+
+int http_receive(char * headers){
+  (void) headers;
+  //TODO decod headers
+  return -1;
+}
+
+
+int get_receive(char * path, char * headers){
+  (void) path;
+  (void) headers;
+  // buscar respuesta correspondiente a path
+  // codificar respuesta
+  // enviar respuesta a socket
+  return -1;
 }

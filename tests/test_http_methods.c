@@ -5,6 +5,8 @@
 #include "fff.h"
 #include "http_methods.h"
 #include "http2.h"
+#include "http_methods_bridge.h"
+
 
 #include <stdio.h>
 #include <string.h>

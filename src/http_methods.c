@@ -12,6 +12,8 @@ HTTP/2
 
 #include "http_methods.h"
 #include "logging.h"
+#include "sock.h"
+#include "http2.h"
 
 
 struct client_s{
@@ -42,6 +44,7 @@ hstates_t global_state;
 
 int http_init_server(uint16_t port){
   global_state.socket_state=0;
+  global_state.table_index=-1;
 
   client.state=NOT_CLIENT;
 
@@ -127,6 +130,7 @@ int http_server_destroy(void){
 
 int http_client_connect(uint16_t port, char * ip){
   global_state.socket_state=0;
+  global_state.table_index=-1;
 
   struct client_s * cl= &client;
   server.state=NOT_SERVER;
@@ -179,18 +183,8 @@ int http_client_disconnect(void){
   return 0;
 }
 
-int http_receive(char * headers){
-  (void) headers;
-  //TODO decod headers
-  return -1;
-}
-
-
-int get_receive(char * path, char * headers){
-  (void) path;
-  (void) headers;
-  // buscar respuesta correspondiente a path
-  // codificar respuesta
-  // enviar respuesta a socket
-  return -1;
+int http_add_header(char * name, char * value){
+  (void) name;
+  (void) value;
+  return 0;
 }

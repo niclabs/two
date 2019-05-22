@@ -2,7 +2,11 @@
 This API contains the HTTP methods to be used by
 HTTP/2
 */
+#ifndef HTTP_METHODS_H
+#define HTTP_METHODS_H
 
+#include <stdlib.h>
+#include <stdint.h>
 #include "http_methods_bridge.h"
 
 
@@ -61,13 +65,7 @@ int http_client_connect(uint16_t port, char * ip);
 int http_client_disconnect(void);
 
 
-/*
-* Given the content of the request made by the client, this function calls
-* the functions necessary to respond to the request
-*
-* @param    headers   Encoded request
-*
-* @return   0         the action was successful
-* @return   -1        the action fail
-*/
-int http_receive(char * headers);
+int http_add_header(char * name, char * value);
+
+
+#endif /* HTTP_METHODS_H */
