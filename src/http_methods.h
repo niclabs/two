@@ -3,8 +3,8 @@ This API contains the HTTP methods to be used by
 HTTP/2
 */
 
-#include <stdlib.h>
-#include <stdint.h>
+#include "http_methods_bridge.h"
+
 
 /*Server*/
 /*
@@ -60,29 +60,6 @@ int http_client_connect(uint16_t port, char * ip);
 */
 int http_client_disconnect(void);
 
-/*
-* Write in the socket with the client
-*
-* @param   buf   buffer with the data to writte
-* @param   len   buffer length
-*
-* @return >0   number of bytes written
-* @return 0    if connection was closed on the other side
-* @return -1   on error
-*/
-int http_write(uint8_t * buf, int len);
-
-/*
-* Read the data from the socket with the client
-*
-* @param    buf   buffer where the data will be write
-* @param    len   buffer length
-*
-* @return   >0     number of bytes read
-* @return   0      if connection was closed on the other side
-* @return  -1      on error
-*/
-int http_read(uint8_t * buf, int len);
 
 /*
 * Given the content of the request made by the client, this function calls

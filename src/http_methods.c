@@ -36,12 +36,14 @@ struct server_s{
 
 struct server_s server;
 struct client_s client;
+hstates_t global_state;
 
 
 /************************************Server************************************/
 
 
 int http_init_server(uint16_t port){
+  global_state.s=0;
 
   client.state=NOT_CLIENT;
 
@@ -77,8 +79,9 @@ int http_init_server(uint16_t port){
 
   printf("Client found and connected\n");
 
-  h2states_t server_state;
-  if(server_init_connection(&server_state)<0){
+  global_state.socket=&client_sock;
+  global_state.s=1;
+  if(server_init_connection(&global_state)<0){
     ERROR("Problems sending server data");
     return -1;
   }
@@ -95,6 +98,10 @@ int http_set_function_to_path(char * callback, char * path){
 
 
 int http_server_destroy(void){
+  if(global_state.s==0){
+    WARN("");
+    return -1;
+  }
 
   if (server.state==NOT_SERVER){
     WARN("Server not found");
@@ -106,6 +113,8 @@ int http_server_destroy(void){
       WARN("Client still connected");
     }
   }
+
+  global_state.s=0;
 
   if (sock_destroy(server.socket)<0){
     ERROR("Error in server disconnection");
@@ -124,6 +133,8 @@ int http_server_destroy(void){
 
 
 int http_client_connect(uint16_t port, char * ip){
+  global_state.s=0;
+
   struct client_s * cl= &client;
   server.state=NOT_SERVER;
 
@@ -146,8 +157,10 @@ int http_client_connect(uint16_t port, char * ip){
 
   cl->state=CONNECTED;
 
-  h2states_t client_state;
-  if(client_init_connection(&client_state)<0){
+  global_state.socket=&sock;
+  global_state.s=1;
+
+  if(client_init_connection(&global_state)<0){
     ERROR("Problems sending client data");
     return -1;
   }
@@ -158,7 +171,7 @@ int http_client_connect(uint16_t port, char * ip){
 
 int http_client_disconnect(void){
 
-  if (client.state==CREATED){
+  if (client.state==CREATED || global_state.s==0){
     return 0;
   }
 
@@ -167,6 +180,7 @@ int http_client_disconnect(void){
     return -1;
   }
 
+  global_state.s=0;
   client.state=NOT_CLIENT;
 
   printf("Client disconnected\n");
@@ -188,57 +202,4 @@ int get_receive(char * path, char * headers){
   // codificar respuesta
   // enviar respuesta a socket
   return -1;
-}
-
-
-
-/******************************************************************************/
-
-
-int http_write(uint8_t * buf, int len){
-  int wr=0;
-
-  if (client.state == CONNECTED){
-    wr= sock_write(client.socket, (char *) buf, len);
-  } else {
-    ERROR("No client connected found");
-    return -1;
-  }
-
-  if (wr<=0){
-    ERROR("Error in writing");
-    if (wr==0){
-      client.state=NOT_CLIENT;
-      if (server.state==CLIENT_CONNECT){
-        server.state=LISTEN;
-      }
-    }
-    return wr;
-  }
-  return wr;
-}
-
-
-int http_read( uint8_t * buf, int len){
-  int rd=0;
-
-  if (client.state == CONNECTED){
-    rd= sock_read(client.socket, (char *) buf, len, 0);
-  } else {
-    ERROR("No client connected found");
-    return -1;
-  }
-
-  if (rd<=0){
-    ERROR("Error in reading");
-    if (rd==0){
-      client.state=NOT_CLIENT;
-      if (server.state==CLIENT_CONNECT){
-        server.state=LISTEN;
-      }
-    }
-    return rd;
-  }
-  return rd;
-
 }
