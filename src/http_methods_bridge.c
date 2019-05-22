@@ -28,8 +28,8 @@ int http_write(uint8_t * buf, int len, hstates_t hs){
   if (wr<=0){
     ERROR("Error in writing");
     if (wr==0){
-      hs.s=0;
-      }
+      hs.socket_state=0;
+    }
     return wr;
   }
   return wr;
@@ -49,10 +49,7 @@ int http_read( uint8_t * buf, int len, hstates_t hs){
   if (rd<=0){
     ERROR("Error in reading");
     if (rd==0){
-      client.state=NOT_CLIENT;
-      if (server.state==CLIENT_CONNECT){
-        server.state=LISTEN;
-      }
+      hs.socket_state=0;
     }
     return rd;
   }
