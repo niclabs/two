@@ -7,7 +7,6 @@ HTTP/2
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "http_methods_bridge.h"
 
 
 /*Server*/

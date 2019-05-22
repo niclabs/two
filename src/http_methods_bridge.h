@@ -2,8 +2,8 @@
 This API contains the HTTP methods to be used by
 HTTP/2
 */
-#ifndef HTTP_METHODS_H
-#define HTTP_METHODS_H
+#ifndef HTTP_METHODS_BRIDGE_H
+#define HTTP_METHODS_BRIDGE_H
 
 #include <stdlib.h>
 #include <stdint.h>
