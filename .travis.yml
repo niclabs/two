@@ -11,10 +11,8 @@ before_install:
   - sudo chgrp -hR 1000 $TWO_HOST_PATH
 
 script:
-  # Test that everything compiles
-  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make
-  # Run tests
-  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make test
+  # Run make inside container
+  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make $MAKE_TARGET
 
 after_success:
   # Run code coverage (doesn't work yet)
@@ -26,3 +24,8 @@ env:
   global:
     - DOCKER_IMG='niclabs/embeddable'
     - TWO_HOST_PATH=`pwd`
+  matrix:
+    # Test compilation
+    - MAKE_TARGET=
+    # Run tests
+    - MAKE_TARGET=test
