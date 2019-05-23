@@ -14,7 +14,7 @@ else
 	TARGET_EXTENSION=out
 endif
 
-.PHONY: test clean
+.PHONY: test clean test_%
 
 BASEDIR		?= $(CURDIR)/..
 BUILDDIR	?= $(BASEDIR)/build
@@ -75,6 +75,9 @@ test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "\n$(if $(FAIL),FAILED,OK)"
 	@test -z "$(FAIL)"
 
+test_%: $(PATHB)test_%.$(TARGET_EXTENSION) $(BUILD_PATHS)
+	$(Q)$<
+
 clean:
 	@$(RM) -r $(PATHB)
 
@@ -85,7 +88,7 @@ $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
 $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o #$(PATHD)test_%.d
 	$(Q)$(LINK) $(LDFLAGS) -o $@ $^
 
-$(PATHO)%.o:: $(PATHT)%.c
+$(PATHO)%.o:: $(PATHT)%.c $(PATHT)unit.h
 	$(Q)$(COMPILE) $(CFLAGS) -g -fprofile-arcs -ftest-coverage $< -o $@
 
 $(PATHO)%.o:: $(PATHS)%.c
