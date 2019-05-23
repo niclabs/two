@@ -12,9 +12,9 @@ before_install:
 
 script:
   # Test that everything compiles
-  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -ti $DOCKER_IMG QUIET=0 make
+  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make
   # Run tests
-  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -ti $DOCKER_IMG QUIET=0 make test
+  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make test
 
 after_success:
   # Run code coverage (doesn't work yet)
