@@ -96,7 +96,6 @@ test: $(ALLDIRS) $(TESTSDIR)
 
 # Catch all other rules
 .DEFAULT:
-    # Create directories manually since .DEFAULT cannot call dependenci
 	$(foreach dir,$(ALLDIRS),\
 		$(if $(wildcard $(dir)),,\
 			$(info Creating $(dir))\
