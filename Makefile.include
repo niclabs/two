@@ -6,7 +6,6 @@ PLATFORM ?= linux
 BASEDIR			?= $(dir $(lastword $(MAKEFILE_LIST)))
 BUILDDIR		?= $(BASEDIR)/build
 TARGETDIR		?= $(BUILDDIR)/$(PLATFORM)
-DEPSDIR			?= $(BASEDIR)/deps
 PLATFORMDIR		?= $(BASEDIR)/platform
 SRCDIR			?= $(BASEDIR)/src
 TESTSDIR		?= $(BASEDIR)/tests
@@ -15,7 +14,6 @@ TESTSDIR		?= $(BASEDIR)/tests
 override BASEDIR        := $(abspath $(BASEDIR))
 override BUILDDIR       := $(abspath $(BUILDDIR))
 override TARGETDIR      := $(abspath $(TARGETDIR))
-override DEPSDIR        := $(abspath $(DEPSDIR))
 override PLATFORMDIR    := $(abspath $(PLATFORMDIR))
 override SRCDIR         := $(abspath $(SRCDIR))
 override TESTSDIR       := $(abspath $(TESTSDIR))
@@ -78,7 +76,7 @@ endif
 export
 
 # Create build directories
-ALLDIRS := $(TARGETDIR) $(DEPSDIR)
+ALLDIRS := $(TARGETDIR)
 
 $(ALLDIRS):
 	@echo "Creating $@"
@@ -87,8 +85,15 @@ $(ALLDIRS):
 # Removes all build files
 .PHONY: clean
 clean:
-	@echo "Delete build files"
-	@$(RM) -r $(BUILDDIR)/*
+	@echo "Delete target build files"
+	@$(RM) -r $(TARGETDIR)
+	@echo "Delete test build files"
+	@$(MAKE) -C $(TESTSDIR) $@
+
+.PHONY: clean-all
+clean-all: clean
+	@echo "Delete build folder"
+	@$(RM) -r $(BUILDDIR)
 
 # Test target
 test: $(ALLDIRS) $(TESTSDIR)
