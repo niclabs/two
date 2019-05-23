@@ -22,7 +22,7 @@ struct client_s{
       CREATED,
       CONNECTED
   } state;
-  sock_t * socket;
+  sock_t socket;
 };
 
 struct server_s{
@@ -31,7 +31,7 @@ struct server_s{
     LISTEN,
     CLIENT_CONNECT
   } state;
-  sock_t * socket;
+  sock_t socket;
 };
 
 struct server_s server;
@@ -45,35 +45,27 @@ int http_init_server(uint16_t port){
 
   client.state=NOT_CLIENT;
 
-  sock_t server_sock;
-  //server.socket=&server_sock;
-
-  if (sock_create(&server_sock)<0){
+  if (sock_create(&server.socket)<0){
     ERROR("Error in server creation");
     return -1;
   }
 
-  server.socket=&server_sock;
-
-  if (sock_listen(&server_sock, port)<0){
+  if (sock_listen(&server.socket, port)<0){
     ERROR("Partial error in server creation");
     return -1;
   }
 
   server.state=LISTEN;
 
-  sock_t client_sock;
-
   printf("Server waiting for a client\n");
 
 
-  if (sock_accept(&server_sock, &client_sock)<0){
+  if (sock_accept(&server.socket, &client.socket)<0){
     ERROR("Not client found");
     return -1;
   }
 
   client.state=CONNECTED;
-  client.socket=&client_sock;
 
   printf("Client found and connected\n");
 
@@ -102,15 +94,17 @@ int http_server_destroy(void){
   }
 
   if (client.state==CONNECTED){
-    if (sock_destroy(client.socket)<0){
+    if (sock_destroy(&client.socket)<0){
       WARN("Client still connected");
     }
   }
 
-  if (sock_destroy(server.socket)<0){
+  DEBUG("HERE");
+  if (sock_destroy(&server.socket)<0){
     ERROR("Error in server disconnection");
     return -1;
   }
+  DEBUG("AFTER DESTROY");
 
   server.state=NOT_SERVER;
 
@@ -127,17 +121,14 @@ int http_client_connect(uint16_t port, char * ip){
   struct client_s * cl= &client;
   server.state=NOT_SERVER;
 
-  sock_t sock;
-  cl->socket=&sock;
-
-  if (sock_create(&sock)<0){
+  if (sock_create(&cl->socket)<0){
     ERROR("Error on client creation");
     return -1;
   }
 
   cl->state=CREATED;
 
-  if (sock_connect(&sock, ip, port)<0){
+  if (sock_connect(&cl->socket, ip, port)<0){
     ERROR("Error on client connection");
     return -1;
   }
@@ -162,7 +153,7 @@ int http_client_disconnect(void){
     return 0;
   }
 
-  if (sock_destroy(client.socket)<0){
+  if (sock_destroy(&client.socket)<0){
     ERROR("Error in client disconnection");
     return -1;
   }
@@ -199,7 +190,7 @@ int http_write(uint8_t * buf, int len){
   int wr=0;
 
   if (client.state == CONNECTED){
-    wr= sock_write(client.socket, (char *) buf, len);
+    wr= sock_write(&client.socket, (char *) buf, len);
   } else {
     ERROR("No client connected found");
     return -1;
@@ -223,7 +214,7 @@ int http_read( uint8_t * buf, int len){
   int rd=0;
 
   if (client.state == CONNECTED){
-    rd= sock_read(client.socket, (char *) buf, len, 0);
+    rd= sock_read(&client.socket, (char *) buf, len, 0);
   } else {
     ERROR("No client connected found");
     return -1;
