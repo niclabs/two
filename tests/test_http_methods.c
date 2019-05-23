@@ -538,37 +538,37 @@ void test_http_read_fail_not_connected_client(void){
 
 
 int main(void){
-  UNITY_BEGIN();
+  UNIT_TESTS_BEGIN();
 
-  RUN_TEST(test_http_init_server_success);
-  RUN_TEST(test_http_init_server_fail_server_init_connection);
-  RUN_TEST(test_http_init_server_fail_sock_accept);
-  RUN_TEST(test_http_init_server_fail_sock_listen);
-  RUN_TEST(test_http_init_server_fail_sock_create);
+  UNIT_TEST(test_http_init_server_success);
+  UNIT_TEST(test_http_init_server_fail_server_init_connection);
+  UNIT_TEST(test_http_init_server_fail_sock_accept);
+  UNIT_TEST(test_http_init_server_fail_sock_listen);
+  UNIT_TEST(test_http_init_server_fail_sock_create);
 
-  RUN_TEST(test_http_server_destroy_success);
-  RUN_TEST(test_http_server_destroy_success_without_client);
-  RUN_TEST(test_http_server_destroy_fail_not_server);
-  RUN_TEST(test_http_server_destroy_fail_sock_destroy);
+  UNIT_TEST(test_http_server_destroy_success);
+  UNIT_TEST(test_http_server_destroy_success_without_client);
+  UNIT_TEST(test_http_server_destroy_fail_not_server);
+  UNIT_TEST(test_http_server_destroy_fail_sock_destroy);
 
-  RUN_TEST(test_http_client_connect_success);
-  RUN_TEST(test_http_client_connect_fail_client_init_connection);
-  RUN_TEST(test_http_client_connect_fail_sock_connect);
-  RUN_TEST(test_http_client_connect_fail_sock_create);
+  UNIT_TEST(test_http_client_connect_success);
+  UNIT_TEST(test_http_client_connect_fail_client_init_connection);
+  UNIT_TEST(test_http_client_connect_fail_sock_connect);
+  UNIT_TEST(test_http_client_connect_fail_sock_create);
 
-  RUN_TEST(test_http_client_disconnect_success_v1);
-  RUN_TEST(test_http_client_disconnect_success_v2);
-  RUN_TEST(test_http_client_disconnect_fail);
+  UNIT_TEST(test_http_client_disconnect_success_v1);
+  UNIT_TEST(test_http_client_disconnect_success_v2);
+  UNIT_TEST(test_http_client_disconnect_fail);
 
-  RUN_TEST(test_http_write_server_success);
-  RUN_TEST(test_http_write_client_success);
-  RUN_TEST(test_http_write_fail_sock_write);
-  RUN_TEST(test_http_write_fail_no_client_or_server);
+  UNIT_TEST(test_http_write_server_success);
+  UNIT_TEST(test_http_write_client_success);
+  UNIT_TEST(test_http_write_fail_sock_write);
+  UNIT_TEST(test_http_write_fail_no_client_or_server);
 
-  RUN_TEST(test_http_read_server_success);
-  RUN_TEST(test_http_read_client_success);
-  RUN_TEST(test_http_read_fail_sock_read);
-  RUN_TEST(test_http_read_fail_not_connected_client);
+  UNIT_TEST(test_http_read_server_success);
+  UNIT_TEST(test_http_read_client_success);
+  UNIT_TEST(test_http_read_fail_sock_read);
+  UNIT_TEST(test_http_read_fail_not_connected_client);
 
-  return UNITY_END();
+  return UNIT_TESTS_END();
 }
