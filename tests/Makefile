@@ -14,15 +14,14 @@ else
 	TARGET_EXTENSION=out
 endif
 
-.PHONY: test
+.PHONY: test clean
 
 BASEDIR		?= $(CURDIR)/..
 BUILDDIR	?= $(BASEDIR)/build
-DEPSDIR		?= $(BASEDIR)/deps
 SRCDIR		?= $(BASEDIR)/src
 TESTSDIR	?= $(BASEDIR)/tests
 
-PATHU = $(DEPSDIR)/unity/src/
+PATHU = $(BUILDDIR)/unity/src/
 PATHS = $(SRCDIR)
 PATHT = $(TESTSDIR)
 PATHB = $(BUILDDIR)/tests/
@@ -76,6 +75,9 @@ test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "\n$(if $(FAIL),FAILED,OK)"
 	@test -z "$(FAIL)"
 
+clean:
+	@$(RM) -r $(PATHB)
+
 $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
 	$(Q)-trap '$(RM) $@' INT; $< > $@
 	@test -s $@ || ($(RM) $@ && false)  # if file size is zero then an error ocurred before the redirection
@@ -108,7 +110,7 @@ $(PATHR):
 	$(Q)$(MKDIR) $(PATHR)
 
 $(PATHU):
-	$(Q)git clone https://github.com/ThrowTheSwitch/Unity.git $(DEPSDIR)/unity
+	$(Q)git clone https://github.com/ThrowTheSwitch/Unity.git $(BUILDDIR)/unity
 
 .PRECIOUS: $(PATHB)test_%.$(TARGET_EXTENSION)
 .PRECIOUS: $(PATHD)%.d
