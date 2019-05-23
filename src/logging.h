@@ -56,16 +56,16 @@ typedef enum
                 fprintf(stderr, "\n");                                                                               \
                 break;                                                                                               \
             case ERROR:                                                                                              \
+            case FATAL:                                                                                              \
                 if (errno > 0)                                                                                       \
                 {                                                                                                    \
-                    fprintf(stderr, " (%s)", strerror(errno));                                                      \
+                    fprintf(stderr, " (%s)", strerror(errno));                                                       \
                 }                                                                                                    \
                 fprintf(stderr, "\n");                                                                               \
                 break;                                                                                               \
-            case FATAL:                                                                                              \
-                exit(EXIT_FAILURE);                                                                                  \
             }                                                                                                        \
         }                                                                                                            \
+        if (level == FATAL) exit(EXIT_FAILURE);                                                                      \
     } while (0)
 
 // Macro to print debugging messages
@@ -79,5 +79,8 @@ typedef enum
 
 // Macro to print error messages
 #define ERROR(...) LOG(ERROR, __func__, __FILE__, __LINE__, __VA_ARGS__)
+
+// Macro to print fatal error messages
+#define FATAL(...) LOG(FATAL, __func__, __FILE__, __LINE__, __VA_ARGS__)
 
 #endif /* LOGGING_H */
