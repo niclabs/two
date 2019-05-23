@@ -17,6 +17,7 @@
 #include "http2.h"
 
 
+<<<<<<< HEAD
 struct client_s {
     enum client_state {
         NOT_CLIENT,
@@ -33,6 +34,24 @@ struct server_s {
         CLIENT_CONNECT
     } state;
     sock_t *socket;
+=======
+struct client_s{
+  enum client_state {
+      NOT_CLIENT,
+      CREATED,
+      CONNECTED
+  } state;
+  sock_t socket;
+};
+
+struct server_s{
+  enum server_state {
+    NOT_SERVER,
+    LISTEN,
+    CLIENT_CONNECT
+  } state;
+  sock_t socket;
+>>>>>>> Fix static memory allocation inside http methods
 };
 
 struct server_s server;
@@ -50,6 +69,7 @@ int http_init_server(uint16_t port)
 
     client.state = NOT_CLIENT;
 
+<<<<<<< HEAD
     sock_t server_sock;
     //server.socket=&server_sock;
 
@@ -64,9 +84,21 @@ int http_init_server(uint16_t port)
         ERROR("Partial error in server creation");
         return -1;
     }
+=======
+  if (sock_create(&server.socket)<0){
+    ERROR("Error in server creation");
+    return -1;
+  }
+
+  if (sock_listen(&server.socket, port)<0){
+    ERROR("Partial error in server creation");
+    return -1;
+  }
+>>>>>>> Fix static memory allocation inside http methods
 
     server.state = LISTEN;
 
+<<<<<<< HEAD
     sock_t client_sock;
 
     printf("Server waiting for a client\n");
@@ -79,6 +111,17 @@ int http_init_server(uint16_t port)
 
     client.state = CONNECTED;
     client.socket = &client_sock;
+=======
+  printf("Server waiting for a client\n");
+
+
+  if (sock_accept(&server.socket, &client.socket)<0){
+    ERROR("Not client found");
+    return -1;
+  }
+
+  client.state=CONNECTED;
+>>>>>>> Fix static memory allocation inside http methods
 
     printf("Client found and connected\n");
 
