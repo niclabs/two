@@ -1,8 +1,28 @@
-language: c
-script: 
-  - QUIET=0 make # check compilation
-  - QUIET=0 make test # run tests
+# Setup environment for Docker
+language: generic
+services: docker
+notifications:
+  email: false
+
+before_install:
+  # Get docker image from docker hub
+  - docker pull $DOCKER_IMG
+  # Set permissions for Docker mount
+  - sudo chgrp -hR 1000 $TWO_HOST_PATH
+
+script:
+  # Test that everything compiles
+  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -ti $DOCKER_IMG QUIET=0 make
+  # Run tests
+  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -ti $DOCKER_IMG QUIET=0 make test
 
 after_success:
+  # Run code coverage (doesn't work yet)
   - bash <(curl -s https://codecov.io/bash) -a '-o build/tests/objs/'
-compiler: gcc
+
+# Environment variables
+env:
+# Global environment variables, i.e., set for all builds
+  global:
+    - DOCKER_IMG='niclabs/embeddable'
+    - TWO_HOST_PATH=`pwd`
