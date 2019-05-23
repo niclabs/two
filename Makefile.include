@@ -95,8 +95,11 @@ clean-all: clean
 	@echo "Delete build folder"
 	@$(RM) -r $(BUILDDIR)
 
-# Test target
+# Test targets
 test: $(ALLDIRS) $(TESTSDIR)
+	@$(MAKE) -C $(TESTSDIR) $@
+
+test_%: $(ALLDIRS) $(TESTSDIR)
 	@$(MAKE) -C $(TESTSDIR) $@
 
 # Catch all other rules
