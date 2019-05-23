@@ -32,7 +32,7 @@ typedef enum
 #define LOG_CONTEXT(func, file, line)
 #else
 #define LEVEL (DEBUG)
-#define LOG_CONTEXT(func, file, line) fprintf(stderr, "%s() in %s:%d ", func, file, line)
+#define LOG_CONTEXT(func, file, line) fprintf(stderr, "; at %s:%d in %s()", file, line, func)
 #endif
 
 #ifndef LEVEL
@@ -46,13 +46,13 @@ typedef enum
     {                                                                                                                \
         if (level >= LEVEL)                                                                                          \
         {                                                                                                            \
-            LOG_CONTEXT(func, file, line);                                                                           \
-            fprintf(stderr, "[" LEVEL_STR(level) "]: " msg, ##__VA_ARGS__);                                          \
+            fprintf(stderr, "[" LEVEL_STR(level) "] " msg, ##__VA_ARGS__);                                           \
             switch (level)                                                                                           \
             {                                                                                                        \
             case DEBUG:                                                                                              \
             case INFO:                                                                                               \
             case WARN:                                                                                               \
+                LOG_CONTEXT(func, file, line);                                                                       \
                 fprintf(stderr, "\n");                                                                               \
                 break;                                                                                               \
             case ERROR:                                                                                              \
@@ -61,6 +61,7 @@ typedef enum
                 {                                                                                                    \
                     fprintf(stderr, " (%s)", strerror(errno));                                                       \
                 }                                                                                                    \
+                LOG_CONTEXT(func, file, line);                                                                       \
                 fprintf(stderr, "\n");                                                                               \
                 break;                                                                                               \
             }                                                                                                        \
