@@ -36,7 +36,7 @@ typedef enum
 #endif
 
 #ifndef LEVEL
-#define LEVEL (INFO)
+#define LEVEL (FATAL)
 #endif
 
 #define LEVEL_STR(level) #level
@@ -83,5 +83,12 @@ typedef enum
 
 // Macro to print fatal error messages
 #define FATAL(...) LOG(FATAL, __func__, __FILE__, __LINE__, __VA_ARGS__)
+
+// User messages
+#ifndef DISABLE_PRINTF
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
 
 #endif /* LOGGING_H */
