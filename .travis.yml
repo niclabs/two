@@ -1,5 +1,5 @@
 # Setup environment for Docker
-language: generic
+language: c
 services: docker
 notifications:
   email: false
