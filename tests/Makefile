@@ -94,7 +94,7 @@ $(PATHO)%.o:: $(PATHT)%.c $(PATHT)unit.h
 $(PATHO)%.o:: $(PATHS)%.c
 	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
 
-$(PATHO)%.o:: $(PATHU)%.c $(PATHU)%.h
+$(PATHO)unity.o:: $(PATHU)unity.c $(PATHU)unity.h
 	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
 
 $(PATHD)%.d:: $(PATHT)%.c
