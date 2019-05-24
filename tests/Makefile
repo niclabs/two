@@ -14,7 +14,7 @@ else
 	TARGET_EXTENSION=out
 endif
 
-.PHONY: test clean test_%
+.PHONY: test clean dirs
 
 BASEDIR		?= $(CURDIR)/..
 BUILDDIR	?= $(BASEDIR)/build
@@ -75,8 +75,10 @@ test: $(BUILD_PATHS) $(RESULTS)
 	@echo -e "\n$(if $(FAIL),FAILED,OK)"
 	@test -z "$(FAIL)"
 
-test_%: $(PATHB)test_%.$(TARGET_EXTENSION) $(BUILD_PATHS)
-	$(Q)$<
+ALL_TESTS = $(patsubst $(PATHT)test_%.c,test_%,$(SRCT))
+.PHONY: $(ALL_TESTS)
+$(ALL_TESTS): test_%: $(BUILD_PATHS) $(PATHB)test_%.$(TARGET_EXTENSION)
+	$(Q)$(PATHB)$@.$(TARGET_EXTENSION)
 
 clean:
 	@$(RM) -r $(PATHB)
