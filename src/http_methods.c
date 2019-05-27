@@ -17,22 +17,22 @@
 #include "http2.h"
 
 
-struct client_s{
-  enum client_state {
-      NOT_CLIENT,
-      CREATED,
-      CONNECTED
-  } state;
-  sock_t socket;
+struct client_s {
+    enum client_state {
+        NOT_CLIENT,
+        CREATED,
+        CONNECTED
+    } state;
+    sock_t socket;
 };
 
-struct server_s{
-  enum server_state {
-    NOT_SERVER,
-    LISTEN,
-    CLIENT_CONNECT
-  } state;
-  sock_t socket;
+struct server_s {
+    enum server_state {
+        NOT_SERVER,
+        LISTEN,
+        CLIENT_CONNECT
+    } state;
+    sock_t socket;
 };
 
 struct server_s server;
@@ -74,7 +74,7 @@ int http_init_server(uint16_t port)
 
     printf("Client found and connected\n");
 
-    global_state.socket = &client_sock;
+    global_state.socket = &client.socket;
     global_state.socket_state = 1;
     if (server_init_connection(&global_state) < 0) {
         ERROR("Problems sending server data");
@@ -119,14 +119,14 @@ int http_server_destroy(void)
     }
 
     if (client.state == CONNECTED || global_state.socket_state == 1) {
-        if (sock_destroy(client.socket) < 0) {
+        if (sock_destroy(&client.socket) < 0) {
             WARN("Client still connected");
         }
     }
 
     global_state.socket_state = 0;
 
-    if (sock_destroy(server.socket) < 0) {
+    if (sock_destroy(&server.socket) < 0) {
         ERROR("Error in server disconnection");
         return -1;
     }
@@ -169,7 +169,7 @@ int http_client_connect(uint16_t port, char *ip)
 
     cl->state = CONNECTED;
 
-    global_state.socket = &sock;
+    global_state.socket = &cl->socket;
     global_state.socket_state = 1;
 
     if (client_init_connection(&global_state) < 0) {
@@ -192,7 +192,7 @@ char *http_grab_header(char *header, int len)
 
     int k;
     for (k = 0; k <= i; k++) {
-        if (memcmp(global_state.header_list[k].name, header, len)==0){
+        if (strncmp(global_state.header_list[k].name, header, len)==0){
           return global_state.header_list[k].value;
         }
     }
@@ -204,7 +204,7 @@ int http_client_disconnect(void)
 {
 
     if (client.state == CONNECTED || global_state.socket_state == 1) {
-        if (sock_destroy(client.socket) < 0) {
+        if (sock_destroy(&client.socket) < 0) {
             ERROR("Error in client disconnection");
             return -1;
         }
