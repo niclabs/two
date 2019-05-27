@@ -1,7 +1,6 @@
 #include "http2utils.h"
 
 uint8_t buffer[MAX_BUFFER_SIZE];
-int size = 0;
 
 /* Function: verify_setting
 * Verifies a pair id/value setting is correct.

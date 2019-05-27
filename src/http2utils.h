@@ -1,5 +1,3 @@
-#ifndef HTTP_METHODS_H
-#define HTTP2_UTILS_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,4 +22,3 @@ typedef enum SettingsParameters{
 
 int verify_setting(uint16_t id, uint32_t value);
 int read_n_bytes(uint8_t *buff_read, int n,  hstates_t *hs);
-#endif /* HTTP2_UTILS_H */
