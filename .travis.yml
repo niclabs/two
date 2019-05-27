@@ -17,10 +17,11 @@ before_install:
 jobs:
   include:
     - stage: test
-      name: "Unit Tests"
-      script: 
-        - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make test
-        - bash <(curl -s https://codecov.io/bash) # generate code coverage report
+      name: Unit Tests
+      script: # Run tests and generate coverage report
+        - > 
+          docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make test 
+          bash <(curl -s https://codecov.io/bash)
 
 # Environment variables
 env:
