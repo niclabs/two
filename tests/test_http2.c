@@ -6,8 +6,8 @@
 extern int init_variables(hstates_t * st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
 extern int send_settings_ack(hstates_t *st);
-extern int check_for_settings_ack(frame_header_t *header, h2states_t *st);
-extern int read_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, h2states_t *st);
+extern int check_for_settings_ack(frame_header_t *header, hstates_t *st);
+extern int read_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st);
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
  /*---------------- Mock functions ---------------------------*/
 
@@ -21,7 +21,6 @@ int http_write(uint8_t *bytes, int length, hstates_t *st){
  }
  memcpy(buffer+size, bytes, length);
  size += length;
- printf("Write: buffer size is %u\n", size);
  return length;
 }
 
@@ -35,7 +34,6 @@ int http_read(uint8_t *bytes, int length, hstates_t *st){
   size = size - length;
   //Move the rest of the data on buffer
   memcpy(buffer, buffer+length, size);
-  printf("Read: buffer size is %u\n", size);
   return length;
 }
 
@@ -285,7 +283,7 @@ void test_send_local_settings(void){
   TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 1, "create_settings_frame must be called once");
   TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame_to_bytes must be called once");
   TEST_ASSERT_MESSAGE(size == 45, "send local settings must have written 45 bytes");
-  TEST_ASSERT_MESSAGE(dummy.wait_setting_ack == 1, "wait_setting_ack must be 1. Settings were sent");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 1, "wait_setting_ack must be 1. Settings were sent");
   TEST_ASSERT_MESSAGE(rc == 0, "return code of send_local_settings must be 0");
 }
 
