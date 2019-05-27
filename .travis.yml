@@ -23,7 +23,7 @@ jobs:
       env: MAKE_TARGET=test
 
 after_success:
-  # Run code coverage (doesn't work yet)
+  # Run code coverage
   - bash <(curl -s https://codecov.io/bash)
 =======
 
