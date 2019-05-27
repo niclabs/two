@@ -199,11 +199,11 @@ char *http_grab_header(char *header, int len)
     }
 
     int k;
-    for (k = 0, k <= i) {
-        memcmp(global_state.header_list[i].name, name);
+    for (k = 0; k <= i; k++) {
+        if (memcmp(global_state.header_list[k].name, header, len)==0){
+          return global_state.header_list[k].value;
+        }
     }
-    memcmp(global_state.header_list[i].value, value);
-
     return 0;
 }
 
