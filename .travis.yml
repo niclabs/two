@@ -23,7 +23,7 @@ jobs:
 
 after_success:
   # Run code coverage (doesn't work yet)
-  - bash <(curl -s https://codecov.io/bash) -a '-o build/tests/objs/'
+  - bash <(curl -s https://codecov.io/bash)
 
 # Environment variables
 env:
