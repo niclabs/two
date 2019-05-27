@@ -17,24 +17,6 @@
 #include "http2.h"
 
 
-<<<<<<< HEAD
-struct client_s{
-  enum client_state {
-      NOT_CLIENT,
-      CREATED,
-      CONNECTED
-  } state;
-  sock_t socket;
-};
-
-struct server_s{
-  enum server_state {
-    NOT_SERVER,
-    LISTEN,
-    CLIENT_CONNECT
-  } state;
-  sock_t socket;
-=======
 struct client_s {
     enum client_state {
         NOT_CLIENT,
@@ -51,7 +33,6 @@ struct server_s {
         CLIENT_CONNECT
     } state;
     sock_t socket;
->>>>>>> http_state
 };
 
 struct server_s server;
@@ -79,11 +60,7 @@ int http_init_server(uint16_t port)
     return -1;
   }
 
-<<<<<<< HEAD
-  server.state=LISTEN;
-=======
     server.state = LISTEN;
->>>>>>> http_state
 
   printf("Server waiting for a client\n");
 
@@ -120,33 +97,13 @@ int http_add_header(char *name, char *value)
 {
     int i = global_state.table_index;
 
-<<<<<<< HEAD
-  if (server.state==NOT_SERVER){
-    WARN("Server not found");
-    return -1;
-  }
-
-  if (client.state==CONNECTED){
-    if (sock_destroy(&client.socket)<0){
-      WARN("Client still connected");
-=======
     if (i == 10) {
         ERROR("Headers list is full");
         return -1;
->>>>>>> http_state
     }
 
-<<<<<<< HEAD
-  DEBUG("HERE");
-  if (sock_destroy(&server.socket)<0){
-    ERROR("Error in server disconnection");
-    return -1;
-  }
-  DEBUG("AFTER DESTROY");
-=======
     strcpy(global_state.header_list[i].name, name);
     strcpy(global_state.header_list[i].value, value);
->>>>>>> http_state
 
     global_state.table_index = i + 1;
 
@@ -154,26 +111,12 @@ int http_add_header(char *name, char *value)
 }
 
 
-<<<<<<< HEAD
-/************************************Client************************************/
-
-
-int http_client_connect(uint16_t port, char * ip){
-  struct client_s * cl= &client;
-  server.state=NOT_SERVER;
-
-  if (sock_create(&cl->socket)<0){
-    ERROR("Error on client creation");
-    return -1;
-  }
-=======
 int http_server_destroy(void)
 {
     if (server.state == NOT_SERVER) {
         WARN("Server not found");
         return -1;
     }
->>>>>>> http_state
 
     if (client.state == CONNECTED || global_state.socket_state == 1) {
         if (sock_destroy(&client.socket) < 0) {
@@ -181,14 +124,7 @@ int http_server_destroy(void)
         }
     }
 
-<<<<<<< HEAD
-  if (sock_connect(&cl->socket, ip, port)<0){
-    ERROR("Error on client connection");
-    return -1;
-  }
-=======
     global_state.socket_state = 0;
->>>>>>> http_state
 
     if (sock_destroy(&server.socket) < 0) {
         ERROR("Error in server disconnection");
@@ -206,17 +142,10 @@ int http_server_destroy(void)
 /************************************Client************************************/
 
 
-<<<<<<< HEAD
-  if (sock_destroy(&client.socket)<0){
-    ERROR("Error in client disconnection");
-    return -1;
-  }
-=======
 int http_client_connect(uint16_t port, char *ip)
 {
     global_state.socket_state = 0;
     global_state.table_index = -1;
->>>>>>> http_state
 
     struct client_s *cl = &client;
     server.state = NOT_SERVER;
@@ -253,19 +182,10 @@ char *http_grab_header(char *header, int len)
 {
     int i = global_state.table_index;
 
-<<<<<<< HEAD
-  if (client.state == CONNECTED){
-    wr= sock_write(&client.socket, (char *) buf, len);
-  } else {
-    ERROR("No client connected found");
-    return -1;
-  }
-=======
     if (i == -1) {
         ERROR("Headers list is empty");
         return NULL;
     }
->>>>>>> http_state
 
     int k;
     for (k = 0; k <= i; k++) {
@@ -280,20 +200,11 @@ char *http_grab_header(char *header, int len)
 int http_client_disconnect(void)
 {
 
-<<<<<<< HEAD
-  if (client.state == CONNECTED){
-    rd= sock_read(&client.socket, (char *) buf, len, 0);
-  } else {
-    ERROR("No client connected found");
-    return -1;
-  }
-=======
     if (client.state == CONNECTED || global_state.socket_state == 1) {
         if (sock_destroy(&client.socket) < 0) {
             ERROR("Error in client disconnection");
             return -1;
         }
->>>>>>> http_state
 
         printf("Client disconnected\n");
     }
