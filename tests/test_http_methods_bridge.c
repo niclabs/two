@@ -47,7 +47,7 @@ int sock_read_custom_fake(sock_t *s, char *buf, int l, int u)
 
 void test_http_write_success(void)
 {
-    sock_write_fake.return_val = 4;
+    sock_write_fake.return_val = 5;
 
     uint8_t *buf = (uint8_t *)"hola";
     hstates_t hs;
@@ -57,7 +57,7 @@ void test_http_write_success(void)
 
     TEST_ASSERT_EQUAL((void *)sock_write, fff.call_history[0]);
 
-    TEST_ASSERT_EQUAL(4, wr);
+    TEST_ASSERT_EQUAL(5, wr);
 }
 
 
@@ -149,13 +149,13 @@ int main(void)
 {
     UNITY_BEGIN();
 
-    RUN_TEST(test_http_write_success);
-    RUN_TEST(test_http_write_fail_sock_write);
-    RUN_TEST(test_http_write_fail_no_client_or_server);
+    UNIT_TEST(test_http_write_success);
+    UNIT_TEST(test_http_write_fail_sock_write);
+    UNIT_TEST(test_http_write_fail_no_client_or_server);
 
-    RUN_TEST(test_http_read_success);
-    RUN_TEST(test_http_read_fail_sock_read);
-    RUN_TEST(test_http_read_fail_not_connected_client);
+    UNIT_TEST(test_http_read_success);
+    UNIT_TEST(test_http_read_fail_sock_read);
+    UNIT_TEST(test_http_read_fail_not_connected_client);
 
     return UNITY_END();
 }
