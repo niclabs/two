@@ -91,10 +91,10 @@ $(PATHB)test_%.$(TARGET_EXTENSION): $(PATHO)test_%.o $(PATHO)%.o $(PATHO)unity.o
 	$(Q)$(LINK) $(LDFLAGS) -o $@ $^
 
 $(PATHO)%.o:: $(PATHT)%.c $(PATHT)unit.h
-	$(Q)$(COMPILE) $(CFLAGS) -g -fprofile-arcs -ftest-coverage $< -o $@
+	$(Q)$(COMPILE) $(CFLAGS) -g $< -o $@
 
 $(PATHO)%.o:: $(PATHS)%.c
-	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
+	$(Q)$(COMPILE) $(CFLAGS) -fprofile-arcs -ftest-coverage $< -o $@
 
 $(PATHO)unity.o:: $(PATHU)unity.c $(PATHU)unity.h
 	$(Q)$(COMPILE) $(CFLAGS) $< -o $@
