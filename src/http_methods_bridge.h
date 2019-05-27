@@ -8,13 +8,19 @@ HTTP/2
 #include <stdlib.h>
 #include <stdint.h>
 #include "sock.h"
-#include "http2.h"
 
 typedef struct TABLE_ENTRY{
   char name [32];
   char value [128];
 } table_pair_t;
 
+/*Struct for storing HTTP2 states*/
+typedef struct HTTP2_STATES{
+  uint32_t remote_settings[6];
+  uint32_t local_settings[6];
+  /*uint32_t local_cache[6]; Could be implemented*/
+  uint8_t wait_setting_ack;
+} h2states_t;
 
 typedef struct HTTP_STATES{
   uint8_t socket_state;
@@ -24,13 +30,6 @@ typedef struct HTTP_STATES{
   table_pair_t header_list[10];
 } hstates_t;
 
-/*Struct for storing HTTP2 states*/
-typedef struct HTTP2_STATES{
-  uint32_t remote_settings[6];
-  uint32_t local_settings[6];
-  /*uint32_t local_cache[6]; Could be implemented*/
-  uint8_t wait_setting_ack;
-} h2states_t;
 
 
 

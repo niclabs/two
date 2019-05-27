@@ -17,4 +17,3 @@ uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
 int client_init_connection(hstates_t *st);
 int server_init_connection(hstates_t *st);
 int receive_frame(hstates_t *st);
-#endif
