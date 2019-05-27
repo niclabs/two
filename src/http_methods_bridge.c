@@ -76,10 +76,10 @@ int get_receive(char * path, char * headers){
 
 int http_clear_header_list(hstates_t * hs, int index){
   if (index<=10 && index>=0){
-    strcpy(hs->header_list[index]->name, "");
-    strcpy(hs->header_list[index]->value, "");
+    strcpy(hs->header_list[index].name, "");
+    strcpy(hs->header_list[index].value, "");
 
-    if (memcmp(hs->header_list[index]->name,"",1)!=0 || memcmp(hs->header_list[index]->value,"",1)!=0){
+    if (memcmp(hs->header_list[index].name,"",1)!=0 || memcmp(hs->header_list[index].value,"",1)!=0){
       ERROR("Problems deleting a header or its value");
       return -1;
     }
@@ -89,12 +89,12 @@ int http_clear_header_list(hstates_t * hs, int index){
 
   int i;
 
-  for (i=0, i<=hs->table_index, i++){
+  for (i=0; i<=hs->table_index; i++){
 
-    strcpy(hs->header_list[i]->name, "");
-    strcpy(hs->header_list[i]->value, "");
+    strcpy(hs->header_list[i].name, "");
+    strcpy(hs->header_list[i].value, "");
 
-    if (memcmp(hs->header_list[i]->name,"",1)!=0 || memcmp(hs->header_list[i]->value,"",1)!=0){
+    if (memcmp(hs->header_list[i].name,"",1)!=0 || memcmp(hs->header_list[i].value,"",1)!=0){
       ERROR("Problems deleting a header or its value");
       return -1;
     }
