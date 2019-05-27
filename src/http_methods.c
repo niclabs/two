@@ -150,17 +150,14 @@ int http_client_connect(uint16_t port, char *ip)
     struct client_s *cl = &client;
     server.state = NOT_SERVER;
 
-    sock_t sock;
-    cl->socket = &sock;
-
-    if (sock_create(&sock) < 0) {
+    if (sock_create(&cl->socket) < 0) {
         ERROR("Error on client creation");
         return -1;
     }
 
     cl->state = CREATED;
 
-    if (sock_connect(&sock, ip, port) < 0) {
+    if (sock_connect(&cl->socket, ip, port) < 0) {
         ERROR("Error on client connection");
         return -1;
     }
