@@ -14,20 +14,12 @@ before_install:
   # Set permissions for Docker mount
   - sudo chgrp -hR 1000 $TWO_HOST_PATH
 
-script:
-  # Run make inside container
-  - docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make $MAKE_TARGET
-
 jobs:
   include:
-    - stage: build
-      env: MAKE_TARGET=
     - stage: test
-      env: MAKE_TARGET=test
-
-after_success:
-  # Run code coverage
-  - bash <(curl -s https://codecov.io/bash)
+      name: "Unit Tests"
+      script: docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make test
+      script: bash <(curl -s https://codecov.io/bash) # generate code coverage report
 
 # Environment variables
 env:
