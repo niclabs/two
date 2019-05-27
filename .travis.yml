@@ -3,6 +3,10 @@ language: c
 services: docker
 notifications:
   email: false
+branches:
+  only: 
+    - master
+    - develop
 
 before_install:
   # Get docker image from docker hub
