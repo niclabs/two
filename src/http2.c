@@ -71,7 +71,8 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st)
 /*
 * Function: send_settings_ack
 * Sends an ACK settings frame to endpoint
-* Input: void
+* Input: -> st: pointer to hstates struct where http and http2 connection info is
+* stored
 * Output: 0 if sent was successfully made, -1 if not.
 */
 int send_settings_ack(hstates_t * st){
