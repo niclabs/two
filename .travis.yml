@@ -13,15 +13,18 @@ before_install:
   - docker pull $DOCKER_IMG
   # Set permissions for Docker mount
   - sudo chgrp -hR 1000 $TWO_HOST_PATH
+  # request codecov to detect CI environment to pass through to docker
+  - ci_env=`bash <(curl -s https://codecov.io/env)`
 
 jobs:
   include:
     - stage: test
       name: Unit Tests
-      script: # Run tests and generate coverage report
-        - > 
-          docker run --privileged -v $TWO_HOST_PATH:/home/user/two --workdir /home/user/two -e QUIET=0 -ti $DOCKER_IMG make test; 
-          bash <(curl -s https://codecov.io/bash)
+      script: >  # Run tests and calculate code coverage
+        docker run --privileged -v $TWO_HOST_PATH:/home/user/two 
+          --workdir /home/user/two $ci_env 
+          -ti $DOCKER_IMG 
+          bash -c "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
 
 # Environment variables
 env:
