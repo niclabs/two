@@ -20,8 +20,9 @@ jobs:
   include:
     - stage: test
       name: Unit Tests
-      script: >  # Run tests and calculate code coverage
-        docker run --privileged -v $TWO_HOST_PATH:/home/user/two 
+      script: 
+        - > 
+          docker run --privileged -v $TWO_HOST_PATH:/home/user/two 
           --workdir /home/user/two $ci_env 
           -ti $DOCKER_IMG 
           bash -c "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
