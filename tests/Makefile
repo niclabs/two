@@ -79,6 +79,9 @@ ALL_TESTS = $(patsubst $(PATHT)test_%.c,test_%,$(SRCT))
 .PHONY: $(ALL_TESTS)
 $(ALL_TESTS): test_%: $(BUILD_PATHS) $(PATHB)test_%.$(TARGET_EXTENSION)
 	$(Q)$(PATHB)$@.$(TARGET_EXTENSION)
+	@echo ""
+	@echo -e "--------------------------\nCode coverage data\n--------------------------"
+	$(Q)gcov -b -n $(patsubst test_%,$(PATHO)%.gcno,$@)
 
 clean:
 	@$(RM) -r $(PATHB)
