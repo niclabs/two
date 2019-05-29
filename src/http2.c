@@ -356,14 +356,18 @@ int receive_frame(hstates_t *st){
             return -1;
           }
 
-          headers_payload_t header_pyl;
-          rc = read_headers_payload(buff_read, &header, &header_pyl);
+          headers_payload_t hpl;
+          /*TODO: Implement read_headers_payload. It reads data from buffer and writes on hpl*/
+          rc = read_headers_payload(buff_read, &header, &hpl);
           if(rc != 0){
             ERROR("Error in headers payload");
             return rc;
           }
-          // read_headers(*header_block_fragment, *header_list, header_list_start, header_list_max)
-          rc = read_headers(header_pyl.header_block_fragment, st->header_list, st->header_count, HTTP2_MAX_HEADER_COUNT);
+          /*TODO: Implement read_headers. It uses the hpl to write on header_list.
+          * we assume that returns the number of headers pairs written.
+          */
+          // read_headers(*header_payload_t, *header_list, header_list_start, header_list_max)
+          rc = read_headers(&hpl, st->header_list, st->header_count, HTTP2_MAX_HEADER_COUNT);
           if (rc < 0) {
             ERROR("Error reading headers");
             // TODO: send internal error if number of headers > HTTP2HTTP2_MAX_HEADER_COUNT

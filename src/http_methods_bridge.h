@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "sock.h"
-#include "http2.h"
 
 #define HTTP2_MAX_HEADER_COUNT 32
 
@@ -16,6 +15,32 @@ typedef struct TABLE_ENTRY {
     char name [32];
     char value [128];
 } table_pair_t;
+
+/*-----HTTP2 structures-----*/
+
+typedef enum{
+  STREAM_IDLE,
+  STREAM_OPEN,
+  STREAM_HALF_CLOSED_REMOTE,
+  STREAM_HALF_CLOSED_LOCAL,
+  STREAM_CLOSED
+} h2_stream_state_t;
+
+typedef struct HTTP2_STREAM {
+  uint32_t stream_id;
+  h2_stream_state_t state;
+} h2_stream_t;
+
+/*Struct for storing HTTP2 states*/
+typedef struct HTTP2_STATES {
+    uint32_t remote_settings[6];
+    uint32_t local_settings[6];
+    /*uint32_t local_cache[6]; Could be implemented*/
+    uint8_t wait_setting_ack;
+    h2_stream_t current_stream;
+} h2states_t;
+
+/*-----HTTP structures-----*/
 
 typedef struct HTTP_STATES {
     uint8_t socket_state;

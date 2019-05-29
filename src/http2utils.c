@@ -71,3 +71,17 @@ int read_n_bytes(uint8_t *buff_read, int n,  hstates_t *hs){
   }
   return read_bytes;
 }
+
+int read_headers_payload(uint8_t *buff_read, frame_header_t *hdr, headers_payload_t *hpl){
+  (void) buff_read;
+  (void) hdr;
+  (void) hpl;
+  return 0;
+}
+int read_headers(headers_payload_t *hpl, table_pair_t* hlist, uint8_t count, uint8_t max_count){
+  (void) hpl;
+  (void) hlist;
+  (void) count;
+  (void) max_count;
+  return 0;
+}
