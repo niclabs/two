@@ -1,4 +1,6 @@
 #include "http2.h"
+#include "logging.h"
+
 
 /*
 * This API assumes the existence of a TCP connection between Server and Client,
@@ -339,16 +341,16 @@ int receive_frame(hstates_t *st){
   }
   switch(header.type){
       case DATA_TYPE://Data
-          printf("TODO: Data Frame. Not implemented yet.");
+          WARN("TODO: Data Frame. Not implemented yet.");
           return -1;
       case HEADERS_TYPE://Header
-          printf("TODO: Header Frame. Not implemented yet.");
+          WARN("TODO: Header Frame. Not implemented yet.");
           return -1;
       case PRIORITY_TYPE://Priority
-          printf("TODO: Priority Frame. Not implemented yet.");
+          WARN("TODO: Priority Frame. Not implemented yet.");
           return -1;
       case RST_STREAM_TYPE://RST_STREAM
-          printf("TODO: Reset Stream Frame. Not implemented yet.");
+          WARN("TODO: Reset Stream Frame. Not implemented yet.");
           return -1;
       case SETTINGS_TYPE:{//Settings
           rc = check_for_settings_ack(&header, st);
@@ -369,22 +371,22 @@ int receive_frame(hstates_t *st){
           return rc;
       }
       case PUSH_PROMISE_TYPE://Push promise
-          printf("TODO: Push promise frame. Not implemented yet.");
+          WARN("TODO: Push promise frame. Not implemented yet.");
           return -1;
       case PING_TYPE://Ping
-          printf("TODO: Ping frame. Not implemented yet.");
+          WARN("TODO: Ping frame. Not implemented yet.");
           return -1;
       case GOAWAY_TYPE://Go Avaw
-          printf("TODO: Go away frame. Not implemented yet.");
+          WARN("TODO: Go away frame. Not implemented yet.");
           return -1;
       case WINDOW_UPDATE_TYPE://Window update
-          printf("TODO: Window update frame. Not implemented yet.");
+          WARN("TODO: Window update frame. Not implemented yet.");
           return -1;
       case CONTINUATION_TYPE://Continuation
-          printf("TODO: Continuation frame. Not implemented yet.");
+          WARN("TODO: Continuation frame. Not implemented yet.");
           return -1;
       default:
-          printf("Error: Type not found");
+          WARN("Error: Type not found");
           return -1;
   }
 }
