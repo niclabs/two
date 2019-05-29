@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include "sock.h"
 
+#define HTTP2_MAX_HEADER_COUNT 32
+
 typedef struct TABLE_ENTRY {
     char name [32];
     char value [128];
@@ -20,6 +22,7 @@ typedef struct HTTP2_STATES {
     uint32_t local_settings[6];
     /*uint32_t local_cache[6]; Could be implemented*/
     uint8_t wait_setting_ack;
+
 } h2states_t;
 
 typedef struct HTTP_STATES {
@@ -27,7 +30,8 @@ typedef struct HTTP_STATES {
     sock_t *socket;
     h2states_t h2s;
     uint8_t table_index;
-    table_pair_t header_list[10];
+    table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
+    uint8_t header_count;
 } hstates_t;
 
 
