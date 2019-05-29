@@ -11,6 +11,20 @@ extern int read_settings_payload(uint8_t *bf, frame_header_t *h, settings_payloa
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
  /*---------------- Mock functions ---------------------------*/
 
+ int read_headers_payload(uint8_t *buff_read, frame_header_t *hdr, headers_payload_t *hpl){
+   (void) buff_read;
+   (void) hdr;
+   (void) hpl;
+   return 0;
+ }
+ int read_headers(headers_payload_t *hpl, table_pair_t* hlist, uint8_t count, uint8_t max_count){
+   (void) hpl;
+   (void) hlist;
+   (void) count;
+   (void) max_count;
+   return 0;
+ }
+
  uint8_t buffer[MAX_BUFFER_SIZE];
  int size = 0;
 
@@ -141,7 +155,7 @@ void test_update_settings_table(void){
   h2states_t dummy = {{1,1,1,1,1,1},
                       {1,1,1,1,1,1},
                       0};
-  hdummy.h2s = dummy;                      
+  hdummy.h2s = dummy;
   verify_setting_fake.custom_fake = verify_return_zero;
   int rc = update_settings_table(&payload, LOCAL, &hdummy);
   TEST_ASSERT_MESSAGE(verify_setting_fake.call_count == 6, "Call count of verify_setting must be 6");
@@ -192,7 +206,7 @@ void test_check_for_settings_ack(void){
   h2states_t dummy = {{1,1,1,1,1,1},
                       {1,1,1,1,1,1},
                       1};
-  hdummy.h2s = dummy;                      
+  hdummy.h2s = dummy;
   frame_header_t header_ack = {0, 0x4, 0x0|0x1, 0x0, 0};
   frame_header_t header_ack_wrong_size = {36, 0x4, 0x0|0x1, 0x0, 0};
   frame_header_t header_not_ack = {24, 0x4, 0x0, 0x0, 0};
@@ -224,7 +238,7 @@ void test_read_settings_payload(void){
   h2states_t dummy = {{1,1,1,1,1,1},
                       {1,1,1,1,1,1},
                       0};
-  hdummy.h2s = dummy;                      
+  hdummy.h2s = dummy;
   bytes_to_settings_payload_fake.custom_fake = bytes_settings_payload_return_24;
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
   verify_setting_fake.custom_fake = verify_return_zero;
