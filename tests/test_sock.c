@@ -476,7 +476,7 @@ int main(void)
     UNIT_TEST(test_sock_listen);
     UNIT_TEST(test_sock_accept);
     UNIT_TEST(test_sock_connect);
-    UNIT_TEST(test_sock_write)
+    UNIT_TEST(test_sock_write);
     UNIT_TEST(test_sock_read);
     UNIT_TEST(test_sock_destroy);
     /*TEST OF FUNCTIONS IN CASE OF BAD USE*/
