@@ -1,3 +1,5 @@
+#ifndef HTTP2UTILS_H
+#define HTTP2UTILS_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

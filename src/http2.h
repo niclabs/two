@@ -1,4 +1,7 @@
+#ifndef HTTP2_H
+#define HTTP2_H
 #include "http2utils.h"
+
 
 /*Default settings values*/
 #define DEFAULT_HTS 4096
@@ -39,3 +42,4 @@ uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
 int client_init_connection(hstates_t *st);
 int server_init_connection(hstates_t *st);
 int receive_frame(hstates_t *st);
+#endif /*HTTP2UTILS_H*/
