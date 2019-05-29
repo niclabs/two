@@ -45,8 +45,8 @@ SRCT = $(wildcard $(PATHT)*.c)
 COMPILE=gcc -c -Wall -O0 -std=c99
 LINK=gcc
 DEPEND=gcc -MM -MG -MF
-CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
-LDFLAGS += --coverage
+CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST -pthread
+LDFLAGS += --coverage -pthread
 
 ifneq ($(DEBUG),)
 	CFLAGS += -DENABLE_DEBUG
