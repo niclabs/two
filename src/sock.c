@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include <sys/select.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -132,27 +136,32 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         return -1;
     }
 
-   /* struct timeval time_o;
-    time_o.tv_sec = timeout;
-    time_o.tv_usec = 0;
+    fd_set set;
+    struct timeval tv;
 
-    //if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
-        ERROR("Error setting timeout");
+    FD_ZERO(&set);
+    FD_SET(sock->fd,&set);
+
+    tv.tv_sec = 0;
+    tv.tv_usec = timeout;
+
+    int rv=select((sock->fd)+1, &set, NULL, NULL, &tv);
+
+    if(rv<0){
+        if(rv==0){
+            errno=ETIMEDOUT;
+            DEBUG("Timeout reached");
+        }
+        else{
+            ERROR("Error setting timeout");
+        }
         return -1;
-    }*/
-
+    }
     ssize_t bytes_read = read(sock->fd, buf, len);
     if(bytes_read < 0) {
         ERROR("Error reading from socket");
         return -1;
     }
-    
-   /* time_o.tv_sec = 0;
-    time_o.tv_usec = 0;
-    if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
-        ERROR("Error unsetting timeout");
-        return -1;
-     }*/
     return bytes_read;
 }
 
