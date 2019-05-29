@@ -1,19 +1,26 @@
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <pthread.h>
 
 #include "unit.h"
 #include "sock.h"
 #include "fff.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
+#define filename "mocking_input.txt"
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, socket, int, int, int);
 FAKE_VALUE_FUNC(int, bind, int, const struct sockaddr *, socklen_t);
 FAKE_VALUE_FUNC(int, listen, int, int);
 FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
-FAKE_VALUE_FUNC(int, read, int, void *, size_t *);
-FAKE_VALUE_FUNC(int, write, int, void *, size_t *);
 FAKE_VALUE_FUNC(int, close, int);
 FAKE_VALUE_FUNC(int, connect, int, const struct sockaddr *, socklen_t);
 
@@ -23,43 +30,76 @@ FAKE_VALUE_FUNC(int, connect, int, const struct sockaddr *, socklen_t);
     FAKE(bind)               \
     FAKE(listen)             \
     FAKE(accept)             \
-    FAKE(read)               \
-    FAKE(write)              \
     FAKE(close)              \
     FAKE(connect)
-
+ 
 
 // TODO: a better way could be to use unity_fixtures
 // https://github.com/ThrowTheSwitch/Unity/blob/199b13c099034e9a396be3df9b3b1db1d1e35f20/examples/example_2/test/TestProductionCode.c
-void setUp(void) {
-    /* Register resets */
-  FFF_FAKES_LIST(RESET_FAKE);
+struct thread_sock
+{
+    uint16_t port;
+};
 
-  /* reset common FFF internal structures */
-  FFF_RESET_HISTORY();
+void setUp(void)
+{
+    /* Register resets */
+    FFF_FAKES_LIST(RESET_FAKE);
+
+    /* reset common FFF internal structures */
+    FFF_RESET_HISTORY();
+}
+
+/*Function to mock input from user. The content of io_mock will act as the input*/
+void io_mock(void){
+
+    FILE *file_pointer; 
+	
+	file_pointer = fopen(filename, "w"); 
+ 
+	fprintf(file_pointer, "Socket says: hello world\n"); //26 chars
+	
+	fclose(file_pointer); 
+}
+/*Function to erase file that was created in the mock*/
+void erase_io_mock(void){
+    remove(filename);
+}
+
+FILE* fdopen(int fd, char* opt);
+
+/*Run client in thread to test functionalities that need connection established.*/
+void *thread_connect(void *arg)
+{
+    struct thread_sock *client = arg;
+    uint16_t port = client->port;
+    socket_fake.return_val = 122;
+    sock_t socket_c;
+    sock_create(&socket_c);
+    int res=sock_connect(&socket_c, "::1", port);
+
+    intptr_t result = (intptr_t)res;
+    sock_destroy(&socket_c);
+    return (void *)result;
 }
 
 void test_sock_create(void)
 {
     sock_t sock;
-
-    // Set success return for socket()
     socket_fake.return_val = 123;
     sock_create(&sock);
-    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_OPENED, "sock_create should leave sock in 'OPENED' state");
-    TEST_ASSERT_EQUAL_MESSAGE(sock.fd, 123, "sock_create should set file descriptor in sock structure");
-
-    // Close socket
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_OPENED, sock.state, "sock_create should leave sock in 'OPENED' state");
+    TEST_ASSERT_EQUAL_MESSAGE(123, sock.fd, "sock_create should set file descriptor in sock structure");
     sock_destroy(&sock);
 }
 
-void test_sock_create_null_sock(void){
-    socket_fake.return_val=-1;
-    int res=sock_create(NULL);
+void test_sock_create_null_sock(void)
+{
+    socket_fake.return_val = -1;
+    int res = sock_create(NULL);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on error");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_create should set errno on error");
-
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_create should set errno on error");
 }
 
 void test_sock_create_fail_to_create_socket(void)
@@ -68,38 +108,42 @@ void test_sock_create_fail_to_create_socket(void)
     socket_fake.return_val = -1;
     int res = sock_create(&sock);
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on error");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_create should set errno on error");
-    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CLOSED, "sock_create should leave sock in 'CLOSED' state on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_create should set errno on error");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_CLOSED, sock.state, "sock_create should leave sock in 'CLOSED' state on error");
 }
 
-void test_sock_listen_unitialized_socket(void) {
+void test_sock_listen_unitialized_socket(void)
+{
     sock_t sock;
     listen_fake.return_val = -1;
     int res = sock_listen(&sock, 8888);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_listen on unitialized socket should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_listen should set errno on error");
 }
 
-void test_sock_listen_null_socket(void){
+void test_sock_listen_null_socket(void)
+{
     listen_fake.return_val = -1;
-    int res=sock_listen(NULL, 8888);
+    int res = sock_listen(NULL, 8888);
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_listen on NULL socket should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_listen should set errno on error");
 }
 
-void test_sock_listen(void) {
+void test_sock_listen(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
 
     listen_fake.return_val = 0;
     int res = sock_listen(&sock, 8888);
-    TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_listen should return 0 on success");
-    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_LISTENING, "sock_listen set sock state to LISTENING");
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_listen should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_LISTENING, sock.state, "sock_listen set sock state to LISTENING");
 }
 
-void test_sock_listen_error_return(void) {
+void test_sock_listen_error_return(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
@@ -108,136 +152,202 @@ void test_sock_listen_error_return(void) {
 
     int res = sock_listen(&sock, 8888);
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_listen should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_listen should set errno on error");
 }
 
-void test_sock_accept(void){
-    sock_t sock_s, sock_c;
-    socket_fake.return_val=123;
+void test_sock_accept(void)
+{
+
+    sock_t sock_s;
+    socket_fake.return_val = 123;
     sock_create(&sock_s);
 
     listen_fake.return_val = 0;
     sock_listen(&sock_s, 8888);
-
-    accept_fake.return_val=0;
+    accept_fake.return_val = 0;
+    sock_t sock_c;
     int res = sock_accept(&sock_s, &sock_c);
-    TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_accept should return 0 on success");
-    TEST_ASSERT_EQUAL_MESSAGE(sock_c.state, SOCK_CONNECTED, "sock_accept set client state to CONNECTED");
+
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock_s.state, "sock_accept set server state to CONNECTED");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock_c.state, "sock_accept set client state to CONNECTED");
 }
 
-void test_sock_accept_unitialized_socket(void) {
+void test_sock_accept_unitialized_socket(void)
+{
     sock_t sock;
-    accept_fake.return_val=-1;
+    accept_fake.return_val = -1;
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept on unitialized socket should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_accept should set errno on error");
 }
 
-void test_sock_accept_unbound_socket(void) {
+void test_sock_accept_unbound_socket(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    accept_fake.return_val=-1;
+    accept_fake.return_val = -1;
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept on unbound socket should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_accept should set errno on error");
 }
 
-void test_sock_accept_null_client(void) {
+void test_sock_accept_null_client(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
     listen_fake.return_val = 0;
     sock_listen(&sock, 8888);
-    accept_fake.return_val=-1;
+    accept_fake.return_val = -1;
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept with null client should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_accept should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_accept should set errno on error");
 }
 
-void test_sock_connect(void){
+void test_sock_connect(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    connect_fake.return_val=0;
+    connect_fake.return_val = 0;
     int res = sock_connect(&sock, "::1", 0);
-    TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_connect should return 0 on success");
-    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CONNECTED, "sock_connect set sock state to CONNECTED");
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_connect should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock.state, "sock_connect set sock state to CONNECTED");
 }
 
-void test_sock_connect_null_client(void){
-    connect_fake.return_val=-1;
-    int res=sock_connect(NULL, "::1", 0);
+void test_sock_connect_null_client(void)
+{
+    connect_fake.return_val = -1;
+    int res = sock_connect(NULL, "::1", 0);
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on null socket should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
 
-void test_sock_connect_unitialized_client(void) {
+void test_sock_connect_unitialized_client(void)
+{
     sock_t sock;
-    connect_fake.return_val=-1;
+    connect_fake.return_val = -1;
     int res = sock_connect(&sock, "::1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on unitialized socket should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
 
-void test_sock_connect_null_address(void) {
+void test_sock_connect_null_address(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    connect_fake.return_val=-1;
+    connect_fake.return_val = -1;
     int res = sock_connect(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should not accept a null address");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
 
-void test_sock_connect_ipv4_address(void) {
+void test_sock_connect_ipv4_address(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    connect_fake.return_val=-1;
+    connect_fake.return_val = -1;
     int res = sock_connect(&sock, "127.0.0.1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should not accept ipv4 addresses");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
 
-void test_sock_connect_bad_address(void) {
+void test_sock_connect_bad_address(void)
+{
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    connect_fake.return_val=-1;
+    connect_fake.return_val = -1;
     int res = sock_connect(&sock, "bad_address", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should fail on bad address");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_connect should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
+}
+
+
+void test_sock_read(void){
+
+    char buffer[256];
+    socket_fake.return_val = 123;
+
+    struct thread_sock *thread_client;
+    thread_client = malloc(sizeof(thread_client));
+    thread_client->port = 1111;
+    pthread_t client_thread;
+
+    sock_t sock_s;
+    sock_create(&sock_s);
+
+    sock_listen(&sock_s, 1111);
+
+    sock_t sock_c2;
+    sock_create(&sock_c2);
+   
+    pthread_create(&client_thread, NULL, thread_connect, thread_client);
+
+    sock_accept(&sock_s, &sock_c2);
+    
+
+    FILE *file_sock = fdopen(sock_c2.fd, "w+r");
+    freopen(filename, "r", file_sock);
+   
+    int res= sock_read(&sock_c2, buffer,25, 0);
+
+    pthread_join(client_thread, NULL);
+    free(thread_client);
+    thread_client=NULL;
+    
+    
+    TEST_ASSERT_EQUAL_MESSAGE(25, res, "sock_read should have read 25 bytes");
+    TEST_ASSERT_EQUAL_MESSAGE(0, errno, "sock_read should not set errno on success");
+
+}
+
+void test_sock_read_null_buffer(void) {
+    socket_fake.return_val = 12;
+
+    struct thread_sock *thread_client;
+    thread_client = malloc(sizeof(thread_client));
+    thread_client->port = 1122;
+    pthread_t client_thread;
+
+    sock_t sock_s;
+    sock_create(&sock_s);
+
+    sock_listen(&sock_s, 1122);
+
+    sock_t sock_c2;
+    sock_create(&sock_c2);
+   
+    pthread_create(&client_thread, NULL, thread_connect, thread_client);
+
+    sock_accept(&sock_s, &sock_c2);
+   
+    int res= sock_read(&sock_c2, NULL,25, 0);
+
+    pthread_join(client_thread, NULL);
+    free(thread_client);
+    thread_client=NULL;
+
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when buffer is NULL");
+    TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set errno on error");
 }
 
 void test_sock_read_null_socket(void){
     char buf[256];
-    read_fake.return_val=-1;
-    int res=sock_read(NULL, buf, 256, 0);
+    int res=sock_read(NULL, buf, 255, 0);
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from NULL socket");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
-}
-
-void test_sock_read_null_buffer(void) {
-    sock_t sock_server, sock_client;
-    socket_fake.return_val = 123;
-    sock_create(&sock_server);
-    listen_fake.return_val=0;
-    sock_listen(&sock_server, 0);
-    accept_fake.return_val=0;
-    sock_accept(&sock_server, &sock_client);
-    read_fake.return_val=-1;
-    int res = sock_read(&sock_server, NULL, 256, 0);
-
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when buffer is NULL");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
 }
 
 void test_sock_read_unconnected_socket(void) {
@@ -245,142 +355,153 @@ void test_sock_read_unconnected_socket(void) {
     char buf[256];
     socket_fake.return_val = 123;
     sock_create(&sock);
-    read_fake.return_val=-1;
-    int res = sock_read(&sock, buf, 256, 0);
+    int res = sock_read(&sock, buf, 255, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from unconnected socket");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_read should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
 }
 
-void test_sock_read(void){
-    TEST_IGNORE();
-    char buf[10]="Hola mundo";
-    char other_buf[10];
-    sock_t sock_server, sock_client;
-    sock_create(&sock_server);
-    sock_listen(&sock_server, 8888);
-    sock_create(&sock_client);
-    sock_connect(&sock_client, "::1", 8888);
-    sock_accept(&sock_server, &sock_client);
-    sock_write(&sock_server, buf, 10);
-    read_fake.return_val=0;
-    int res=sock_read(&sock_server, other_buf, 10, 0);
+void test_sock_write(void)
+{
+    char buffer[26]="Socket says: hello world\n";
+    socket_fake.return_val = 123;
 
-    TEST_ASSERT_EQUAL_MESSAGE(res, 10, "sock_read should have read 10 bytes");
-    TEST_ASSERT_EQUAL_MESSAGE(errno, 0, "sock_read should not set errno on success");
-    TEST_ASSERT_EQUAL_STRING_MESSAGE(other_buf, buf, "sock_read should correctly store message from socket");
+    struct thread_sock *thread_client;
+    thread_client = malloc(sizeof(thread_client));
+    thread_client->port = 1111;
+    pthread_t client_thread;
+
+    sock_t sock_s;
+    sock_create(&sock_s);
+
+    sock_listen(&sock_s, 1111);
+
+    sock_t sock_c2;
+    sock_create(&sock_c2);
+   
+    pthread_create(&client_thread, NULL, thread_connect, thread_client);
+
+    sock_accept(&sock_s, &sock_c2);
+    int res= sock_write(&sock_c2,buffer,25);
+    free(thread_client);
+    thread_client=NULL;
+    pthread_join(client_thread, NULL);
+    
+    TEST_ASSERT_EQUAL_MESSAGE(25, res, "sock_write should have written 25 bytes");
+    TEST_ASSERT_EQUAL_MESSAGE(0, errno, "sock_write should not set errno on success");
 }
 
 void test_sock_write_null_socket(void){
-    char buf[256];
-    write_fake.return_val=-1;
-    int res=sock_write(NULL, buf, 256);
+    int res=sock_write(NULL, "Socket says: hello world", 24);
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from NULL socket");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
 
 void test_sock_write_null_buffer(void) {
-    sock_t sock_server, sock_client;
     socket_fake.return_val = 123;
-    sock_create(&sock_server);
-    listen_fake.return_val=0;
-    sock_listen(&sock_server, 0);
-    accept_fake.return_val=0;
-    sock_accept(&sock_server, &sock_client);
-    write_fake.return_val=-1;
-    int res = sock_write(&sock_server, NULL, 256);
+
+    struct thread_sock *thread_client;
+    thread_client = malloc(sizeof(thread_client));
+    thread_client->port = 1111;
+    pthread_t client_thread;
+
+    sock_t sock_s;
+    sock_create(&sock_s);
+
+    sock_listen(&sock_s, 1111);
+
+    sock_t sock_c2;
+    sock_create(&sock_c2);
+   
+    pthread_create(&client_thread, NULL, thread_connect, thread_client);
+
+    sock_accept(&sock_s, &sock_c2);
+    int res= sock_write(&sock_c2,NULL,24);
+    free(thread_client);
+    thread_client=NULL;
+    pthread_join(client_thread, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when buffer is NULL");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
 
 void test_sock_write_unconnected_socket(void) {
     sock_t sock;
-    char buf[256];
     socket_fake.return_val = 123;
     sock_create(&sock);
-    write_fake.return_val=-1;
-    int res = sock_write(&sock, buf, 256);
+    int res = sock_write(&sock, "Socket says: hello world", 24);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from unconnected socket");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_write should set errno on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
 
-void test_sock_write(void){
-    TEST_IGNORE();
-    char buf[10]="Hola mundo";
-    sock_t sock_server, sock_client;
-    sock_create(&sock_server);
-    sock_listen(&sock_server, 8888);
-    sock_create(&sock_client);
-    sock_connect(&sock_client, "::1", 8888);
-    sock_accept(&sock_server, &sock_client);
-    write_fake.return_val=0;
-    int res=sock_write(&sock_server, buf, 10);
-
-    TEST_ASSERT_EQUAL_MESSAGE(res, 10, "sock_write should have written 10 bytes");
-    TEST_ASSERT_EQUAL_MESSAGE(errno,0, "sock_write should not set errno on success");
-
-}
-
-void test_sock_destroy(void){
+void test_sock_destroy(void)
+{
     sock_t sock;
-    socket_fake.return_val=123;
+    socket_fake.return_val = 123;
     sock_create(&sock);
-    close_fake.return_val=0;
-    int res=sock_destroy(&sock);
-    TEST_ASSERT_EQUAL_MESSAGE(res, 0, "sock_destroy should return 0 on success");
-    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CLOSED, "sock_destroy set sock state to CLOSED");
+    close_fake.return_val = 0;
+    int res = sock_destroy(&sock);
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_destroy should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_CLOSED, sock.state, "sock_destroy set sock state to CLOSED");
 }
 
- void test_sock_destroy_null_sock(void){
-    close_fake.return_val=-1;
-    int res=sock_destroy(NULL);
+void test_sock_destroy_null_sock(void)
+{
+    close_fake.return_val = -1;
+    int res = sock_destroy(NULL);
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is NULL");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_destroy should set errno on error");
- }
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_destroy should set errno on error");
+}
 
- void test_sock_destroy_closed_sock(void){
-     sock_t sock;
-     socket_fake.return_val=123;
-     sock_create(&sock);
-     sock_destroy(&sock);
-     close_fake.return_val=-1;
-     int res=sock_destroy(&sock);
-     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is CLOSED");
-     TEST_ASSERT_NOT_EQUAL_MESSAGE(errno, 0, "sock_destroy should set errno on error");
- }
+void test_sock_destroy_closed_sock(void)
+{
+    sock_t sock;
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+    sock_destroy(&sock);
+    close_fake.return_val = -1;
+    int res = sock_destroy(&sock);
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is CLOSED");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_destroy should set errno on error");
+}
 
 int main(void)
 {
+    /*CREATE FILE TO MOCK USER INPUT*/
+    io_mock();
     UNIT_TESTS_BEGIN();
+    /*TEST OF FUNCTIONS IN CASE OF GOOD USE*/
     UNIT_TEST(test_sock_create);
+    UNIT_TEST(test_sock_listen);
+    UNIT_TEST(test_sock_accept);
+    UNIT_TEST(test_sock_connect);
+    UNIT_TEST(test_sock_write)
+    UNIT_TEST(test_sock_read);
+    UNIT_TEST(test_sock_destroy);
+    /*TEST OF FUNCTIONS IN CASE OF BAD USE*/
     UNIT_TEST(test_sock_create_fail_to_create_socket);
     UNIT_TEST(test_sock_create_null_sock);
     UNIT_TEST(test_sock_listen_unitialized_socket);
     UNIT_TEST(test_sock_listen_error_return);
     UNIT_TEST(test_sock_listen_null_socket);
-    UNIT_TEST(test_sock_listen);
     UNIT_TEST(test_sock_accept_unitialized_socket);
     UNIT_TEST(test_sock_accept_unbound_socket);
     UNIT_TEST(test_sock_accept_null_client);
-    UNIT_TEST(test_sock_accept);
     UNIT_TEST(test_sock_connect_null_client);
     UNIT_TEST(test_sock_connect_unitialized_client);
     UNIT_TEST(test_sock_connect_null_address);
     UNIT_TEST(test_sock_connect_ipv4_address);
     UNIT_TEST(test_sock_connect_bad_address);
-    UNIT_TEST(test_sock_connect);
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_unconnected_socket);
-    UNIT_TEST(test_sock_read);
     UNIT_TEST(test_sock_write_null_socket);
     UNIT_TEST(test_sock_write_null_buffer);
     UNIT_TEST(test_sock_write_unconnected_socket);
-    UNIT_TEST(test_sock_write);
-    UNIT_TEST(test_sock_destroy);
     UNIT_TEST(test_sock_destroy_null_sock);
     UNIT_TEST(test_sock_destroy_closed_sock);
+    /*ERASE FILE TO MOCK USER INPUT*/
+    erase_io_mock();
     return UNIT_TESTS_END();
 }
