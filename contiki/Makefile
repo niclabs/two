@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = main
+CONTIKI_PROJECT = two
 all: $(CONTIKI_PROJECT)
 
 
