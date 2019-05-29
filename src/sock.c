@@ -32,7 +32,7 @@ int sock_create(sock_t * sock) {
 }
 
 int sock_listen(sock_t * server, uint16_t port) {
-    if((server==NULL) || (server->state != SOCK_OPENED) || (server->fd<=0)){
+    if((server==NULL) || (server->state != SOCK_OPENED) || (server->fd<0)){
         errno=EINVAL;
         DEBUG("Error in sock_listen, server must valid and opened");
         return -1;
@@ -54,7 +54,7 @@ int sock_listen(sock_t * server, uint16_t port) {
 }
 
 int sock_accept(sock_t * server, sock_t * client) {
-    if((server == NULL) || (server->state != SOCK_LISTENING) || (server->fd <= 0)) {
+    if((server == NULL) || (server->state != SOCK_LISTENING) || (server->fd < 0)) {
         errno=EINVAL;
         DEBUG("Error in sock_accept, server must be valid and listening");
         return -1;
@@ -73,11 +73,12 @@ int sock_accept(sock_t * server, sock_t * client) {
     }
     client->fd = clifd;
     client->state = SOCK_CONNECTED;
+    server->state = SOCK_CONNECTED;
 	return 0;
 }
 
 int sock_connect(sock_t * client, char * addr, uint16_t port) {
-    if(client==NULL || (client->state != SOCK_OPENED) || (client->fd<=0)){
+    if(client==NULL || (client->state != SOCK_OPENED) || ((client->fd)<0)){
         errno=EINVAL;
         DEBUG("Error in sock_connect, client must be valid and opened");
         return -1;
@@ -113,7 +114,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 }
 
 int sock_read(sock_t * sock, char * buf, int len, int timeout) {
-    if(sock==NULL || (sock->state != SOCK_CONNECTED) || (sock->fd<=0)){
+    if(sock==NULL || (sock->state != SOCK_CONNECTED) || ((sock->fd)<0)){
         errno=EINVAL;
         DEBUG("Called sock_read with invalid socket");
         return -1;
@@ -131,14 +132,14 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         return -1;
     }
 
-    struct timeval time_o;
+   /* struct timeval time_o;
     time_o.tv_sec = timeout;
     time_o.tv_usec = 0;
 
-    if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
+    //if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
         ERROR("Error setting timeout");
         return -1;
-    }
+    }*/
 
     ssize_t bytes_read = read(sock->fd, buf, len);
     if(bytes_read < 0) {
@@ -146,17 +147,17 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         return -1;
     }
     
-    time_o.tv_sec = 0;
+   /* time_o.tv_sec = 0;
     time_o.tv_usec = 0;
     if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&time_o, sizeof(time_o)) < 0) {
         ERROR("Error unsetting timeout");
         return -1;
-    }
+     }*/
     return bytes_read;
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    if(sock==NULL || sock->state != SOCK_CONNECTED || (sock->fd<=0)) {
+    if(sock==NULL || sock->state != SOCK_CONNECTED || (sock->fd<0)) {
         errno=EINVAL;
         DEBUG("Error in sock_write, socket must be valid and connected.");
         return -1;
@@ -167,12 +168,11 @@ int sock_write(sock_t * sock, char * buf, int len) {
         DEBUG("Error in sock_write, buffer must not be NULL");
         return -1;
     }
-
     ssize_t bytes_written;
     ssize_t bytes_written_total = 0;
     const char *p = buf;
     while(len>0) {
-        if(p==NULL){
+        if( p==NULL){
             break;
         }
         bytes_written = write(sock->fd, p, len);
@@ -188,7 +188,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 }
 
 int sock_destroy(sock_t * sock) {
-    if(sock==NULL || sock->fd<=0){
+    if(sock==NULL || sock->fd<0){
         errno=EINVAL;
         DEBUG("Error on socket_destroy, NULL socket given");
         return -1;
