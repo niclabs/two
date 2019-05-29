@@ -313,6 +313,38 @@ void test_sock_read(void){
 
 }
 
+void test_sock_read_bad_timeout(void) {
+
+    char buffer[256];
+    socket_fake.return_val = 11;
+
+    struct thread_sock *thread_client;
+    thread_client = malloc(sizeof(thread_client));
+    thread_client->port = 1122;
+    pthread_t client_thread;
+
+    sock_t sock_s;
+    sock_create(&sock_s);
+
+    sock_listen(&sock_s, 1122);
+
+    sock_t sock_c2;
+    sock_create(&sock_c2);
+   
+    pthread_create(&client_thread, NULL, thread_connect, thread_client);
+
+    sock_accept(&sock_s, &sock_c2);
+   
+    int res= sock_read(&sock_c2, buffer,25, -1);
+
+    pthread_join(client_thread, NULL);
+    free(thread_client);
+    thread_client=NULL;
+
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when timeout is not valid");
+    TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set errno on error");
+}
+
 void test_sock_read_null_buffer(void) {
     socket_fake.return_val = 12;
 
@@ -495,6 +527,7 @@ int main(void)
     UNIT_TEST(test_sock_connect_bad_address);
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_null_buffer);
+    UNIT_TEST(test_sock_read_bad_timeout);
     UNIT_TEST(test_sock_read_unconnected_socket);
     UNIT_TEST(test_sock_write_null_socket);
     UNIT_TEST(test_sock_write_null_buffer);
