@@ -24,6 +24,7 @@ int init_variables(hstates_t * st){
   st->h2s.remote_settings[4] = st->h2s.local_settings[4] = DEFAULT_MFS;
   st->h2s.remote_settings[5] = st->h2s.local_settings[5] = DEFAULT_MHLS;
   st->h2s.wait_setting_ack = 0;
+  memset(&st->h2s.current_stream, 0, sizeof(h2_stream_t));
   return 0;
 }
 
@@ -343,7 +344,34 @@ int receive_frame(hstates_t *st){
       case DATA_TYPE://Data
           WARN("TODO: Data Frame. Not implemented yet.");
           return -1;
-      case HEADERS_TYPE://Header
+      case HEADERS_TYPE:{//Header
+          // read stream from frame if it does not exist, create it, otherwise reject it
+          if(st->h2s.current_stream.stream_id == 0){
+            st->h2s.current_stream.stream_id = header.stream_id;
+            st->h2s.current_stream.state = STREAM_OPEN;
+          }
+          else if(header.stream_id != st->h2s.current_stream.stream_id){
+            ERROR("Stream not created. Sending error.");
+            //Send reject error. Write error to HTTP. Check if error is relevant to HTTP or HTTP2
+            return -1;
+          }
+
+          headers_payload_t header_pyl;
+          rc = read_headers_payload(buff_read, &header, &header_pyl);
+          if(rc != 0){
+            ERROR("Error in headers payload");
+            return rc;
+          }
+          // read_headers(*header_block_fragment, *header_list, header_list_start, header_list_max)
+          rc = read_headers(header_pyl.header_block_fragment, st->header_list, st->header_count, HTTP2_MAX_HEADER_COUNT);
+          if (rc < 0) {
+            ERROR("Error reading headers");
+            // TODO: send internal error if number of headers > HTTP2HTTP2_MAX_HEADER_COUNT
+            return rc;
+          }
+          st->header_count += rc;
+      }
+
           WARN("TODO: Header Frame. Not implemented yet.");
           return -1;
       case PRIORITY_TYPE://Priority
