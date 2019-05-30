@@ -345,7 +345,7 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* va
 };
 
 
-int unpack_header_block(uint8_t* header_block, uint8_t header_block_size){
+int decode_header_block(uint8_t* header_block, uint8_t header_block_size){
 
 }
 

@@ -97,7 +97,7 @@ int bytes_to_frame_header(uint8_t* byte_array, int size, frame_header_t* frame_h
 
 int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t * padding);
 int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload);
-int decode_header_block(hstates_t * states);
+int receive_header_block(hstates_t * states);
 
 
 

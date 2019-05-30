@@ -380,7 +380,7 @@ int receive_frame(hstates_t *st){
 
             //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
             if(is_flag_set(header.flags,HEADERS_END_HEADERS_FLAG)){
-                rc = decode_header_block(st);
+                rc = receive_header_block(st);
                 st->waiting_for_end_headers_flag = 0;
             }
 

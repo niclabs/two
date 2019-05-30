@@ -385,7 +385,7 @@ int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload
     return frame_header->length - pad_length - priority_length;
 }
 
-int decode_header_block(hstates_t * states){
+int receive_header_block(hstates_t * states){
     (void)states;
     return -1;
 }

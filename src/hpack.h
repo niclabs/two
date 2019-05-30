@@ -26,7 +26,7 @@ int compress_static(char* headers, int headers_size, uint8_t* compressed_headers
 int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers);
 
 
-int unpack_header_block(uint8_t* header_block, uint8_t header_block_size);
+int decode_header_block(uint8_t* header_block, uint8_t header_block_size);
 
 
 #endif //TWO_HPACK_H
