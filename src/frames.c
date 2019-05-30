@@ -1,6 +1,6 @@
 
 #include "frames.h"
-#include "hpack.h"
+
 
 /*
 * Function: frame_header_to_bytes
@@ -385,8 +385,13 @@ int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload
     return frame_header->length - pad_length - priority_length;
 }
 
-int receive_header_block(hstates_t * states){
-    (void)states;
+int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, table_pair_t* header_list, uint8_t table_index){//return size of header_list (header_count)
+    (void)header_block_fragments;
+    (void)header_block_fragments_pointer;
+    (void)header_list;
+    (void)table_index;
+    //int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, header_list, table_index);
+    //(void)rc;
     return -1;
 }
 
