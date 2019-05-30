@@ -72,7 +72,7 @@ void erase_io_mock(void){
     remove(filename);
 }
 
-FILE* fdopen(int fd, char* opt);
+//FILE* fdopen(int fd, char* opt);// when not commented get this error on make test: /usr/include/stdio.h:265:14: note: previous declaration of ‘fdopen’ was here: extern FILE *fdopen (int __fd, const char *__modes) __THROW __wur;
 
 /*Run client in thread to test functionalities that need connection established.*/
 void *thread_connect(void *arg)
