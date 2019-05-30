@@ -14,6 +14,8 @@
 #include "sock.h"
 #include "fff.h"
 
+/*filename: to simulate user input in test where is needed, user input is redirected 
+to content of this file.*/
 #define filename "mocking_input.txt"
 
 DEFINE_FFF_GLOBALS;
@@ -36,6 +38,10 @@ FAKE_VALUE_FUNC(int, connect, int, const struct sockaddr *, socklen_t);
 
 // TODO: a better way could be to use unity_fixtures
 // https://github.com/ThrowTheSwitch/Unity/blob/199b13c099034e9a396be3df9b3b1db1d1e35f20/examples/example_2/test/TestProductionCode.c
+
+/*TODO: separate functions and definitions that are used by test and put in another file.*/
+
+/*Struct used by pthread_create, stores arguments of function used by thread.*/
 struct thread_sock
 {
     uint16_t port;
@@ -50,7 +56,7 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-/*Function to mock input from user. The content of io_mock will act as the input*/
+/*Function to mock input from user. The content of the file will act as the input*/
 void io_mock(void){
 
     FILE *file_pointer; 
@@ -66,7 +72,7 @@ void erase_io_mock(void){
     remove(filename);
 }
 
-//FILE* fdopen(int fd, char* opt);
+FILE* fdopen(int fd, char* opt);
 
 /*Run client in thread to test functionalities that need connection established.*/
 void *thread_connect(void *arg)
@@ -297,7 +303,7 @@ void test_sock_read(void){
 
     sock_accept(&sock_s, &sock_c2);
     
-
+    /*Redirecting reading to read from file created in io_mock.*/
     FILE *file_sock = fdopen(sock_c2.fd, "w+r");
     freopen(filename, "r", file_sock);
    
