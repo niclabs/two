@@ -49,6 +49,9 @@ typedef struct HTTP_STATES {
     uint8_t table_index;
     table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
     uint8_t header_count;
+    uint8_t header_block_fragments[128];
+    uint8_t header_block_fragments_pointer; //points to the next byte to write in
+    uint8_t waiting_for_end_headers_flag;//bool
 } hstates_t;
 
 

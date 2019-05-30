@@ -322,3 +322,72 @@ int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* com
     return headers_size;
 
 }
+
+
+
+int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t * padding){
+    uint8_t pad_length = 0; // only if padded flag is set
+    uint8_t exclusive_dependency = 0; // only if priority flag is set
+    uint32_t stream_dependency = 0; // only if priority flag is set
+    uint8_t weight = 0; // only if priority flag is set
+    //uint8_t header_block_fragment[64]; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
+    //uint8_t padding[32]; //only if padded flag is set. Size = pad_length
+
+    int pointer = 0;
+    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
+        pad_length = read_buffer[pointer];
+        pointer +=1;
+    }
+    if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){ //if priority flag is set
+        exclusive_dependency = ((uint8_t)128)&read_buffer[pointer];
+        stream_dependency = (uint32_t) bytes_to_uint32_31(read_buffer+pointer);
+        pointer +=4;
+        weight = read_buffer[pointer];
+        pointer +=1;
+    }
+
+    //header block fragment
+    int header_block_fragment_size = frame_header->length-pad_length-pointer;
+    if(header_block_fragment_size>=64){
+        ERROR("Header block fragment size longer than the space given.");
+        return -1;
+    }
+    int rc = buffer_copy(headers_block_fragment,read_buffer+pointer, header_block_fragment_size);
+    pointer += rc;
+
+    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
+        if(pad_length>=32){
+            ERROR("Pad lenght longer than the space given.");
+            return -1;
+        }
+        rc = buffer_copy(padding,read_buffer+pointer, pad_length);
+        pointer += pad_length;
+    }
+
+    headers_payload->pad_length = pad_length;
+    headers_payload->exclusive_dependency = exclusive_dependency;
+    headers_payload->stream_dependency = stream_dependency;
+    headers_payload->weight = weight;
+    headers_payload->header_block_fragment = headers_block_fragment;
+    headers_payload->padding = padding;
+    return 0;
+}
+
+int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload){
+    int priority_length = 0;
+    if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){
+        priority_length = 5;
+    }
+    int pad_length = 0;
+    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) {
+        pad_length = headers_payload->pad_length + 1; //plus one for the pad_length byte.
+    }
+    return frame_header->length - pad_length - priority_length;
+}
+
+int decode_header_block(hstates_t * states){
+    (void)states;
+    return -1;
+}
+
+

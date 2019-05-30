@@ -1,6 +1,7 @@
 #include "hpack.h"
 #include "logging.h"
 #include <math.h>
+#include "hpack_utils.h"
 /*
  *
  * returns compressed headers size or -1 if error
@@ -30,27 +31,6 @@ int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_header
 
 
 
-/*
- * pass a byte b to string bits in str
- * "str" must be a char[9] for allocate string with 8chars + '/0'
- * Returns 0 if ok.
- */
-int byte_to_8bits_string(uint8_t b, char* str){
-    uint8_t aux = (uint8_t)128;
-    for(uint8_t i = 0; i < 8; i++){
-        if(b & aux){
-            str[i] = '1';
-        }else{
-            str[i] = '0';
-        }
-        aux = aux >> 1;
-    }
-    str[8] = '\0';
-    return 0;
-};
-
-
-
 
 /*returns the amount of octets used to encode a int num with a prefix p*/
 uint32_t get_octets_length(uint32_t num, uint8_t prefix){
@@ -66,7 +46,7 @@ uint32_t get_octets_length(uint32_t num, uint8_t prefix){
     }
 };
 
-
+/*returns the size of the encoded integer with prefix*/
 int encoded_integer_size(uint32_t integer, uint8_t prefix){
     int octets_size;
     uint32_t max_first_octet = (1<<prefix)-1;
@@ -85,7 +65,7 @@ int encoded_integer_size(uint32_t integer, uint8_t prefix){
 
 
 /*
- * encode an integer wit the given prefix
+ * encode an integer with the given prefix
  * and save the encoded integer in "encoded_integer"
  * encoded_integer must be an array of the size calculated by encoded_integer_size
  * returns the encoded_intege_size
@@ -363,3 +343,29 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* va
         }
     }
 };
+
+
+int unpack_header_block(uint8_t* header_block, uint8_t header_block_size){
+
+}
+
+hpack_preamble_t get_preamble(uint8_t preamble){
+    if(preamble&INDEXED_HEADER_FIELD){
+        return INDEXED_HEADER_FIELD;
+    }
+    if(preamble&LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING){
+        return LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
+    }
+    if(preamble&DYNAMIC_TABLE_SIZE_UPDATE){
+        return DYNAMIC_TABLE_SIZE_UPDATE;
+    }
+    if(preamble&LITERAL_HEADER_FIELD_NEVER_INDEXED){
+        return LITERAL_HEADER_FIELD_NEVER_INDEXED;
+    }
+    if(preamble<16) {
+        return LITERAL_HEADER_FIELD_WITHOUT_INDEXING; // preamble = 0000
+    }
+    ERROR("wrong preamble");
+    return NULL;
+}
+

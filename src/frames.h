@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdint.h>
 #include "utils.h"
+#include "http_methods_bridge.h"
+#include "logging.h"
 
 
 /*note the difference between
@@ -92,6 +94,13 @@ typedef enum{
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t* frame_header, uint8_t* byte_array);
 int bytes_to_frame_header(uint8_t* byte_array, int size, frame_header_t* frame_header);
+
+int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t * padding);
+int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload);
+int decode_header_block(hstates_t * states);
+
+
+
 
 /*flags methods*/
 int is_flag_set(uint8_t flags, uint8_t flag);

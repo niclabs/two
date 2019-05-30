@@ -71,3 +71,10 @@ int append_byte_arrays(uint8_t *dest, uint8_t *array1, uint8_t *array2, int size
     //memcpy(total+sizeof(array1), array2, sizeof(array2));
     return size1 + size2;
 }
+
+int buffer_copy(uint8_t* dest, uint8_t* orig, int size){
+    for(int i = 0; i< size; i++){
+        dest[i] = orig[i];
+    }
+    return size;
+}
