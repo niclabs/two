@@ -1,5 +1,6 @@
 
 #include "frames.h"
+#include "hpack.h"
 
 /*
 * Function: frame_header_to_bytes
@@ -76,7 +77,7 @@ int settings_frame_to_bytes(settings_payload_t *settings_payload, uint32_t count
         int size = setting_to_bytes(settings_payload->pairs+i, setting_bytes);
         for(int j = 0; j<size; j++){
             bytes[i*6+j] = setting_bytes[j];
-        } 
+        }
     }
     return 6*count;
 }
@@ -210,7 +211,7 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *f
 
 /*
 * Function: create_settings_ack_frame
-* Create a Frame of type sewttings with flag ack 
+* Create a Frame of type sewttings with flag ack
 * Input:  pointer to frame, pointer to frameheader
 * Output: 0 if setting frame was created
 */
@@ -249,4 +250,75 @@ int is_flag_set(uint8_t flags, uint8_t queried_flag){
 uint8_t set_flag(uint8_t flags, uint8_t flag_to_set){
     uint8_t new_flag = flags|flag_to_set;
     return new_flag;
+}
+
+
+
+int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, headers_payload_t* headers_payload){
+    uint8_t type = HEADERS_TYPE;
+    uint8_t flags = 0x0;
+    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is impolemented
+
+    frame_header->length = length;
+    frame_header->type = type;
+    frame_header ->flags = flags;
+    frame_header->stream_id = stream_id;
+    frame_header->reserved = 0;
+
+    headers_payload->header_block_fragment = headers_block;//TODO check this
+
+    frame->frame_header = frame_header;
+    frame->payload = headers_payload;
+
+    return 0;
+}
+
+int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, continuation_payload_t* continuation_payload){
+    uint8_t type = CONTINUATION_TYPE;
+    uint8_t flags = 0x0;
+    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is impolemented
+
+    frame_header->length = length;
+    frame_header->type = type;
+    frame_header ->flags = flags;
+    frame_header->stream_id = stream_id;
+    frame_header->reserved = 0;
+
+    continuation_payload->header_block_fragment = headers_block;//TODO check this
+
+    frame->frame_header = frame_header;
+    frame->payload = continuation_payload;
+
+    return 0;
+}
+
+
+/*
+ * returns compressed headers size or -1 if error
+ *
+ */
+int compress_headers(char* headers, int headers_size, uint8_t* compressed_headers){
+    //TODO implement default compression
+    //now it is without compression
+    for(int i =0; i<headers_size; i++){
+        compressed_headers[i] = (uint8_t)headers[i];
+    }
+    return headers_size;
+}
+
+int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, uint8_t bool_table_compression, uint8_t bool_huffman_compression){
+    //TODO implement
+    return -1;
+    if(bool_table_compression>0){
+        return compress_static(headers, headers_size, compressed_headers);
+    }
+    if(bool_huffman_compression>0){
+        return compress_hauffman(headers, headers_size, compressed_headers);
+    }
+    //without compression
+    for(int i =0; i<headers_size; i++){
+        compressed_headers[i] = (uint8_t)headers[i];
+    }
+    return headers_size;
+
 }

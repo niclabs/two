@@ -1,3 +1,6 @@
+#ifndef FRAMES_H
+#define FRAMES_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,12 +11,6 @@
 /*note the difference between
 frameheader (data that identifies a frame of any type) and
 headersframe(type of frame that contains http headers)*/
-
-/*typedef struct ByteArray{
-    uint8_t* bytes;
-    uint32_t length;
-}bytearray_t;
-*/
 
 /*FRAME TYPES*/
 typedef enum{
@@ -41,7 +38,7 @@ typedef struct{
 /*FRAME*/
 typedef struct{
     frame_header_t* frame_header;
-void * payload;
+    void * payload;
 }frame_t;
 
 
@@ -68,18 +65,28 @@ typedef struct{
     uint8_t pad_length; // only if padded flag is set
     uint8_t exclusive_dependency:1; // only if priority flag is set
     uint32_t stream_dependency:31; // only if priority flag is set
-    uint8_t wheight; // only if priority flag is set
-    void* header_block_fragment; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
-    void* padding; //only if padded flag is set. Size = pad_length
+    uint8_t weight; // only if priority flag is set
+    uint8_t* header_block_fragment; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
+    uint8_t* padding; //only if padded flag is set. Size = pad_length
 }headers_payload_t; //48+32+32 bits -> 14 bytes
 
 typedef enum{
     HEADERS_END_STREAM_FLAG = 0x1,//bit 0
-    HEADERS_END_HEADERS_FLAG = 0x4,//bit bit 2
+    HEADERS_END_HEADERS_FLAG = 0x4,//bit 2
     HEADERS_PADDED_FLAG = 0x8,//bit 3
     HEADERS_PRIORITY_FLAG = 0x20//bit 5
-}header_flag_t;
+}headers_flag_t;
 
+
+/*CONTINUATION FRAME*/
+
+typedef struct{
+    uint8_t* header_block_fragment; // only if length > 0. Size = frame size
+}continuation_payload_t;
+
+typedef enum{
+    CONTINUATION_END_HEADERS_FLAG = 0x4//bit 2
+}continuation_flag_t;
 
 
 /*frame header methods*/
@@ -96,13 +103,30 @@ int frame_to_bytes(frame_t* frame, uint8_t* bytes);
 
 /*settings methods*/
 int create_list_of_settings_pair(uint16_t* ids, uint32_t* values, int count, settings_pair_t* pair_list);
-int create_settings_frame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frame_header_t* frame_header, settings_payload_t* settings_frame, settings_pair_t* pairs);
+int create_settings_frame(uint16_t* ids, uint32_t* values, int count, frame_t* frame, frame_header_t* frame_header, settings_payload_t* settings_payload, settings_pair_t* pairs);
 int setting_to_bytes(settings_pair_t* setting, uint8_t* byte_array);
 int settings_frame_to_bytes(settings_payload_t* settings_frame, uint32_t count, uint8_t* byte_array);
 
 int bytes_to_settings_payload(uint8_t* bytes, int size, settings_payload_t* settings_frame, settings_pair_t* pairs);
 
 int create_settings_ack_frame(frame_t * frame, frame_header_t* frame_header);
+
+
+
+
+/*header payload methods*/
+int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, headers_payload_t* headers_payload);
+
+/*continuation payload methods*/
+int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, continuation_payload_t* continuation_payload);
+
+
+//TODO
+
+/*Headers compresion*/
+//int compress_headers(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size);
+//int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size, uint8_t bool_table_compression, uint8_t bool_huffman_compression);
+
 
 
 /*
@@ -113,3 +137,5 @@ byteToPayloadDispatcher[SETTINGS_TYPE] = &bytesToSettingsPayload;
 typedef* payloadTypeDispatcher[10];
 payloadTypeDispatcher[SETTINGS_TYPE] = &settings_payload_t
 */
+
+#endif /*FRAMES_H*/

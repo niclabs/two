@@ -66,7 +66,7 @@ void erase_io_mock(void){
     remove(filename);
 }
 
-FILE* fdopen(int fd, char* opt);
+//FILE* fdopen(int fd, char* opt);
 
 /*Run client in thread to test functionalities that need connection established.*/
 void *thread_connect(void *arg)
