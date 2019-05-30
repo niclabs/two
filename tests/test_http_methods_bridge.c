@@ -74,7 +74,7 @@ void test_http_write_fail_sock_write(void)
     TEST_ASSERT_EQUAL((void *)sock_write, fff.call_history[0]);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, wr, "Error in writing");
-    TEST_ASSERT_EQUAL(0,hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
 
 }
 
@@ -83,6 +83,7 @@ void test_http_write_fail_no_client_or_server(void)
 {
     uint8_t *buf = (uint8_t *)"hola";
     hstates_t hs;
+
     hs.socket_state = 0;
     int wr = http_write(buf, 256, &hs);
 
@@ -124,7 +125,7 @@ void test_http_read_fail_sock_read(void)
     TEST_ASSERT_EQUAL((void *)sock_read, fff.call_history[0]);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, rd, "Error in reading");
-    TEST_ASSERT_EQUAL(0,hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
 
     free(buf);
 }
@@ -145,6 +146,42 @@ void test_http_read_fail_not_connected_client(void)
 }
 
 
+void test_http_clear_header_list_success_new_index_bigger(void)
+{
+    hstates_t hs;
+
+    hs.table_count = 4;
+    int clear = http_clear_header_list(&hs, 5);
+
+    TEST_ASSERT_EQUAL(0, clear);
+    TEST_ASSERT_EQUAL(4,hs.table_count);
+}
+
+
+void test_http_clear_header_list_success_new_invalid_index(void)
+{
+    hstates_t hs;
+
+    hs.table_count = 5;
+    int clear = http_clear_header_list(&hs, -6);
+
+    TEST_ASSERT_EQUAL(0, clear);
+    TEST_ASSERT_EQUAL(0,hs.table_count);
+}
+
+
+void test_http_clear_header_list_success_new_valid_index(void)
+{
+    hstates_t hs;
+
+    hs.table_count = 7;
+    int clear = http_clear_header_list(&hs, 2);
+
+    TEST_ASSERT_EQUAL(0, clear);
+    TEST_ASSERT_EQUAL(2,hs.table_count);
+}
+
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -156,6 +193,10 @@ int main(void)
     UNIT_TEST(test_http_read_success);
     UNIT_TEST(test_http_read_fail_sock_read);
     UNIT_TEST(test_http_read_fail_not_connected_client);
+
+    UNIT_TEST(test_http_clear_header_list_success_new_index_bigger);
+    UNIT_TEST(test_http_clear_header_list_success_new_invalid_index);
+    UNIT_TEST(test_http_clear_header_list_success_new_valid_index);
 
     return UNITY_END();
 }

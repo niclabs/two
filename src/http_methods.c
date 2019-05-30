@@ -46,31 +46,31 @@ hstates_t global_state;
 int http_init_server(uint16_t port)
 {
     global_state.socket_state = 0;
-    global_state.table_index = -1;
+    global_state.table_count = 0;
 
     client.state = NOT_CLIENT;
 
-  if (sock_create(&server.socket)<0){
-    ERROR("Error in server creation");
-    return -1;
-  }
+    if (sock_create(&server.socket) < 0) {
+        ERROR("Error in server creation");
+        return -1;
+    }
 
-  if (sock_listen(&server.socket, port)<0){
-    ERROR("Partial error in server creation");
-    return -1;
-  }
+    if (sock_listen(&server.socket, port) < 0) {
+        ERROR("Partial error in server creation");
+        return -1;
+    }
 
     server.state = LISTEN;
 
-  printf("Server waiting for a client\n");
+    printf("Server waiting for a client\n");
 
 
-  if (sock_accept(&server.socket, &client.socket)<0){
-    ERROR("Not client found");
-    return -1;
-  }
+    if (sock_accept(&server.socket, &client.socket) < 0) {
+        ERROR("Not client found");
+        return -1;
+    }
 
-  client.state=CONNECTED;
+    client.state = CONNECTED;
 
     printf("Client found and connected\n");
 
@@ -95,9 +95,9 @@ int http_set_function_to_path(char *callback, char *path)
 
 int http_add_header(char *name, char *value)
 {
-    int i = global_state.table_index;
+    int i = global_state.table_count;
 
-    if (i == 10) {
+    if (i == HTTP2_MAX_HEADER_COUNT) {
         ERROR("Headers list is full");
         return -1;
     }
@@ -105,7 +105,7 @@ int http_add_header(char *name, char *value)
     strcpy(global_state.header_list[i].name, name);
     strcpy(global_state.header_list[i].value, value);
 
-    global_state.table_index = i + 1;
+    global_state.table_count = i + 1;
 
     return 0;
 }
@@ -145,7 +145,7 @@ int http_server_destroy(void)
 int http_client_connect(uint16_t port, char *ip)
 {
     global_state.socket_state = 0;
-    global_state.table_index = -1;
+    global_state.table_count = 0;
 
     struct client_s *cl = &client;
     server.state = NOT_SERVER;
@@ -180,17 +180,17 @@ int http_client_connect(uint16_t port, char *ip)
 
 char *http_grab_header(char *header, int len)
 {
-    int i = global_state.table_index;
+    int i = global_state.table_count;
 
-    if (i == -1) {
+    if (i == 0) {
         ERROR("Headers list is empty");
         return NULL;
     }
 
     int k;
     for (k = 0; k <= i; k++) {
-        if (strncmp(global_state.header_list[k].name, header, len)==0){
-          return global_state.header_list[k].value;
+        if (strncmp(global_state.header_list[k].name, header, len) == 0) {
+            return global_state.header_list[k].value;
         }
     }
     return 0;

@@ -11,24 +11,19 @@
 
 #define HTTP2_MAX_HEADER_COUNT 32
 
-typedef struct TABLE_ENTRY {
-    char name [32];
-    char value [128];
-} table_pair_t;
-
 /*-----HTTP2 structures-----*/
 
-typedef enum{
-  STREAM_IDLE,
-  STREAM_OPEN,
-  STREAM_HALF_CLOSED_REMOTE,
-  STREAM_HALF_CLOSED_LOCAL,
-  STREAM_CLOSED
+typedef enum {
+    STREAM_IDLE,
+    STREAM_OPEN,
+    STREAM_HALF_CLOSED_REMOTE,
+    STREAM_HALF_CLOSED_LOCAL,
+    STREAM_CLOSED
 } h2_stream_state_t;
 
 typedef struct HTTP2_STREAM {
-  uint32_t stream_id;
-  h2_stream_state_t state;
+    uint32_t stream_id;
+    h2_stream_state_t state;
 } h2_stream_t;
 
 /*Struct for storing HTTP2 states*/
@@ -42,16 +37,22 @@ typedef struct HTTP2_STATES {
 
 /*-----HTTP structures-----*/
 
+
+typedef struct TABLE_ENTRY {
+    char name [32];
+    char value [128];
+} table_pair_t;
+
 typedef struct HTTP_STATES {
     uint8_t socket_state;
     sock_t *socket;
     h2states_t h2s;
-    uint8_t table_index;
+    uint8_t table_count;
     table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
     uint8_t header_count;
     uint8_t header_block_fragments[128];
     uint8_t header_block_fragments_pointer; //points to the next byte to write in
-    uint8_t waiting_for_end_headers_flag;//bool
+    uint8_t waiting_for_end_headers_flag;   //bool
 } hstates_t;
 
 
@@ -98,8 +99,8 @@ int http_receive(char *headers);
  * Empty the list of headers in hstates_t struct
  *
  * @param    hs        http states struct
- * @param    index     header index in headers list, invalid index to delete
- *                     the entire table
+ * @param    index     header index in the headers list to be maintained,
+ *                     invalid index to delete the entire table
  *
  * @return    0        The list was emptied
  * @return    1        There was an error
