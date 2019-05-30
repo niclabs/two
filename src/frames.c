@@ -1,6 +1,6 @@
 
 #include "frames.h"
-
+#include "utils.h"
 
 /*
 * Function: frame_header_to_bytes
@@ -240,7 +240,6 @@ int is_flag_set(uint8_t flags, uint8_t queried_flag){
     return 0;
 }
 
-
 /*
 * Function: set_flag
 * Sets a flag in a flag byte.
@@ -251,8 +250,6 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set){
     uint8_t new_flag = flags|flag_to_set;
     return new_flag;
 }
-
-
 
 int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, headers_payload_t* headers_payload){
     uint8_t type = HEADERS_TYPE;
@@ -292,7 +289,6 @@ int create_continuation_frame(uint8_t * headers_block, int headers_block_size, u
     return 0;
 }
 
-
 /*
  * returns compressed headers size or -1 if error
  *
@@ -320,7 +316,6 @@ int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* com
         compressed_headers[i] = (uint8_t)headers[i];
     }
     return headers_size;
-
 }
 
 
@@ -347,12 +342,12 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
     }
 
     //header block fragment
-    int header_block_fragment_size = frame_header->length-pad_length-pointer;
+    int header_block_fragment_size = (int)frame_header->length-pad_length-pointer;
     if(header_block_fragment_size>=64){
         ERROR("Header block fragment size longer than the space given.");
         return -1;
     }
-    int rc = buffer_copy(headers_block_fragment,read_buffer+pointer, header_block_fragment_size);
+    int rc = buffer_copy(headers_block_fragment, read_buffer+pointer, header_block_fragment_size);
     pointer += rc;
 
     if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
@@ -360,8 +355,8 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
             ERROR("Pad lenght longer than the space given.");
             return -1;
         }
-        rc = buffer_copy(padding,read_buffer+pointer, pad_length);
-        pointer += pad_length;
+        rc = buffer_copy(padding, read_buffer+pointer, (int)pad_length);
+        pointer += rc;
     }
 
     headers_payload->pad_length = pad_length;
@@ -394,5 +389,3 @@ int receive_header_block(uint8_t* header_block_fragments, int header_block_fragm
     //(void)rc;
     return -1;
 }
-
-

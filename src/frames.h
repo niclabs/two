@@ -1,6 +1,3 @@
-#ifndef FRAMES_H
-#define FRAMES_H
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +6,11 @@
 #include "http_methods_bridge.h"
 #include "logging.h"
 #include "hpack.h"
+
+#ifndef FRAMES_H
+#define FRAMES_H
+
+
 
 
 /*note the difference between

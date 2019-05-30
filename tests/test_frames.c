@@ -7,6 +7,7 @@
 #include "unit.h"
 #include "frames.h"
 #include "fff.h"
+#include "utils.h"
 
 
 DEFINE_FFF_GLOBALS;
@@ -21,6 +22,8 @@ FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t*);
 FAKE_VALUE_FUNC(uint16_t, bytes_to_uint16, uint8_t*);
 
 FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int);
+FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
+
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)        \
@@ -32,7 +35,8 @@ FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int)
     FAKE(bytes_to_uint32_31)        \
     FAKE(bytes_to_uint32_24)        \
     FAKE(bytes_to_uint16)           \
-    FAKE(append_byte_arrays)
+    FAKE(append_byte_arrays)        \
+    FAKE(buffer_copy)
 
 void setUp(void) {
     /* Register resets */
@@ -40,6 +44,14 @@ void setUp(void) {
 
     /* reset common FFF internal structures */
     FFF_RESET_HISTORY();
+}
+
+
+int buffer_copy_fake_custom(uint8_t* dest, uint8_t* orig, int size){
+    for(int i = 0; i< size; i++){
+        dest[i] = orig[i];
+    }
+    return size;
 }
 
 

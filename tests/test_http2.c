@@ -11,12 +11,13 @@ extern int read_settings_payload(uint8_t *bf, frame_header_t *h, settings_payloa
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
  /*---------------- Mock functions ---------------------------*/
 
- int read_headers_payload(uint8_t *buff_read, frame_header_t *hdr, headers_payload_t *hpl){
+FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);
+ /*int read_headers_payload(uint8_t *buff_read, frame_header_t *hdr, headers_payload_t *hpl){
    (void) buff_read;
    (void) hdr;
    (void) hpl;
    return 0;
- }
+ }*/
  int read_headers(headers_payload_t *hpl, table_pair_t* hlist, uint8_t count, uint8_t max_count){
    (void) hpl;
    (void) hlist;
@@ -75,6 +76,11 @@ FAKE_VALUE_FUNC(int, bytes_to_settings_payload, uint8_t*, int, settings_payload_
 FAKE_VALUE_FUNC(int, bytes_to_frame_header, uint8_t*, int , frame_header_t*);
 FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*, frame_header_t*, settings_payload_t*, settings_pair_t*);
 
+FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
+FAKE_VALUE_FUNC(int, get_header_block_fragment_size,frame_header_t*, headers_payload_t*);
+FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, table_pair_t*, uint8_t);
+
+
 #define FFF_FAKES_LIST(FAKE)         \
     FAKE(verify_setting)             \
     FAKE(create_settings_ack_frame)  \
@@ -82,7 +88,10 @@ FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*,
     FAKE(is_flag_set)                \
     FAKE(bytes_to_settings_payload)  \
     FAKE(bytes_to_frame_header)      \
-    FAKE(create_settings_frame)
+    FAKE(create_settings_frame)       \
+    FAKE(buffer_copy)                 \
+    FAKE(get_header_block_fragment_size)\
+    FAKE(receive_header_block)
 
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
@@ -108,6 +117,13 @@ int bytes_frame_return_zero(uint8_t* u, int uu, frame_header_t *fh){
 }
 int bytes_settings_payload_return_24(uint8_t*u, int uu, settings_payload_t* sp, settings_pair_t* spp){
   return 24;
+}
+
+int buffer_copy_fake_custom(uint8_t* dest, uint8_t* orig, int size){
+  for(int i = 0; i< size; i++){
+    dest[i] = orig[i];
+  }
+  return size;
 }
 
 
