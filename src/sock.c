@@ -20,6 +20,8 @@
 (In listen function).*/
 #define BACKLOG 1
 
+/*Note for sock_create: return value in function socket() must be non negative. Therefore, value of 0 in fd field of sock_t
+structure is valid.*/
 int sock_create(sock_t * sock) {
     if(sock==NULL){
         errno=EINVAL;
@@ -43,6 +45,7 @@ int sock_listen(sock_t * server, uint16_t port) {
         DEBUG("Error in sock_listen, server must valid and opened");
         return -1;
     }
+    /* Struct sockaddr_in6 needed for binding. Family defined for ipv6. */
     struct sockaddr_in6 sin6;
     sin6.sin6_family=AF_INET6;
     sin6.sin6_port=htons(port);
@@ -89,6 +92,7 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
         DEBUG("Error in sock_connect, client must be valid and opened");
         return -1;
     }
+    /*Struct sockaddr_in6 is used to store information about client in connect function.*/
     struct sockaddr_in6 sin6;
     struct in6_addr address;
     if(addr==NULL){
@@ -138,6 +142,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         return -1;
     }
 
+    /*Code below is needed to set timeout to function*/
     fd_set set;
     struct timeval tv;
 
@@ -159,6 +164,7 @@ int sock_read(sock_t * sock, char * buf, int len, int timeout) {
         }
         return -1;
     }
+    /*----------------------------------------------*/
     ssize_t bytes_read = read(sock->fd, buf, len);
     if(bytes_read < 0) {
         ERROR("Error reading from socket");
@@ -182,6 +188,9 @@ int sock_write(sock_t * sock, char * buf, int len) {
     ssize_t bytes_written;
     ssize_t bytes_written_total = 0;
     const char *p = buf;
+    /*Note that a successful write() may transfer fewer than count bytes. Is expected that when
+    all bytes are transfered, there's no length left of the message and/or there's no information 
+    left in the buffer.*/
     while(len>0) {
         if( p==NULL){
             break;
