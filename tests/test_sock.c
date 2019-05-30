@@ -303,7 +303,9 @@ void test_sock_read(void){
 
     sock_accept(&sock_s, &sock_c2);
     
-    /*Redirecting reading to read from file created in io_mock.*/
+    /*Due to giving socket the minimun number of fd available, in the test sock_c2 has fd of 0,
+    corresponding to stdin.*/
+    /*Redirecting reading to read from file created in io_mock instead of stdin.*/
     FILE *file_sock = fdopen(sock_c2.fd, "w+r");
     freopen(filename, "r", file_sock);
    
