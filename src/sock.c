@@ -16,7 +16,9 @@
 #include "logging.h"
 #include "assert.h"
 
-#define BACKLOAD 1
+/*BACKLOG: The backlog argument defines the maximum length to which the queue of pending connections for sockfd may grow.
+(In listen function).*/
+#define BACKLOG 1
 
 int sock_create(sock_t * sock) {
     if(sock==NULL){
@@ -49,7 +51,7 @@ int sock_listen(sock_t * server, uint16_t port) {
         ERROR("Error on binding");
         return -1;
     }
-    if (listen(server->fd, BACKLOAD)<0){
+    if (listen(server->fd, BACKLOG)<0){
         ERROR("Error on listening");
         return -1;
     }
