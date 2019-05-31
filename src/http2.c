@@ -198,12 +198,12 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 /*----------------------API methods-------------------*/
 
 /*
-* Function: send_local_settings
+* Function: h2_send_local_settings
 * Sends local settings to endpoint.
 * Input: -> st: pointer to hstates_t struct where local settings are stored
 * Output: 0 if settings were sent. -1 if not.
 */
-int send_local_settings(hstates_t *st){
+int h2_send_local_settings(hstates_t *st){
     int rc;
     uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
     frame_t mysettingframe;
@@ -231,7 +231,7 @@ int send_local_settings(hstates_t *st){
 }
 
 /*
-* Function: read_setting_from
+* Function: h2_read_setting_from
 * Reads a setting parameter from local or remote table
 * Input: -> place: must be LOCAL or REMOTE. It indicates the table to read.
 *        -> param: it indicates which parameter to read from table.
@@ -239,7 +239,7 @@ int send_local_settings(hstates_t *st){
 * Output: The value read from the table. -1 if nothing was read.
 */
 
-uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st){
+uint32_t h2_read_setting_from(uint8_t place, uint8_t param, hstates_t *st){
     if(param < 1 || param > 6){
         printf("Error: %u is not a valid setting parameter\n", param);
         return -1;
@@ -258,14 +258,14 @@ uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st){
 }
 
 /*
-* Function: client_init_connection
+* Function: h2_client_init_connection
 * Initializes HTTP2 connection between endpoints. Sends preface and local
 * settings.
 * Input: -> st: pointer to hstates_t struct where variables of client are going
 *               to be stored.
 * Output: 0 if connection was made successfully. -1 if not.
 */
-int client_init_connection(hstates_t *st){
+int h2_client_init_connection(hstates_t *st){
     int rc = init_variables(st);
     char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
     uint8_t preface_buff[24];
@@ -282,7 +282,7 @@ int client_init_connection(hstates_t *st){
         return -1;
     }
     puts("Client: sending local settings...");
-    if((rc = send_local_settings(st)) < 0){
+    if((rc = h2_send_local_settings(st)) < 0){
         puts("Error in local settings sending");
         return -1;
     }
@@ -291,14 +291,14 @@ int client_init_connection(hstates_t *st){
 }
 
 /*
-* Function: server_init_connection
+* Function: h2_server_init_connection
 * Initializes HTTP2 connection between endpoints. Waits for preface and sends
 * local settings.
 * Input: -> st: pointer to hstates_t struct where variables of client are going
 *               to be stored.
 * Output: 0 if connection was made successfully. -1 if not.
 */
-int server_init_connection(hstates_t *st){
+int h2_server_init_connection(hstates_t *st){
     int rc = init_variables(st);
     char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
     uint8_t preface_buff[25];
@@ -317,7 +317,7 @@ int server_init_connection(hstates_t *st){
     }
     /*Server sends local settings to endpoint*/
     puts("Server: sending local settings...");
-    if((rc = send_local_settings(st)) < 0){
+    if((rc = h2_send_local_settings(st)) < 0){
         puts("Error in local settings sending");
         return -1;
     }
@@ -331,12 +331,12 @@ int server_init_connection(hstates_t *st){
 
 
 /*
-* Function: receive_frame
+* Function: h2_receive_frame
 * Receives a frame from endpoint, decodes it and works with it.
 * Input: void
 * Output: 0 if no problem was found. -1 if error was found.
 */
-int receive_frame(hstates_t *st){
+int h2_receive_frame(hstates_t *st){
     uint8_t buff_read[MAX_BUFFER_SIZE];
     //uint8_t buff_write[MAX_BUFFER_SIZE]
     int rc;

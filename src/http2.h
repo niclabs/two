@@ -15,9 +15,9 @@
 #define LOCAL 0
 #define REMOTE 1
 
-int send_local_settings(hstates_t *hs);
-uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
-int client_init_connection(hstates_t *st);
-int server_init_connection(hstates_t *st);
-int receive_frame(hstates_t *st);
+int h2_send_local_settings(hstates_t *hs);
+uint32_t h2_read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
+int h2_client_init_connection(hstates_t *st);
+int h2_server_init_connection(hstates_t *st);
+int h2_receive_frame(hstates_t *st);
 #endif /*HTTP2_H*/
