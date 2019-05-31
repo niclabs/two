@@ -47,6 +47,7 @@ int http_init_server(uint16_t port)
 {
     global_state.socket_state = 0;
     global_state.table_count = 0;
+    global_state.conection_state = 0;
 
     client.state = NOT_CLIENT;
 
@@ -65,23 +66,37 @@ int http_init_server(uint16_t port)
     printf("Server waiting for a client\n");
 
 
-    if (sock_accept(&server.socket, &client.socket) < 0) {
-        ERROR("Not client found");
-        return -1;
-    }
+    while (sock_accept(&server.socket, &client.socket) >= 0) {
+        client.state = CONNECTED;
 
-    client.state = CONNECTED;
+        printf("Client found and connected\n");
 
-    printf("Client found and connected\n");
+        global_state.socket = &client.socket;
+        global_state.socket_state = 1;
+        global_state.conection_state = 1;
 
+        if (server_init_connection(&global_state) < 0) {
+            ERROR("Problems sending server data");
+            return -1;
+        }
+
+        while (global_state.conection_state) {
+            return 0;
+        }
+
+<<<<<<< HEAD
     global_state.socket = &client.socket;
     global_state.socket_state = 1;
     if (h2_server_init_connection(&global_state) < 0) {
         ERROR("Problems sending server data");
         return -1;
+=======
+>>>>>>> refactor test http_methods and cycle for server
     }
 
-    return 0;
+    ERROR("Not client found");
+
+    return -1;
 }
 
 int http_set_function_to_path(char *callback, char *path)
@@ -125,6 +140,7 @@ int http_server_destroy(void)
     }
 
     global_state.socket_state = 0;
+    global_state.conection_state = 0;
 
     if (sock_destroy(&server.socket) < 0) {
         ERROR("Error in server disconnection");
@@ -146,6 +162,7 @@ int http_client_connect(uint16_t port, char *ip)
 {
     global_state.socket_state = 0;
     global_state.table_count = 0;
+    global_state.conection_state = 0;
 
     struct client_s *cl = &client;
     server.state = NOT_SERVER;
@@ -168,6 +185,7 @@ int http_client_connect(uint16_t port, char *ip)
 
     global_state.socket = &cl->socket;
     global_state.socket_state = 1;
+    global_state.conection_state = 1;
 
     if (h2_client_init_connection(&global_state) < 0) {
         ERROR("Problems sending client data");
@@ -212,6 +230,7 @@ int http_client_disconnect(void)
     }
 
     global_state.socket_state = 0;
+    global_state.conection_state = 0;
     client.state = NOT_CLIENT;
 
     return 0;

@@ -51,28 +51,6 @@ void setUp()
 }
 
 
-int sock_create_custom_fake(sock_t *s)
-{
-    s->fd = 2;
-    s->state = SOCK_OPENED;
-    return 0;
-}
-int sock_listen_custom_fake(sock_t *s, uint16_t n)
-{
-    s->state = SOCK_LISTENING;
-    return 0;
-}
-int sock_accept_custom_fake(sock_t *ss, sock_t *sc)
-{
-    sc->fd = 2;
-    sc->state = SOCK_CONNECTED;
-    return 0;
-}
-int sock_connect_custom_fake(sock_t *s, char *ip, uint16_t p)
-{
-    s->state = SOCK_CONNECTED;
-    return 0;
-}
 int sock_read_custom_fake(sock_t *s, char *buf, int l, int u)
 {
     strcpy(buf, "hola");
@@ -80,19 +58,21 @@ int sock_read_custom_fake(sock_t *s, char *buf, int l, int u)
     (void)u;
     return 4;
 }
-int sock_destroy_custom_fake(sock_t *s)
-{
-    s->state = SOCK_CLOSED;
-    return 0;
-}
 
 
 void test_http_init_server_success(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
     h2_server_init_connection_fake.return_val = 0;
+=======
+    sock_create_fake.return_val = 0;
+    sock_listen_fake.return_val = 0;
+    sock_accept_fake.return_val = 0;
+    server_init_connection_fake.return_val = 0;
+>>>>>>> refactor test http_methods and cycle for server
 
     int is = http_init_server(12);
 
@@ -107,10 +87,17 @@ void test_http_init_server_success(void)
 
 void test_http_init_server_fail_h2_server_init_connection(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
     h2_server_init_connection_fake.return_val = -1;
+=======
+    sock_create_fake.return_val = 0;
+    sock_listen_fake.return_val = 0;
+    sock_accept_fake.return_val = 0;
+    server_init_connection_fake.return_val = -1;
+>>>>>>> refactor test http_methods and cycle for server
 
     int is = http_init_server(12);
 
@@ -125,8 +112,8 @@ void test_http_init_server_fail_h2_server_init_connection(void)
 
 void test_http_init_server_fail_sock_accept(void)
 {
-    sock_create_fake.custom_fake = sock_create_custom_fake;
-    sock_listen_fake.custom_fake = sock_listen_custom_fake;
+    sock_create_fake.return_val = 0;
+    sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = -1;
 
     int is = http_init_server(12);
@@ -141,7 +128,7 @@ void test_http_init_server_fail_sock_accept(void)
 
 void test_http_init_server_fail_sock_listen(void)
 {
-    sock_create_fake.custom_fake = sock_create_custom_fake;
+    sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = -1;
 
     int is = http_init_server(12);
@@ -188,15 +175,22 @@ void test_http_set_header_fail_table_full(void)
 
 void test_http_server_destroy_success(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
     h2_server_init_connection_fake.return_val = 0;
+=======
+    sock_create_fake.return_val = 0;
+    sock_listen_fake.return_val = 0;
+    sock_accept_fake.return_val = 0;
+    server_init_connection_fake.return_val = 0;
+>>>>>>> refactor test http_methods and cycle for server
 
     http_init_server(12);
 
 
-    sock_destroy_fake.custom_fake = sock_destroy_custom_fake;
+    sock_destroy_fake.return_val = 0;
 
     int d = http_server_destroy();
 
@@ -215,14 +209,14 @@ void test_http_server_destroy_success(void)
 
 void test_http_server_destroy_success_without_client(void)
 {
-    sock_create_fake.custom_fake = sock_create_custom_fake;
-    sock_listen_fake.custom_fake = sock_listen_custom_fake;
+    sock_create_fake.return_val = 0;
+    sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = -1;
 
     http_init_server(12);
 
 
-    sock_destroy_fake.custom_fake = sock_destroy_custom_fake;
+    sock_destroy_fake.return_val = 0;
 
     int d = http_server_destroy();
 
@@ -254,10 +248,17 @@ void test_http_server_destroy_fail_not_server(void)
 
 void test_http_server_destroy_fail_sock_destroy(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
     h2_server_init_connection_fake.return_val = 0;
+=======
+    sock_create_fake.return_val = 0;
+    sock_listen_fake.return_val = 0;
+    sock_accept_fake.return_val = 0;
+    server_init_connection_fake.return_val = 0;
+>>>>>>> refactor test http_methods and cycle for server
 
     http_init_server(12);
 
@@ -283,9 +284,15 @@ void test_http_server_destroy_fail_sock_destroy(void)
 
 void test_http_client_connect_success(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
     h2_client_init_connection_fake.return_val = 0;
+=======
+    sock_create_fake.return_val = 0;
+    sock_connect_fake.return_val = 0;
+    client_init_connection_fake.return_val = 0;
+>>>>>>> refactor test http_methods and cycle for server
 
     int cc = http_client_connect(12, "::");
 
@@ -299,9 +306,15 @@ void test_http_client_connect_success(void)
 
 void test_http_client_connect_fail_h2_client_init_connection(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
     h2_client_init_connection_fake.return_val = -1;
+=======
+    sock_create_fake.return_val = 0;
+    sock_connect_fake.return_val = 0;
+    client_init_connection_fake.return_val = -1;
+>>>>>>> refactor test http_methods and cycle for server
 
     int cc = http_client_connect(12, "::");
 
@@ -315,7 +328,7 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 
 void test_http_client_connect_fail_sock_connect(void)
 {
-    sock_create_fake.custom_fake = sock_create_custom_fake;
+    sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = -1;
 
     int cc = http_client_connect(12, "::");
@@ -378,7 +391,7 @@ void test_http_get_header_fail_header_not_found(void)
 
 void test_http_client_disconnect_success_v1(void)
 {
-    sock_create_fake.custom_fake = sock_create_custom_fake;
+    sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = -1;
 
     http_client_connect(12, "::");
@@ -391,14 +404,20 @@ void test_http_client_disconnect_success_v1(void)
 
 void test_http_client_disconnect_success_v2(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
     h2_client_init_connection_fake.return_val = 0;
+=======
+    sock_create_fake.return_val = 0;
+    sock_connect_fake.return_val = 0;
+    client_init_connection_fake.return_val = 0;
+>>>>>>> refactor test http_methods and cycle for server
 
     http_client_connect(12, "::");
 
 
-    sock_destroy_fake.custom_fake = sock_destroy_custom_fake;
+    sock_destroy_fake.return_val = 0;
 
     int d = http_client_disconnect();
 
@@ -415,9 +434,15 @@ void test_http_client_disconnect_success_v2(void)
 
 void test_http_client_disconnect_fail(void)
 {
+<<<<<<< HEAD
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
     h2_client_init_connection_fake.return_val = 0;
+=======
+    sock_create_fake.return_val = 0;
+    sock_connect_fake.return_val = 0;
+    client_init_connection_fake.return_val = 0;
+>>>>>>> refactor test http_methods and cycle for server
 
     http_client_connect(12, "::");
 
