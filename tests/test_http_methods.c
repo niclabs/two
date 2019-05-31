@@ -24,8 +24,8 @@ FAKE_VALUE_FUNC(int, sock_connect, sock_t *, char *, uint16_t);
 FAKE_VALUE_FUNC(int, sock_read, sock_t *, char *, int, int);
 FAKE_VALUE_FUNC(int, sock_write, sock_t *, char *, int);
 FAKE_VALUE_FUNC(int, sock_destroy, sock_t *);
-FAKE_VALUE_FUNC(int, client_init_connection, hstates_t *);
-FAKE_VALUE_FUNC(int, server_init_connection, hstates_t *);
+FAKE_VALUE_FUNC(int, h2_client_init_connection, hstates_t *);
+FAKE_VALUE_FUNC(int, h2_server_init_connection, hstates_t *);
 
 
 /* List of fakes used by this unit tester */
@@ -37,8 +37,8 @@ FAKE_VALUE_FUNC(int, server_init_connection, hstates_t *);
     FAKE(sock_read)                       \
     FAKE(sock_write)                      \
     FAKE(sock_destroy)                    \
-    FAKE(client_init_connection)          \
-    FAKE(server_init_connection)          \
+    FAKE(h2_client_init_connection)          \
+    FAKE(h2_server_init_connection)          \
 
 
 void setUp()
@@ -92,32 +92,32 @@ void test_http_init_server_success(void)
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
-    server_init_connection_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = 0;
 
     int is = http_init_server(12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
     TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-    TEST_ASSERT_EQUAL((void *)server_init_connection, fff.call_history[3]);
+    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[3]);
 
     TEST_ASSERT_EQUAL(0, is);
 }
 
 
-void test_http_init_server_fail_server_init_connection(void)
+void test_http_init_server_fail_h2_server_init_connection(void)
 {
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
-    server_init_connection_fake.return_val = -1;
+    h2_server_init_connection_fake.return_val = -1;
 
     int is = http_init_server(12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
     TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-    TEST_ASSERT_EQUAL((void *)server_init_connection, fff.call_history[3]);
+    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[3]);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 }
@@ -170,7 +170,7 @@ void test_http_server_destroy_success(void)
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
-    server_init_connection_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = 0;
 
     http_init_server(12);
 
@@ -183,7 +183,7 @@ void test_http_server_destroy_success(void)
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
     TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-    TEST_ASSERT_EQUAL((void *)server_init_connection, fff.call_history[3]);
+    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[3]);
 
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[4]);
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[5]);
@@ -236,7 +236,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_listen_fake.custom_fake = sock_listen_custom_fake;
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
-    server_init_connection_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = 0;
 
     http_init_server(12);
 
@@ -250,7 +250,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
     TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-    TEST_ASSERT_EQUAL((void *)server_init_connection, fff.call_history[3]);
+    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[3]);
 
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[4]);
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[5]);
@@ -264,29 +264,29 @@ void test_http_client_connect_success(void)
 {
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
-    client_init_connection_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = 0;
 
     int cc = http_client_connect(12, "::");
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
+    TEST_ASSERT_EQUAL((void *)h2_client_init_connection, fff.call_history[2]);
 
     TEST_ASSERT_EQUAL(0, cc);
 }
 
 
-void test_http_client_connect_fail_client_init_connection(void)
+void test_http_client_connect_fail_h2_client_init_connection(void)
 {
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
-    client_init_connection_fake.return_val = -1;
+    h2_client_init_connection_fake.return_val = -1;
 
     int cc = http_client_connect(12, "::");
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
+    TEST_ASSERT_EQUAL((void *)h2_client_init_connection, fff.call_history[2]);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Problems sending client data");
 }
@@ -335,7 +335,7 @@ void test_http_client_disconnect_success_v2(void)
 {
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
-    client_init_connection_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = 0;
 
     http_client_connect(12, "::");
 
@@ -347,7 +347,7 @@ void test_http_client_disconnect_success_v2(void)
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
+    TEST_ASSERT_EQUAL((void *)h2_client_init_connection, fff.call_history[2]);
 
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[3]);
 
@@ -359,7 +359,7 @@ void test_http_client_disconnect_fail(void)
 {
     sock_create_fake.custom_fake = sock_create_custom_fake;
     sock_connect_fake.custom_fake = sock_connect_custom_fake;
-    client_init_connection_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = 0;
 
     http_client_connect(12, "::");
 
@@ -371,7 +371,7 @@ void test_http_client_disconnect_fail(void)
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)client_init_connection, fff.call_history[2]);
+    TEST_ASSERT_EQUAL((void *)h2_client_init_connection, fff.call_history[2]);
 
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[3]);
 
@@ -384,7 +384,7 @@ int main(void)
     UNITY_BEGIN();
 
     UNIT_TEST(test_http_init_server_success);
-    UNIT_TEST(test_http_init_server_fail_server_init_connection);
+    UNIT_TEST(test_http_init_server_fail_h2_server_init_connection);
     UNIT_TEST(test_http_init_server_fail_sock_accept);
     UNIT_TEST(test_http_init_server_fail_sock_listen);
     UNIT_TEST(test_http_init_server_fail_sock_create);
@@ -395,7 +395,7 @@ int main(void)
     UNIT_TEST(test_http_server_destroy_fail_sock_destroy);
 
     UNIT_TEST(test_http_client_connect_success);
-    UNIT_TEST(test_http_client_connect_fail_client_init_connection);
+    UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
 
