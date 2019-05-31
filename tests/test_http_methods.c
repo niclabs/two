@@ -165,6 +165,27 @@ void test_http_init_server_fail_sock_create(void)
 }
 
 
+void test_http_set_header_success(void)
+{
+    hstates_t hs;
+    int set = http_set_header("settings", "server:on", &hs);
+
+    TEST_ASSERT_EQUAL(0, set);
+    TEST_ASSERT_EQUAL(1, hs.table_count);
+}
+
+
+void test_http_set_header_fail_table_full(void)
+{
+    hstates_t hs;
+    hs.table_count=HTTP2_MAX_HEADER_COUNT;
+    int set = http_set_header("settings", "server:on", &hs);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, set,"Headers list is full");
+    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.table_count);
+}
+
+
 void test_http_server_destroy_success(void)
 {
     sock_create_fake.custom_fake = sock_create_custom_fake;
@@ -318,6 +339,43 @@ void test_http_client_connect_fail_sock_create(void)
 }
 
 
+void test_http_get_header_success(void)
+{
+    hstates_t hs;
+
+    http_set_header("something", "something two", &hs);
+    http_set_header("settings", "server:on", &hs);
+
+    char *buf = http_get_header("settings", &hs);
+
+    TEST_ASSERT_EQUAL(0, strncmp(buf, "server:on", strlen("server:on")));
+}
+
+
+void test_http_get_header_fail_empty_table(void)
+{
+    hstates_t hs;
+
+    hs.table_count = 0;
+    char *buf = http_get_header("settings", &hs);
+
+    TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");
+}
+
+
+void test_http_get_header_fail_header_not_found(void)
+{
+    hstates_t hs;
+
+    http_set_header("something1", "something one", &hs);
+    http_set_header("something2", "something two", &hs);
+
+    char *buf = http_get_header("settings", &hs);
+
+    TEST_ASSERT_MESSAGE(buf == NULL, "Header should not be found in headers list");
+}
+
+
 void test_http_client_disconnect_success_v1(void)
 {
     sock_create_fake.custom_fake = sock_create_custom_fake;
@@ -389,6 +447,9 @@ int main(void)
     UNIT_TEST(test_http_init_server_fail_sock_listen);
     UNIT_TEST(test_http_init_server_fail_sock_create);
 
+    UNIT_TEST(test_http_set_header_success);
+    UNIT_TEST(test_http_set_header_fail_table_full);
+
     UNIT_TEST(test_http_server_destroy_success);
     UNIT_TEST(test_http_server_destroy_success_without_client);
     UNIT_TEST(test_http_server_destroy_fail_not_server);
@@ -398,6 +459,10 @@ int main(void)
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
+
+    UNIT_TEST(test_http_get_header_success);
+    UNIT_TEST(test_http_get_header_fail_empty_table);
+    UNIT_TEST(test_http_get_header_fail_header_not_found);
 
     UNIT_TEST(test_http_client_disconnect_success_v1);
     UNIT_TEST(test_http_client_disconnect_success_v2);

@@ -93,19 +93,19 @@ int http_set_function_to_path(char *callback, char *path)
 }
 
 
-int http_add_header(char *name, char *value)
+int http_set_header(char *name, char *value, hstates_t *hs)
 {
-    int i = global_state.table_count;
+    int i = hs->table_count;
 
     if (i == HTTP2_MAX_HEADER_COUNT) {
         ERROR("Headers list is full");
         return -1;
     }
 
-    strcpy(global_state.header_list[i].name, name);
-    strcpy(global_state.header_list[i].value, value);
+    strcpy(hs->header_list[i].name, name);
+    strcpy(hs->header_list[i].value, value);
 
-    global_state.table_count = i + 1;
+    hs->table_count = i + 1;
 
     return 0;
 }
@@ -178,28 +178,30 @@ int http_client_connect(uint16_t port, char *ip)
 }
 
 
-char *http_grab_header(char *header, int len)
+char *http_get_header(char *header, hstates_t *hs)
 {
-    int i = global_state.table_count;
+    int i = hs->table_count;
 
     if (i == 0) {
-        ERROR("Headers list is empty");
+        WARN("Headers list is empty");
         return NULL;
     }
 
     int k;
     for (k = 0; k <= i; k++) {
-        if (strncmp(global_state.header_list[k].name, header, len) == 0) {
-            return global_state.header_list[k].value;
+        if (strncmp(hs->header_list[k].name, header, strlen(header)) == 0) {
+            INFO("RETURNING value of '%s' header; '%s'", hs->header_list[k].name, hs->header_list[k].value);
+            return hs->header_list[k].value;
         }
     }
-    return 0;
+
+    WARN("Header not found in headers list");
+    return NULL;
 }
 
 
 int http_client_disconnect(void)
 {
-
     if (client.state == CONNECTED || global_state.socket_state == 1) {
         if (sock_destroy(&client.socket) < 0) {
             ERROR("Error in client disconnection");

@@ -42,6 +42,19 @@ int http_server_destroy(void);
 int http_set_function_to_path(char *callback, char *path);
 
 
+/*
+ * Add a header and its value to the headers list
+ *
+ * @param    name      new headers name
+ * @param    value     new headers value
+ *
+ * @return   0      successfully added pair
+ * @return   -1     There was an error
+ */
+int http_set_header(char *name, char *value, hstates_t *hs);
+
+
+
 /*Client*/
 
 /*
@@ -64,25 +77,14 @@ int http_client_connect(uint16_t port, char *ip);
 int http_client_disconnect(void);
 
 /*
- * Add a header and its value to the headers list
- *
- * @param    name      new headers name
- * @param    value     new headers value
- *
- * @return   0      successfully added pair
- * @return   -1     There was an error
- */
-int http_add_header(char *name, char *value);
-
-/*
  * Search by a value of a header in the header list
  *
  * @param    header     Header name
- * @param    len        header name length
+ * @param    hs         struct with headers info
  *
  * @return              value finded
  */
-char *http_grab_header(char *header, int len);
+char *http_get_header(char *header, hstates_t *hs);
 
 
 #endif /* HTTP_METHODS_H */
