@@ -300,7 +300,7 @@ void test_read_frame_error(void){
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1");
 }
 
-void test_send_local_settings(void){
+void test_h2_send_local_settings(void){
   /*Depends on create_settings_frame, frame_to_bytes and http_write*/
   hstates_t hdummy;
   h2states_t dummy = {{1,1,1,1,1,1},
@@ -309,37 +309,37 @@ void test_send_local_settings(void){
   hdummy.h2s = dummy;
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
-  int rc = send_local_settings(&hdummy);
+  int rc = h2_send_local_settings(&hdummy);
   TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 1, "create_settings_frame must be called once");
   TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame_to_bytes must be called once");
   TEST_ASSERT_MESSAGE(size == 45, "send local settings must have written 45 bytes");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 1, "wait_setting_ack must be 1. Settings were sent");
-  TEST_ASSERT_MESSAGE(rc == 0, "return code of send_local_settings must be 0");
+  TEST_ASSERT_MESSAGE(rc == 0, "return code of h2_send_local_settings must be 0");
 }
 
-void test_read_setting_from(void){
+void test_h2_read_setting_from(void){
   hstates_t hdummy;
   h2states_t dummy = {{1,2,3,4,5,6},
                       {7,8,9,10,11,12},
                       0};
   hdummy.h2s = dummy;
-  uint32_t answ = read_setting_from(LOCAL, 0x1, &hdummy);
+  uint32_t answ = h2_read_setting_from(LOCAL, 0x1, &hdummy);
   TEST_ASSERT_MESSAGE(answ == 7, "Answer must be 7");
-  answ = read_setting_from(REMOTE, 0x6, &hdummy);
+  answ = h2_read_setting_from(REMOTE, 0x6, &hdummy);
   TEST_ASSERT_MESSAGE(answ == 6, "Answer must be 6");
-  answ = read_setting_from(LOCAL, 0x0, &hdummy);
+  answ = h2_read_setting_from(LOCAL, 0x0, &hdummy);
   TEST_ASSERT_MESSAGE(answ == -1, "Answer must be -1. Error in id! (overvalue)");
-  answ = read_setting_from(REMOTE, 0x7, &hdummy);
+  answ = h2_read_setting_from(REMOTE, 0x7, &hdummy);
   TEST_ASSERT_MESSAGE(answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
 }
 
-void test_client_init_connection(void){
-  /*Depends on http_write and send_local_settings*/
+void test_h2_client_init_connection(void){
+  /*Depends on http_write and h2_send_local_settings*/
   hstates_t client;
   uint32_t init_vals[6] = {DEFAULT_HTS,DEFAULT_EP,DEFAULT_MCS,DEFAULT_IWS,DEFAULT_MFS,DEFAULT_MHLS};
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
-  int rc = client_init_connection(&client);
+  int rc = h2_client_init_connection(&client);
   TEST_ASSERT_MESSAGE(client.h2s.local_settings[0] == init_vals[0], "HTS in local settings is not setted");
   TEST_ASSERT_MESSAGE(client.h2s.local_settings[1] == init_vals[1], "EP in local settings is not setted");
   TEST_ASSERT_MESSAGE(client.h2s.local_settings[2] == init_vals[2], "MCS in local settings is not setted");
@@ -353,11 +353,11 @@ void test_client_init_connection(void){
   TEST_ASSERT_MESSAGE(client.h2s.remote_settings[4] == init_vals[4], "MFS in remote settings is not setted");
   TEST_ASSERT_MESSAGE(client.h2s.remote_settings[5] == init_vals[5], "MHLS in remote settings is not setted");
   TEST_ASSERT_MESSAGE(size == 69, "client must wrote 69 bytes, 45 of settings, 24 of preface");
-  TEST_ASSERT_MESSAGE(rc == 0, "return code of client_init_connection must be 0");
+  TEST_ASSERT_MESSAGE(rc == 0, "return code of h2_client_init_connection must be 0");
 }
 
-void test_server_init_connection(void){
-  /*Depends on http_write and send_local_settings*/
+void test_h2_server_init_connection(void){
+  /*Depends on http_write and h2_send_local_settings*/
   hstates_t server;
   uint32_t init_vals[6] = {DEFAULT_HTS,DEFAULT_EP,DEFAULT_MCS,DEFAULT_IWS,DEFAULT_MFS,DEFAULT_MHLS};
   create_settings_frame_fake.custom_fake = create_return_zero;
@@ -373,7 +373,7 @@ void test_server_init_connection(void){
   int wrc = http_write(preface_buff,24, &server);
   TEST_ASSERT_MESSAGE(wrc == 24, "Fake buffer not written");
   TEST_ASSERT_MESSAGE(size == 24, "Fake buffer not written");
-  int rc = server_init_connection(&server);
+  int rc = h2_server_init_connection(&server);
   TEST_ASSERT_MESSAGE(server.h2s.local_settings[0] == init_vals[0], "HTS in local settings is not setted");
   TEST_ASSERT_MESSAGE(server.h2s.local_settings[1] == init_vals[1], "EP in local settings is not setted");
   TEST_ASSERT_MESSAGE(server.h2s.local_settings[2] == init_vals[2], "MCS in local settings is not setted");
@@ -387,7 +387,7 @@ void test_server_init_connection(void){
   TEST_ASSERT_MESSAGE(server.h2s.remote_settings[4] == init_vals[4], "MFS in remote settings is not setted");
   TEST_ASSERT_MESSAGE(server.h2s.remote_settings[5] == init_vals[5], "MHLS in remote settings is not setted");
   TEST_ASSERT_MESSAGE(size == 45, "server must have written 45 bytes of settings");
-  TEST_ASSERT_MESSAGE(rc==0, "return code of server_init_connection must be 0");
+  TEST_ASSERT_MESSAGE(rc==0, "return code of h2_server_init_connection must be 0");
 }
 
 int main(void)
@@ -400,9 +400,9 @@ int main(void)
     UNIT_TEST(test_read_settings_payload);
     UNIT_TEST(test_read_frame);
     UNIT_TEST(test_read_frame_error);
-    UNIT_TEST(test_send_local_settings);
-    UNIT_TEST(test_read_setting_from);
-    UNIT_TEST(test_client_init_connection);
-    UNIT_TEST(test_server_init_connection);
+    UNIT_TEST(test_h2_send_local_settings);
+    UNIT_TEST(test_h2_read_setting_from);
+    UNIT_TEST(test_h2_client_init_connection);
+    UNIT_TEST(test_h2_server_init_connection);
     return UNIT_TESTS_END();
 }
