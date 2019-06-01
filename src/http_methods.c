@@ -75,7 +75,7 @@ int http_init_server(uint16_t port)
         global_state.socket_state = 1;
         global_state.conection_state = 1;
 
-        if (server_init_connection(&global_state) < 0) {
+        if (h2_server_init_connection(&global_state) < 0) {
             ERROR("Problems sending server data");
             return -1;
         }

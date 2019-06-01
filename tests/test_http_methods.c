@@ -65,7 +65,7 @@ void test_http_init_server_success(void)
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
-    server_init_connection_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = 0;
 
     int is = http_init_server(12);
 
@@ -83,7 +83,7 @@ void test_http_init_server_fail_h2_server_init_connection(void)
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
-    server_init_connection_fake.return_val = -1;
+    h2_server_init_connection_fake.return_val = -1;
 
     int is = http_init_server(12);
 
@@ -164,7 +164,7 @@ void test_http_server_destroy_success(void)
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
-    server_init_connection_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = 0;
 
     http_init_server(12);
 
@@ -230,7 +230,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
-    server_init_connection_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = 0;
 
     http_init_server(12);
 
