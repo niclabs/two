@@ -83,15 +83,6 @@ int http_init_server(uint16_t port)
         while (global_state.conection_state) {
             return 0;
         }
-
-<<<<<<< HEAD
-    global_state.socket = &client.socket;
-    global_state.socket_state = 1;
-    if (h2_server_init_connection(&global_state) < 0) {
-        ERROR("Problems sending server data");
-        return -1;
-=======
->>>>>>> refactor test http_methods and cycle for server
     }
 
     ERROR("Not client found");
