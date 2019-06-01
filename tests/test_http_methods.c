@@ -258,7 +258,7 @@ void test_http_client_connect_success(void)
 {
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
-    client_init_connection_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = 0;
 
     int cc = http_client_connect(12, "::");
 
@@ -274,7 +274,7 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 {
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
-    client_init_connection_fake.return_val = -1;
+    h2_client_init_connection_fake.return_val = -1;
 
     int cc = http_client_connect(12, "::");
 
@@ -366,7 +366,7 @@ void test_http_client_disconnect_success_v2(void)
 {
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
-    client_init_connection_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = 0;
 
     http_client_connect(12, "::");
 
@@ -390,7 +390,7 @@ void test_http_client_disconnect_fail(void)
 {
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
-    client_init_connection_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = 0;
 
     http_client_connect(12, "::");
 
