@@ -89,7 +89,7 @@ endif
 
 # Find all source files in the source directory, sorted by most
 # recently modified
-ifeq ($(OS),Darwin)
+ifeq ($(OS),darwin)
 	SOURCES = $(shell find $(SRCDIR) -name '*.c' | sort -k 1nr | cut -f2-)
 else
 	SOURCES = $(shell find $(SRCDIR) -name '*.c' -printf '%T@\t%p\n' \
