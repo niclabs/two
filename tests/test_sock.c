@@ -104,7 +104,7 @@ void test_sock_create_null_sock(void)
     socket_fake.return_val = -1;
     int res = sock_create(NULL);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on error");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on NULL pointer parameter");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_create should set errno on error");
 }
 
