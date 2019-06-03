@@ -228,7 +228,7 @@ void test_sock_accept_ok(void)
     int res = sock_accept(&sock_s, &sock_c);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept should return 0 on success");
-    TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock_s.state, "sock_accept set server state to CONNECTED");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_LISTENING, sock_s.state, "sock_accept should maintain server socket state");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock_c.state, "sock_accept set client state to CONNECTED");
 }
 

@@ -75,7 +75,6 @@ int sock_accept(sock_t *server, sock_t *client)
     }
     client->fd = clifd;
     client->state = SOCK_CONNECTED;
-    server->state = SOCK_CONNECTED;
     return 0;
 }
 
