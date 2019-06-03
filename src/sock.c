@@ -81,28 +81,32 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
 {
     if (client == NULL || (client->state != SOCK_OPENED)) {
         errno = EINVAL;
-        DEBUG("Error in sock_connect, client must be valid and opened");
         return -1;
     }
-    /*Struct sockaddr_in6 is used to store information about client in connect function.*/
-    struct sockaddr_in6 sin6;
-    struct in6_addr address;
+
     if (addr == NULL) {
         errno = EFAULT;
-        DEBUG("Error in sock_connect, NULL address given");
         return -1;
     }
-    int inet_return = inet_pton(AF_INET6, addr, &address);
-    if (inet_return < 1) {
-        if (inet_return == 0) {
-            errno = EFAULT;
-            ERROR("Error converting IPv6 address to binary");
-        }
-        if (inet_return == -1) {
-            ERROR("Error converting IPv6 address to binary");
-        }
+
+    // convert address string to a socket address
+    struct in6_addr address;
+    int pton_res = inet_pton(AF_INET6, addr, &address);
+     
+    // string is not valid INET6 address
+    if (pton_res == 0) {
+        errno = EINVAL;
+        ERROR("'%s' is not a valid IPv6 address", addr);
         return -1;
     }
+
+    // AF_INET6 is not supported
+    if (pton_res < 0) {
+        ERROR("AF_INET6 is not supported");
+        return -1;
+    }
+
+    struct sockaddr_in6 sin6;
     sin6.sin6_port = htons(port);
     sin6.sin6_family = AF_INET6;
     sin6.sin6_addr = address;
@@ -111,6 +115,7 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
         ERROR("Error on connect");
         return -1;
     }
+
     client->state = SOCK_CONNECTED;
     return 0;
 }
