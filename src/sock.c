@@ -85,7 +85,7 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
     }
 
     if (addr == NULL) {
-        errno = EFAULT;
+        errno = EINVAL;
         return -1;
     }
 
