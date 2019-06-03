@@ -6,12 +6,8 @@
 #ifndef SOCK_H
 #define SOCK_H
 
-#include <stdlib.h>
-#include <sys/types.h>
 #include <stdint.h>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 /* Socket states */
 typedef enum {
