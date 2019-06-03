@@ -102,7 +102,7 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
 
     // AF_INET6 is not supported
     if (pton_res < 0) {
-        ERROR("AF_INET6 is not supported");
+        ERROR("'%s' is not a valid IPv6 address", addr);
         return -1;
     }
 
@@ -112,7 +112,7 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
     sin6.sin6_addr = address;
     int res = connect(client->fd, (struct sockaddr *)&sin6, sizeof(sin6));
     if (res < 0) {
-        ERROR("Error on connect");
+        ERROR("Failed to connect to [%s]:%d", addr, port);
         return -1;
     }
 
