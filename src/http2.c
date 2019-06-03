@@ -195,6 +195,20 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
     return 0;
 }
 
+/*
+* Function: check_headers_stream_condition
+* Checks the stream conditionals and return a value depending on the current
+* stream state and id, and the stream_id given in the header of the frame
+* Input: -> st: hstates_t struct where stream variables are stored
+*         -> header: header of the incoming frame
+* Ouput:
+*/
+int check_headers_stream_condition(hstates_t *st, frame_header_t *header){
+  (void) st;
+  (void) header;
+  return 0;
+}
+
 /*----------------------API methods-------------------*/
 
 /*
@@ -351,17 +365,25 @@ int h2_receive_frame(hstates_t *st){
             WARN("TODO: Data Frame. Not implemented yet.");
             return -1;
         case HEADERS_TYPE:{//Header
-            // read stream from frame if it does not exist, create it, otherwise reject it
-            if(st->h2s.current_stream.stream_id == 0){
+            // Check if stream is not created or previous one is closed
+            if(st->h2s.current_stream.stream_id == 0 ||
+                (st->h2s.current_stream.state == STREAM_CLOSED &&
+                st->h2s.current_stream.stream_id < header.stream_id)){
+                //we create a new stream
                 st->h2s.current_stream.stream_id = header.stream_id;
                 st->h2s.current_stream.state = STREAM_OPEN;
             }
+            // Stream id mismatch
             else if(header.stream_id != st->h2s.current_stream.stream_id){
-                ERROR("Stream not created. Sending error.");
+                ERROR("Stream ids do not match. PROTOCOL ERROR.");
                 //Send reject error. Write error to HTTP. Check if error is relevant to HTTP or HTTP2
                 return -1;
             }
-
+            // Current stream is not open
+            else if(st->h2s.current_stream.state != STREAM_OPEN){
+              ERROR("Current stream is not open. STREAM CLOSED ERROR");
+              return -1;
+            }
             headers_payload_t hpl;
             uint8_t headers_block_fragment[64];
             uint8_t padding[32];
@@ -385,12 +407,9 @@ int h2_receive_frame(hstates_t *st){
                 st->waiting_for_end_headers_flag = 0;
             }
 
-            if(is_flag_set(header.flags,HEADERS_END_STREAM_FLAG)){//TODO check this!
-
-
+            if(is_flag_set(header.flags,HEADERS_END_STREAM_FLAG)){
+              st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
             }
-
-
 
             /*TODO: Implement read_headers. It uses the hpl to write on header_list.
             * we assume that returns the number of headers pairs written.
@@ -400,7 +419,7 @@ int h2_receive_frame(hstates_t *st){
 
             if (rc < 0) {
                 ERROR("Error reading headers");
-                // TODO: send internal error if number of headers > HTTP2HTTP2_MAX_HEADER_COUNT
+                // TODO: send internal error if number of headers > HTTP2_MAX_HEADER_COUNT
                 return rc;
             }
             st->header_count += rc;
