@@ -54,13 +54,13 @@ int sock_listen(sock_t *server, uint16_t port)
     sin6.sin6_port = htons(port);
     sin6.sin6_addr = in6addr_any;
     if (bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
-        ERROR("Error on binding");
         return -1;
     }
+    
     if (listen(server->fd, BACKLOG) < 0) {
-        ERROR("Error on listening");
         return -1;
     }
+    
     server->state = SOCK_LISTENING;
     return 0;
 }
