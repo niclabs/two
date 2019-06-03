@@ -33,6 +33,10 @@ typedef struct HTTP2_STATES {
     /*uint32_t local_cache[6]; Could be implemented*/
     uint8_t wait_setting_ack;
     h2_stream_t current_stream;
+    uint8_t header_count;
+    uint8_t header_block_fragments[128];
+    uint8_t header_block_fragments_pointer; //points to the next byte to write in
+    uint8_t waiting_for_end_headers_flag;   //bool
 } h2states_t;
 
 /*-----HTTP structures-----*/
@@ -50,10 +54,6 @@ typedef struct HTTP_STATES {
     h2states_t h2s;
     uint8_t table_count;
     table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
-    uint8_t header_count;
-    uint8_t header_block_fragments[128];
-    uint8_t header_block_fragments_pointer; //points to the next byte to write in
-    uint8_t waiting_for_end_headers_flag;   //bool
 } hstates_t;
 
 

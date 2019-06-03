@@ -393,9 +393,9 @@ int h2_receive_frame(hstates_t *st){
                 return rc;
             }
 
-            //first we recveive fragments, so we save those on the st->header_block_fragments buffer
-            st->waiting_for_end_headers_flag = 1;
-            rc = buffer_copy(st->header_block_fragments, hpl.header_block_fragment, get_header_block_fragment_size(&header, &hpl));
+            //first we recveive fragments, so we save those on the st->h2s.header_block_fragments buffer
+            st->h2s.waiting_for_end_headers_flag = 1;
+            rc = buffer_copy(st->h2s.header_block_fragments, hpl.header_block_fragment, get_header_block_fragment_size(&header, &hpl));
             if(rc >= 128){
                 ERROR("Header block fragments to big (not enough space allocated).");
                 return -1;
@@ -403,8 +403,8 @@ int h2_receive_frame(hstates_t *st){
 
             //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
             if(is_flag_set(header.flags,HEADERS_END_HEADERS_FLAG)){
-                rc = receive_header_block(st->header_block_fragments, st->header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
-                st->waiting_for_end_headers_flag = 0;
+                rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
+                st->h2s.waiting_for_end_headers_flag = 0;
             }
 
             if(is_flag_set(header.flags,HEADERS_END_STREAM_FLAG)){
@@ -415,14 +415,14 @@ int h2_receive_frame(hstates_t *st){
             * we assume that returns the number of headers pairs written.
             */
             // read_headers(*header_payload_t, *header_list, header_list_start, header_list_max)
-            //rc = read_headers(&hpl, st->header_list, st->header_count, HTTP2_MAX_HEADER_COUNT);
+            //rc = read_headers(&hpl, st->header_list, st->h2s.header_count, HTTP2_MAX_HEADER_COUNT);
 
             if (rc < 0) {
                 ERROR("Error reading headers");
                 // TODO: send internal error if number of headers > HTTP2_MAX_HEADER_COUNT
                 return rc;
             }
-            st->header_count += rc;
+            st->h2s.header_count += rc;
         }
 
             WARN("TODO: Header Frame. Not implemented yet.");
@@ -474,7 +474,7 @@ int h2_receive_frame(hstates_t *st){
               ERROR("Continuation received on closed stream. CLOSED STREAM ERROR");
               return -1;
             }
-            if(!st->waiting_for_end_headers_flag){
+            if(!st->h2s.waiting_for_end_headers_flag){
               ERROR("Continuation must be preceded by a HEADERS frame. PROTOCOL ERROR");
               return -1;
             }
@@ -482,8 +482,8 @@ int h2_receive_frame(hstates_t *st){
             (void) contpl;
             //TODO: write continuation payload and store the block fragment
             if(is_flag_set(header.flags, CONTINUATION_END_HEADERS_FLAG)){
-              rc = receive_header_block(st->header_block_fragments, st->header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
-              st->waiting_for_end_headers_flag = 0;
+              rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
+              st->h2s.waiting_for_end_headers_flag = 0;
             }
             return 0;
 
