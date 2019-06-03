@@ -62,19 +62,16 @@ int sock_accept(sock_t *server, sock_t *client)
 {
     if ((server == NULL) || (server->state != SOCK_LISTENING) || (server->fd < 0)) {
         errno = EINVAL;
-        DEBUG("Error in sock_accept, server must be valid and listening");
         return -1;
     }
 
     if (client == NULL) {
         errno = EINVAL;
-        DEBUG("Error in sock_accept, NULL client given");
         return -1;
     }
 
     int clifd = accept(server->fd, NULL, NULL);
     if (clifd < 0) {
-        ERROR("Error on accept");
         return -1;
     }
     client->fd = clifd;
