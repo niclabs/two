@@ -611,39 +611,53 @@ int main(void)
     /*CREATE FILE TO MOCK USER INPUT*/
     io_mock();
     UNIT_TESTS_BEGIN();
-    /*TEST OF FUNCTIONS IN CASE OF GOOD USE*/
+
+    // sock_create tests
     UNIT_TEST(test_sock_create_ok);
-    UNIT_TEST(test_sock_listen_ok);
-    UNIT_TEST(test_sock_accept_ok);
-    UNIT_TEST(test_sock_connect_ok);
-    UNIT_TEST(test_sock_write_ok);
-    UNIT_TEST(test_sock_read_ok);
-    UNIT_TEST(test_sock_destroy_ok);
-    /*TEST OF FUNCTIONS IN CASE OF BAD USE*/
     UNIT_TEST(test_sock_create_fail_to_create_socket);
     UNIT_TEST(test_sock_create_null_sock);
+    UNIT_TEST(test_sock_write_ok);
+    
+    // sock_listen tests
+    UNIT_TEST(test_sock_listen_ok);
     UNIT_TEST(test_sock_listen_unitialized_socket);
     UNIT_TEST(test_sock_listen_error_in_bind);
     UNIT_TEST(test_sock_listen_error_in_listen);
     UNIT_TEST(test_sock_listen_null_socket);
+    
+    // sock_accept tests
+    UNIT_TEST(test_sock_accept_ok);
     UNIT_TEST(test_sock_accept_unitialized_socket);
     UNIT_TEST(test_sock_accept_without_listen);
     UNIT_TEST(test_sock_accept_null_client);
+    
+    // sock_connect tests
+    UNIT_TEST(test_sock_connect_ok);
     UNIT_TEST(test_sock_connect_null_client);
     UNIT_TEST(test_sock_connect_unitialized_client);
     UNIT_TEST(test_sock_connect_null_address);
     UNIT_TEST(test_sock_connect_ipv4_address);
     UNIT_TEST(test_sock_connect_bad_address);
     UNIT_TEST(test_sock_connect_with_connection_error);
+    
+    // sock_read tests
+    UNIT_TEST(test_sock_read_ok);
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_bad_timeout);
     UNIT_TEST(test_sock_read_unconnected_socket);
+    
+    // sock_write tests
+    UNIT_TEST(test_sock_write_ok);
     UNIT_TEST(test_sock_write_null_socket);
     UNIT_TEST(test_sock_write_null_buffer);
     UNIT_TEST(test_sock_write_unconnected_socket);
+    
+    // sock_destroy tests
+    UNIT_TEST(test_sock_destroy_ok);
     UNIT_TEST(test_sock_destroy_null_sock);
     UNIT_TEST(test_sock_destroy_closed_sock);
+
     /*ERASE FILE TO MOCK USER INPUT*/
     erase_io_mock();
     return UNIT_TESTS_END();
