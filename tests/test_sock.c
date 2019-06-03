@@ -89,7 +89,7 @@ void *thread_connect(void *arg)
     return (void *)result;
 }
 
-void test_sock_create(void)
+void test_sock_create_ok(void)
 {
     sock_t sock;
     socket_fake.return_val = 123;
@@ -136,7 +136,7 @@ void test_sock_listen_null_socket(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_listen should set errno on error");
 }
 
-void test_sock_listen(void)
+void test_sock_listen_ok(void)
 {
     sock_t sock;
     socket_fake.return_val = 123;
@@ -161,7 +161,7 @@ void test_sock_listen_error_return(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_listen should set errno on error");
 }
 
-void test_sock_accept(void)
+void test_sock_accept_ok(void)
 {
 
     sock_t sock_s;
@@ -215,7 +215,7 @@ void test_sock_accept_null_client(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_accept should set errno on error");
 }
 
-void test_sock_connect(void)
+void test_sock_connect_ok(void)
 {
     sock_t sock;
     socket_fake.return_val = 123;
@@ -281,7 +281,7 @@ void test_sock_connect_bad_address(void)
 }
 
 
-void test_sock_read(void){
+void test_sock_read_ok(void){
 
     char buffer[256];
     socket_fake.return_val = 123;
@@ -401,7 +401,7 @@ void test_sock_read_unconnected_socket(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
 }
 
-void test_sock_write(void)
+void test_sock_write_ok(void)
 {
     char buffer[26]="Socket says: hello world\n";
     socket_fake.return_val = 123;
@@ -475,7 +475,7 @@ void test_sock_write_unconnected_socket(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
 
-void test_sock_destroy(void)
+void test_sock_destroy_ok(void)
 {
     sock_t sock;
     socket_fake.return_val = 123;
@@ -512,13 +512,13 @@ int main(void)
     io_mock();
     UNIT_TESTS_BEGIN();
     /*TEST OF FUNCTIONS IN CASE OF GOOD USE*/
-    UNIT_TEST(test_sock_create);
-    UNIT_TEST(test_sock_listen);
-    UNIT_TEST(test_sock_accept);
-    UNIT_TEST(test_sock_connect);
-    UNIT_TEST(test_sock_write);
-    UNIT_TEST(test_sock_read);
-    UNIT_TEST(test_sock_destroy);
+    UNIT_TEST(test_sock_create_ok);
+    UNIT_TEST(test_sock_listen_ok);
+    UNIT_TEST(test_sock_accept_ok);
+    UNIT_TEST(test_sock_connect_ok);
+    UNIT_TEST(test_sock_write_ok);
+    UNIT_TEST(test_sock_read_ok);
+    UNIT_TEST(test_sock_destroy_ok);
     /*TEST OF FUNCTIONS IN CASE OF BAD USE*/
     UNIT_TEST(test_sock_create_fail_to_create_socket);
     UNIT_TEST(test_sock_create_null_sock);
