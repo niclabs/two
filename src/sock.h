@@ -13,18 +13,20 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+/* Socket states */
+typedef enum {
+    SOCK_CLOSED,
+    SOCK_OPENED,
+    SOCK_LISTENING,
+    SOCK_CONNECTED
+} sock_state_t;
 
 /**
  * Socket typedef
  */
 typedef struct {
     int fd;
-    enum {
-        SOCK_CLOSED,
-        SOCK_OPENED,
-        SOCK_LISTENING,
-        SOCK_CONNECTED
-    } state;
+    int state;
 } sock_t;
 
 /**

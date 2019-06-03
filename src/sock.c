@@ -43,11 +43,11 @@ int sock_create(sock_t *sock)
 
 int sock_listen(sock_t *server, uint16_t port)
 {
-    if ((server == NULL) || (server->state != SOCK_OPENED) || (server->fd < 0)) {
+    if ((server == NULL) || (server->state != SOCK_OPENED)) {
         errno = EINVAL;
-        DEBUG("Error in sock_listen, server must valid and opened");
         return -1;
     }
+
     /* Struct sockaddr_in6 needed for binding. Family defined for ipv6. */
     struct sockaddr_in6 sin6;
     sin6.sin6_family = AF_INET6;
@@ -92,7 +92,7 @@ int sock_accept(sock_t *server, sock_t *client)
 
 int sock_connect(sock_t *client, char *addr, uint16_t port)
 {
-    if (client == NULL || (client->state != SOCK_OPENED) || ((client->fd) < 0)) {
+    if (client == NULL || (client->state != SOCK_OPENED)) {
         errno = EINVAL;
         DEBUG("Error in sock_connect, client must be valid and opened");
         return -1;
