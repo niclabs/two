@@ -28,6 +28,7 @@ int sock_create(sock_t *sock)
         errno = EINVAL;
         return -1;
     }
+
     sock->fd = socket(AF_INET6, SOCK_STREAM, 0);
     if (sock->fd < 0) {
         // Set errno if not given by socket() (should only be on a test mock setting)
@@ -35,6 +36,7 @@ int sock_create(sock_t *sock)
         sock->state = SOCK_CLOSED;
         return -1;
     }
+
     sock->state = SOCK_OPENED;
     return 0;
 }
