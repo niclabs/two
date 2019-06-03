@@ -393,7 +393,7 @@ int h2_receive_frame(hstates_t *st){
                 return rc;
             }
 
-            //first we recveive fragments, so we save those on the st->h2s.header_block_fragments buffer
+            //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
             st->h2s.waiting_for_end_headers_flag = 1;
             rc = buffer_copy(st->h2s.header_block_fragments, hpl.header_block_fragment, get_header_block_fragment_size(&header, &hpl));
             if(rc >= 128){
@@ -479,8 +479,21 @@ int h2_receive_frame(hstates_t *st){
               return -1;
             }
             continuation_payload_t contpl;
-            (void) contpl;
-            //TODO: write continuation payload and store the block fragment
+            uint8_t continuation_block_fragment[64];
+            int rc = read_continuation_payload(buff_read, &header, &contpl, continuation_block_fragment);
+            if(rc >=64){
+                ERROR("Error block fragments to big (not enough space allocated)");
+                return rc;
+            }
+
+            //receive fragments and save those on the st->h2s.header_block_fragments buffer
+            rc = buffer_copy(st->h2s.header_block_fragments, contpl.header_block_fragment, header.length);
+            if(rc >= 128){
+                ERROR("Header block fragments to big (not enough space allocated).");
+                return -1;
+            }
+
+
             if(is_flag_set(header.flags, CONTINUATION_END_HEADERS_FLAG)){
               rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
               st->h2s.waiting_for_end_headers_flag = 0;

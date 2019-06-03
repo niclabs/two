@@ -389,3 +389,9 @@ int receive_header_block(uint8_t* header_block_fragments, int header_block_fragm
     //(void)rc;
     return -1;
 }
+
+int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment){
+    int rc = buffer_copy(continuation_block_fragment, buff_read, frame_header->length);
+    continuation_payload->header_block_fragment = continuation_block_fragment;
+    return rc;
+}

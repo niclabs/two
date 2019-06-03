@@ -6,7 +6,7 @@
 #define TWO_HPACK_H
 
 
-
+#include "http_methods_bridge.h"
 #include <stdint.h>
 #include "logging.h"
 

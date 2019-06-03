@@ -365,10 +365,10 @@ hpack_preamble_t get_preamble(uint8_t preamble){
         return LITERAL_HEADER_FIELD_WITHOUT_INDEXING; // preamble = 0000
     }
     ERROR("wrong preamble");
-    return NULL;
+    return -1;
 }
 
-uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
+/*uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
     int pointer = 0;
     uint8_t first_byte = (bytes[0]<<(8-prefix))>>(8-prefix);
     uint32_t sum = (pow(2,prefix)-1);
@@ -383,12 +383,13 @@ uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
         return (uint32_t)first_byte;
     }
 }
+ */
 uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
     int pointer = 0;
     uint8_t b0 = bytes[0];
     b0 = b0<<(8-prefix);
     b0 = b0>>(8-prefix);
-    byte p = 255;
+    uint8_t p = 255;
     p = p<<(8-prefix);
     p = p>>(8-prefix);
     if(b0!=p){
@@ -413,13 +414,14 @@ uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
 }
 
 int decode_literal_header_field_incremental_index(uint8_t* header_block, char* name, char* value){
-    int pointer = 0;
+    //int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));//decode index
     if(index == 0){
         //TODO
         //decode huffman name
         //decode name length
         //decode name
+        (void)name;
     }
     else{
         //TODO find name in table
@@ -427,18 +429,20 @@ int decode_literal_header_field_incremental_index(uint8_t* header_block, char* n
     //TODO
     //decode value length
     //decode value
+    (void)value;
     //TODO add to dynamic table
     ERROR("Not implemented yet.");
-    return -1
+    return -1;
 }
 int decode_literal_header_field_without_indexing(uint8_t* header_block, char* name, char* value){
-    int pointer = 0;
+    //int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
     if(index == 0){
         //TODO
         //decode huffman name
         //decode name length
         //decode name
+        (void)name;
     }
     else{
         //TODO find name in table
@@ -446,15 +450,17 @@ int decode_literal_header_field_without_indexing(uint8_t* header_block, char* na
     //TODO
     //decode value length
     //decode value
+    (void)value;
     //TODO add to dynamic table
     ERROR("Not implemented yet.");
-    return -1
+    return -1;
 }
 int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name, char* value){
-    int pointer = 0;
+    //int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
     if(index == 0){
         //TODO
+        (void)name;
         //decode huffman name
         //decode name length
         //decode name
@@ -465,21 +471,28 @@ int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name,
     //TODO
     //decode value length
     //decode value
+    (void)value;
     //TODO add to dynamic table
     ERROR("Not implemented yet.");
-    return -1
+    return -1;
 }
 int decode_dynamic_table_size(uint8_t* header_block){
-    int pointer = 0;
+    //int pointer = 0;
     uint32_t new_table_size = decode_integer(header_block, find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
     //TODO modify dynamic table size and dynamic table if necessary.
+    (void)new_table_size;
     ERROR("Not implemented yet.");
-    return -1
+    return -1;
 }
 
 
 int decode_header(uint8_t* bytes, hpack_preamble_t preamble, char* name, char* value){
-
+    (void)bytes;
+    (void)preamble;
+    (void)name;
+    (void)value;
+    ERROR("Not implemented yet.");
+    return -1;
 }
 
 int decode_header_block(uint8_t* header_block, uint8_t header_block_size, table_pair_t* header_list, uint8_t table_index){
@@ -488,7 +501,11 @@ int decode_header_block(uint8_t* header_block, uint8_t header_block_size, table_
     int header_counter = 0;
     hpack_preamble_t preamble = get_preamble(header_block[pointer]);
 
-    int rc = decode_header(header_block+pointer, preamble, &header_list[table_index+header_counter].name, &header_list[table_index+header_counter].value);
+    int rc = decode_header(header_block+pointer, preamble, header_list[table_index+header_counter].name, header_list[table_index+header_counter].value);
+    if(rc<header_block_size){
+        ERROR("Error decoding header block... header block size not big enough...");
+        return -1;
+    }
     return -1;
 }
 

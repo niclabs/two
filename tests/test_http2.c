@@ -12,6 +12,8 @@ extern int read_frame(uint8_t *buff_read, frame_header_t *header);
  /*---------------- Mock functions ---------------------------*/
 
 FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);
+
+FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);
  /*int read_headers_payload(uint8_t *buff_read, frame_header_t *hdr, headers_payload_t *hpl){
    (void) buff_read;
    (void) hdr;
