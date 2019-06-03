@@ -281,21 +281,32 @@ void test_sock_accept_null_client(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept with null client return ok");
 }
 
+/**************************************************************************
+ * sock_connect tests
+ *************************************************************************/
+
 void test_sock_connect_ok(void)
 {
+    // initialize socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
+
+    // set all return values to OK
     connect_fake.return_val = 0;
+
+    // call the function
     int res = sock_connect(&sock, "::1", 0);
+
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_connect should return 0 on success");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock.state, "sock_connect set sock state to CONNECTED");
 }
 
 void test_sock_connect_null_client(void)
 {
-    connect_fake.return_val = -1;
+    // call the function with NULL client
     int res = sock_connect(NULL, "::1", 0);
+
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on null socket should return error value");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
@@ -303,7 +314,8 @@ void test_sock_connect_null_client(void)
 void test_sock_connect_unitialized_client(void)
 {
     sock_t sock;
-    connect_fake.return_val = -1;
+
+    // call the function with uninitialized client
     int res = sock_connect(&sock, "::1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect on unitialized socket should return error value");
@@ -312,10 +324,12 @@ void test_sock_connect_unitialized_client(void)
 
 void test_sock_connect_null_address(void)
 {
+    // initialize socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    connect_fake.return_val = -1;
+
+    // call the funciton with a null address
     int res = sock_connect(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should not accept a null address");
@@ -324,10 +338,12 @@ void test_sock_connect_null_address(void)
 
 void test_sock_connect_ipv4_address(void)
 {
+    // initialize socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    connect_fake.return_val = -1;
+
+    // call the funciton with an unsupported address
     int res = sock_connect(&sock, "127.0.0.1", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should not accept ipv4 addresses");
@@ -336,10 +352,12 @@ void test_sock_connect_ipv4_address(void)
 
 void test_sock_connect_bad_address(void)
 {
+    // initialize socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    connect_fake.return_val = -1;
+
+    // call the funciton with a bad address
     int res = sock_connect(&sock, "bad_address", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should fail on bad address");
