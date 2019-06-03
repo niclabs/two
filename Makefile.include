@@ -1,12 +1,17 @@
 # Generic GCC Makefile based on
 # https://github.com/mbcrawfo/GenericMakefile/blob/master/c/Makefile
-PLATFORM ?= linux
+
+# Shell used in this makefile
+# bash is used for 'echo -en'
+SHELL = /bin/bash
+
+# get host operating system
+OS := $(shell uname -s | tr A-Z a-z)
 
 # Some configuration variables
 BASEDIR			?= $(dir $(lastword $(MAKEFILE_LIST)))
 BUILDDIR		?= $(BASEDIR)/build
-TARGETDIR		?= $(BUILDDIR)/$(PLATFORM)
-PLATFORMDIR		?= $(BASEDIR)/platform
+TARGETDIR		?= $(BUILDDIR)/$(OS)
 SRCDIR			?= $(BASEDIR)/src
 TESTSDIR		?= $(BASEDIR)/tests
 
@@ -14,16 +19,31 @@ TESTSDIR		?= $(BASEDIR)/tests
 override BASEDIR        := $(abspath $(BASEDIR))
 override BUILDDIR       := $(abspath $(BUILDDIR))
 override TARGETDIR      := $(abspath $(TARGETDIR))
-override PLATFORMDIR    := $(abspath $(PLATFORMDIR))
 override SRCDIR         := $(abspath $(SRCDIR))
 override TESTSDIR       := $(abspath $(TESTSDIR))
 
-# Shell used in this makefile
-# bash is used for 'echo -en'
-SHELL = /bin/bash
+# General compiler flags
+CFLAGS += -std=c99 -Wall -Wextra
 
-# Target OS dependent CFLAGS
-CFLAGS += -D__$(PLATFORM)
+# Fail on warnings. Can be overridden by `make WERROR=0`.
+WERROR ?= 1
+export WERROR
+ifeq ($(WERROR),1)
+  CFLAGS += -Werror
+endif
+
+WPEDANTIC ?= 0
+export WPEDANTIC
+ifeq ($(WPEDANTIC),1)
+  CFLAGS += -Wpedantic
+endif
+
+# Include path
+INCLUDES += -I $(SRCDIR)
+
+ifneq ($(DEBUG),)
+	CFLAGS += -g -DENABLE_DEBUG
+endif
 
 # Quiet option, to output compile and link commands
 QUIET ?= 1
@@ -33,9 +53,6 @@ ifeq ($(QUIET),1)
 else
   Q=
 endif
-
-# get host operating system
-OS := $(shell uname -s)
 
 # git command
 GIT ?= git
@@ -63,17 +80,52 @@ ifeq ($(shell git describe > /dev/null 2>&1 ; echo $$?), 0)
 		-D VERSION_HASH=\"$(VERSION_HASH)\"
 endif
 
-
 # Check application name
 APPLICATION := $(strip $(APPLICATION))
 ifeq (,$(APPLICATION))
   $(error An application name must be specified as APPLICATION.)
 endif
+
+
+# Find all source files in the source directory, sorted by most
+# recently modified
+ifeq ($(OS),Darwin)
+	SOURCES = $(shell find $(SRCDIR) -name '*.c' | sort -k 1nr | cut -f2-)
+else
+	SOURCES = $(shell find $(SRCDIR) -name '*.c' -printf '%T@\t%p\n' \
+						| sort -k 1nr | cut -f2-)
+endif
+
+# fallback in case the above fails
+rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
+						$(filter $(subst *,%,$2), $d))
+ifeq ($(SOURCES),)
+	SOURCES := $(call rwildcard, $(SRCDIR), *.c)
+endif
+
+
+# Set the object file names, with the source directory stripped
+# from the path, and the build path prepended in its place
+OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(TARGETDIR)/%.o)
+# Set the dependency files that will be used to add header dependencies
+DEPS = $(OBJECTS:.o=.d)
+
+# Define the binary file
+BINFILE ?= $(TARGETDIR)/$(APPLICATION)
+
 ##################
 # Begin targets
 #################
-# Export all variables
-export
+
+# Disable all implicit rules
+.SUFFIXES: 
+
+# Export paths and configuration variables
+export BASEDIR, BUILDDIR, SRCDIR, TESTSDIR
+export DEBUG, QUIET
+
+# Target OS must define 'all' Makefile target
+.DEFAULT_GOAL := all
 
 # Create build directories
 ALLDIRS := $(TARGETDIR)
@@ -81,6 +133,30 @@ ALLDIRS := $(TARGETDIR)
 $(ALLDIRS):
 	@echo "Creating $@"
 	@mkdir -p $@
+
+# Build with debug options
+.PHONY: debug
+debug: export DEBUG := 1
+debug: 
+	@$(MAKE) all --no-print-directory
+
+# Main rule, checks the executable and symlinks to the output
+all: $(BINFILE)
+
+# Link the executable
+$(BINFILE): $(OBJECTS)
+	@echo "Linking: $@"
+	$(Q)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+
+# Add dependency files, if they exist
+-include $(DEPS)
+
+# Source file rules
+# After the first compilation they will be joined with the rules from the
+# dependency files to provide header dependencies
+$(TARGETDIR)/%.o: $(SRCDIR)/%.c $(TARGETDIR)
+	@echo "Compiling: $< -> $@"
+	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
 
 # Removes all build files
 .PHONY: clean
@@ -96,21 +172,11 @@ clean-all: clean
 	@$(RM) -r $(BUILDDIR)
 
 # Test targets
+.PHONY: test
 test: $(ALLDIRS) $(TESTSDIR)
 	@$(MAKE) -C $(TESTSDIR) $@
 
+.PHONY: test_%
+test_%: 
 test_%: $(ALLDIRS) $(TESTSDIR)
 	@$(MAKE) -C $(TESTSDIR) $@
-
-# Catch all other rules
-.DEFAULT:
-	$(foreach dir,$(ALLDIRS),\
-		$(if $(wildcard $(dir)),,\
-			$(info Creating $(dir))\
-			$(shell mkdir -p $(dir))\
-		)\
-	)
-	@$(MAKE) -f $(PLATFORMDIR)/$(PLATFORM)/Makefile.include $@
-
-# Target OS must define 'all' Makefile target
-.DEFAULT_GOAL := all
