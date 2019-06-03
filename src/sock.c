@@ -59,7 +59,7 @@ int sock_listen(sock_t *server, uint16_t port)
 
 int sock_accept(sock_t *server, sock_t *client)
 {
-    if ((server == NULL) || (server->state != SOCK_LISTENING) || (server->fd < 0)) {
+    if ((server == NULL) || (server->state != SOCK_LISTENING)) {
         errno = EINVAL;
         return -1;
     }
