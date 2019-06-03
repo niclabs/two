@@ -216,15 +216,18 @@ void test_sock_listen_error_in_listen(void)
 
 void test_sock_accept_ok(void)
 {
-
+    // create socket
     sock_t sock_s;
     socket_fake.return_val = 123;
     sock_create(&sock_s);
 
+    // set all return values to OK
     listen_fake.return_val = 0;
     sock_listen(&sock_s, 8888);
     accept_fake.return_val = 0;
     sock_t sock_c;
+
+    // call the function
     int res = sock_accept(&sock_s, &sock_c);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept should return 0 on success");
@@ -235,19 +238,22 @@ void test_sock_accept_ok(void)
 void test_sock_accept_unitialized_socket(void)
 {
     sock_t sock;
-    accept_fake.return_val = -1;
+
+    // call the function with unitialized sock
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept on unitialized socket should return error value");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_accept should set errno on error");
 }
 
-void test_sock_accept_unbound_socket(void)
+void test_sock_accept_without_listen(void)
 {
+    // create socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    accept_fake.return_val = -1;
+
+    // call sock_accept without listen
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept on unbound socket should return error value");
@@ -256,12 +262,16 @@ void test_sock_accept_unbound_socket(void)
 
 void test_sock_accept_null_client(void)
 {
+    // create socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
+
+    // call listen
     listen_fake.return_val = 0;
     sock_listen(&sock, 8888);
-    accept_fake.return_val = -1;
+
+    // call accept with null client
     int res = sock_accept(&sock, NULL);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept with null client should return error value");
