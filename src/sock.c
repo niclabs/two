@@ -13,12 +13,10 @@
 #include "logging.h"
 #include "assert.h"
 
-/*BACKLOG: The backlog argument defines the maximum length to which the queue of pending connections for sockfd may grow.
-   (In listen function).*/
-#define BACKLOG 1
+/* From listen(2): The backlog argument defines the maximum length to which the
+ * queue of pending connections for sockfd may grow. */
+#define SOCK_LISTEN_BACKLOG 1
 
-/*Note for sock_create: return value in function socket() must be non negative. Therefore, value of 0 in fd field of sock_t
-   structure is valid.*/
 int sock_create(sock_t *sock)
 {
     if (sock == NULL) {
@@ -54,7 +52,7 @@ int sock_listen(sock_t *server, uint16_t port)
         return -1;
     }
     
-    if (listen(server->fd, BACKLOG) < 0) {
+    if (listen(server->fd, SOCK_LISTEN_BACKLOG) < 0) {
         return -1;
     }
     
