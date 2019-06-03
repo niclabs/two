@@ -110,8 +110,7 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
     sin6.sin6_port = htons(port);
     sin6.sin6_family = AF_INET6;
     sin6.sin6_addr = address;
-    int res = connect(client->fd, (struct sockaddr *)&sin6, sizeof(sin6));
-    if (res < 0) {
+    if (connect(client->fd, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
         ERROR("Failed to connect to [%s]:%d", addr, port);
         return -1;
     }
