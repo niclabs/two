@@ -463,9 +463,31 @@ int h2_receive_frame(hstates_t *st){
         case WINDOW_UPDATE_TYPE://Window update
             WARN("TODO: Window update frame. Not implemented yet.");
             return -1;
-        case CONTINUATION_TYPE://Continuation
-            WARN("TODO: Continuation frame. Not implemented yet.");
-            return -1;
+        case CONTINUATION_TYPE:{//Continuation
+            // First verify stream state
+            if(header.stream_id == 0x0 ||
+              header.stream_id != st->h2s.current_stream.stream_id){
+              ERROR("Continuation received on invalid stream. PROTOCOL ERROR");
+              return -1;
+            }
+            else if(st->h2s.current_stream.state != STREAM_OPEN){
+              ERROR("Continuation received on closed stream. CLOSED STREAM ERROR");
+              return -1;
+            }
+            if(!st->waiting_for_end_headers_flag){
+              ERROR("Continuation must be preceded by a HEADERS frame. PROTOCOL ERROR");
+              return -1;
+            }
+            continuation_payload_t contpl;
+            (void) contpl;
+            //TODO: write continuation payload and store the block fragment
+            if(is_flag_set(header.flags, CONTINUATION_END_HEADERS_FLAG)){
+              rc = receive_header_block(st->header_block_fragments, st->header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
+              st->waiting_for_end_headers_flag = 0;
+            }
+            return 0;
+
+        }
         default:
             WARN("Error: Type not found");
             return -1;
