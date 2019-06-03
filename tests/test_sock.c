@@ -89,6 +89,30 @@ void *thread_connect(void *arg)
     return (void *)result;
 }
 
+
+/**************************************************************************
+ * posix socket mocks
+ *************************************************************************/
+int socket_with_error_fake(int domain, int type, int protocol) {
+    errno = EAFNOSUPPORT;
+    return -1;
+}
+
+int bind_with_error_fake(int sockfd, const struct sockaddr *addr,
+                 socklen_t addrlen) {
+    errno = ENOTSOCK;
+    return -1;
+}
+
+int listen_with_error_fake(int sockfd, int backlog) {
+    errno = EOPNOTSUPP;
+    return -1;
+}
+
+/**************************************************************************
+ * sock_create tests
+ *************************************************************************/
+
 void test_sock_create_ok(void)
 {
     sock_t sock;
@@ -111,12 +135,17 @@ void test_sock_create_null_sock(void)
 void test_sock_create_fail_to_create_socket(void)
 {
     sock_t sock;
-    socket_fake.return_val = -1;
+    socket_fake.custom_fake = socket_with_error_fake;
     int res = sock_create(&sock);
+
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_create should set errno on error");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_CLOSED, sock.state, "sock_create should leave sock in 'CLOSED' state on error");
 }
+
+/**************************************************************************
+ * sock_listen tests
+ *************************************************************************/
 
 void test_sock_listen_unitialized_socket(void)
 {
@@ -148,18 +177,42 @@ void test_sock_listen_ok(void)
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_LISTENING, sock.state, "sock_listen set sock state to LISTENING");
 }
 
-void test_sock_listen_error_return(void)
+void test_sock_listen_error_in_bind(void)
 {
+    // initialize socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
-    listen_fake.return_val = -1;
-    errno = ENOTSOCK;
 
+    // set error in bind    
+    bind_fake.custom_fake = bind_with_error_fake;
+
+    // call function
     int res = sock_listen(&sock, 8888);
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_listen should set errno on error");
 }
+
+void test_sock_listen_error_in_listen(void)
+{
+    // initialize socket
+    sock_t sock;
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // set error in listen
+    listen_fake.custom_fake = listen_with_error_fake;
+
+    // call function
+    int res = sock_listen(&sock, 8888);
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_listen should return -1 on error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_listen should set errno on error");
+}
+
+
+/**************************************************************************
+ * sock_accept tests
+ *************************************************************************/
 
 void test_sock_accept_ok(void)
 {
@@ -523,7 +576,8 @@ int main(void)
     UNIT_TEST(test_sock_create_fail_to_create_socket);
     UNIT_TEST(test_sock_create_null_sock);
     UNIT_TEST(test_sock_listen_unitialized_socket);
-    UNIT_TEST(test_sock_listen_error_return);
+    UNIT_TEST(test_sock_listen_error_in_bind);
+    UNIT_TEST(test_sock_listen_error_in_listen);
     UNIT_TEST(test_sock_listen_null_socket);
     UNIT_TEST(test_sock_accept_unitialized_socket);
     UNIT_TEST(test_sock_accept_unbound_socket);
