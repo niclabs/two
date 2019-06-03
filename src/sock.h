@@ -51,10 +51,7 @@ int sock_listen(sock_t * server, uint16_t port);
  * sock_listen() previously, otherwise an error will be returned.
  * 
  * @param   server      pointer to server socket data structure (defined by the implementation)
- * @param   client      pointer to client socket, socket must be initialized with sock_create() 
- *                      otherwise error will be returned. 
- * @param   timeout     timeout in seconds to wait for a new connection before giving up. 
- *                      if set to zero the method will wait indefinetely
+ * @param   client      pointer to client socket data structure (it will be initialized by the function)
  * 
  * @return   0      if a new client was successfully accepted
  * @return  -1      on error (errno will be set appropriately)
