@@ -73,4 +73,42 @@ build/
 
 # Vim files
 *.swp
+*.swo
 *~
+
+# Contiki files
+*.bin
+*.a
+*.zip
+symbols.*
+obj_*
+*.cooja
+*.redbee-econotag
+*.econotag 
+*.native
+*.z1
+*.minimal-net
+*.sky
+*.wismote
+*.esb
+*.avr-raven
+*.exp5438
+*.mbxxx
+*.win32
+*.apple2enh
+*.atarixl
+*.c128
+*.c64
+*.cc2538dk
+*.zoul
+*.jn516x
+*.srf06-cc26xx
+*.ev-aducrf101mkxz
+*.report
+summary
+*.summary
+*.summary
+*.runerr
+*.runlog
+*.faillog
+*.orig
