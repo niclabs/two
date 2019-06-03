@@ -109,6 +109,10 @@ int listen_with_error_fake(int sockfd, int backlog) {
     return -1;
 }
 
+int connect_with_error_fake(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    errno = ECONNREFUSED;
+    return -1;
+}
 /**************************************************************************
  * sock_create tests
  *************************************************************************/
@@ -339,6 +343,22 @@ void test_sock_connect_bad_address(void)
     int res = sock_connect(&sock, "bad_address", 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should fail on bad address");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
+}
+
+void test_sock_connect_with_connection_error(void) {
+    // initialize socket
+    sock_t sock;
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // set error in connect()
+    connect_fake.custom_fake = connect_with_error_fake;
+
+    // call the funciton with a bad address
+    int res = sock_connect(&sock, "::1", 8888);
+
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_connect should fail on connection error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
 
@@ -596,6 +616,7 @@ int main(void)
     UNIT_TEST(test_sock_connect_null_address);
     UNIT_TEST(test_sock_connect_ipv4_address);
     UNIT_TEST(test_sock_connect_bad_address);
+    UNIT_TEST(test_sock_connect_with_connection_error);
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_bad_timeout);
