@@ -11,7 +11,6 @@
 
 #include "sock.h"
 #include "logging.h"
-#include "assert.h"
 
 /* From listen(2): The backlog argument defines the maximum length to which the
  * queue of pending connections for sockfd may grow. */
