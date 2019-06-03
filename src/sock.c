@@ -64,17 +64,16 @@ int sock_accept(sock_t *server, sock_t *client)
         return -1;
     }
 
-    if (client == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-
     int clifd = accept(server->fd, NULL, NULL);
     if (clifd < 0) {
         return -1;
     }
-    client->fd = clifd;
-    client->state = SOCK_CONNECTED;
+
+    // Only struct values if client is not null
+    if (client != NULL) {
+        client->fd = clifd;
+        client->state = SOCK_CONNECTED;
+    }
     return 0;
 }
 

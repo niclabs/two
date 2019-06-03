@@ -274,8 +274,7 @@ void test_sock_accept_null_client(void)
     // call accept with null client
     int res = sock_accept(&sock, NULL);
 
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept with null client should return error value");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_accept should set errno on error");
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept with null client return ok");
 }
 
 void test_sock_connect_ok(void)
@@ -590,7 +589,7 @@ int main(void)
     UNIT_TEST(test_sock_listen_error_in_listen);
     UNIT_TEST(test_sock_listen_null_socket);
     UNIT_TEST(test_sock_accept_unitialized_socket);
-    UNIT_TEST(test_sock_accept_unbound_socket);
+    UNIT_TEST(test_sock_accept_without_listen);
     UNIT_TEST(test_sock_accept_null_client);
     UNIT_TEST(test_sock_connect_null_client);
     UNIT_TEST(test_sock_connect_unitialized_client);
