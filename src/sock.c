@@ -31,7 +31,8 @@ int sock_create(sock_t *sock)
     }
     sock->fd = socket(AF_INET6, SOCK_STREAM, 0);
     if (sock->fd < 0) {
-        errno = EAGAIN;
+        // Set errno if not given by socket() (should only be on a test mock setting)
+        if (errno == 0) errno = EAGAIN;
         ERROR("Error creating socket");
         sock->state = SOCK_CLOSED;
         return -1;
