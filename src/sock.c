@@ -121,21 +121,18 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
 
 int sock_read(sock_t *sock, char *buf, int len, int timeout)
 {
-    if (sock == NULL || (sock->state != SOCK_CONNECTED) || ((sock->fd) < 0)) {
+    if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
         errno = EINVAL;
-        DEBUG("Called sock_read with invalid socket");
         return -1;
     }
 
     if (buf == NULL) {
         errno = EINVAL;
-        DEBUG("Error: Called sock_read with null buffer");
         return -1;
     }
 
     if (timeout < 0) {
         errno = EINVAL;
-        DEBUG("Error: Called sock_read with timeout smaller than 0");
         return -1;
     }
 
