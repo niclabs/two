@@ -131,29 +131,30 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
         return -1;
     }
 
+
     // set timeout
-    struct timeval tv;
     if (timeout > 0) {
+        // use select to wait for sock to have reading data
+        fd_set read_fds;
+        FD_ZERO(&read_fds); // prepare fd_set
+        FD_SET(sock->fd, &read_fds); // add sock->fd to fd_set
+
+        struct timeval tv;
         tv.tv_sec = timeout;
         tv.tv_usec = 0;
-        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-            return -1; // TODO: should we return, or continue ignoring timeout?
+
+        int res = select(sock->fd + 1, &read_fds, NULL, NULL, &tv);
+        if (res == -1) {
+            return -1;
         }
+        else if (res != 1) { // timeout reached
+            errno = ETIME;
+            return -1;
+        } 
     }
 
-    // read from socket, will return -1 if timeout is reached without reading any bytes
-    ssize_t bytes_read = read(sock->fd, buf, len);
-
-    // unset timeout if set
-    if (timeout > 0) {
-        tv.tv_sec = 0;
-        tv.tv_usec = 0;
-        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-            return -1; // TODO: read already succeeded, should we still return error?
-        }
-    }
-
-    return bytes_read;
+    // read from socket
+    return read(sock->fd, buf, len);
 }
 
 int sock_write(sock_t *sock, char *buf, int len)
