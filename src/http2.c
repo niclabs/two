@@ -90,7 +90,7 @@ int send_settings_ack(hstates_t * st){
     }
     uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
-    rc = http_write(byte_ack, size_byte_ack, st);
+    rc = http_write(st, byte_ack, size_byte_ack);
     if(rc != size_byte_ack){
         puts("Error in Settings ACK sending");
         return -1;
@@ -234,7 +234,7 @@ int h2_send_local_settings(hstates_t *st){
     uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
     int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
     /*Assuming that http_write returns the number of bytes written*/
-    rc = http_write(byte_mysettings, size_byte_mysettings, st);
+    rc = http_write(st, byte_mysettings, size_byte_mysettings);
     if(rc != size_byte_mysettings){
         puts("Error in local settings writing");
         return -1;
@@ -290,7 +290,7 @@ int h2_client_init_connection(hstates_t *st){
         preface_buff[i] = preface[i];
         i++;
     }
-    rc = http_write(preface_buff,24, st);
+    rc = http_write(st, preface_buff,24);
     if(rc != 24){
         puts("Error in preface sending");
         return -1;

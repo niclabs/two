@@ -15,7 +15,7 @@
 #include "logging.h"
 
 
-int http_write(uint8_t *buf, int len, hstates_t *hs)
+int http_write(hstates_t *hs, uint8_t *buf, int len)
 {
     int wr = 0;
 
@@ -38,7 +38,7 @@ int http_write(uint8_t *buf, int len, hstates_t *hs)
 }
 
 
-int http_read( uint8_t *buf, int len, hstates_t *hs)
+int http_read(hstates_t *hs, uint8_t *buf, int len)
 {
     int rd = 0;
 
@@ -61,9 +61,9 @@ int http_read( uint8_t *buf, int len, hstates_t *hs)
 
 }
 
-int http_receive(char *headers)
+int http_receive(hstates_t *hs)
 {
-    (void)headers;
+    (void)hs;
     // TODO: read headers
     // TODO: identify HTTP method
     // TODO: call get_receive

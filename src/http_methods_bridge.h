@@ -72,7 +72,7 @@ typedef struct HTTP_STATES {
  * @return 0    if connection was closed on the other side
  * @return -1   on error
  */
-int http_write(uint8_t *buf, int len, hstates_t *hs);
+int http_write(hstates_t *hs, uint8_t *buf, int len);
 
 /*
  * Read the data from the socket with the client
@@ -85,7 +85,7 @@ int http_write(uint8_t *buf, int len, hstates_t *hs);
  * @return   0     if connection was closed on the other side
  * @return   -1    on error
  */
-int http_read(uint8_t *buf, int len, hstates_t *hs);
+int http_read(hstates_t *hs, uint8_t *buf, int len);
 
 /*
  * Given the content of the request made by the client, this function calls
@@ -96,7 +96,7 @@ int http_read(uint8_t *buf, int len, hstates_t *hs);
  * @return    0         the action was successful
  * @return    -1        the action fail
  */
-int http_receive(char *headers);
+int http_receive(hstates_t *hs);
 
 /*
  * Empty the list of headers in hstates_t struct
