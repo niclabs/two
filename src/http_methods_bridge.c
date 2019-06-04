@@ -64,7 +64,9 @@ int http_read( uint8_t *buf, int len, hstates_t *hs)
 int http_receive(char *headers)
 {
     (void)headers;
-    //TODO decod headers
+    // TODO: read headers
+    // TODO: identify HTTP method
+    // TODO: call get_receive
     return -1;
 }
 
@@ -73,9 +75,10 @@ int get_receive(char *path, char *headers)
 {
     (void)path;
     (void)headers;
-    // buscar respuesta correspondiente a path
-    // codificar respuesta
-    // enviar respuesta a socket
+    // preparar respuesta
+    // buscar callback correspondiente a path
+    // llamar a callback y agregar datos a respuesta
+    // codificar respuesta usando http2
     return -1;
 }
 
