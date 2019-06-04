@@ -146,7 +146,7 @@ void test_sock_create_ok(void)
     socket_fake.return_val = 123;
     sock_create(&sock);
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_OPENED, sock.state, "sock_create should leave sock in 'OPENED' state");
-    TEST_ASSERT_EQUAL_MESSAGE(123, sock.fd, "sock_create should set file descriptor in sock structure");
+    TEST_ASSERT_EQUAL_MESSAGE(123, sock.socket, "sock_create should set file descriptor in sock structure");
     sock_destroy(&sock);
 }
 
@@ -757,7 +757,7 @@ void test_sock_destroy_ok(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_destroy should return 0 on success");
     TEST_ASSERT_EQUAL_MESSAGE(1, close_fake.call_count, "close should be called only once");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_CLOSED, sock.state, "sock_destroy set sock state to CLOSED");
-    TEST_ASSERT_EQUAL_MESSAGE(-1, sock.fd, "sock_destroy should reset file descriptor");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, sock.socket, "sock_destroy should reset file descriptor");
 }
 
 void test_sock_destroy_null_sock(void)

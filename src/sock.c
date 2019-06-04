@@ -23,8 +23,8 @@ int sock_create(sock_t *sock)
         return -1;
     }
 
-    sock->fd = socket(AF_INET6, SOCK_STREAM, 0);
-    if (sock->fd < 0) {
+    sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
+    if (sock->socket < 0) {
         sock->state = SOCK_CLOSED;
         return -1;
     }
@@ -45,11 +45,11 @@ int sock_listen(sock_t *server, uint16_t port)
     sin6.sin6_family = AF_INET6;
     sin6.sin6_port = htons(port);
     sin6.sin6_addr = in6addr_any;
-    if (bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
+    if (bind(server->socket, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
         return -1;
     }
 
-    if (listen(server->fd, SOCK_LISTEN_BACKLOG) < 0) {
+    if (listen(server->socket, SOCK_LISTEN_BACKLOG) < 0) {
         return -1;
     }
 
@@ -64,14 +64,14 @@ int sock_accept(sock_t *server, sock_t *client)
         return -1;
     }
 
-    int clifd = accept(server->fd, NULL, NULL);
+    int clifd = accept(server->socket, NULL, NULL);
     if (clifd < 0) {
         return -1;
     }
 
     // Only struct values if client is not null
     if (client != NULL) {
-        client->fd = clifd;
+        client->socket = clifd;
         client->state = SOCK_CONNECTED;
     }
     return 0;
@@ -110,7 +110,7 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
     sin6.sin6_port = htons(port);
     sin6.sin6_family = AF_INET6;
     sin6.sin6_addr = address;
-    if (connect(client->fd, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
+    if (connect(client->socket, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
         ERROR("Failed to connect to [%s]:%d", addr, port);
         return -1;
     }
@@ -137,13 +137,13 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
         // use select to wait for sock to have reading data
         fd_set read_fds;
         FD_ZERO(&read_fds);             // prepare fd_set
-        FD_SET(sock->fd, &read_fds);    // add sock->fd to fd_set
+        FD_SET(sock->socket, &read_fds);    // add sock->socket to fd_set
 
         struct timeval tv;
         tv.tv_sec = timeout;
         tv.tv_usec = 0;
 
-        int res = select(sock->fd + 1, &read_fds, NULL, NULL, &tv);
+        int res = select(sock->socket + 1, &read_fds, NULL, NULL, &tv);
         if (res == -1) {
             return -1;
         }
@@ -154,7 +154,7 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
     }
 
     // read from socket
-    return read(sock->fd, buf, len);
+    return read(sock->socket, buf, len);
 }
 
 int sock_write(sock_t *sock, char *buf, int len)
@@ -180,7 +180,7 @@ int sock_write(sock_t *sock, char *buf, int len)
      * buffer.
      */
     while (len > 0) {
-        bytes_written = write(sock->fd, p, len);
+        bytes_written = write(sock->socket, p, len);
         if (bytes_written < 0) {
             return -1;
         }
@@ -203,11 +203,11 @@ int sock_destroy(sock_t *sock)
         return -1;
     }
 
-    if (close(sock->fd) < 0) {
+    if (close(sock->socket) < 0) {
         return -1;
     }
 
-    sock->fd = -1;
+    sock->socket = -1;
     sock->state = SOCK_CLOSED;
     return 0;
 }

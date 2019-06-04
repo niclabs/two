@@ -21,7 +21,7 @@ typedef enum {
  * Socket typedef
  */
 typedef struct {
-    int fd;
+    sock_socket_t socket;
     int state;
 } sock_t;
 
