@@ -36,7 +36,7 @@ typedef enum
 #endif
 
 #ifndef LEVEL
-#define LEVEL (FATAL)
+#define LEVEL (INFO)
 #endif
 
 #define LEVEL_STR(level) #level
