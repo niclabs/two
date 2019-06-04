@@ -80,18 +80,21 @@ int connect_with_error_fake(int sockfd, const struct sockaddr *addr, socklen_t a
 }
 
 int select_ok_fake(int nfds, fd_set *readfds, fd_set *writefds,
-                   fd_set *exceptfds, struct timeval *timeout) {
+                   fd_set *exceptfds, struct timeval *timeout)
+{
     return 1;
 }
 
 int select_with_error_fake(int nfds, fd_set *readfds, fd_set *writefds,
-                   fd_set *exceptfds, struct timeval *timeout) {
+                           fd_set *exceptfds, struct timeval *timeout)
+{
     errno = EBADF;
     return -1;
 }
 
 int select_with_timeout_fake(int nfds, fd_set *readfds, fd_set *writefds,
-                   fd_set *exceptfds, struct timeval *timeout) {
+                             fd_set *exceptfds, struct timeval *timeout)
+{
     return 0;
 }
 
@@ -662,9 +665,10 @@ void test_sock_write_null_buffer(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -769,6 +773,7 @@ void test_sock_destroy_closed_sock(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
