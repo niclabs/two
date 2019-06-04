@@ -46,12 +46,19 @@ void setUp(void) {
     FFF_RESET_HISTORY();
 }
 
-
+/* Mocks */
 int buffer_copy_fake_custom(uint8_t* dest, uint8_t* orig, int size){
     for(int i = 0; i< size; i++){
         dest[i] = orig[i];
     }
     return size;
+}
+
+void test_read_headers_payload(void){
+
+}
+void test_read_continuation_payload(void){
+
 }
 
 
