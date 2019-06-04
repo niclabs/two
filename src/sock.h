@@ -72,14 +72,14 @@ int sock_accept(sock_t * server, sock_t * client);
 int sock_connect(sock_t * client, char * addr, uint16_t port);
 
 /**
- * Read len bytes from the socket into the specified buffer. The method will wait for timeout seconds or until
- * all bytes are read
+ * Read len bytes from the socket into the specified buffer. The method will wait for timeout seconds
+ * if timeout is greater than zero
  * 
  * @param   sock    pointer to socket data structure to read from
  * @param   buf     buffer to read the data into
  * @param   len     number of bytes to read
  * @param   timeout timeout in seconds to wait for read before giving up, If set to zero, the method will wait 
- *                  indefinitely
+ *                  indefinitely or until there is data to read
  * 
  * @return   >0     number of bytes read
  * @return   0      if connection was closed on the other side
@@ -104,7 +104,7 @@ int sock_write(sock_t * sock, char * buf, int len);
 /**
  * Close the connection and destroy the socket
  * 
- * @param   sock    pointer to socket data structure to read from
+ * @param   sock    pointer to socket data structure
  * 
  * @return  0   is connection was closed succesfully
  * @return  -1  on error (errno will be set appropriately)
