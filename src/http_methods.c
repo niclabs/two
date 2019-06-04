@@ -17,27 +17,6 @@
 #include "http2.h"
 
 
-struct client_s {
-    enum client_state {
-        NOT_CLIENT,
-        CREATED,
-        CONNECTED
-    } state;
-    sock_t socket;
-};
-
-struct server_s {
-    enum server_state {
-        NOT_SERVER,
-        LISTEN,
-        CLIENT_CONNECT
-    } state;
-    sock_t socket;
-};
-
-struct server_s server;
-struct client_s client;
-
 /************************************Server************************************/
 
 
@@ -46,30 +25,28 @@ int http_init_server(hstates_t *hs, uint16_t port)
     hs->socket_state = 0;
     hs->table_count = 0;
     hs->connection_state = 0;
+    hs->server_socket_state=0;
 
-    client.state = NOT_CLIENT;
-
-    if (sock_create(&server.socket) < 0) {
+    if (sock_create(hs->server_socket) < 0) {
         ERROR("Error in server creation");
         return -1;
     }
 
-    if (sock_listen(&server.socket, port) < 0) {
+    hs->server_socket_state=1;
+
+    if (sock_listen(hs->server_socket, port) < 0) {
         ERROR("Partial error in server creation");
+        sock_destroy(hs->server_socket);
         return -1;
     }
-
-    server.state = LISTEN;
 
     printf("Server waiting for a client\n");
 
 
-    while (sock_accept(&server.socket, &client.socket) >= 0) {
-        client.state = CONNECTED;
+    while (sock_accept(hs->server_socket, hs->socket) >= 0) {
 
         printf("Client found and connected\n");
 
-        hs->socket = &client.socket;
         hs->socket_state = 1;
         hs->connection_state = 1;
 
@@ -125,13 +102,13 @@ int http_set_header(hstates_t *hs, char *name, char *value)
 
 int http_server_destroy(hstates_t *hs)
 {
-    if (server.state == NOT_SERVER) {
+    if (hs->server_socket_state == 0) {
         WARN("Server not found");
         return -1;
     }
 
-    if (client.state == CONNECTED || hs->socket_state == 1) {
-        if (sock_destroy(&client.socket) < 0) {
+    if (hs->socket_state == 1) {
+        if (sock_destroy(hs->socket) < 0) {
             WARN("Client still connected");
         }
     }
@@ -139,12 +116,12 @@ int http_server_destroy(hstates_t *hs)
     hs->socket_state = 0;
     hs->connection_state = 0;
 
-    if (sock_destroy(&server.socket) < 0) {
+    if (sock_destroy(hs->server_socket) < 0) {
         ERROR("Error in server disconnection");
         return -1;
     }
 
-    server.state = NOT_SERVER;
+    hs->server_socket_state = 1;
 
     printf("Server destroyed\n");
 
@@ -158,29 +135,25 @@ int http_server_destroy(hstates_t *hs)
 int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 {
     hs->socket_state = 0;
+    hs->server_socket_state=0;
     hs->table_count = 0;
     hs->connection_state = 0;
 
-    struct client_s *cl = &client;
-    server.state = NOT_SERVER;
-
-    if (sock_create(&cl->socket) < 0) {
+    if (sock_create(hs->socket) < 0) {
         ERROR("Error on client creation");
         return -1;
     }
 
-    cl->state = CREATED;
+    hs->socket_state = 1;
 
-    if (sock_connect(&cl->socket, ip, port) < 0) {
+    if (sock_connect(hs->socket, ip, port) < 0) {
         ERROR("Error on client connection");
+        http_client_disconnect(hs);
         return -1;
     }
 
     printf("Client connected to server\n");
 
-    cl->state = CONNECTED;
-
-    hs->socket = &cl->socket;
     hs->socket_state = 1;
     hs->connection_state = 1;
 
@@ -217,8 +190,8 @@ char *http_get_header(hstates_t *hs, char *header)
 
 int http_client_disconnect(hstates_t *hs)
 {
-    if (client.state == CONNECTED || hs->socket_state == 1) {
-        if (sock_destroy(&client.socket) < 0) {
+    if (hs->socket_state == 1) {
+        if (sock_destroy(hs->socket) < 0) {
             ERROR("Error in client disconnection");
             return -1;
         }
@@ -228,7 +201,6 @@ int http_client_disconnect(hstates_t *hs)
 
     hs->socket_state = 0;
     hs->connection_state = 0;
-    client.state = NOT_CLIENT;
 
     return 0;
 }

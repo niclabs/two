@@ -51,7 +51,9 @@ typedef struct TABLE_ENTRY {
 typedef struct HTTP_STATES {
     uint8_t connection_state;
     uint8_t socket_state;
-    sock_t *socket;
+    sock_t *socket; // client socket
+    uint8_t server_socket_state;
+    sock_t *server_socket;
     h2states_t h2s;
     uint8_t table_count;
     table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
