@@ -2,6 +2,7 @@
 #include "unit.h"
 #include "fff.h"
 #include "http2.h"
+#include "http2utils.h"
  /*---------- Import of functions not declared in http2.h ----------------*/
 extern int init_variables(hstates_t * st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
@@ -9,24 +10,13 @@ extern int send_settings_ack(hstates_t *st);
 extern int check_for_settings_ack(frame_header_t *header, hstates_t *st);
 extern int read_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st);
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
+
  /*---------------- Mock functions ---------------------------*/
 
-FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);
-
-FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);
- /*int read_headers_payload(uint8_t *buff_read, frame_header_t *hdr, headers_payload_t *hpl){
-   (void) buff_read;
-   (void) hdr;
-   (void) hpl;
-   return 0;
- }*/
- int read_headers(headers_payload_t *hpl, table_pair_t* hlist, uint8_t count, uint8_t max_count){
-   (void) hpl;
-   (void) hlist;
-   (void) count;
-   (void) max_count;
-   return 0;
- }
+FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
+FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
+FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);//TODO fix this
+FAKE_VALUE_FUNC(uint32_t, get_header_list_size,table_pair_t* , uint8_t );//TODO fix this
 
  uint8_t buffer[MAX_BUFFER_SIZE];
  int size = 0;

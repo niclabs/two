@@ -406,23 +406,19 @@ int h2_receive_frame(hstates_t *st){
                 rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
                 st->h2s.waiting_for_end_headers_flag = 0;
             }
+            uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
+            uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
+            if (header_list_size < MAX_HEADER_LIST_SIZE_VALUE) {
+                ERROR("Header list size greater than max alloweed");
+                //TODO send error and finish stream
+                return -1;
+            }
+            //TODO pass to upper layer ?
+
 
             if(is_flag_set(header.flags,HEADERS_END_STREAM_FLAG)){
               st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
             }
-
-            /*TODO: Implement read_headers. It uses the hpl to write on header_list.
-            * we assume that returns the number of headers pairs written.
-            */
-            // read_headers(*header_payload_t, *header_list, header_list_start, header_list_max)
-            //rc = read_headers(&hpl, st->header_list, st->h2s.header_count, HTTP2_MAX_HEADER_COUNT);
-
-            if (rc < 0) {
-                ERROR("Error reading headers");
-                // TODO: send internal error if number of headers > HTTP2_MAX_HEADER_COUNT
-                return rc;
-            }
-            st->h2s.header_count += rc;
         }
 
             WARN("TODO: Header Frame. Not implemented yet.");
@@ -498,8 +494,15 @@ int h2_receive_frame(hstates_t *st){
               rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
               st->h2s.waiting_for_end_headers_flag = 0;
             }
+            uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
+            uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
+            if (header_list_size < MAX_HEADER_LIST_SIZE_VALUE) {
+                ERROR("Header list size greater than max alloweed");
+                //TODO send error and finish stream
+                return -1;
+            }
+            //TODO pass to upper layer ?
             return 0;
-
         }
         default:
             WARN("Error: Type not found");
