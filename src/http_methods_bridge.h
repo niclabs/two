@@ -49,7 +49,7 @@ typedef struct TABLE_ENTRY {
 } table_pair_t;
 
 typedef struct HTTP_STATES {
-    uint8_t conection_state;
+    uint8_t connection_state;
     uint8_t socket_state;
     sock_t *socket;
     h2states_t h2s;
