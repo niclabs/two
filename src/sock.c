@@ -179,9 +179,6 @@ int sock_write(sock_t *sock, char *buf, int len)
      * buffer.
      */
     while (len > 0) {
-        if (p == NULL) {
-            break;
-        }
         bytes_written = write(sock->fd, p, len);
         if (bytes_written < 0) {
             return -1;
