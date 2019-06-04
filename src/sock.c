@@ -195,20 +195,21 @@ int sock_write(sock_t *sock, char *buf, int len)
 
 int sock_destroy(sock_t *sock)
 {
-    if (sock == NULL || sock->fd < 0) {
+    if (sock == NULL || sock->state != SOCK_CONNECTED) {
         errno = EINVAL;
-        DEBUG("Error on socket_destroy, NULL socket given");
         return -1;
     }
+
     if (sock->state == SOCK_CLOSED) {
-        errno = EALREADY;
-        DEBUG("Error on sock_destroy, socket already closed");
+        errno = EBADF;
         return -1;
     }
+
     if (close(sock->fd) < 0) {
-        ERROR("Error destroying socket");
         return -1;
     }
+
+    sock->fd = -1;
     sock->state = SOCK_CLOSED;
     return 0;
 }
