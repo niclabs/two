@@ -8,6 +8,7 @@
 #include "frames.h"
 #include "fff.h"
 #include "utils.h"
+#include "logging.h"
 
 
 DEFINE_FFF_GLOBALS;
@@ -55,10 +56,12 @@ int buffer_copy_fake_custom(uint8_t* dest, uint8_t* orig, int size){
 }
 
 void test_read_headers_payload(void){
+
+
     /*expected*/
     frame_header_t expected_frame_header;
     expected_frame_header.type = 0x1;
-    expected_frame_header.flags = 0x4;
+    expected_frame_header.flags = set_flag(0x0, 0x4);
     expected_frame_header.stream_id = 1;
     expected_frame_header.reserved = 0;
     expected_frame_header.length = 9;
@@ -68,23 +71,22 @@ void test_read_headers_payload(void){
     expected_headers_payload.header_block_fragment = expected_headers_block_fragment;
     //expected_headers_payload.padding = expected_padding;
 
+    /*mocks*/
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    bytes_to_uint32_24_fake.return_val = expected_frame_header.length;
+    bytes_to_uint32_31_fake.return_val = expected_frame_header.stream_id;
+
+
     //fill the buffer
-    uint8_t read_buffer[20] = {0,0,9/*length 3 bytes*/,0x1/*type*/,0x4/*flags(end_headers)*/,0,0,0,1/*reserved bit+stream_id*/,0,12,34,5,234,7,34,98,9/*payload*/};
+    uint8_t read_buffer[20] = {0,12,34,5,234,7,34,98,9,0,0,1,12,3/*payload*/};
 
     /*result*/
-    frame_header_t frame_header;
     headers_payload_t headers_payload;
     uint8_t headers_block_fragment[64];
     uint8_t padding[32];
-    int rc = read_headers_payload(read_buffer, &frame_header, &headers_payload, headers_block_fragment, padding);
+    int rc = read_headers_payload(read_buffer, &expected_frame_header, &headers_payload, headers_block_fragment, padding);
 
-    TEST_ASSERT_EQUAL(18,rc);//se leyeron 18 bytes
-    TEST_ASSERT_EQUAL(expected_frame_header.type,frame_header.type);
-    TEST_ASSERT_EQUAL(expected_frame_header.flags,frame_header.flags);
-    TEST_ASSERT_EQUAL(expected_frame_header.stream_id,frame_header.stream_id);
-    TEST_ASSERT_EQUAL(expected_frame_header.reserved,frame_header.reserved);
-    TEST_ASSERT_EQUAL(expected_frame_header.length,frame_header.length);
-
+    TEST_ASSERT_EQUAL(expected_frame_header.length, rc);//se leyeron 9 bytes
     for(int i =0; i<expected_frame_header.length; i++) {
         TEST_ASSERT_EQUAL(expected_headers_payload.header_block_fragment[i], headers_payload.header_block_fragment[i]);
     }
@@ -93,7 +95,35 @@ void test_read_headers_payload(void){
 //int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, table_pair_t* header_list, uint8_t table_index);
 
 void test_read_continuation_payload(void){
+
+    /*mocks*/
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
 //int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment);
+
+    /*expected*/
+    frame_header_t expected_frame_header;
+    expected_frame_header.type = 0x9;
+    expected_frame_header.flags = 0x4;
+    expected_frame_header.stream_id = 1;
+    expected_frame_header.reserved = 0;
+    expected_frame_header.length = 8;
+    uint8_t expected_headers_block_fragment[64] = {0,12,34,5,234,7,34,98};
+
+
+
+    //fill the buffer
+    uint8_t read_buffer[20] = {0,12,34,5,234,7,34,98,9,0,0,1,12/*payload*/};
+
+    /*result*/
+    continuation_payload_t continuation_payload;
+    uint8_t headers_block_fragment[64];
+    int rc = read_continuation_payload(read_buffer, &expected_frame_header, &continuation_payload, headers_block_fragment);
+
+    TEST_ASSERT_EQUAL(expected_frame_header.length,rc);//se leyeron 18 bytes
+    for(int i =0; i<expected_frame_header.length; i++) {
+        TEST_ASSERT_EQUAL(expected_headers_block_fragment[i], continuation_payload.header_block_fragment[i]);
+    }
 }
 
 
@@ -477,6 +507,8 @@ int main(void)
 
     UNIT_TEST(test_create_settings_ack_frame);
     UNIT_TEST(test_frame_to_bytes);
+    UNIT_TEST(test_read_headers_payload);
+    UNIT_TEST(test_read_continuation_payload);
 
     return UNIT_TESTS_END();
 }

@@ -332,6 +332,7 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
     if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
         pad_length = read_buffer[pointer];
         pointer +=1;
+        ERROR("Header with padding");
     }
     if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){ //if priority flag is set
         exclusive_dependency = ((uint8_t)128)&read_buffer[pointer];
@@ -339,10 +340,11 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
         pointer +=4;
         weight = read_buffer[pointer];
         pointer +=1;
+        ERROR("Header with priority");
     }
 
     //header block fragment
-    int header_block_fragment_size = (int)frame_header->length-pad_length-pointer;
+    int header_block_fragment_size = get_header_block_fragment_size(frame_header,headers_payload);//7(int)frame_header->length-pad_length-pointer;
     if(header_block_fragment_size>=64){
         ERROR("Header block fragment size longer than the space given.");
         return -1;
@@ -365,7 +367,7 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
     headers_payload->weight = weight;
     headers_payload->header_block_fragment = headers_block_fragment;
     headers_payload->padding = padding;
-    return 0;
+    return pointer;
 }
 
 int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload){
