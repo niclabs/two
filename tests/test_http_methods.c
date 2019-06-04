@@ -62,12 +62,13 @@ int sock_read_custom_fake(sock_t *s, char *buf, int l, int u)
 
 void test_http_init_server_success(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
     h2_server_init_connection_fake.return_val = 0;
 
-    int is = http_init_server(12);
+    int is = http_init_server(&hs, 12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
@@ -80,12 +81,13 @@ void test_http_init_server_success(void)
 
 void test_http_init_server_fail_h2_server_init_connection(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
     h2_server_init_connection_fake.return_val = -1;
 
-    int is = http_init_server(12);
+    int is = http_init_server(&hs, 12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
@@ -98,11 +100,12 @@ void test_http_init_server_fail_h2_server_init_connection(void)
 
 void test_http_init_server_fail_sock_accept(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = -1;
 
-    int is = http_init_server(12);
+    int is = http_init_server(&hs, 12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
@@ -114,10 +117,11 @@ void test_http_init_server_fail_sock_accept(void)
 
 void test_http_init_server_fail_sock_listen(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = -1;
 
-    int is = http_init_server(12);
+    int is = http_init_server(&hs, 12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
@@ -128,9 +132,10 @@ void test_http_init_server_fail_sock_listen(void)
 
 void test_http_init_server_fail_sock_create(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = -1;
 
-    int is = http_init_server(12);
+    int is = http_init_server(&hs, 12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
 
@@ -141,7 +146,7 @@ void test_http_init_server_fail_sock_create(void)
 void test_http_set_header_success(void)
 {
     hstates_t hs;
-    int set = http_set_header("settings", "server:on", &hs);
+    int set = http_set_header(&hs, "settings", "server:on");
 
     TEST_ASSERT_EQUAL(0, set);
     TEST_ASSERT_EQUAL(1, hs.table_count);
@@ -152,7 +157,7 @@ void test_http_set_header_fail_table_full(void)
 {
     hstates_t hs;
     hs.table_count=HTTP2_MAX_HEADER_COUNT;
-    int set = http_set_header("settings", "server:on", &hs);
+    int set = http_set_header(&hs, "settings", "server:on");
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, set,"Headers list is full");
     TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.table_count);
@@ -161,17 +166,18 @@ void test_http_set_header_fail_table_full(void)
 
 void test_http_server_destroy_success(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
     h2_server_init_connection_fake.return_val = 0;
 
-    http_init_server(12);
+    http_init_server(&hs, 12);
 
 
     sock_destroy_fake.return_val = 0;
 
-    int d = http_server_destroy();
+    int d = http_server_destroy(&hs);
 
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
@@ -188,16 +194,17 @@ void test_http_server_destroy_success(void)
 
 void test_http_server_destroy_success_without_client(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = -1;
 
-    http_init_server(12);
+    http_init_server(&hs, 12);
 
 
     sock_destroy_fake.return_val = 0;
 
-    int d = http_server_destroy();
+    int d = http_server_destroy(&hs);
 
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
@@ -212,11 +219,12 @@ void test_http_server_destroy_success_without_client(void)
 
 void test_http_server_destroy_fail_not_server(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = -1;
 
-    http_client_connect(12, "::");
+    http_client_connect(&hs, 12, "::");
 
-    int d = http_server_destroy();
+    int d = http_server_destroy(&hs);
 
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
@@ -227,18 +235,19 @@ void test_http_server_destroy_fail_not_server(void)
 
 void test_http_server_destroy_fail_sock_destroy(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
     h2_server_init_connection_fake.return_val = 0;
 
-    http_init_server(12);
+    http_init_server(&hs, 12);
 
 
     int returnVals[2] = { 0, -1 };
     SET_RETURN_SEQ(sock_destroy, returnVals, 2);
 
-    int d = http_server_destroy();
+    int d = http_server_destroy(&hs);
 
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
@@ -256,11 +265,12 @@ void test_http_server_destroy_fail_sock_destroy(void)
 
 void test_http_client_connect_success(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = 0;
 
-    int cc = http_client_connect(12, "::");
+    int cc = http_client_connect(&hs, 12, "::");
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
@@ -272,11 +282,12 @@ void test_http_client_connect_success(void)
 
 void test_http_client_connect_fail_h2_client_init_connection(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = -1;
 
-    int cc = http_client_connect(12, "::");
+    int cc = http_client_connect(&hs, 12, "::");
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
@@ -288,10 +299,11 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 
 void test_http_client_connect_fail_sock_connect(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = -1;
 
-    int cc = http_client_connect(12, "::");
+    int cc = http_client_connect(&hs, 12, "::");
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
@@ -302,9 +314,10 @@ void test_http_client_connect_fail_sock_connect(void)
 
 void test_http_client_connect_fail_sock_create(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = -1;
 
-    int cc = http_client_connect(12, "::");
+    int cc = http_client_connect(&hs, 12, "::");
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
 
@@ -316,10 +329,10 @@ void test_http_get_header_success(void)
 {
     hstates_t hs;
 
-    http_set_header("something", "something two", &hs);
-    http_set_header("settings", "server:on", &hs);
+    http_set_header(&hs, "something", "something two");
+    http_set_header(&hs, "settings", "server:on");
 
-    char *buf = http_get_header("settings", &hs);
+    char *buf = http_get_header(&hs, "settings");
 
     TEST_ASSERT_EQUAL(0, strncmp(buf, "server:on", strlen("server:on")));
 }
@@ -330,7 +343,7 @@ void test_http_get_header_fail_empty_table(void)
     hstates_t hs;
 
     hs.table_count = 0;
-    char *buf = http_get_header("settings", &hs);
+    char *buf = http_get_header(&hs, "settings");
 
     TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");
 }
@@ -340,10 +353,10 @@ void test_http_get_header_fail_header_not_found(void)
 {
     hstates_t hs;
 
-    http_set_header("something1", "something one", &hs);
-    http_set_header("something2", "something two", &hs);
+    http_set_header(&hs, "something1", "something one");
+    http_set_header(&hs, "something2", "something two");
 
-    char *buf = http_get_header("settings", &hs);
+    char *buf = http_get_header(&hs, "settings");
 
     TEST_ASSERT_MESSAGE(buf == NULL, "Header should not be found in headers list");
 }
@@ -351,12 +364,13 @@ void test_http_get_header_fail_header_not_found(void)
 
 void test_http_client_disconnect_success_v1(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = -1;
 
-    http_client_connect(12, "::");
+    http_client_connect(&hs, 12, "::");
 
-    int d = http_client_disconnect();
+    int d = http_client_disconnect(&hs);
 
     TEST_ASSERT_EQUAL(0, d);
 }
@@ -364,16 +378,17 @@ void test_http_client_disconnect_success_v1(void)
 
 void test_http_client_disconnect_success_v2(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = 0;
 
-    http_client_connect(12, "::");
+    http_client_connect(&hs, 12, "::");
 
 
     sock_destroy_fake.return_val = 0;
 
-    int d = http_client_disconnect();
+    int d = http_client_disconnect(&hs);
 
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
@@ -388,16 +403,17 @@ void test_http_client_disconnect_success_v2(void)
 
 void test_http_client_disconnect_fail(void)
 {
+    hstates_t hs;
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = 0;
 
-    http_client_connect(12, "::");
+    http_client_connect(&hs, 12, "::");
 
 
     sock_destroy_fake.return_val = -1;
 
-    int d = http_client_disconnect();
+    int d = http_client_disconnect(&hs);
 
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);

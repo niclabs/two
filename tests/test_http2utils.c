@@ -4,7 +4,7 @@
 #include "http2utils.h"
 
 DEFINE_FFF_GLOBALS;
-FAKE_VALUE_FUNC(int, http_read, uint8_t*, int, hstates_t*);
+FAKE_VALUE_FUNC(int, http_read, hstates_t*, uint8_t*, int);
 
 
 #define FFF_FAKES_LIST(FAKE)        \

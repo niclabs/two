@@ -52,7 +52,7 @@ void test_http_write_success(void)
     uint8_t *buf = (uint8_t *)"hola";
     hstates_t hs;
     hs.socket_state = 1;
-    int wr = http_write(buf, 256, &hs);
+    int wr = http_write(&hs, buf, 256);
 
 
     TEST_ASSERT_EQUAL((void *)sock_write, fff.call_history[0]);
@@ -68,7 +68,7 @@ void test_http_write_fail_sock_write(void)
     uint8_t *buf = (uint8_t *)"hola";
     hstates_t hs;
     hs.socket_state = 1;
-    int wr = http_write(buf, 256, &hs);
+    int wr = http_write(&hs, buf, 256);
 
 
     TEST_ASSERT_EQUAL((void *)sock_write, fff.call_history[0]);
@@ -85,7 +85,7 @@ void test_http_write_fail_no_client_or_server(void)
     hstates_t hs;
 
     hs.socket_state = 0;
-    int wr = http_write(buf, 256, &hs);
+    int wr = http_write(&hs, buf, 256);
 
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, wr, "No client connected found");
@@ -100,7 +100,7 @@ void test_http_read_success(void)
     uint8_t *buf = (uint8_t *)malloc(256);
     hstates_t hs;
     hs.socket_state = 1;
-    int rd = http_read(buf, 256, &hs);
+    int rd = http_read(&hs, buf, 256);
 
 
     TEST_ASSERT_EQUAL((void *)sock_read, fff.call_history[0]);
@@ -120,7 +120,7 @@ void test_http_read_fail_sock_read(void)
     uint8_t *buf = (uint8_t *)malloc(256);
     hstates_t hs;
     hs.socket_state = 1;
-    int rd = http_read(buf, 256, &hs);
+    int rd = http_read(&hs, buf, 256);
 
     TEST_ASSERT_EQUAL((void *)sock_read, fff.call_history[0]);
 
@@ -138,7 +138,7 @@ void test_http_read_fail_not_connected_client(void)
     hstates_t hs;
 
     hs.socket_state = 0;
-    int rd = http_read(buf, 256, &hs);
+    int rd = http_read(&hs, buf, 256);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, rd, "No client connected found");
 

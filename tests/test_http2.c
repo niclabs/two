@@ -22,7 +22,7 @@ FAKE_VALUE_FUNC(uint32_t, get_header_list_size,table_pair_t* , uint8_t );//TODO 
  int size = 0;
 
  // Toy write function
-int http_write(uint8_t *bytes, int length, hstates_t *st){
+int http_write(hstates_t *st, uint8_t *bytes, int length){
  if(size+length > MAX_BUFFER_SIZE){
    return -1;
  }
@@ -32,7 +32,7 @@ int http_write(uint8_t *bytes, int length, hstates_t *st){
 }
 
 // Toy read function
-int http_read(uint8_t *bytes, int length, hstates_t *st){
+int http_read(hstates_t *st, uint8_t *bytes, int length){
   if(length > size){
       length = size;
   }
@@ -48,7 +48,7 @@ int read_n_bytes(uint8_t *buff_read, int n, hstates_t *st){
  int read_bytes = 0;
  int incoming_bytes;
  while(read_bytes < n){
-   incoming_bytes = http_read(buff_read+read_bytes, n - read_bytes, st);
+   incoming_bytes = http_read(st, buff_read+read_bytes, n - read_bytes);
    /* incoming_bytes equals -1 means that there was an error*/
    if(incoming_bytes == -1){
      puts("Error in read function");
@@ -267,7 +267,7 @@ void test_read_frame(void){
   uint8_t bf[MAX_BUFFER_SIZE] = { 0 };
   bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
   /*We write 200 zeros for future reading*/
-  int wrc = http_write(bf, 200, &hst);
+  int wrc = http_write(&hst, bf, 200);
   TEST_ASSERT_MESSAGE(wrc == 200, "wrc must be 200.");
   TEST_ASSERT_MESSAGE(size == 200, "size must be 200.");
   int rc = read_frame(bf, &header);
@@ -283,7 +283,7 @@ void test_read_frame_error(void){
   uint8_t bf[MAX_BUFFER_SIZE] = { 0 };
   bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
   /*We write 200 zeros for future reading*/
-  int wrc = http_write(bf, 200, &hst);
+  int wrc = http_write(&hst, bf, 200);
   TEST_ASSERT_MESSAGE(wrc == 200, "wrc must be 200.");
   TEST_ASSERT_MESSAGE(size == 200, "size must be 200.");
   int rc = read_frame(bf, &header);
@@ -362,7 +362,7 @@ void test_h2_server_init_connection(void){
     preface_buff[i] = preface[i];
     i++;
   }
-  int wrc = http_write(preface_buff,24, &server);
+  int wrc = http_write(&server, preface_buff,24);
   TEST_ASSERT_MESSAGE(wrc == 24, "Fake buffer not written");
   TEST_ASSERT_MESSAGE(size == 24, "Fake buffer not written");
   int rc = h2_server_init_connection(&server);
