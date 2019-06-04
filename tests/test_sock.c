@@ -78,6 +78,13 @@ int connect_with_error_fake(int sockfd, const struct sockaddr *addr, socklen_t a
     return -1;
 }
 
+
+int setsockopt_ok_fake(int sockfd, int level, int optname,
+                               const void *optval, socklen_t optlen)
+{
+    return 0;
+}
+
 int setsockopt_with_error_fake(int sockfd, int level, int optname,
                                const void *optval, socklen_t optlen)
 {
@@ -566,6 +573,34 @@ void test_sock_read_with_setsockopt_error(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
 }
 
+void test_sock_read_with_setsockopt_unset_error(void)
+{
+    // initialize socket
+    sock_t sock;
+
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // configure setsockopt fake to fail on second call
+    int (*setsockopt_fakes[])(int, int, int, const void *, socklen_t) = {setsockopt_ok_fake, setsockopt_with_error_fake};
+    SET_CUSTOM_FAKE_SEQ(setsockopt, setsockopt_fakes, 2);
+
+    // read passing a 5 seconds timeout
+    char buf[64];
+    int res = sock_read(&sock, buf, 64, 5);
+
+    TEST_ASSERT_EQUAL_MESSAGE(2, setsockopt_fake.call_count, "setsockopt should be called twice");
+    TEST_ASSERT_EQUAL_MESSAGE(1, read_fake.call_count, "read should be called");
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail if setsockopt fails");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
+}
+
+
+
 void test_sock_read_ok_with_timeout(void)
 {
     // initialize socket
@@ -817,6 +852,7 @@ int main(void)
     UNIT_TEST(test_sock_read_unconnected_socket);
     UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_with_setsockopt_error);
+    UNIT_TEST(test_sock_read_with_setsockopt_unset_error);
 
     // sock_write tests
     UNIT_TEST(test_sock_write_ok);
