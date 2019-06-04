@@ -66,9 +66,9 @@ typedef struct HTTP_STATES {
 /*
  * Write in the socket with the client
  *
+ * @param    hs    http states struct
  * @param    buf   buffer with the data to writte
  * @param    len   buffer length
- * @param    hs    http states struct
  *
  * @return >0   number of bytes written
  * @return 0    if connection was closed on the other side
@@ -79,9 +79,9 @@ int http_write(hstates_t *hs, uint8_t *buf, int len);
 /*
  * Read the data from the socket with the client
  *
+ * @param    hs    http states struct
  * @param    buf   buffer where the data will be write
  * @param    len   buffer length
- * @param    hs    http states struct
  *
  * @return   >0    number of bytes read
  * @return   0     if connection was closed on the other side
@@ -93,17 +93,17 @@ int http_read(hstates_t *hs, uint8_t *buf, int len);
  * Given the content of the request made by the client, this function calls
  * the functions necessary to respond to the request
  *
- * @param     headers   Encoded request
+ * @param     hs    struct with headers information
  *
- * @return    0         the action was successful
- * @return    -1        the action fail
+ * @return    0     the action was successful
+ * @return    -1    the action fail
  */
 int http_receive(hstates_t *hs);
 
 /*
  * Empty the list of headers in hstates_t struct
  *
- * @param    hs        http states struct
+ * @param    hs        struct with headers information
  * @param    index     header index in the headers list to be maintained,
  *                     invalid index to delete the entire table
  *
@@ -112,4 +112,4 @@ int http_receive(hstates_t *hs);
  */
 int http_clear_header_list(hstates_t *hs, int index);
 
-#endif /* HTTP_METHODS_H */
+#endif /* HTTP_BRIDGE_H */
