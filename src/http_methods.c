@@ -81,6 +81,15 @@ int http_init_server(uint16_t port)
         }
 
         while (global_state.connection_state != 1) {
+            if (h2_receive_frame(&global_state) < 1) {
+              break;
+            }
+        }
+
+        global_state.connection_state=0;
+        global_state.socket_state=0;
+        if (sock_destroy(global_state.socket)==-1){
+          WARN("Could not destroy client socket");
         }
     }
 
