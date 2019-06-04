@@ -65,6 +65,13 @@ int listen_with_error_fake(int sockfd, int backlog)
     return -1;
 }
 
+int accept_with_error_fake(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+    errno = EBADF;
+    return -1;
+}
+
+
 int connect_with_error_fake(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
     errno = ECONNREFUSED;
@@ -243,6 +250,7 @@ void test_sock_accept_ok(void)
     // call the function
     int res = sock_accept(&sock_s, &sock_c);
 
+    TEST_ASSERT_EQUAL_MESSAGE(1, accept_fake.call_count, "accept() should be called once");
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept should return 0 on success");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_LISTENING, sock_s.state, "sock_accept should maintain server socket state");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock_c.state, "sock_accept set client state to CONNECTED");
@@ -291,6 +299,30 @@ void test_sock_accept_null_client(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept with null client return ok");
 }
+
+void test_sock_accept_with_accept_error(void)
+{
+    // create socket
+    sock_t sock_s;
+
+    socket_fake.return_val = 123;
+    sock_create(&sock_s);
+
+    // set all return values to OK
+    listen_fake.return_val = 0;
+    sock_listen(&sock_s, 8888);
+    accept_fake.return_val = 0;
+    sock_t sock_c;
+
+    // call the function
+    accept_fake.custom_fake = accept_with_error_fake;
+    int res = sock_accept(&sock_s, &sock_c);
+
+    TEST_ASSERT_EQUAL_MESSAGE(1, accept_fake.call_count, "accept() should be called once");
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_accept should return error value if the call to accept fails");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_accept should set errno on error");
+}
+
 
 /**************************************************************************
  * sock_connect tests
@@ -764,6 +796,7 @@ int main(void)
     UNIT_TEST(test_sock_accept_unitialized_socket);
     UNIT_TEST(test_sock_accept_without_listen);
     UNIT_TEST(test_sock_accept_null_client);
+    UNIT_TEST(test_sock_accept_with_accept_error);
 
     // sock_connect tests
     UNIT_TEST(test_sock_connect_ok);
