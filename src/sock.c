@@ -148,7 +148,7 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
     if (timeout > 0) {
         tv.tv_sec = 0;
         tv.tv_usec = 0;
-        if (timeout > 0 && setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
             return -1;
         }
     }
