@@ -1,22 +1,10 @@
 #include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <pthread.h>
 
 #include "unit.h"
 #include "sock.h"
 #include "fff.h"
-
-/*filename: to simulate user input in test where is needed, user input is redirected 
-to content of this file.*/
-#define filename "mocking_input.txt"
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, socket, int, int, int);
@@ -27,6 +15,7 @@ FAKE_VALUE_FUNC(int, close, int);
 FAKE_VALUE_FUNC(int, connect, int, const struct sockaddr *, socklen_t);
 FAKE_VALUE_FUNC(int, setsockopt, int, int, int, const void *, socklen_t);
 FAKE_VALUE_FUNC(ssize_t, read, int, void *, size_t);
+FAKE_VALUE_FUNC(ssize_t, write, int, void *, size_t);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE) \
@@ -36,21 +25,12 @@ FAKE_VALUE_FUNC(ssize_t, read, int, void *, size_t);
     FAKE(accept)             \
     FAKE(close)              \
     FAKE(setsockopt)         \
-    FAKE(read)         \
+    FAKE(read)               \
+    FAKE(write)              \
     FAKE(connect)
  
 
-// TODO: a better way could be to use unity_fixtures
-// https://github.com/ThrowTheSwitch/Unity/blob/199b13c099034e9a396be3df9b3b1db1d1e35f20/examples/example_2/test/TestProductionCode.c
-
-/*TODO: separate functions and definitions that are used by test and put in another file.*/
-
-/*Struct used by pthread_create, stores arguments of function used by thread.*/
-struct thread_sock
-{
-    uint16_t port;
-};
-
+char global_write_buffer[64];
 void setUp(void)
 {
     /* Register resets */
@@ -58,41 +38,10 @@ void setUp(void)
 
     /* reset common FFF internal structures */
     FFF_RESET_HISTORY();
+
+    // Reset global write buffer
+    memset(global_write_buffer, 0, 64);
 }
-
-/*Function to mock input from user. The content of the file will act as the input*/
-void io_mock(void){
-
-    FILE *file_pointer; 
-	
-	file_pointer = fopen(filename, "w"); 
- 
-	fprintf(file_pointer, "Socket says: hello world\n"); //26 chars
-	
-	fclose(file_pointer); 
-}
-/*Function to erase file that was created in the mock*/
-void erase_io_mock(void){
-    remove(filename);
-}
-
-//FILE* fdopen(int fd, char* opt);// when not commented get this error on make test: /usr/include/stdio.h:265:14: note: previous declaration of ‘fdopen’ was here: extern FILE *fdopen (int __fd, const char *__modes) __THROW __wur;
-
-/*Run client in thread to test functionalities that need connection established.*/
-void *thread_connect(void *arg)
-{
-    struct thread_sock *client = arg;
-    uint16_t port = client->port;
-    socket_fake.return_val = 122;
-    sock_t socket_c;
-    sock_create(&socket_c);
-    int res=sock_connect(&socket_c, "::1", port);
-
-    intptr_t result = (intptr_t)res;
-    sock_destroy(&socket_c);
-    return (void *)result;
-}
-
 
 /**************************************************************************
  * posix socket mocks
@@ -137,6 +86,21 @@ ssize_t read_with_error_fake(int fd, void *buf, size_t count) {
 ssize_t read_zero_bytes_fake(int fd, void *buf, size_t count) {
     return 0;
 }
+
+ssize_t write_ok_fake(int fd, void *buf, size_t count) {
+    // write to global buffer
+    memcpy(global_write_buffer, buf, count);
+    return count;
+}
+
+ssize_t write_with_error_fake(int fd, void *buf, size_t count) {
+    errno = EBADF;
+    return -1;
+}
+
+
+
+//ssize_t write(int fd, const void *buf, size_t count);
 
 /**************************************************************************
  * sock_create tests
@@ -557,63 +521,38 @@ void test_sock_read_ok_with_timeout(void) {
 
 void test_sock_write_ok(void)
 {
-    char buffer[26]="Socket says: hello world\n";
+    // initialize socket
+    sock_t sock;
     socket_fake.return_val = 123;
-
-    struct thread_sock *thread_client;
-    thread_client = malloc(sizeof(thread_client));
-    thread_client->port = 1111;
-    pthread_t client_thread;
-
-    sock_t sock_s;
-    sock_create(&sock_s);
-
-    sock_listen(&sock_s, 1111);
-
-    sock_t sock_c2;
-    sock_create(&sock_c2);
-   
-    pthread_create(&client_thread, NULL, thread_connect, thread_client);
-
-    sock_accept(&sock_s, &sock_c2);
-    int res= sock_write(&sock_c2,buffer,25);
-    free(thread_client);
-    thread_client=NULL;
-    pthread_join(client_thread, NULL);
+    sock_create(&sock);
     
-    TEST_ASSERT_EQUAL_MESSAGE(25, res, "sock_write should have written 25 bytes");
-    TEST_ASSERT_EQUAL_MESSAGE(0, errno, "sock_write should not set errno on success");
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // write to socket
+    write_fake.custom_fake = write_ok_fake;
+    int res = sock_write(&sock, "HELLO WORLD", 12);
+    
+    TEST_ASSERT_GREATER_THAN_MESSAGE(0, write_fake.call_count, "write should be called at least once");
+    TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_write should write 12 bytes");
+    TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", global_write_buffer, "sock_write should write 'HELLO WORLD' to socket");
 }
 
 void test_sock_write_null_socket(void){
-    int res=sock_write(NULL, "Socket says: hello world", 24);
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from NULL socket");
+    int res=sock_write(NULL, "HELLO WORLD", 12);
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when a NULL socket is given");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
 
 void test_sock_write_null_buffer(void) {
+    // initialize socket
+    sock_t sock;
     socket_fake.return_val = 123;
+    sock_create(&sock);
 
-    struct thread_sock *thread_client;
-    thread_client = malloc(sizeof(thread_client));
-    thread_client->port = 1111;
-    pthread_t client_thread;
-
-    sock_t sock_s;
-    sock_create(&sock_s);
-
-    sock_listen(&sock_s, 1111);
-
-    sock_t sock_c2;
-    sock_create(&sock_c2);
-   
-    pthread_create(&client_thread, NULL, thread_connect, thread_client);
-
-    sock_accept(&sock_s, &sock_c2);
-    int res= sock_write(&sock_c2,NULL,24);
-    free(thread_client);
-    thread_client=NULL;
-    pthread_join(client_thread, NULL);
+    // call write with null buffer
+    int res=sock_write(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when buffer is NULL");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
@@ -628,6 +567,50 @@ void test_sock_write_unconnected_socket(void) {
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from unconnected socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
+
+void test_sock_write_zero_bytes(void)
+{
+    // initialize socket
+    sock_t sock;
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+    
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // write to socket
+    write_fake.custom_fake = write_ok_fake;
+    int res = sock_write(&sock, "HELLO WORLD", 0);
+    
+    TEST_ASSERT_EQUAL_MESSAGE(0, write_fake.call_count, "write should not be called when writing zero bytes");
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_write should write 0 bytes");
+}
+
+void test_sock_write_with_error(void)
+{
+    // initialize socket
+    sock_t sock;
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+    
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // write to socket
+    write_fake.custom_fake = write_with_error_fake;
+    int res = sock_write(&sock, "HELLO WORLD", 12);
+    
+    TEST_ASSERT_GREATER_THAN_MESSAGE(0, write_fake.call_count, "write should be called at least once");
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when write returns an error");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
+}
+
+
+/**************************************************************************
+ * sock_destroy tests
+ *************************************************************************/
 
 void test_sock_destroy_ok(void)
 {
@@ -662,8 +645,6 @@ void test_sock_destroy_closed_sock(void)
 
 int main(void)
 {
-    /*CREATE FILE TO MOCK USER INPUT*/
-    io_mock();
     UNIT_TESTS_BEGIN();
 
     // sock_create tests
@@ -708,13 +689,13 @@ int main(void)
     UNIT_TEST(test_sock_write_null_socket);
     UNIT_TEST(test_sock_write_null_buffer);
     UNIT_TEST(test_sock_write_unconnected_socket);
+    UNIT_TEST(test_sock_write_zero_bytes);
+    UNIT_TEST(test_sock_write_with_error);
     
     // sock_destroy tests
     UNIT_TEST(test_sock_destroy_ok);
     UNIT_TEST(test_sock_destroy_null_sock);
     UNIT_TEST(test_sock_destroy_closed_sock);
 
-    /*ERASE FILE TO MOCK USER INPUT*/
-    erase_io_mock();
     return UNIT_TESTS_END();
 }
