@@ -36,7 +36,9 @@ int http_init_server(hstates_t *hs, uint16_t port)
 
     if (sock_listen(hs->server_socket, port) < 0) {
         ERROR("Partial error in server creation");
-        sock_destroy(hs->server_socket);
+        if (sock_destroy(hs->server_socket)==0){
+          hs->server_socket_state=0;
+        }
         return -1;
     }
 
@@ -51,21 +53,22 @@ int http_init_server(hstates_t *hs, uint16_t port)
         hs->connection_state = 1;
 
         if (h2_server_init_connection(hs) < 0) {
+            hs->connection_state = 0;
             ERROR("Problems sending server data");
             return -1;
         }
 
-        while (hs->connection_state != 1) {
+        while (hs->connection_state == 1) {
             if (h2_receive_frame(hs) < 1) {
               break;
             }
         }
 
-        hs->connection_state=0;
-        hs->socket_state=0;
         if (sock_destroy(hs->socket)==-1){
           WARN("Could not destroy client socket");
         }
+        hs->connection_state=0;
+        hs->socket_state=0;
     }
 
     ERROR("Not client found");
@@ -121,7 +124,7 @@ int http_server_destroy(hstates_t *hs)
         return -1;
     }
 
-    hs->server_socket_state = 1;
+    hs->server_socket_state = 0;
 
     printf("Server destroyed\n");
 
@@ -154,7 +157,6 @@ int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 
     printf("Client connected to server\n");
 
-    hs->socket_state = 1;
     hs->connection_state = 1;
 
     if (h2_client_init_connection(hs) < 0) {
