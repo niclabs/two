@@ -48,11 +48,11 @@ int sock_listen(sock_t *server, uint16_t port)
     if (bind(server->fd, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
         return -1;
     }
-    
+
     if (listen(server->fd, SOCK_LISTEN_BACKLOG) < 0) {
         return -1;
     }
-    
+
     server->state = SOCK_LISTENING;
     return 0;
 }
@@ -92,7 +92,7 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
     // convert address string to a socket address
     struct in6_addr address;
     int pton_res = inet_pton(AF_INET6, addr, &address);
-     
+
     // string is not valid INET6 address
     if (pton_res == 0) {
         errno = EINVAL;
@@ -136,8 +136,8 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
     if (timeout > 0) {
         // use select to wait for sock to have reading data
         fd_set read_fds;
-        FD_ZERO(&read_fds); // prepare fd_set
-        FD_SET(sock->fd, &read_fds); // add sock->fd to fd_set
+        FD_ZERO(&read_fds);             // prepare fd_set
+        FD_SET(sock->fd, &read_fds);    // add sock->fd to fd_set
 
         struct timeval tv;
         tv.tv_sec = timeout;
@@ -150,7 +150,7 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
         else if (res != 1) { // timeout reached
             errno = ETIME;
             return -1;
-        } 
+        }
     }
 
     // read from socket
@@ -173,10 +173,10 @@ int sock_write(sock_t *sock, char *buf, int len)
     ssize_t bytes_written_total = 0;
     const char *p = buf;
 
-    /** 
-     * Note that a successful write() may transfer fewer than count bytes. 
-     * Is expected that when all bytes are transfered, there's no length 
-     * left of the message and/or there's no information left in the 
+    /**
+     * Note that a successful write() may transfer fewer than count bytes.
+     * Is expected that when all bytes are transfered, there's no length
+     * left of the message and/or there's no information left in the
      * buffer.
      */
     while (len > 0) {
