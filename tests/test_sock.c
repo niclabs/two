@@ -735,7 +735,6 @@ void test_sock_destroy_closed_sock(void)
 {
     // initialize socket
     sock_t sock;
-
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -748,9 +747,8 @@ void test_sock_destroy_closed_sock(void)
     sock_destroy(&sock);
 
     // Call destroy again
-    sock_destroy(&sock);
-
     int res = sock_destroy(&sock);
+
     TEST_ASSERT_EQUAL_MESSAGE(1, close_fake.call_count, "close should be called only once");
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destroy should fail when socket is CLOSED");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_destroy should set errno on error");
