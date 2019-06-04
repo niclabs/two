@@ -628,9 +628,12 @@ void test_sock_write_null_buffer(void)
 {
     // initialize socket
     sock_t sock;
-
     socket_fake.return_val = 123;
     sock_create(&sock);
+    
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
 
     // call write with null buffer
     int res = sock_write(&sock, NULL, 0);
