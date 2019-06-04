@@ -55,10 +55,45 @@ int buffer_copy_fake_custom(uint8_t* dest, uint8_t* orig, int size){
 }
 
 void test_read_headers_payload(void){
+    /*expected*/
+    frame_header_t expected_frame_header;
+    expected_frame_header.type = 0x1;
+    expected_frame_header.flags = 0x4;
+    expected_frame_header.stream_id = 1;
+    expected_frame_header.reserved = 0;
+    expected_frame_header.length = 9;
+    headers_payload_t expected_headers_payload;
+    uint8_t expected_headers_block_fragment[64] = {0,12,34,5,234,7,34,98,9};
+    //uint8_t expected_padding[32] = {};
+    expected_headers_payload.header_block_fragment = expected_headers_block_fragment;
+    //expected_headers_payload.padding = expected_padding;
 
+    //fill the buffer
+    uint8_t read_buffer[20] = {0,0,9/*length 3 bytes*/,0x1/*type*/,0x4/*flags(end_headers)*/,0,0,0,1/*reserved bit+stream_id*/,0,12,34,5,234,7,34,98,9/*payload*/};
+
+    /*result*/
+    frame_header_t frame_header;
+    headers_payload_t headers_payload;
+    uint8_t headers_block_fragment[64];
+    uint8_t padding[32];
+    int rc = read_headers_payload(read_buffer, &frame_header, &headers_payload, headers_block_fragment, padding);
+
+    TEST_ASSERT_EQUAL(18,rc);//se leyeron 18 bytes
+    TEST_ASSERT_EQUAL(expected_frame_header.type,frame_header.type);
+    TEST_ASSERT_EQUAL(expected_frame_header.flags,frame_header.flags);
+    TEST_ASSERT_EQUAL(expected_frame_header.stream_id,frame_header.stream_id);
+    TEST_ASSERT_EQUAL(expected_frame_header.reserved,frame_header.reserved);
+    TEST_ASSERT_EQUAL(expected_frame_header.length,frame_header.length);
+
+    for(int i =0; i<expected_frame_header.length; i++) {
+        TEST_ASSERT_EQUAL(expected_headers_payload.header_block_fragment[i], headers_payload.header_block_fragment[i]);
+    }
 }
-void test_read_continuation_payload(void){
+//int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload);
+//int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, table_pair_t* header_list, uint8_t table_index);
 
+void test_read_continuation_payload(void){
+//int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment);
 }
 
 
