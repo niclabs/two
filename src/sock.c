@@ -158,30 +158,32 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
 
 int sock_write(sock_t *sock, char *buf, int len)
 {
-    if (sock == NULL || sock->state != SOCK_CONNECTED || (sock->fd < 0)) {
+    if (sock == NULL || sock->state != SOCK_CONNECTED) {
         errno = EINVAL;
-        DEBUG("Error in sock_write, socket must be valid and connected.");
         return -1;
     }
 
     if (buf == NULL) {
         errno = EINVAL;
-        DEBUG("Error in sock_write, buffer must not be NULL");
         return -1;
     }
+
     ssize_t bytes_written;
     ssize_t bytes_written_total = 0;
     const char *p = buf;
-    /*Note that a successful write() may transfer fewer than count bytes. Is expected that when
-       all bytes are transfered, there's no length left of the message and/or there's no information
-       left in the buffer.*/
+
+    /** 
+     * Note that a successful write() may transfer fewer than count bytes. 
+     * Is expected that when all bytes are transfered, there's no length 
+     * left of the message and/or there's no information left in the 
+     * buffer.
+     */
     while (len > 0) {
         if (p == NULL) {
             break;
         }
         bytes_written = write(sock->fd, p, len);
         if (bytes_written < 0) {
-            ERROR("Error writing on socket");
             return -1;
         }
         p += bytes_written;
