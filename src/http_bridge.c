@@ -10,8 +10,8 @@
 
 #include <unistd.h>
 
-#include "http_methods_bridge.h"
-#include "http_methods.h"
+#include "http_bridge.h"
+#include "http.h"
 #include "logging.h"
 
 

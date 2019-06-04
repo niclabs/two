@@ -10,7 +10,7 @@
 #include <signal.h>
 
 #include "logging.h"
-#include "http_methods.h"
+#include "http.h"
 
 #define PORT (8888)
 

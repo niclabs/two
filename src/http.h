@@ -2,10 +2,10 @@
    This API contains the HTTP methods to be used by
    HTTP/2
  */
-#ifndef HTTP_METHODS_H
-#define HTTP_METHODS_H
+#ifndef HTTP_H
+#define HTTP_H
 
-#include "http_methods_bridge.h"
+#include "http_bridge.h"
 
 
 
@@ -87,4 +87,4 @@ int http_client_disconnect(hstates_t *hs);
 char *http_get_header(hstates_t *hs, char *header);
 
 
-#endif /* HTTP_METHODS_H */
+#endif /* HTTP_H */

@@ -1,5 +1,5 @@
 #include "http2utils.h"
-#include "http_methods_bridge.h"
+#include "http_bridge.h"
 
 uint8_t buffer[MAX_BUFFER_SIZE];
 

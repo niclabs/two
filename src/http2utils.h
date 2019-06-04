@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 #include "frames.h"
-#include "http_methods_bridge.h"
+#include "http_bridge.h"
 
 
 /*Enumerator for settings parameters*/

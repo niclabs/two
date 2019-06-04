@@ -3,8 +3,8 @@
 #include "sock.h"
 
 #include "fff.h"
-#include "http_methods.h"
-#include "http_methods_bridge.h"
+#include "http.h"
+#include "http_bridge.h"
 
 
 #include <stdio.h>

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "utils.h"
-#include "http_methods_bridge.h"
+#include "http_bridge.h"
 #include "logging.h"
 #include "hpack.h"
 
