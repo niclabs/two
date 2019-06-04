@@ -98,9 +98,11 @@ ssize_t write_with_error_fake(int fd, void *buf, size_t count) {
     return -1;
 }
 
+int close_with_error_fake(int fd) {
+    errno = EBADF;
+    return -1;
+}
 
-
-//ssize_t write(int fd, const void *buf, size_t count);
 
 /**************************************************************************
  * sock_create tests
@@ -614,33 +616,76 @@ void test_sock_write_with_error(void)
 
 void test_sock_destroy_ok(void)
 {
+    // initialize socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
+
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // call destroy on connected socket
     close_fake.return_val = 0;
     int res = sock_destroy(&sock);
+
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_destroy should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(1, close_fake.call_count, "close should be called only once");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_CLOSED, sock.state, "sock_destroy set sock state to CLOSED");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, sock.fd, "sock_destroy should reset file descriptor");
 }
 
 void test_sock_destroy_null_sock(void)
 {
-    close_fake.return_val = -1;
     int res = sock_destroy(NULL);
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is NULL");
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destroy should fail when socket is NULL");
+    TEST_ASSERT_EQUAL_MESSAGE(0, close_fake.call_count, "close should never be called");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_destroy should set errno on error");
 }
 
 void test_sock_destroy_closed_sock(void)
 {
+    // initialize socket
     sock_t sock;
     socket_fake.return_val = 123;
     sock_create(&sock);
+
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // Destroy socket
+    close_fake.return_val = 0;
     sock_destroy(&sock);
-    close_fake.return_val = -1;
+    
+    // Call destroy again
+    sock_destroy(&sock);
+
     int res = sock_destroy(&sock);
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destrroy should fail when socket is CLOSED");
+    TEST_ASSERT_EQUAL_MESSAGE(1, close_fake.call_count, "close should be called only once");
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destroy should fail when socket is CLOSED");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_destroy should set errno on error");
+}
+
+void test_sock_destroy_with_close_error(void)
+{
+    // initialize socket
+    sock_t sock;
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // call destroy on connected socket
+    close_fake.custom_fake = close_with_error_fake;
+    int res = sock_destroy(&sock);
+
+    TEST_ASSERT_EQUAL_MESSAGE(1, close_fake.call_count, "close should be called only once");
+    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destroy should fail when close() fails");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_destroy should set errno on error");
+    TEST_ASSERT_EQUAL_MESSAGE(sock.state, SOCK_CONNECTED, "sock_destroy maintain sock state when close() fails");
 }
 
 int main(void)
@@ -696,6 +741,7 @@ int main(void)
     UNIT_TEST(test_sock_destroy_ok);
     UNIT_TEST(test_sock_destroy_null_sock);
     UNIT_TEST(test_sock_destroy_closed_sock);
+    UNIT_TEST(test_sock_destroy_with_close_error);
 
     return UNIT_TESTS_END();
 }
