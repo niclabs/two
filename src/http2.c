@@ -401,10 +401,22 @@ int h2_receive_frame(hstates_t *st){
                 return -1;
             }
 
+            //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
+            if(is_flag_set(header.flags,HEADERS_END_STREAM_FLAG)){
+                st->h2s.received_end_stream = 1;
+
+            }
+
             //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
             if(is_flag_set(header.flags,HEADERS_END_HEADERS_FLAG)){
                 rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
-                st->h2s.waiting_for_end_headers_flag = 0;
+                st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
+
+                if(st->h2s.received_end_stream == 1){
+                    st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+                    st->h2s.received_end_stream = 0;//RESET TO 0
+                }
+
             }
             uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
             uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
@@ -416,9 +428,6 @@ int h2_receive_frame(hstates_t *st){
             //TODO pass to upper layer ?
 
 
-            if(is_flag_set(header.flags,HEADERS_END_STREAM_FLAG)){
-              st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
-            }
         }
 
             WARN("TODO: Header Frame. Not implemented yet.");
@@ -491,8 +500,12 @@ int h2_receive_frame(hstates_t *st){
 
 
             if(is_flag_set(header.flags, CONTINUATION_END_HEADERS_FLAG)){
-              rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
-              st->h2s.waiting_for_end_headers_flag = 0;
+                rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
+                st->h2s.waiting_for_end_headers_flag = 0;
+                if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN hEASDER fRAME, THEN CLOSE THE STREAM
+                    st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+                    st->h2s.received_end_stream = 0;//RESET TO 0
+                }
             }
             uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
             uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
