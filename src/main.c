@@ -15,14 +15,15 @@
 #define PORT (8888)
 
 //sock_t server_sock;
+hstates_t http_global_state;
 
 void cleanup(int signal)
 {
     (void)signal;
 
     INFO("Ctrl-C received. Terminating");
-    http_client_disconnect();
-    http_server_destroy();
+    http_client_disconnect(&http_global_state);
+    http_server_destroy(&http_global_state);
 }
 
 int main(int argc, char **argv){
@@ -40,7 +41,7 @@ int main(int argc, char **argv){
         }
 
         uint16_t port = atoi(argv[2]);
-        http_init_server(port);
+        http_init_server(&http_global_state, port);
     }
     else if (strcmp(argv[1], "client") == 0)
     {
@@ -52,7 +53,7 @@ int main(int argc, char **argv){
         }
 
         uint16_t port = atoi(argv[2]);
-        http_client_connect(port, argv[3]);
+        http_client_connect(&http_global_state, port, argv[3]);
     }
     else
     {

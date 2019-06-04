@@ -18,7 +18,7 @@
  * @return   0       Server was successfully initialized
  * @return   -1      Server wasn't initialized
  */
-int http_init_server(uint16_t port);
+int http_init_server(hstates_t *hs, uint16_t port);
 
 
 /*
@@ -27,7 +27,7 @@ int http_init_server(uint16_t port);
  * @return   0       Server was successfully destroyed
  * @return   -1      Server wasn't destroyed
  */
-int http_server_destroy(void);
+int http_server_destroy(hstates_t *hs);
 
 
 /*
@@ -51,7 +51,7 @@ int http_set_function_to_path(char *callback, char *path);
  * @return   0      successfully added pair
  * @return   -1     There was an error
  */
-int http_set_header(char *name, char *value, hstates_t *hs);
+int http_set_header(hstates_t *hs, char *name, char *value);
 
 
 
@@ -66,7 +66,7 @@ int http_set_header(char *name, char *value, hstates_t *hs);
  * @return   0      successfully started connection
  * @return   -1     the connection fail
  */
-int http_client_connect(uint16_t port, char *ip);
+int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
 
 /*
  * Stop the connection between client and server
@@ -74,7 +74,7 @@ int http_client_connect(uint16_t port, char *ip);
  * @return    0    connection was stopped
  * @return    -1   failed to stop connection
  */
-int http_client_disconnect(void);
+int http_client_disconnect(hstates_t *hs);
 
 /*
  * Search by a value of a header in the header list
@@ -84,7 +84,7 @@ int http_client_disconnect(void);
  *
  * @return              value finded
  */
-char *http_get_header(char *header, hstates_t *hs);
+char *http_get_header(hstates_t *hs, char *header);
 
 
 #endif /* HTTP_METHODS_H */

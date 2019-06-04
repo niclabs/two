@@ -37,17 +37,15 @@ struct server_s {
 
 struct server_s server;
 struct client_s client;
-hstates_t global_state;
-
 
 /************************************Server************************************/
 
 
-int http_init_server(uint16_t port)
+int http_init_server(hstates_t *hs, uint16_t port)
 {
-    global_state.socket_state = 0;
-    global_state.table_count = 0;
-    global_state.connection_state = 0;
+    hs->socket_state = 0;
+    hs->table_count = 0;
+    hs->connection_state = 0;
 
     client.state = NOT_CLIENT;
 
@@ -71,24 +69,24 @@ int http_init_server(uint16_t port)
 
         printf("Client found and connected\n");
 
-        global_state.socket = &client.socket;
-        global_state.socket_state = 1;
-        global_state.connection_state = 1;
+        hs->socket = &client.socket;
+        hs->socket_state = 1;
+        hs->connection_state = 1;
 
-        if (h2_server_init_connection(&global_state) < 0) {
+        if (h2_server_init_connection(hs) < 0) {
             ERROR("Problems sending server data");
             return -1;
         }
 
-        while (global_state.connection_state != 1) {
-            if (h2_receive_frame(&global_state) < 1) {
+        while (hs->connection_state != 1) {
+            if (h2_receive_frame(hs) < 1) {
               break;
             }
         }
 
-        global_state.connection_state=0;
-        global_state.socket_state=0;
-        if (sock_destroy(global_state.socket)==-1){
+        hs->connection_state=0;
+        hs->socket_state=0;
+        if (sock_destroy(hs->socket)==-1){
           WARN("Could not destroy client socket");
         }
     }
@@ -107,7 +105,7 @@ int http_set_function_to_path(char *callback, char *path)
 }
 
 
-int http_set_header(char *name, char *value, hstates_t *hs)
+int http_set_header(hstates_t *hs, char *name, char *value)
 {
     int i = hs->table_count;
 
@@ -125,21 +123,21 @@ int http_set_header(char *name, char *value, hstates_t *hs)
 }
 
 
-int http_server_destroy(void)
+int http_server_destroy(hstates_t *hs)
 {
     if (server.state == NOT_SERVER) {
         WARN("Server not found");
         return -1;
     }
 
-    if (client.state == CONNECTED || global_state.socket_state == 1) {
+    if (client.state == CONNECTED || hs->socket_state == 1) {
         if (sock_destroy(&client.socket) < 0) {
             WARN("Client still connected");
         }
     }
 
-    global_state.socket_state = 0;
-    global_state.connection_state = 0;
+    hs->socket_state = 0;
+    hs->connection_state = 0;
 
     if (sock_destroy(&server.socket) < 0) {
         ERROR("Error in server disconnection");
@@ -157,11 +155,11 @@ int http_server_destroy(void)
 /************************************Client************************************/
 
 
-int http_client_connect(uint16_t port, char *ip)
+int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 {
-    global_state.socket_state = 0;
-    global_state.table_count = 0;
-    global_state.connection_state = 0;
+    hs->socket_state = 0;
+    hs->table_count = 0;
+    hs->connection_state = 0;
 
     struct client_s *cl = &client;
     server.state = NOT_SERVER;
@@ -182,11 +180,11 @@ int http_client_connect(uint16_t port, char *ip)
 
     cl->state = CONNECTED;
 
-    global_state.socket = &cl->socket;
-    global_state.socket_state = 1;
-    global_state.connection_state = 1;
+    hs->socket = &cl->socket;
+    hs->socket_state = 1;
+    hs->connection_state = 1;
 
-    if (h2_client_init_connection(&global_state) < 0) {
+    if (h2_client_init_connection(hs) < 0) {
         ERROR("Problems sending client data");
         return -1;
     }
@@ -195,7 +193,7 @@ int http_client_connect(uint16_t port, char *ip)
 }
 
 
-char *http_get_header(char *header, hstates_t *hs)
+char *http_get_header(hstates_t *hs, char *header)
 {
     int i = hs->table_count;
 
@@ -217,9 +215,9 @@ char *http_get_header(char *header, hstates_t *hs)
 }
 
 
-int http_client_disconnect(void)
+int http_client_disconnect(hstates_t *hs)
 {
-    if (client.state == CONNECTED || global_state.socket_state == 1) {
+    if (client.state == CONNECTED || hs->socket_state == 1) {
         if (sock_destroy(&client.socket) < 0) {
             ERROR("Error in client disconnection");
             return -1;
@@ -228,8 +226,8 @@ int http_client_disconnect(void)
         printf("Client disconnected\n");
     }
 
-    global_state.socket_state = 0;
-    global_state.connection_state = 0;
+    hs->socket_state = 0;
+    hs->connection_state = 0;
     client.state = NOT_CLIENT;
 
     return 0;
