@@ -131,39 +131,28 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
         return -1;
     }
 
-    if (timeout < 0) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    /*Code below is needed to set timeout to function*/
-    fd_set set;
+    // set timeout
     struct timeval tv;
-
-    FD_ZERO(&set);
-    FD_SET(sock->fd, &set);
-
-    tv.tv_sec = 0;
-    tv.tv_usec = timeout;
-
-    int rv = select((sock->fd) + 1, &set, NULL, NULL, &tv);
-
-    if (rv < 0) {
-        if (rv == 0) {
-            errno = ETIMEDOUT;
-            DEBUG("Timeout reached");
+    if (timeout > 0) {
+        tv.tv_sec = timeout;
+        tv.tv_usec = 0;
+        if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+            return -1; // TODO: should we return, or continue ignoring timeout?
         }
-        else {
-            ERROR("Error setting timeout");
-        }
-        return -1;
     }
-    /*----------------------------------------------*/
+
+    // read from socket, will return -1 if timeout is reached without reading any bytes
     ssize_t bytes_read = read(sock->fd, buf, len);
-    if (bytes_read < 0) {
-        ERROR("Error reading from socket");
-        return -1;
+
+    // unset timeout if set
+    if (timeout > 0) {
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        if (timeout > 0 && setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+            return -1;
+        }
     }
+
     return bytes_read;
 }
 
