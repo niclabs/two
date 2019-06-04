@@ -28,7 +28,7 @@ FAKE_VALUE_FUNC(ssize_t, write, int, void *, size_t);
     FAKE(read)               \
     FAKE(write)              \
     FAKE(connect)
- 
+
 
 char global_write_buffer[64];
 void setUp(void)
@@ -46,59 +46,70 @@ void setUp(void)
 /**************************************************************************
  * posix socket mocks
  *************************************************************************/
-int socket_with_error_fake(int domain, int type, int protocol) {
+int socket_with_error_fake(int domain, int type, int protocol)
+{
     errno = EAFNOSUPPORT;
     return -1;
 }
 
 int bind_with_error_fake(int sockfd, const struct sockaddr *addr,
-                 socklen_t addrlen) {
+                         socklen_t addrlen)
+{
     errno = ENOTSOCK;
     return -1;
 }
 
-int listen_with_error_fake(int sockfd, int backlog) {
+int listen_with_error_fake(int sockfd, int backlog)
+{
     errno = EOPNOTSUPP;
     return -1;
 }
 
-int connect_with_error_fake(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+int connect_with_error_fake(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+{
     errno = ECONNREFUSED;
     return -1;
 }
 
 int setsockopt_with_error_fake(int sockfd, int level, int optname,
-                 const void *optval, socklen_t optlen) {
+                               const void *optval, socklen_t optlen)
+{
     errno = EBADF;
     return -1;
 }
 
-ssize_t read_ok_fake(int fd, void *buf, size_t count) {
-    strncpy(buf, "HELLO WORLD", 12); 
+ssize_t read_ok_fake(int fd, void *buf, size_t count)
+{
+    strncpy(buf, "HELLO WORLD", 12);
     return 12;
 }
 
-ssize_t read_with_error_fake(int fd, void *buf, size_t count) {
+ssize_t read_with_error_fake(int fd, void *buf, size_t count)
+{
     errno = EAGAIN; // timeout reached
     return -1;
 }
 
-ssize_t read_zero_bytes_fake(int fd, void *buf, size_t count) {
+ssize_t read_zero_bytes_fake(int fd, void *buf, size_t count)
+{
     return 0;
 }
 
-ssize_t write_ok_fake(int fd, void *buf, size_t count) {
+ssize_t write_ok_fake(int fd, void *buf, size_t count)
+{
     // write to global buffer
     memcpy(global_write_buffer, buf, count);
     return count;
 }
 
-ssize_t write_with_error_fake(int fd, void *buf, size_t count) {
+ssize_t write_with_error_fake(int fd, void *buf, size_t count)
+{
     errno = EBADF;
     return -1;
 }
 
-int close_with_error_fake(int fd) {
+int close_with_error_fake(int fd)
+{
     errno = EBADF;
     return -1;
 }
@@ -111,6 +122,7 @@ int close_with_error_fake(int fd) {
 void test_sock_create_ok(void)
 {
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_OPENED, sock.state, "sock_create should leave sock in 'OPENED' state");
@@ -130,6 +142,7 @@ void test_sock_create_null_sock(void)
 void test_sock_create_fail_to_create_socket(void)
 {
     sock_t sock;
+
     socket_fake.custom_fake = socket_with_error_fake;
     int res = sock_create(&sock);
 
@@ -145,6 +158,7 @@ void test_sock_create_fail_to_create_socket(void)
 void test_sock_listen_unitialized_socket(void)
 {
     sock_t sock;
+
     listen_fake.return_val = -1;
     int res = sock_listen(&sock, 8888);
 
@@ -163,6 +177,7 @@ void test_sock_listen_null_socket(void)
 void test_sock_listen_ok(void)
 {
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -176,10 +191,11 @@ void test_sock_listen_error_in_bind(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
-    // set error in bind    
+    // set error in bind
     bind_fake.custom_fake = bind_with_error_fake;
 
     // call function
@@ -192,6 +208,7 @@ void test_sock_listen_error_in_listen(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -213,6 +230,7 @@ void test_sock_accept_ok(void)
 {
     // create socket
     sock_t sock_s;
+
     socket_fake.return_val = 123;
     sock_create(&sock_s);
 
@@ -245,6 +263,7 @@ void test_sock_accept_without_listen(void)
 {
     // create socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -259,6 +278,7 @@ void test_sock_accept_null_client(void)
 {
     // create socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -280,6 +300,7 @@ void test_sock_connect_ok(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -317,6 +338,7 @@ void test_sock_connect_null_address(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -331,6 +353,7 @@ void test_sock_connect_ipv4_address(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -345,6 +368,7 @@ void test_sock_connect_bad_address(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -355,9 +379,11 @@ void test_sock_connect_bad_address(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
 
-void test_sock_connect_with_connection_error(void) {
+void test_sock_connect_with_connection_error(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -376,9 +402,11 @@ void test_sock_connect_with_connection_error(void) {
  * sock_read tests
  *************************************************************************/
 
-void test_sock_read_ok(void){
+void test_sock_read_ok(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -389,15 +417,17 @@ void test_sock_read_ok(void){
     char buf[64];
     read_fake.custom_fake = read_ok_fake;
     int res = sock_read(&sock, buf, 64, 0);
-    
+
     TEST_ASSERT_EQUAL_MESSAGE(0, setsockopt_fake.call_count, "setsockopt should not be called if timeout is 0");
     TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_read should return 12 bytes");
     TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", buf, "sock_read should write 'HELLO WORLD' to buf");
 }
 
-void test_sock_read_ok_zero_bytes(void){
+void test_sock_read_ok_zero_bytes(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -408,25 +438,29 @@ void test_sock_read_ok_zero_bytes(void){
     char buf[64];
     read_fake.custom_fake = read_zero_bytes_fake;
     int res = sock_read(&sock, buf, 64, 0);
-    
+
     TEST_ASSERT_EQUAL_MESSAGE(0, setsockopt_fake.call_count, "setsockopt should not be called if timeout is 0");
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_read should return 0 bytes");
 }
 
 
-void test_sock_read_null_socket(void){
+void test_sock_read_null_socket(void)
+{
     char buf[64];
-    int res=sock_read(NULL, buf, 64, 0);
+    int res = sock_read(NULL, buf, 64, 0);
+
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from NULL socket");
     TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set 'invalid parameter' error number");
 }
 
-void test_sock_read_unconnected_socket(void) {
+void test_sock_read_unconnected_socket(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-   
+
     // read without performing sock_connect()
     char buf[64];
     int res = sock_read(&sock, buf, 64, 0);
@@ -435,12 +469,14 @@ void test_sock_read_unconnected_socket(void) {
     TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set 'invalid parameter' error number");
 }
 
-void test_sock_read_null_buffer(void) {
+void test_sock_read_null_buffer(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -452,12 +488,14 @@ void test_sock_read_null_buffer(void) {
     TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set 'invalid parameter' error number");
 }
 
-void test_sock_read_ok_bad_timeout(void) {
+void test_sock_read_ok_bad_timeout(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -473,12 +511,14 @@ void test_sock_read_ok_bad_timeout(void) {
     TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", buf, "sock_read should write 'HELLO WORLD' to buf");
 }
 
-void test_sock_read_with_setsockopt_error(void) {
+void test_sock_read_with_setsockopt_error(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -494,12 +534,14 @@ void test_sock_read_with_setsockopt_error(void) {
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
 }
 
-void test_sock_read_ok_with_timeout(void) {
+void test_sock_read_ok_with_timeout(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -525,9 +567,10 @@ void test_sock_write_ok(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -535,33 +578,39 @@ void test_sock_write_ok(void)
     // write to socket
     write_fake.custom_fake = write_ok_fake;
     int res = sock_write(&sock, "HELLO WORLD", 12);
-    
+
     TEST_ASSERT_GREATER_THAN_MESSAGE(0, write_fake.call_count, "write should be called at least once");
     TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_write should write 12 bytes");
     TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", global_write_buffer, "sock_write should write 'HELLO WORLD' to socket");
 }
 
-void test_sock_write_null_socket(void){
-    int res=sock_write(NULL, "HELLO WORLD", 12);
+void test_sock_write_null_socket(void)
+{
+    int res = sock_write(NULL, "HELLO WORLD", 12);
+
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when a NULL socket is given");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
 
-void test_sock_write_null_buffer(void) {
+void test_sock_write_null_buffer(void)
+{
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
     // call write with null buffer
-    int res=sock_write(&sock, NULL, 0);
+    int res = sock_write(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when buffer is NULL");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
 
-void test_sock_write_unconnected_socket(void) {
+void test_sock_write_unconnected_socket(void)
+{
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
     int res = sock_write(&sock, "Socket says: hello world", 24);
@@ -574,9 +623,10 @@ void test_sock_write_zero_bytes(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -584,7 +634,7 @@ void test_sock_write_zero_bytes(void)
     // write to socket
     write_fake.custom_fake = write_ok_fake;
     int res = sock_write(&sock, "HELLO WORLD", 0);
-    
+
     TEST_ASSERT_EQUAL_MESSAGE(0, write_fake.call_count, "write should not be called when writing zero bytes");
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_write should write 0 bytes");
 }
@@ -593,9 +643,10 @@ void test_sock_write_with_error(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
-    
+
     // set socket to connected state
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
@@ -603,7 +654,7 @@ void test_sock_write_with_error(void)
     // write to socket
     write_fake.custom_fake = write_with_error_fake;
     int res = sock_write(&sock, "HELLO WORLD", 12);
-    
+
     TEST_ASSERT_GREATER_THAN_MESSAGE(0, write_fake.call_count, "write should be called at least once");
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when write returns an error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
@@ -618,6 +669,7 @@ void test_sock_destroy_ok(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -638,6 +690,7 @@ void test_sock_destroy_ok(void)
 void test_sock_destroy_null_sock(void)
 {
     int res = sock_destroy(NULL);
+
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_destroy should fail when socket is NULL");
     TEST_ASSERT_EQUAL_MESSAGE(0, close_fake.call_count, "close should never be called");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_destroy should set errno on error");
@@ -647,6 +700,7 @@ void test_sock_destroy_closed_sock(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -657,7 +711,7 @@ void test_sock_destroy_closed_sock(void)
     // Destroy socket
     close_fake.return_val = 0;
     sock_destroy(&sock);
-    
+
     // Call destroy again
     sock_destroy(&sock);
 
@@ -671,6 +725,7 @@ void test_sock_destroy_with_close_error(void)
 {
     // initialize socket
     sock_t sock;
+
     socket_fake.return_val = 123;
     sock_create(&sock);
 
@@ -696,20 +751,20 @@ int main(void)
     UNIT_TEST(test_sock_create_ok);
     UNIT_TEST(test_sock_create_fail_to_create_socket);
     UNIT_TEST(test_sock_create_null_sock);
-    
+
     // sock_listen tests
     UNIT_TEST(test_sock_listen_ok);
     UNIT_TEST(test_sock_listen_unitialized_socket);
     UNIT_TEST(test_sock_listen_error_in_bind);
     UNIT_TEST(test_sock_listen_error_in_listen);
     UNIT_TEST(test_sock_listen_null_socket);
-    
+
     // sock_accept tests
     UNIT_TEST(test_sock_accept_ok);
     UNIT_TEST(test_sock_accept_unitialized_socket);
     UNIT_TEST(test_sock_accept_without_listen);
     UNIT_TEST(test_sock_accept_null_client);
-    
+
     // sock_connect tests
     UNIT_TEST(test_sock_connect_ok);
     UNIT_TEST(test_sock_connect_null_client);
@@ -718,7 +773,7 @@ int main(void)
     UNIT_TEST(test_sock_connect_ipv4_address);
     UNIT_TEST(test_sock_connect_bad_address);
     UNIT_TEST(test_sock_connect_with_connection_error);
-    
+
     // sock_read tests
     UNIT_TEST(test_sock_read_ok);
     UNIT_TEST(test_sock_read_ok_zero_bytes);
@@ -728,7 +783,7 @@ int main(void)
     UNIT_TEST(test_sock_read_unconnected_socket);
     UNIT_TEST(test_sock_read_null_buffer);
     UNIT_TEST(test_sock_read_with_setsockopt_error);
-    
+
     // sock_write tests
     UNIT_TEST(test_sock_write_ok);
     UNIT_TEST(test_sock_write_null_socket);
@@ -736,7 +791,7 @@ int main(void)
     UNIT_TEST(test_sock_write_unconnected_socket);
     UNIT_TEST(test_sock_write_zero_bytes);
     UNIT_TEST(test_sock_write_with_error);
-    
+
     // sock_destroy tests
     UNIT_TEST(test_sock_destroy_ok);
     UNIT_TEST(test_sock_destroy_null_sock);
