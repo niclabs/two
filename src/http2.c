@@ -197,16 +197,36 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 
 /*
 * Function: check_headers_stream_condition
-* Checks the stream conditionals and return a value depending on the current
-* stream state and id, and the stream_id given in the header of the frame
+* Checks the incoming frame stream_id and the current stream stream_id and
+* verifies its correctness. Creates a new stream if needed.
 * Input: -> st: hstates_t struct where stream variables are stored
 *         -> header: header of the incoming frame
-* Ouput:
+* Ouput: 0 if no errors were found, -1 if protocol error was found, -2 if
+* stream closed error was found.
 */
 int check_headers_stream_condition(hstates_t *st, frame_header_t *header){
-  (void) st;
-  (void) header;
-  return 0;
+  // Check if stream is not created or previous one is closed
+  if(st->h2s.current_stream.stream_id == 0 ||
+      (st->h2s.current_stream.state == STREAM_CLOSED &&
+      st->h2s.current_stream.stream_id < header->stream_id)){
+      //we create a new stream
+      st->h2s.current_stream.stream_id = header->stream_id;
+      st->h2s.current_stream.state = STREAM_OPEN;
+      return 0;
+  }
+  // Stream id mismatch
+  else if(header->stream_id != st->h2s.current_stream.stream_id){
+      //protocol error
+      return -1;
+  }
+  // Current stream is not open
+  else if(st->h2s.current_stream.state != STREAM_OPEN){
+      //stream closed error
+      return -2;
+  }
+  else{
+    return 0;
+  }
 }
 
 /*----------------------API methods-------------------*/
@@ -365,22 +385,13 @@ int h2_receive_frame(hstates_t *st){
             WARN("TODO: Data Frame. Not implemented yet.");
             return -1;
         case HEADERS_TYPE:{//Header
-            // Check if stream is not created or previous one is closed
-            if(st->h2s.current_stream.stream_id == 0 ||
-                (st->h2s.current_stream.state == STREAM_CLOSED &&
-                st->h2s.current_stream.stream_id < header.stream_id)){
-                //we create a new stream
-                st->h2s.current_stream.stream_id = header.stream_id;
-                st->h2s.current_stream.state = STREAM_OPEN;
+            // returns -1 if protocol error was found, -2 if stream closed error, 0 if no errors found
+            rc = check_headers_stream_condition(st, &header);
+            if(rc == -1){
+              ERROR("Stream ids do not match. PROTOCOL ERROR.");
+              return -1;
             }
-            // Stream id mismatch
-            else if(header.stream_id != st->h2s.current_stream.stream_id){
-                ERROR("Stream ids do not match. PROTOCOL ERROR.");
-                //Send reject error. Write error to HTTP. Check if error is relevant to HTTP or HTTP2
-                return -1;
-            }
-            // Current stream is not open
-            else if(st->h2s.current_stream.state != STREAM_OPEN){
+            else if(rc == -2){
               ERROR("Current stream is not open. STREAM CLOSED ERROR");
               return -1;
             }
