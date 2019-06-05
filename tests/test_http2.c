@@ -8,7 +8,7 @@ extern int init_variables(hstates_t * st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
 extern int send_settings_ack(hstates_t *st);
 extern int check_for_settings_ack(frame_header_t *header, hstates_t *st);
-extern int read_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st);
+extern int handle_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st);
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
 
  /*---------------- Mock functions ---------------------------*/
@@ -234,7 +234,7 @@ void test_check_for_settings_ack(void){
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 0, "wait must be changed to 0");
 }
 
-void test_read_settings_payload(void){
+void test_handle_settings_payload(void){
   settings_pair_t pair1 = {0x3, 12345};
   settings_pair_t pair2 = {0x4, 12345};
   settings_pair_t pair3 = {0x5, 12345};
@@ -251,7 +251,7 @@ void test_read_settings_payload(void){
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
   verify_setting_fake.custom_fake = verify_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_9;
-  int rc = read_settings_payload(buffer, &header_sett, &payload, pairs, &hdummy);
+  int rc = handle_settings_payload(buffer, &header_sett, &payload, pairs, &hdummy);
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 0, "ACK wait must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[2] == 12345, "Remote settings were not updates!");
@@ -389,7 +389,7 @@ int main(void)
     UNIT_TEST(test_update_settings_table);
     UNIT_TEST(test_send_settings_ack);
     UNIT_TEST(test_check_for_settings_ack);
-    UNIT_TEST(test_read_settings_payload);
+    UNIT_TEST(test_handle_settings_payload);
     UNIT_TEST(test_read_frame);
     UNIT_TEST(test_read_frame_error);
     UNIT_TEST(test_h2_send_local_settings);

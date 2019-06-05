@@ -138,7 +138,7 @@ int check_for_settings_ack(frame_header_t *header, hstates_t *st){
 }
 
 /*
-* Function: read_settings_payload
+* Function: handle_settings_payload
 * Reads a settings payload from buffer and works with it.
 * Input: -> buff_read: buffer where payload's data is written
         -> header: pointer to a frameheader_t structure already built with frame info
@@ -147,7 +147,7 @@ int check_for_settings_ack(frame_header_t *header, hstates_t *st){
         -> st: pointer to hstates_t struct where connection variables are stored
 * Output: 0 if operations are done successfully, -1 if not.
 */
-int read_settings_payload(uint8_t *buff_read, frame_header_t *header, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st){
+int handle_settings_payload(uint8_t *buff_read, frame_header_t *header, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st){
     int size = bytes_to_settings_payload(buff_read, header->length, spl, pairs);
     if(size != header->length){
         puts("Error in byte to settings payload coding");
@@ -460,7 +460,7 @@ int h2_receive_frame(hstates_t *st){
             }
             settings_payload_t spl;
             settings_pair_t pairs[header.length/6];
-            rc = read_settings_payload(buff_read, &header, &spl, pairs, st);
+            rc = handle_settings_payload(buff_read, &header, &spl, pairs, st);
             if(rc == -1){
                 puts("Error in read settings payload");
                 return -1;
