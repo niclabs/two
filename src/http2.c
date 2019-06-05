@@ -351,8 +351,8 @@ int h2_server_init_connection(hstates_t *st){
 * Output: 0 if no problem was found. -1 if error was found.
 */
 int h2_receive_frame(hstates_t *st){
-    uint8_t buff_read[MAX_BUFFER_SIZE];
-    //uint8_t buff_write[MAX_BUFFER_SIZE]
+    uint8_t buff_read[HTTP2_MAX_BUFFER_SIZE];
+    //uint8_t buff_write[HTTP2_MAX_BUFFER_SIZE]
     int rc;
     frame_header_t header;
     rc = read_frame(buff_read, &header, st);
