@@ -10,6 +10,7 @@
 #include "sock.h"
 
 #define HTTP2_MAX_HEADER_COUNT 32
+#define HTTP2_MAX_HBF_BUFFER 128
 
 /*-----HTTP2 structures-----*/
 
@@ -34,7 +35,7 @@ typedef struct HTTP2_STATES {
     uint8_t wait_setting_ack;
     h2_stream_t current_stream;
     uint8_t header_count;
-    uint8_t header_block_fragments[128];
+    uint8_t header_block_fragments[HTTP2_MAX_HBF_BUFFER];
     uint8_t header_block_fragments_pointer; //points to the next byte to write in
     uint8_t waiting_for_end_headers_flag;   //bool
     uint8_t received_end_stream;

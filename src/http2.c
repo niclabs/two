@@ -433,7 +433,7 @@ int h2_receive_frame(hstates_t *st){
             //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
             st->h2s.waiting_for_end_headers_flag = 1;
             rc = buffer_copy(st->h2s.header_block_fragments, hpl.header_block_fragment, get_header_block_fragment_size(&header, &hpl));
-            if(rc >= 128){
+            if(rc >= HTTP2_MAX_HBF_BUFFER){
                 ERROR("Header block fragments to big (not enough space allocated).");
                 return -1;
             }
