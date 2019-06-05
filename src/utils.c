@@ -73,9 +73,9 @@ int append_byte_arrays(uint8_t *dest, uint8_t *array1, uint8_t *array2, int size
 }
 
 
-int buffer_copy(uint8_t* dest, uint8_t* orig, int size){
+int buffer_copy(uint8_t* dest, uint8_t* orig, int size, int pos){
     for(int i = 0; i< size; i++){
-        dest[i] = orig[i];
+        dest[i+pos] = orig[i];
     }
     return size;
 }
