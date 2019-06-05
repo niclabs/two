@@ -420,7 +420,7 @@ int h2_receive_frame(hstates_t *st){
             }
             uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
             uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
-            if (header_list_size < MAX_HEADER_LIST_SIZE_VALUE) {
+            if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
                 ERROR("Header list size greater than max alloweed");
                 //TODO send error and finish stream
                 return -1;
@@ -509,7 +509,7 @@ int h2_receive_frame(hstates_t *st){
             }
             uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
             uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
-            if (header_list_size < MAX_HEADER_LIST_SIZE_VALUE) {
+            if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
                 ERROR("Header list size greater than max alloweed");
                 //TODO send error and finish stream
                 return -1;
