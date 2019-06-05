@@ -478,7 +478,7 @@ int h2_receive_frame(hstates_t *st){
         case SETTINGS_TYPE:{//Settings
             rc = check_for_settings_ack(&header, st);
             if(rc < 0){
-                puts("Error was found in SETTINGS Header");
+                ERROR("Error was found in SETTINGS Header");
                 return -1;
             }
             else if(rc){ /*Frame was an ACK*/
@@ -488,7 +488,7 @@ int h2_receive_frame(hstates_t *st){
             settings_pair_t pairs[header.length/6];
             rc = handle_settings_payload(buff_read, &header, &spl, pairs, st);
             if(rc == -1){
-                puts("Error in read settings payload");
+                ERROR("Error in read settings payload");
                 return -1;
             }
             return rc;
