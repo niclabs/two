@@ -8,6 +8,22 @@
 
 #include <stdint.h>
 
+#ifdef WITH_CONTIKI
+#include "net/ip/tcp-socket.h"
+
+#ifndef SOCK_INPUT_BUF_SIZE
+#define SOCK_INPUT_BUF_SIZE 512
+#endif
+
+#ifndef SOCK_OUTPUT_BUF_SIZE
+#define SOCK_OUTPUT_BUF_SIZE 512
+#endif
+
+typedef struct tcp_socket sock_socket_t;
+#else
+typedef int sock_socket_t;
+#endif
+
 
 /* Socket states */
 typedef enum {
