@@ -20,4 +20,5 @@ uint32_t h2_read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
 int h2_client_init_connection(hstates_t *st);
 int h2_server_init_connection(hstates_t *st);
 int h2_receive_frame(hstates_t *st);
+int h2h2_send_headers(hstates_t *st);
 #endif /*HTTP2_H*/
