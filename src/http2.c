@@ -460,7 +460,7 @@ int h2_receive_frame(hstates_t *st){
                   ERROR("Error was found receiving header_block");
                   return -1;
                 }
-                st->table_count += rc;
+                st->table_count = rc;
                 st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
                 if(st->h2s.received_end_stream == 1){
                     st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
@@ -531,28 +531,40 @@ int h2_receive_frame(hstates_t *st){
             }
             continuation_payload_t contpl;
             uint8_t continuation_block_fragment[64];
+            // We check if header length fits on array, so there is no segmentation fault on read_continuation_payload
+            if(header.length >=64){
+              ERROR("Error block fragments too big (not enough space allocated)");
+              return -1;
+            }
             int rc = read_continuation_payload(buff_read, &header, &contpl, continuation_block_fragment);
-            if(rc >=64){
-                ERROR("Error block fragments to big (not enough space allocated)");
-                return rc;
+            if(rc < 1){
+              ERROR("Error in continuation payload reading");
+              return -1;
             }
-
+            //We check if payload fits on buffer
+            if(header.length >= HTTP2_MAX_HBF_BUFFER - st->h2s.header_block_fragments_pointer){
+              ERROR("Continuation Header block fragments doesnt fit on buffer (not enough space allocated)");
+              return -1;
+            }
             //receive fragments and save those on the st->h2s.header_block_fragments buffer
-            rc = buffer_copy(st->h2s.header_block_fragments, contpl.header_block_fragment, header.length);
-            if(rc >= 128){
-                ERROR("Header block fragments to big (not enough space allocated).");
-                return -1;
+            rc = buffer_copy(st->h2s.header_block_fragments, contpl.header_block_fragment, header.length, st->h2s.header_block_fragments_pointer);
+            if(rc < 1){
+              ERROR("Continuation block fragment was not written or payload was empty");
+              return -1;
             }
-
-
+            st->h2s.header_block_fragments_pointer += rc;
             if(is_flag_set(header.flags, CONTINUATION_END_HEADERS_FLAG)){
-                rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);//return size of header_list (header_count)
+                //return number of headers written on header_list, so http2 can update table_count
+                rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);
+                st->table_count = rc;
                 st->h2s.waiting_for_end_headers_flag = 0;
                 if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN hEASDER fRAME, THEN CLOSE THE STREAM
                     st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
                     st->h2s.received_end_stream = 0;//RESET TO 0
                 }
             }
+            //TODO: Notify HTTP that changes were made
+            // header_count or table_count?
             uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
             uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
             if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
