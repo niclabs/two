@@ -229,6 +229,32 @@ int check_headers_stream_condition(hstates_t *st, frame_header_t *header){
   }
 }
 
+/*
+* Function: check_continuation_stream_condition
+* Checks the incoming frame stream_id and the current stream stream_id. Also,
+* verify if there was a HEADERS FRAME before the current CONTINUATION FRAME.
+* Input: -> st: hstates_t struct where stream variables are stored
+*         -> header: header of the incoming frame
+* Ouput: 0 if no errors were found, -1 if protocol error was found, -2 if
+* stream closed error was found.
+*/
+int check_continuation_stream_condition(hstates_t *st, frame_header_t *header){
+  // First verify stream state
+  if(header->stream_id == 0x0 ||
+    header->stream_id != st->h2s.current_stream.stream_id){
+    ERROR("Continuation received on invalid stream.");
+    return -1;
+  }
+  else if(st->h2s.current_stream.state != STREAM_OPEN){
+    ERROR("Continuation received on closed stream.");
+    return -2;
+  }
+  if(!st->h2s.waiting_for_end_headers_flag){
+    ERROR("Continuation must be preceded by a HEADERS frame.");
+    return -1;
+  }
+  return 0;
+}
 /*----------------------API methods-------------------*/
 
 /*
@@ -480,18 +506,13 @@ int h2_receive_frame(hstates_t *st){
             WARN("TODO: Window update frame. Not implemented yet.");
             return -1;
         case CONTINUATION_TYPE:{//Continuation
-            // First verify stream state
-            if(header.stream_id == 0x0 ||
-              header.stream_id != st->h2s.current_stream.stream_id){
-              ERROR("Continuation received on invalid stream. PROTOCOL ERROR");
+            rc = check_continuation_stream_condition(st, &header);
+            if(rc == -1){
+              ERROR("PROTOCOL ERROR was found");
               return -1;
             }
-            else if(st->h2s.current_stream.state != STREAM_OPEN){
-              ERROR("Continuation received on closed stream. CLOSED STREAM ERROR");
-              return -1;
-            }
-            if(!st->h2s.waiting_for_end_headers_flag){
-              ERROR("Continuation must be preceded by a HEADERS frame. PROTOCOL ERROR");
+            else if(rc == -2){
+              ERROR("STREAM CLOSED ERROR was found");
               return -1;
             }
             continuation_payload_t contpl;
