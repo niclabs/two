@@ -199,12 +199,12 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 * Function: check_incoming_headers_condition
 * Checks the incoming frame stream_id and the current stream stream_id and
 * verifies its correctness. Creates a new stream if needed.
-* Input: -> st: hstates_t struct where stream variables are stored
-*         -> header: header of the incoming frame
+* Input: -> header: header of the incoming frame
+*        -> st: hstates_t struct where stream variables are stored
 * Ouput: 0 if no errors were found, -1 if protocol error was found, -2 if
 * stream closed error was found.
 */
-int check_incoming_headers_condition(hstates_t *st, frame_header_t *header){
+int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
   // Check if stream is not created or previous one is closed
   if(st->h2s.current_stream.stream_id == 0 ||
       (st->h2s.current_stream.state == STREAM_CLOSED &&
@@ -233,12 +233,12 @@ int check_incoming_headers_condition(hstates_t *st, frame_header_t *header){
 * Function: check_incoming_continuation_condition
 * Checks the incoming frame stream_id and the current stream stream_id. Also,
 * verify if there was a HEADERS FRAME before the current CONTINUATION FRAME.
-* Input: -> st: hstates_t struct where stream variables are stored
-*         -> header: header of the incoming frame
+* Input : -> header: header of the incoming frame
+*         -> st: hstates_t struct where stream variables are stored
 * Ouput: 0 if no errors were found, -1 if protocol error was found, -2 if
 * stream closed error was found.
 */
-int check_incoming_continuation_condition(hstates_t *st, frame_header_t *header){
+int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st){
   // First verify stream state
   if(header->stream_id == 0x0 ||
     header->stream_id != st->h2s.current_stream.stream_id){
@@ -412,7 +412,7 @@ int h2_receive_frame(hstates_t *st){
             return -1;
         case HEADERS_TYPE:{//Header
             // returns -1 if protocol error was found, -2 if stream closed error, 0 if no errors found
-            rc = check_incoming_headers_condition(st, &header);
+            rc = check_incoming_headers_condition(&header, st);
             if(rc == -1){
               ERROR("Stream ids do not match. PROTOCOL ERROR.");
               return -1;
@@ -506,7 +506,8 @@ int h2_receive_frame(hstates_t *st){
             WARN("TODO: Window update frame. Not implemented yet.");
             return -1;
         case CONTINUATION_TYPE:{//Continuation
-            rc = check_incoming_continuation_condition(st, &header);
+            //returns -1 if protocol error, -2 if stream closed, 0 if no errors
+            rc = check_incoming_continuation_condition(&header, st);
             if(rc == -1){
               ERROR("PROTOCOL ERROR was found");
               return -1;
