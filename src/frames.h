@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "utils.h"
+#include "table.h"
 #include "http_bridge.h"
 #include "logging.h"
 #include "hpack.h"

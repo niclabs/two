@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include "frames.h"
+#include "table.h"
 #include "http_bridge.h"
 
 

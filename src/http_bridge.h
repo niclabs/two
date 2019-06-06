@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "sock.h"
+#include "table.h"
 
 #define HTTP2_MAX_HEADER_COUNT 32
 #define HTTP2_MAX_HBF_BUFFER 128
@@ -42,12 +43,6 @@ typedef struct HTTP2_STATES {
 } h2states_t;
 
 /*-----HTTP structures-----*/
-
-
-typedef struct TABLE_ENTRY {
-    char name [32];
-    char value [128];
-} table_pair_t;
 
 typedef struct HTTP_STATES {
     uint8_t connection_state;

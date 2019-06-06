@@ -9,6 +9,7 @@
 #include "http_bridge.h"
 #include <stdint.h>
 #include "logging.h"
+#include "table.h"
 
 
 typedef enum{
