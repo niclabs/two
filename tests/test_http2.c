@@ -18,12 +18,12 @@ FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, conti
 FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);//TODO fix this
 FAKE_VALUE_FUNC(uint32_t, get_header_list_size,table_pair_t* , uint8_t );//TODO fix this
 
- uint8_t buffer[MAX_BUFFER_SIZE];
+ uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
  int size = 0;
 
  // Toy write function
 int http_write(hstates_t *st, uint8_t *bytes, int length){
- if(size+length > MAX_BUFFER_SIZE){
+ if(size+length > HTTP2_MAX_BUFFER_SIZE){
    return -1;
  }
  memcpy(buffer+size, bytes, length);
@@ -264,7 +264,7 @@ void test_handle_settings_payload(void){
 void test_read_frame(void){
   hstates_t hst;
   frame_header_t header = {36, 0x4, 0x0, 0x0, 0};
-  uint8_t bf[MAX_BUFFER_SIZE] = { 0 };
+  uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
   bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
   /*We write 200 zeros for future reading*/
   int wrc = http_write(&hst, bf, 200);
@@ -280,7 +280,7 @@ void test_read_frame_error(void){
   hstates_t hst;
   /*Header with payload greater than 256*/
   frame_header_t header = {1024, 0x4, 0x0, 0x0, 0};
-  uint8_t bf[MAX_BUFFER_SIZE] = { 0 };
+  uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
   bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
   /*We write 200 zeros for future reading*/
   int wrc = http_write(&hst, bf, 200);
