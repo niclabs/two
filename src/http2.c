@@ -468,7 +468,7 @@ int h2_receive_frame(hstates_t *st){
                     st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
                     st->h2s.received_end_stream = 0;//RESET TO 0
                 }
-                uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
+                uint32_t header_list_size = get_header_list_size(st->header_list, st->table_count);
                 uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
                 if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
                   ERROR("Header list size greater than max alloweed. Send HTTP 431");
@@ -558,7 +558,7 @@ int h2_receive_frame(hstates_t *st){
                     st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
                     st->h2s.received_end_stream = 0;//RESET TO 0
                 }
-                uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
+                uint32_t header_list_size = get_header_list_size(st->header_list, st->table_count);
                 uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
                 if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
                   ERROR("Header list size greater than max alloweed. Send HTTP 431");
