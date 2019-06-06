@@ -565,6 +565,9 @@ int h2_receive_frame(hstates_t *st){
                   //TODO send error and finish stream
                   return 0;
                 }
+                // notify http for reading
+                st->new_headers = 1;
+                st->keep_receiving = 0;
             }
             return 0;
         }
