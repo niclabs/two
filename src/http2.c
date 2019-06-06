@@ -405,7 +405,7 @@ int h2_receive_frame(hstates_t *st){
     frame_header_t header;
     rc = read_frame(buff_read, &header, st);
     if(rc == -1){
-        puts("Error reading frame");
+        ERROR("Error reading frame");
         return -1;
     }
     switch(header.type){
@@ -440,7 +440,7 @@ int h2_receive_frame(hstates_t *st){
             }
             // We check if hbf fits on buffer
             if(hbf_size >= HTTP2_MAX_HBF_BUFFER){
-              ERROR("Header block fragments too big (not enough space allocated).");
+              ERROR("Header block fragments too big (not enough space allocated). INTERNAL_ERROR");
               return -1;
             }
             //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
@@ -570,7 +570,7 @@ int h2_receive_frame(hstates_t *st){
             uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
             uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
             if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
-                ERROR("Header list size greater than max alloweed");
+                ERROR("Header list size greater than max alloweed. INTERNAL_ERROR");
                 //TODO send error and finish stream
                 return -1;
             }
