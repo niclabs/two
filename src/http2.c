@@ -476,8 +476,7 @@ int h2_receive_frame(hstates_t *st){
                   return 0;
                 }
             }
-            else{
-              return 0;
+            return 0;
         }
         case PRIORITY_TYPE://Priority
             WARN("TODO: Priority Frame. Not implemented yet.");
@@ -530,7 +529,7 @@ int h2_receive_frame(hstates_t *st){
             uint8_t continuation_block_fragment[64];
             // We check if header length fits on array, so there is no segmentation fault on read_continuation_payload
             if(header.length >=64){
-              ERROR("Error block fragments too big (not enough space allocated)");
+              ERROR("Error block fragments too big (not enough space allocated). INTERNAL ERROR");
               return -1;
             }
             int rc = read_continuation_payload(buff_read, &header, &contpl, continuation_block_fragment);
@@ -540,7 +539,7 @@ int h2_receive_frame(hstates_t *st){
             }
             //We check if payload fits on buffer
             if(header.length >= HTTP2_MAX_HBF_BUFFER - st->h2s.header_block_fragments_pointer){
-              ERROR("Continuation Header block fragments doesnt fit on buffer (not enough space allocated)");
+              ERROR("Continuation Header block fragments doesnt fit on buffer (not enough space allocated). INTERNAL ERROR");
               return -1;
             }
             //receive fragments and save those on the st->h2s.header_block_fragments buffer
@@ -555,21 +554,18 @@ int h2_receive_frame(hstates_t *st){
                 rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->header_list, st->table_count);
                 st->table_count = rc;
                 st->h2s.waiting_for_end_headers_flag = 0;
-                if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN hEASDER fRAME, THEN CLOSE THE STREAM
+                if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEASDER FRAME, THEN CLOSE THE STREAM
                     st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
                     st->h2s.received_end_stream = 0;//RESET TO 0
                 }
+                uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
+                uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
+                if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
+                  ERROR("Header list size greater than max alloweed. Send HTTP 431");
+                  //TODO send error and finish stream
+                  return 0;
+                }
             }
-            //TODO: Notify HTTP that changes were made
-            // header_count or table_count?
-            uint32_t header_list_size = get_header_list_size(st->header_list, st->h2s.header_count);
-            uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
-            if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
-                ERROR("Header list size greater than max alloweed. INTERNAL_ERROR");
-                //TODO send error and finish stream
-                return -1;
-            }
-            //TODO pass to upper layer ?
             return 0;
         }
         default:
