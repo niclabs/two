@@ -1,17 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include "utils.h"
-#include "table.h"
-#include "http_bridge.h"
-#include "logging.h"
-#include "hpack.h"
-
 #ifndef FRAMES_H
 #define FRAMES_H
 
-
+#include <stdint.h>
+#include "table.h"
 
 
 /*note the difference between

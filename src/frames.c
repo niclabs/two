@@ -1,6 +1,12 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 #include "frames.h"
 #include "utils.h"
+#include "logging.h"
+#include "hpack.h"
 
 /*
 * Function: frame_header_to_bytes
