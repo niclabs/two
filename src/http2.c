@@ -433,6 +433,7 @@ int h2_receive_frame(hstates_t *st){
             }
             // we receive a headers, so it could be continuation frames
             st->h2s.waiting_for_end_headers_flag = 1;
+            st->keep_receiving = 1;
             int hbf_size = get_header_block_fragment_size(&header, &hpl);
             // We are reading a new header frame, so previous fragments are useless
             if(st->h2s.header_block_fragments_pointer != 0){
@@ -475,6 +476,9 @@ int h2_receive_frame(hstates_t *st){
                   //TODO send error and finish stream
                   return 0;
                 }
+                //we notify http that new headers were written
+                st->new_headers = 1;
+                st->keep_receiving = 0;
             }
             return 0;
         }
