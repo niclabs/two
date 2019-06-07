@@ -7,4 +7,11 @@ typedef struct TABLE_ENTRY {
     char value [128];
 } table_pair_t;
 
+
+// Key value pair
+typedef struct KEY_POINTER_MAP {
+    char name [64];
+    void * ptr;
+} key_pointer_map_t;
+
 #endif /* TABLE_H */
