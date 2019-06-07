@@ -31,7 +31,7 @@ int http_init_server(hstates_t *hs, uint16_t port);
  * @return   0          the action was successful
  * @return   -1         the action fail
  */
-int http_set_function_to_path(char *callback, char *path);
+int http_set_function_to_path(hstates_t *hs, char *callback, char *path);
 
 
 /*
