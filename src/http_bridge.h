@@ -45,6 +45,14 @@ typedef struct HTTP2_STATES {
 
 /*-----HTTP structures-----*/
 
+typedef struct HEADERS_LISTS_S {
+    uint8_t header_list_count;
+    table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
+    uint8_t header_list_count_response;
+    table_pair_t header_list_response[HTTP2_MAX_HEADER_COUNT];
+} headers_lists_t;
+
+
 typedef struct HTTP_STATES {
     uint8_t connection_state;
     uint8_t socket_state;
@@ -52,13 +60,11 @@ typedef struct HTTP_STATES {
     uint8_t server_socket_state;
     sock_t *server_socket;
     h2states_t h2s;
-    uint8_t header_list_count;
-    table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
+    headers_lists_t h_lists;
     uint8_t path_callback_list_count;
     key_pointer_map_t path_callback_list[HTTP_MAX_CALLBACK_LIST_ENTRY];
     uint8_t new_headers; //boolean. Notifies HTTP if new headers were written
     uint8_t keep_receiving; //boolean. Tells HTTP to keep receiving frames
-
 } hstates_t;
 
 
