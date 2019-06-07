@@ -85,15 +85,15 @@ int get_receive(char *path, char *headers)
 
 int http_clear_header_list(hstates_t *hs, int index)
 {
-    if (index>=hs->header_list_count){
+    if (index>=hs->h_lists.header_list_count){
       return 0;
     }
     if (index <= HTTP2_MAX_HEADER_COUNT && index >= 0) {
-        hs->header_list_count = index;
+        hs->h_lists.header_list_count = index;
         return 0;
     }
 
-    hs->header_list_count = 0;
+    hs->h_lists.header_list_count = 0;
 
     return 0;
 }
