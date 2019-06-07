@@ -23,7 +23,7 @@
 int http_init_server(hstates_t *hs, uint16_t port)
 {
     hs->socket_state = 0;
-    hs->table_count = 0;
+    hs->header_list_count = 0;
     hs->connection_state = 0;
     hs->server_socket_state=0;
 
@@ -87,7 +87,7 @@ int http_set_function_to_path(char *callback, char *path)
 
 int http_set_header(hstates_t *hs, char *name, char *value)
 {
-    int i = hs->table_count;
+    int i = hs->header_list_count;
 
     if (i == HTTP2_MAX_HEADER_COUNT) {
         ERROR("Headers list is full");
@@ -97,7 +97,7 @@ int http_set_header(hstates_t *hs, char *name, char *value)
     strcpy(hs->header_list[i].name, name);
     strcpy(hs->header_list[i].value, value);
 
-    hs->table_count = i + 1;
+    hs->header_list_count = i + 1;
 
     return 0;
 }
@@ -139,7 +139,7 @@ int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 {
     hs->socket_state = 0;
     hs->server_socket_state=0;
-    hs->table_count = 0;
+    hs->header_list_count = 0;
     hs->connection_state = 0;
 
     if (sock_create(hs->socket) < 0) {
@@ -170,7 +170,7 @@ int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 
 char *http_get_header(hstates_t *hs, char *header)
 {
-    int i = hs->table_count;
+    int i = hs->header_list_count;
 
     if (i == 0) {
         WARN("Headers list is empty");
