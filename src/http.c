@@ -76,7 +76,7 @@ int http_init_server(hstates_t *hs, uint16_t port)
     return -1;
 }
 
-int http_set_function_to_path(hstates_t *hs, char *callback, char *path)
+int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path)
 {
   int i = hs->path_callback_list_count;
 
@@ -86,7 +86,7 @@ int http_set_function_to_path(hstates_t *hs, char *callback, char *path)
   }
 
   strcpy(hs->path_callback_list[i].name, path);
-  strcpy(hs->path_callback_list[i].ptr, callback);
+  hs->path_callback_list[i].ptr=callback.cb;
 
   hs->path_callback_list_count = i + 1;
 

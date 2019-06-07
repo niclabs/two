@@ -7,7 +7,9 @@
 
 #include "http_bridge.h"
 
-
+typedef struct CALLBACK_TYPE_S{
+  int (*cb)(uint8_t,table_pair_t*,uint8_t*,table_pair_t*);
+} callback_type_t;
 
 /*Server*/
 /*
@@ -31,7 +33,7 @@ int http_init_server(hstates_t *hs, uint16_t port);
  * @return   0          the action was successful
  * @return   -1         the action fail
  */
-int http_set_function_to_path(hstates_t *hs, char *callback, char *path);
+int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path);
 
 
 /*
