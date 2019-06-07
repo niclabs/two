@@ -78,10 +78,19 @@ int http_init_server(hstates_t *hs, uint16_t port)
 
 int http_set_function_to_path(char *callback, char *path)
 {
-    (void)callback;
-    (void)path;
-    //TODO callback(argc,argv)
-    return -1;
+  int i = hs->path_callback_list_count;
+
+  if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {
+      WARN("Path-callback list is full");
+      return -1;
+  }
+
+  strcpy(hs->path_callback_list[i].name, path);
+  strcpy(hs->path_callback_list[i].ptr, callback);
+
+  hs->path_callback_list_count = i + 1;
+
+  return 0;
 }
 
 
@@ -90,7 +99,7 @@ int http_set_header(hstates_t *hs, char *name, char *value)
     int i = hs->header_list_count;
 
     if (i == HTTP2_MAX_HEADER_COUNT) {
-        ERROR("Headers list is full");
+        WARN("Headers list is full");
         return -1;
     }
 
