@@ -23,7 +23,7 @@
 int http_init_server(hstates_t *hs, uint16_t port)
 {
     hs->socket_state = 0;
-    hs->header_list_count = 0;
+    hs->h_lists.header_list_count = 0;
     hs->connection_state = 0;
     hs->server_socket_state=0;
 
@@ -96,17 +96,17 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
 
 int http_set_header(hstates_t *hs, char *name, char *value)
 {
-    int i = hs->header_list_count;
+    int i = hs->h_lists.header_list_count;
 
     if (i == HTTP2_MAX_HEADER_COUNT) {
         WARN("Headers list is full");
         return -1;
     }
 
-    strcpy(hs->header_list[i].name, name);
-    strcpy(hs->header_list[i].value, value);
+    strcpy(hs->h_lists.header_list[i].name, name);
+    strcpy(hs->h_lists.header_list[i].value, value);
 
-    hs->header_list_count = i + 1;
+    hs->h_lists.header_list_count = i + 1;
 
     return 0;
 }
@@ -148,7 +148,7 @@ int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 {
     hs->socket_state = 0;
     hs->server_socket_state=0;
-    hs->header_list_count = 0;
+    hs->h_lists.header_list_count = 0;
     hs->connection_state = 0;
 
     if (sock_create(hs->socket) < 0) {
@@ -179,7 +179,7 @@ int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 
 char *http_get_header(hstates_t *hs, char *header)
 {
-    int i = hs->header_list_count;
+    int i = hs->h_lists.header_list_count;
 
     if (i == 0) {
         WARN("Headers list is empty");
@@ -188,9 +188,9 @@ char *http_get_header(hstates_t *hs, char *header)
 
     int k;
     for (k = 0; k <= i; k++) {
-        if (strncmp(hs->header_list[k].name, header, strlen(header)) == 0) {
-            INFO("RETURNING value of '%s' header; '%s'", hs->header_list[k].name, hs->header_list[k].value);
-            return hs->header_list[k].value;
+        if (strncmp(hs->h_lists.header_list[k].name, header, strlen(header)) == 0) {
+            INFO("RETURNING value of '%s' header; '%s'", hs->h_lists.header_list[k].name, hs->h_lists.header_list[k].value);
+            return hs->h_lists.header_list[k].value;
         }
     }
 

@@ -8,7 +8,7 @@
 #include "http_bridge.h"
 
 typedef struct CALLBACK_TYPE_S{
-  int (*cb)(uint8_t,table_pair_t*,uint8_t*,table_pair_t*);
+  int (*cb)(headers_lists_t*);
 } callback_type_t;
 
 /*Server*/
