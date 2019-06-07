@@ -61,6 +61,10 @@ int sock_read_custom_fake(sock_t *s, char *buf, int l, int u)
     return 4;
 }
 
+int foo(headers_lists_t * headers){
+  (void)headers;
+}
+
 
 void test_http_init_server_success(void)
 {
@@ -181,6 +185,34 @@ void test_http_init_server_fail_sock_create(void)
 }
 
 
+void test_http_set_function_to_path_success(void){
+    hstates_t hs;
+    hs.path_callback_list_count=0;
+    callback_type_t foo_callback;
+    foo_callback.cb=foo;
+
+    int set=http_set_function_to_path(&hs, foo_callback, "index");
+
+    TEST_ASSERT_EQUAL(0,set);
+
+    TEST_ASSERT_EQUAL(1, hs.path_callback_list_count);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.path_callback_list[0].name, "index", strlen("index")));
+    TEST_ASSERT_EQUAL(foo_callback.cb, hs.path_callback_list[0].ptr);
+
+}
+
+
+void test_http_set_function_to_path_fail_list_full(void){
+    hstates_t hs;
+    hs.path_callback_list_count=HTTP_MAX_CALLBACK_LIST_ENTRY;
+    callback_type_t foo_callback;
+
+    int set=http_set_function_to_path(&hs, foo_callback, "index");
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1,set,"Path-callback list is full");
+}
+
+
 void test_http_set_header_success(void)
 {
     hstates_t hs;
@@ -191,7 +223,7 @@ void test_http_set_header_success(void)
 }
 
 
-void test_http_set_header_fail_table_full(void)
+void test_http_set_header_fail_list_full(void)
 {
     hstates_t hs;
     hs.h_lists.header_list_count=HTTP2_MAX_HEADER_COUNT;
@@ -463,8 +495,11 @@ int main(void)
     UNIT_TEST(test_http_init_server_fail_sock_listen);
     UNIT_TEST(test_http_init_server_fail_sock_create);
 
+    UNIT_TEST(test_http_set_function_to_path_success);
+    UNIT_TEST(test_http_set_function_to_path_fail_list_full);
+
     UNIT_TEST(test_http_set_header_success);
-    UNIT_TEST(test_http_set_header_fail_table_full);
+    UNIT_TEST(test_http_set_header_fail_list_full);
 
     UNIT_TEST(test_http_server_destroy_success);
     UNIT_TEST(test_http_server_destroy_success_without_client);
