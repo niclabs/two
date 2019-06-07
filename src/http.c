@@ -24,6 +24,8 @@ int http_init_server(hstates_t *hs, uint16_t port)
 {
     hs->socket_state = 0;
     hs->h_lists.header_list_count = 0;
+    hs->h_lists.header_list_count_response = 0;
+    hs->path_callback_list_count=0;
     hs->connection_state = 0;
     hs->server_socket_state=0;
 
@@ -149,6 +151,8 @@ int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
     hs->socket_state = 0;
     hs->server_socket_state=0;
     hs->h_lists.header_list_count = 0;
+    hs->h_lists.header_list_count_response = 0;
+    hs->path_callback_list_count=0;
     hs->connection_state = 0;
 
     if (sock_create(hs->socket) < 0) {
