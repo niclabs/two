@@ -13,6 +13,8 @@
 #define HTTP2_MAX_HEADER_COUNT 32
 #define HTTP2_MAX_HBF_BUFFER 128
 
+#define HTTP_MAX_CALLBACK_LIST_ENTRY 32
+
 /*-----HTTP2 structures-----*/
 
 typedef enum {
@@ -52,6 +54,8 @@ typedef struct HTTP_STATES {
     h2states_t h2s;
     uint8_t header_list_count;
     table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
+    uint8_t path_callback_list_count;
+    table_pair_t path_callback_list[HTTP_MAX_CALLBACK_LIST_ENTRY];
     uint8_t new_headers; //boolean. Notifies HTTP if new headers were written
     uint8_t keep_receiving; //boolean. Tells HTTP to keep receiving frames
 
