@@ -66,6 +66,30 @@ int foo(headers_lists_t * headers){
 }
 
 
+void test_set_init_values_success(void){
+  hstates_t hs;
+  hs.socket_state = 1;
+  hs.h_lists.header_list_count = 1;
+  hs.h_lists.header_list_count_response = 1;
+  hs.path_callback_list_count = 1;
+  hs.connection_state = 1;
+  hs.server_socket_state = 1;
+  hs.keep_receiving = 1;
+  hs.new_headers = 1;
+
+  set_init_values(&hs);
+
+  TEST_ASSERT_EQUAL(0, hs.socket_state);
+  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_response );
+  TEST_ASSERT_EQUAL(0, hs.path_callback_list_count);
+  TEST_ASSERT_EQUAL(0, hs.connection_state);
+  TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+  TEST_ASSERT_EQUAL(0, hs.keep_receiving);
+  TEST_ASSERT_EQUAL(0, hs.new_headers);
+}
+
+
 void test_http_init_server_success(void)
 {
     hstates_t hs;
@@ -488,6 +512,8 @@ void test_http_get_header_fail_header_not_found(void)
 int main(void)
 {
     UNITY_BEGIN();
+
+    UNIT_TEST(test_set_init_values_success);
 
     UNIT_TEST(test_http_init_server_success);
     UNIT_TEST(test_http_init_server_fail_h2_server_init_connection);

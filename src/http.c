@@ -18,17 +18,23 @@
 
 int get_receive(hstates_t *hs);
 
+void set_init_values(hstates_t *hs){
+  hs->socket_state = 0;
+  hs->h_lists.header_list_count = 0;
+  hs->h_lists.header_list_count_response = 0;
+  hs->path_callback_list_count = 0;
+  hs->connection_state = 0;
+  hs->server_socket_state = 0;
+  hs->keep_receiving = 0;
+  hs->new_headers = 0;
+}
+
 /************************************Server************************************/
 
 
 int http_init_server(hstates_t *hs, uint16_t port)
 {
-    hs->socket_state = 0;
-    hs->h_lists.header_list_count = 0;
-    hs->h_lists.header_list_count_response = 0;
-    hs->path_callback_list_count=0;
-    hs->connection_state = 0;
-    hs->server_socket_state=0;
+    set_init_values(hs);
 
     if (sock_create(hs->server_socket) < 0) {
         ERROR("Error in server creation");
@@ -138,12 +144,7 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
 
 int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 {
-    hs->socket_state = 0;
-    hs->server_socket_state=0;
-    hs->h_lists.header_list_count = 0;
-    hs->h_lists.header_list_count_response = 0;
-    hs->path_callback_list_count=0;
-    hs->connection_state = 0;
+    set_init_values(hs);
 
     if (sock_create(hs->socket) < 0) {
         ERROR("Error on client creation");
