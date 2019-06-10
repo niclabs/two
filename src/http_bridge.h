@@ -46,10 +46,10 @@ typedef struct HTTP2_STATES {
 /*-----HTTP structures-----*/
 
 typedef struct HEADERS_LISTS_S {
-    uint8_t header_list_count;
-    table_pair_t header_list[HTTP2_MAX_HEADER_COUNT];
-    uint8_t header_list_count_response;
-    table_pair_t header_list_response[HTTP2_MAX_HEADER_COUNT];
+    uint8_t header_list_count_in;
+    table_pair_t header_list_in[HTTP2_MAX_HEADER_COUNT];
+    uint8_t header_list_count_out;
+    table_pair_t header_list_out[HTTP2_MAX_HEADER_COUNT];
 } headers_lists_t;
 
 

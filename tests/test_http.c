@@ -21,8 +21,6 @@ FAKE_VALUE_FUNC(int, sock_create, sock_t *);
 FAKE_VALUE_FUNC(int, sock_listen, sock_t *, uint16_t);
 FAKE_VALUE_FUNC(int, sock_accept, sock_t *, sock_t *);
 FAKE_VALUE_FUNC(int, sock_connect, sock_t *, char *, uint16_t);
-FAKE_VALUE_FUNC(int, sock_read, sock_t *, char *, int, int);
-FAKE_VALUE_FUNC(int, sock_write, sock_t *, char *, int);
 FAKE_VALUE_FUNC(int, sock_destroy, sock_t *);
 FAKE_VALUE_FUNC(int, h2_client_init_connection, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_server_init_connection, hstates_t *);
@@ -36,8 +34,6 @@ FAKE_VALUE_FUNC(int, h2_send_headers, hstates_t *);
     FAKE(sock_listen)                     \
     FAKE(sock_accept)                     \
     FAKE(sock_connect)                    \
-    FAKE(sock_read)                       \
-    FAKE(sock_write)                      \
     FAKE(sock_destroy)                    \
     FAKE(h2_client_init_connection)       \
     FAKE(h2_server_init_connection)       \
@@ -69,8 +65,8 @@ int foo(headers_lists_t * headers){
 void test_set_init_values_success(void){
   hstates_t hs;
   hs.socket_state = 1;
-  hs.h_lists.header_list_count = 1;
-  hs.h_lists.header_list_count_response = 1;
+  hs.h_lists.header_list_count_in = 1;
+  hs.h_lists.header_list_count_out = 1;
   hs.path_callback_list_count = 1;
   hs.connection_state = 1;
   hs.server_socket_state = 1;
@@ -80,8 +76,8 @@ void test_set_init_values_success(void){
   set_init_values(&hs);
 
   TEST_ASSERT_EQUAL(0, hs.socket_state);
-  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
-  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_response );
+  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
   TEST_ASSERT_EQUAL(0, hs.path_callback_list_count);
   TEST_ASSERT_EQUAL(0, hs.connection_state);
   TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -116,7 +112,8 @@ void test_http_init_server_success(void)
 
     TEST_ASSERT_EQUAL(-1, is);
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
@@ -140,7 +137,8 @@ void test_http_init_server_fail_h2_server_init_connection(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
@@ -163,7 +161,8 @@ void test_http_init_server_fail_sock_accept(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Not client found");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
@@ -185,7 +184,8 @@ void test_http_init_server_fail_sock_listen(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Partial error in server creation");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -203,7 +203,8 @@ void test_http_init_server_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Server could not be created");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -333,7 +334,8 @@ void test_http_client_connect_success(void)
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
 }
 
@@ -355,7 +357,8 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
 }
 
@@ -377,7 +380,8 @@ void test_http_client_connect_fail_sock_connect(void)
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
 }
 
@@ -395,7 +399,8 @@ void test_http_client_connect_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
 }
 
@@ -458,18 +463,18 @@ void test_http_set_header_success(void)
     int set = http_set_header(&hs.h_lists, "settings", "server:on");
 
     TEST_ASSERT_EQUAL(0, set);
-    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
 }
 
 
 void test_http_set_header_fail_list_full(void)
 {
     hstates_t hs;
-    hs.h_lists.header_list_count=HTTP2_MAX_HEADER_COUNT;
+    hs.h_lists.header_list_count_out=HTTP2_MAX_HEADER_COUNT;
     int set = http_set_header(&hs.h_lists, "settings", "server:on");
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, set,"Headers list is full");
-    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.h_lists.header_list_count);
+    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.h_lists.header_list_count_out);
 }
 
 
@@ -489,7 +494,7 @@ void test_http_get_header_fail_empty_table(void)
 {
     hstates_t hs;
 
-    hs.h_lists.header_list_count = 0;
+    hs.h_lists.header_list_count_in = 0;
     char *buf = http_get_header(&hs.h_lists, "settings");
 
     TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");

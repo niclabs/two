@@ -20,8 +20,8 @@ int get_receive(hstates_t *hs);
 
 void set_init_values(hstates_t *hs){
   hs->socket_state = 0;
-  hs->h_lists.header_list_count = 0;
-  hs->h_lists.header_list_count_response = 0;
+  hs->h_lists.header_list_count_in = 0;
+  hs->h_lists.header_list_count_out = 0;
   hs->path_callback_list_count = 0;
   hs->connection_state = 0;
   hs->server_socket_state = 0;
@@ -194,17 +194,17 @@ int http_client_disconnect(hstates_t *hs)
 
 int http_set_header(headers_lists_t* h_lists, char *name, char *value)
 {
-    int i = h_lists->header_list_count;
+    int i = h_lists->header_list_count_out;
 
     if (i == HTTP2_MAX_HEADER_COUNT) {
         WARN("Headers list is full");
         return -1;
     }
 
-    strcpy(h_lists->header_list[i].name, name);
-    strcpy(h_lists->header_list[i].value, value);
+    strcpy(h_lists->header_list_out[i].name, name);
+    strcpy(h_lists->header_list_out[i].value, value);
 
-    h_lists->header_list_count = i + 1;
+    h_lists->header_list_count_out = i + 1;
 
     return 0;
 }
@@ -212,7 +212,7 @@ int http_set_header(headers_lists_t* h_lists, char *name, char *value)
 
 char *http_get_header(headers_lists_t* h_lists, char *header)
 {
-    int i = h_lists->header_list_count;
+    int i = h_lists->header_list_count_in;
 
     if (i == 0) {
         WARN("Headers list is empty");
@@ -221,9 +221,9 @@ char *http_get_header(headers_lists_t* h_lists, char *header)
 
     int k;
     for (k = 0; k <= i; k++) {
-        if (strncmp(h_lists->header_list[k].name, header, strlen(header)) == 0) {
-            INFO("RETURNING value of '%s' header; '%s'", h_lists->header_list[k].name, h_lists->header_list[k].value);
-            return h_lists->header_list[k].value;
+        if (strncmp(h_lists->header_list_in[k].name, header, strlen(header)) == 0) {
+            INFO("RETURNING value of '%s' header; '%s'", h_lists->header_list_in[k].name, h_lists->header_list_in[k].value);
+            return h_lists->header_list_in[k].value;
         }
     }
 
