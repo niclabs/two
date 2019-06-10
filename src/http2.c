@@ -196,6 +196,69 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 }
 
 /*
+* Function: handle_headers_payload
+* Does all the operations related to an incoming HEADERS FRAME.
+* Input: -> header: pointer to the headers frame header (frame_header_t)
+*        -> hpl: pointer to the headers payload (headers_payload_t)
+*        -> st: pointer to hstates_t struct where connection variables are stored
+* Output: 0 if no error was found, -1 if not.
+*/
+int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstates_t *st){
+  // we receive a headers, so it could be continuation frames
+  int rc;
+  st->h2s.waiting_for_end_headers_flag = 1;
+  st->keep_receiving = 1;
+  int hbf_size = get_header_block_fragment_size(header, hpl);
+  // We are reading a new header frame, so previous fragments are useless
+  if(st->h2s.header_block_fragments_pointer != 0){
+    st->h2s.header_block_fragments_pointer = 0;
+  }
+  // We check if hbf fits on buffer
+  if(hbf_size >= HTTP2_MAX_HBF_BUFFER){
+    ERROR("Header block fragments too big (not enough space allocated). INTERNAL_ERROR");
+    return -1;
+  }
+  //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
+  rc = buffer_copy(st->h2s.header_block_fragments, hpl->header_block_fragment, hbf_size, st->h2s.header_block_fragments_pointer);
+  if(rc < 1){
+    ERROR("Headers' header block fragment were not written or paylaod was empty");
+    return -1;
+  }
+  st->h2s.header_block_fragments_pointer += rc;
+  //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
+  if(is_flag_set(header->flags,HEADERS_END_STREAM_FLAG)){
+      st->h2s.received_end_stream = 1;
+  }
+  //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
+  if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
+      //return number of headers written on header_list, so http2 can update header_list_count
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list, st->h_lists.header_list_count);
+      if(rc < 1){
+        ERROR("Error was found receiving header_block");
+        return -1;
+      }
+      st->h_lists.header_list_count = rc;
+      st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
+      if(st->h2s.received_end_stream == 1){
+          st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+          st->h2s.received_end_stream = 0;//RESET TO 0
+      }
+      uint32_t header_list_size = get_header_list_size(st->h_lists.header_list, st->h_lists.header_list_count);
+      uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
+      if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
+        ERROR("Header list size greater than max alloweed. Send HTTP 431");
+        st->keep_receiving = 0;
+        //TODO send error and finish stream
+        return 0;
+      }
+      //we notify http that new headers were written
+      st->new_headers = 1;
+      st->keep_receiving = 0;
+  }
+  return 0;
+}
+
+/*
 * Function: check_incoming_headers_condition
 * Checks the incoming frame stream_id and the current stream stream_id and
 * verifies its correctness. Creates a new stream if needed.
@@ -431,55 +494,10 @@ int h2_receive_frame(hstates_t *st){
                 ERROR("Error in headers payload");
                 return rc;
             }
-            // we receive a headers, so it could be continuation frames
-            st->h2s.waiting_for_end_headers_flag = 1;
-            st->keep_receiving = 1;
-            int hbf_size = get_header_block_fragment_size(&header, &hpl);
-            // We are reading a new header frame, so previous fragments are useless
-            if(st->h2s.header_block_fragments_pointer != 0){
-              st->h2s.header_block_fragments_pointer = 0;
-            }
-            // We check if hbf fits on buffer
-            if(hbf_size >= HTTP2_MAX_HBF_BUFFER){
-              ERROR("Header block fragments too big (not enough space allocated). INTERNAL_ERROR");
-              return -1;
-            }
-            //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
-            rc = buffer_copy(st->h2s.header_block_fragments, hpl.header_block_fragment, hbf_size, st->h2s.header_block_fragments_pointer);
-            if(rc < 1){
-              ERROR("Headers' header block fragment were not written or paylaod was empty");
-              return -1;
-            }
-            st->h2s.header_block_fragments_pointer += rc;
-            //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
-            if(is_flag_set(header.flags,HEADERS_END_STREAM_FLAG)){
-                st->h2s.received_end_stream = 1;
-            }
-            //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
-            if(is_flag_set(header.flags,HEADERS_END_HEADERS_FLAG)){
-                //return number of headers written on header_list, so http2 can update header_list_count
-                rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list, st->h_lists.header_list_count);
-                if(rc < 1){
-                  ERROR("Error was found receiving header_block");
-                  return -1;
-                }
-                st->h_lists.header_list_count = rc;
-                st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
-                if(st->h2s.received_end_stream == 1){
-                    st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
-                    st->h2s.received_end_stream = 0;//RESET TO 0
-                }
-                uint32_t header_list_size = get_header_list_size(st->h_lists.header_list, st->h_lists.header_list_count);
-                uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
-                if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
-                  ERROR("Header list size greater than max alloweed. Send HTTP 431");
-                  st->keep_receiving = 0;
-                  //TODO send error and finish stream
-                  return 0;
-                }
-                //we notify http that new headers were written
-                st->new_headers = 1;
-                st->keep_receiving = 0;
+            rc = handle_headers_payload(&header, &hpl, st);
+            if(rc == -1){
+              ERROR("Error during headers payload handling");
+              return rc;
             }
             return 0;
         }
