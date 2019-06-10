@@ -18,14 +18,12 @@
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_read, sock_t *, char *, int, int);
 FAKE_VALUE_FUNC(int, sock_write, sock_t *, char *, int);
-FAKE_VALUE_FUNC(int, h2_send_headers, hstates_t *);
 
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)            \
     FAKE(sock_read)                       \
     FAKE(sock_write)                      \
-    FAKE(h2_send_headers)                 \
 
 
 void setUp()
