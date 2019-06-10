@@ -78,41 +78,6 @@ int http_init_server(hstates_t *hs, uint16_t port)
     return -1;
 }
 
-int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path)
-{
-  int i = hs->path_callback_list_count;
-
-  if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {
-      WARN("Path-callback list is full");
-      return -1;
-  }
-
-  strcpy(hs->path_callback_list[i].name, path);
-  hs->path_callback_list[i].ptr=callback.cb;
-
-  hs->path_callback_list_count = i + 1;
-
-  return 0;
-}
-
-
-int http_set_header(hstates_t *hs, char *name, char *value)
-{
-    int i = hs->h_lists.header_list_count;
-
-    if (i == HTTP2_MAX_HEADER_COUNT) {
-        WARN("Headers list is full");
-        return -1;
-    }
-
-    strcpy(hs->h_lists.header_list[i].name, name);
-    strcpy(hs->h_lists.header_list[i].value, value);
-
-    hs->h_lists.header_list_count = i + 1;
-
-    return 0;
-}
-
 
 int http_server_destroy(hstates_t *hs)
 {
@@ -140,6 +105,24 @@ int http_server_destroy(hstates_t *hs)
     printf("Server destroyed\n");
 
     return 0;
+}
+
+
+int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path)
+{
+  int i = hs->path_callback_list_count;
+
+  if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {
+      WARN("Path-callback list is full");
+      return -1;
+  }
+
+  strcpy(hs->path_callback_list[i].name, path);
+  hs->path_callback_list[i].ptr=callback.cb;
+
+  hs->path_callback_list_count = i + 1;
+
+  return 0;
 }
 
 
@@ -181,6 +164,44 @@ int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
 }
 
 
+int http_client_disconnect(hstates_t *hs)
+{
+    if (hs->socket_state == 1) {
+        if (sock_destroy(hs->socket) < 0) {
+            ERROR("Error in client disconnection");
+            return -1;
+        }
+
+        printf("Client disconnected\n");
+    }
+
+    hs->socket_state = 0;
+    hs->connection_state = 0;
+
+    return 0;
+}
+
+
+/************************************Headers************************************/
+
+int http_set_header(hstates_t *hs, char *name, char *value)
+{
+    int i = hs->h_lists.header_list_count;
+
+    if (i == HTTP2_MAX_HEADER_COUNT) {
+        WARN("Headers list is full");
+        return -1;
+    }
+
+    strcpy(hs->h_lists.header_list[i].name, name);
+    strcpy(hs->h_lists.header_list[i].value, value);
+
+    hs->h_lists.header_list_count = i + 1;
+
+    return 0;
+}
+
+
 char *http_get_header(hstates_t *hs, char *header)
 {
     int i = hs->h_lists.header_list_count;
@@ -202,20 +223,34 @@ char *http_get_header(hstates_t *hs, char *header)
     return NULL;
 }
 
-
-int http_client_disconnect(hstates_t *hs)
+int get_receive(hstates_t *hs, char *path)
 {
-    if (hs->socket_state == 1) {
-        if (sock_destroy(hs->socket) < 0) {
-            ERROR("Error in client disconnection");
-            return -1;
-        }
+    // preparar respuesta
 
-        printf("Client disconnected\n");
+    callback_type_t callback;
+
+    if (hs->path_callback_list_count == 0) {
+        WARN("Path-callback list is empty");
+        return -1;
     }
 
-    hs->socket_state = 0;
-    hs->connection_state = 0;
+    int i;
+    for (i = 0; i <= hs->path_callback_list_count; i++) {
+        if (strncmp(hs->path_callback_list[i].name, path, strlen(path)) == 0) {
+            callback.cb = hs->path_callback_list[i].ptr;
+            break;
+        }
+        if (i == hs->path_callback_list_count) {
+            WARN("No function associated with this path");
+            return -1;
+        }
+    }
+
+    callback.cb(&hs->h_lists);
+
+    if(h2_send_headers(hs)<0){
+      return -1;
+    }
 
     return 0;
 }

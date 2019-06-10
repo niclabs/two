@@ -62,48 +62,6 @@ int http_read(hstates_t *hs, uint8_t *buf, int len)
 
 }
 
-int http_receive(hstates_t *hs)
-{
-    (void)hs;
-    // TODO: read headers
-    // TODO: identify HTTP method
-    // TODO: call get_receive
-    return -1;
-}
-
-
-int get_receive(hstates_t *hs, char *path)
-{
-    // preparar respuesta
-
-    callback_type_t callback;
-
-    if (hs->path_callback_list_count == 0) {
-        WARN("Path-callback list is empty");
-        return -1;
-    }
-
-    int i;
-    for (i = 0; i <= hs->path_callback_list_count; i++) {
-        if (strncmp(hs->path_callback_list[i].name, path, strlen(path)) == 0) {
-            callback.cb = hs->path_callback_list[i].ptr;
-            break;
-        }
-        if (i == hs->path_callback_list_count) {
-            WARN("No function associated with this path");
-            return -1;
-        }
-    }
-
-    callback.cb(&hs->h_lists);
-
-    if(h2_send_headers(hs)<0){
-      return -1;
-    }
-
-    return 0;
-}
-
 
 int http_clear_header_list(hstates_t *hs, int index)
 {

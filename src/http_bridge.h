@@ -97,17 +97,6 @@ int http_write(hstates_t *hs, uint8_t *buf, int len);
 int http_read(hstates_t *hs, uint8_t *buf, int len);
 
 /*
- * Given the content of the request made by the client, this function calls
- * the functions necessary to respond to the request
- *
- * @param     hs    struct with headers information
- *
- * @return    0     the action was successful
- * @return    -1    the action fail
- */
-int http_receive(hstates_t *hs);
-
-/*
  * Empty the list of headers in hstates_t struct
  *
  * @param    hs        struct with headers information

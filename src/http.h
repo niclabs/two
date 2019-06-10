@@ -25,6 +25,17 @@ int http_init_server(hstates_t *hs, uint16_t port);
 
 
 /*
+ * Stop and destroy server if it is running
+ *
+ * @param    hs      struct with server information
+ *
+ * @return   0       Server was successfully destroyed
+ * @return   -1      Server wasn't destroyed
+ */
+int http_server_destroy(hstates_t *hs);
+
+
+/*
  * Set an internal server function to a specific path
  *
  * @param    callback   function name
@@ -34,30 +45,6 @@ int http_init_server(hstates_t *hs, uint16_t port);
  * @return   -1         the action fail
  */
 int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path);
-
-
-/*
- * Add a header and its value to the headers list
- *
- * @param    hs        struct with headers information
- * @param    name      new headers name
- * @param    value     new headers value
- *
- * @return   0      successfully added pair
- * @return   -1     There was an error
- */
-int http_set_header(hstates_t *hs, char *name, char *value);
-
-
-/*
- * Stop and destroy server if it is running
- *
- * @param    hs      struct with server information
- *
- * @return   0       Server was successfully destroyed
- * @return   -1      Server wasn't destroyed
- */
-int http_server_destroy(hstates_t *hs);
 
 
 
@@ -77,17 +64,6 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
 
 
 /*
- * Search by a value of a header in the header list
- *
- * @param    hs         struct with headers information
- * @param    header     Header name
- *
- * @return              value finded
- */
-char *http_get_header(hstates_t *hs, char *header);
-
-
-/*
  * Stop the connection between client and server
  *
  * @param    hs     struct with client information
@@ -96,6 +72,33 @@ char *http_get_header(hstates_t *hs, char *header);
  * @return    -1   failed to stop connection
  */
 int http_client_disconnect(hstates_t *hs);
+
+
+
+/*Headers*/
+
+/*
+ * Add a header and its value to the headers list
+ *
+ * @param    hs        struct with headers information
+ * @param    name      new headers name
+ * @param    value     new headers value
+ *
+ * @return   0      successfully added pair
+ * @return   -1     There was an error
+ */
+int http_set_header(hstates_t *hs, char *name, char *value);
+
+
+/*
+ * Search by a value of a header in the header list
+ *
+ * @param    hs         struct with headers information
+ * @param    header     Header name
+ *
+ * @return              value finded
+ */
+char *http_get_header(hstates_t *hs, char *header);
 
 
 #endif /* HTTP_H */
