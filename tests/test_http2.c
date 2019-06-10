@@ -119,6 +119,13 @@ int buffer_copy_fake_custom(uint8_t* dest, uint8_t* orig, int size){
   }
   return size;
 }
+//getheaderblockfragmentsize
+int ghbfs(frame_header_t *h, headers_payload_t *st){
+  return 20;
+}
+int bc(uint8_t* a, uint8_t*b, int c){
+  return 20;
+}
 
 
 /*---------- TESTING SUIT --------------------*/
@@ -482,14 +489,36 @@ void test_handle_headers_payload(void){
   frame_header_t head;
   headers_payload_t hpl;
   hstates_t st;
-  st.h2s.waiting_for_end_headers_flag = 0;
-  st.keep_receiving = 0;
-  st.h2s.header_block_fragments_pointer = 0;
-  get_header_block_fragment_size_fake.custom_fake = 20;
-  buffer_copy_fake.custom_fake = 2;
-  is_flag_set_fake.custom_fake = 0;
+  st.h2s.header_block_fragments_pointer = 123;
+  get_header_block_fragment_size_fake.custom_fake = ghbfs;
+  buffer_copy_fake.custom_fake = bc;
+  int flag_returns[2] = {0, 0};
+  SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
   int rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+}
+
+void test_handle_headers_payload_errors(void){
+  frame_header_t head;
+  headers_payload_t hpl;
+  hstates_t st;
+  int ghbfs_returns[2] = {10000, 20};
+  SET_RETURN_SEQ(get_header_block_fragment_size, ghbfs_returns, 2);
+  int bc_returns[2] = {-1, 20};
+  SET_RETURN_SEQ(buffer_copy, bc_returns, 2);
+  int flag_returns[3] = {1, 0, 1, 1};
+  SET_RETURN_SEQ(is_flag_set, flag_returns, 4);
+  int rcv_returns[3] = {0};
+  SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
+  int rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (Internal error)");
+  rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (writting error)");
+  rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.received_end_stream == 1, "Received end stream must be 1");
+  rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (error in header block reception)");
 }
 
 int main(void)
@@ -512,6 +541,7 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_continuation_condition);
     UNIT_TEST(test_check_incoming_continuation_condition_errors);
-    //UNIT_TEST(test_handle_headers_payload);
+    UNIT_TEST(test_handle_headers_payload);
+    //UNIT_TEST(test_handle_headers_payload_errors);
     return UNIT_TESTS_END();
 }
