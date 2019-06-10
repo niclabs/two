@@ -185,55 +185,6 @@ void test_http_init_server_fail_sock_create(void)
 }
 
 
-void test_http_set_function_to_path_success(void){
-    hstates_t hs;
-    hs.path_callback_list_count=0;
-    callback_type_t foo_callback;
-    foo_callback.cb=foo;
-
-    int set=http_set_function_to_path(&hs, foo_callback, "index");
-
-    TEST_ASSERT_EQUAL(0,set);
-
-    TEST_ASSERT_EQUAL(1, hs.path_callback_list_count);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.path_callback_list[0].name, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(foo_callback.cb, hs.path_callback_list[0].ptr);
-
-}
-
-
-void test_http_set_function_to_path_fail_list_full(void){
-    hstates_t hs;
-    hs.path_callback_list_count=HTTP_MAX_CALLBACK_LIST_ENTRY;
-    callback_type_t foo_callback;
-
-    int set=http_set_function_to_path(&hs, foo_callback, "index");
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1,set,"Path-callback list is full");
-}
-
-
-void test_http_set_header_success(void)
-{
-    hstates_t hs;
-    int set = http_set_header(&hs, "settings", "server:on");
-
-    TEST_ASSERT_EQUAL(0, set);
-    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count);
-}
-
-
-void test_http_set_header_fail_list_full(void)
-{
-    hstates_t hs;
-    hs.h_lists.header_list_count=HTTP2_MAX_HEADER_COUNT;
-    int set = http_set_header(&hs, "settings", "server:on");
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, set,"Headers list is full");
-    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.h_lists.header_list_count);
-}
-
-
 void test_http_server_destroy_success(void)
 {
     hstates_t hs;
@@ -308,6 +259,34 @@ void test_http_server_destroy_fail_sock_destroy(void)
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
+}
+
+
+void test_http_set_function_to_path_success(void){
+    hstates_t hs;
+    hs.path_callback_list_count=0;
+    callback_type_t foo_callback;
+    foo_callback.cb=foo;
+
+    int set=http_set_function_to_path(&hs, foo_callback, "index");
+
+    TEST_ASSERT_EQUAL(0,set);
+
+    TEST_ASSERT_EQUAL(1, hs.path_callback_list_count);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.path_callback_list[0].name, "index", strlen("index")));
+    TEST_ASSERT_EQUAL(foo_callback.cb, hs.path_callback_list[0].ptr);
+
+}
+
+
+void test_http_set_function_to_path_fail_list_full(void){
+    hstates_t hs;
+    hs.path_callback_list_count=HTTP_MAX_CALLBACK_LIST_ENTRY;
+    callback_type_t foo_callback;
+
+    int set=http_set_function_to_path(&hs, foo_callback, "index");
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1,set,"Path-callback list is full");
 }
 
 
@@ -396,43 +375,6 @@ void test_http_client_connect_fail_sock_create(void)
 }
 
 
-void test_http_get_header_success(void)
-{
-    hstates_t hs;
-
-    http_set_header(&hs, "something", "something two");
-    http_set_header(&hs, "settings", "server:on");
-
-    char *buf = http_get_header(&hs, "settings");
-
-    TEST_ASSERT_EQUAL(0, strncmp(buf, "server:on", strlen("server:on")));
-}
-
-
-void test_http_get_header_fail_empty_table(void)
-{
-    hstates_t hs;
-
-    hs.h_lists.header_list_count = 0;
-    char *buf = http_get_header(&hs, "settings");
-
-    TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");
-}
-
-
-void test_http_get_header_fail_header_not_found(void)
-{
-    hstates_t hs;
-
-    http_set_header(&hs, "something1", "something one");
-    http_set_header(&hs, "something2", "something two");
-
-    char *buf = http_get_header(&hs, "settings");
-
-    TEST_ASSERT_MESSAGE(buf == NULL, "Header should not be found in headers list");
-}
-
-
 void test_http_client_disconnect_success_v1(void)
 {
     hstates_t hs;
@@ -485,6 +427,64 @@ void test_http_client_disconnect_fail(void)
 }
 
 
+void test_http_set_header_success(void)
+{
+    hstates_t hs;
+    int set = http_set_header(&hs, "settings", "server:on");
+
+    TEST_ASSERT_EQUAL(0, set);
+    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count);
+}
+
+
+void test_http_set_header_fail_list_full(void)
+{
+    hstates_t hs;
+    hs.h_lists.header_list_count=HTTP2_MAX_HEADER_COUNT;
+    int set = http_set_header(&hs, "settings", "server:on");
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, set,"Headers list is full");
+    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.h_lists.header_list_count);
+}
+
+
+void test_http_get_header_success(void)
+{
+    hstates_t hs;
+
+    http_set_header(&hs, "something", "something two");
+    http_set_header(&hs, "settings", "server:on");
+
+    char *buf = http_get_header(&hs, "settings");
+
+    TEST_ASSERT_EQUAL(0, strncmp(buf, "server:on", strlen("server:on")));
+}
+
+
+void test_http_get_header_fail_empty_table(void)
+{
+    hstates_t hs;
+
+    hs.h_lists.header_list_count = 0;
+    char *buf = http_get_header(&hs, "settings");
+
+    TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");
+}
+
+
+void test_http_get_header_fail_header_not_found(void)
+{
+    hstates_t hs;
+
+    http_set_header(&hs, "something1", "something one");
+    http_set_header(&hs, "something2", "something two");
+
+    char *buf = http_get_header(&hs, "settings");
+
+    TEST_ASSERT_MESSAGE(buf == NULL, "Header should not be found in headers list");
+}
+
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -495,29 +495,29 @@ int main(void)
     UNIT_TEST(test_http_init_server_fail_sock_listen);
     UNIT_TEST(test_http_init_server_fail_sock_create);
 
-    UNIT_TEST(test_http_set_function_to_path_success);
-    UNIT_TEST(test_http_set_function_to_path_fail_list_full);
-
-    UNIT_TEST(test_http_set_header_success);
-    UNIT_TEST(test_http_set_header_fail_list_full);
-
     UNIT_TEST(test_http_server_destroy_success);
     UNIT_TEST(test_http_server_destroy_success_without_client);
     UNIT_TEST(test_http_server_destroy_fail_not_server);
     UNIT_TEST(test_http_server_destroy_fail_sock_destroy);
+
+    UNIT_TEST(test_http_set_function_to_path_success);
+    UNIT_TEST(test_http_set_function_to_path_fail_list_full);
 
     UNIT_TEST(test_http_client_connect_success);
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
 
-    UNIT_TEST(test_http_get_header_success);
-    UNIT_TEST(test_http_get_header_fail_empty_table);
-    UNIT_TEST(test_http_get_header_fail_header_not_found);
-
     UNIT_TEST(test_http_client_disconnect_success_v1);
     UNIT_TEST(test_http_client_disconnect_success_v2);
     UNIT_TEST(test_http_client_disconnect_fail);
+
+    UNIT_TEST(test_http_set_header_success);
+    UNIT_TEST(test_http_set_header_fail_list_full);
+
+    UNIT_TEST(test_http_get_header_success);
+    UNIT_TEST(test_http_get_header_fail_empty_table);
+    UNIT_TEST(test_http_get_header_fail_header_not_found);
 
     return UNITY_END();
 }
