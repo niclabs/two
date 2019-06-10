@@ -16,6 +16,7 @@
 #include "sock.h"
 #include "http2.h"
 
+int get_receive(hstates_t *hs);
 
 /************************************Server************************************/
 
@@ -229,10 +230,11 @@ char *http_get_header(headers_lists_t* h_lists, char *header)
     return NULL;
 }
 
-int get_receive(hstates_t *hs, char *path)
+
+int get_receive(hstates_t *hs)
 {
     // preparar respuesta
-
+    char *path=http_get_header(&hs->h_lists, "path");
     callback_type_t callback;
 
     if (hs->path_callback_list_count == 0) {
