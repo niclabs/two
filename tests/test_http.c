@@ -55,12 +55,10 @@ void setUp()
 }
 
 
-int sock_read_custom_fake(sock_t *s, char *buf, int l, int u)
-{
-    strcpy(buf, "hola");
-    (void)s;
-    (void)u;
-    return 4;
+int h2_receive_frame_custom_fake(hstates_t * hs){
+  hs->keep_receiving = 1;
+  hs->connection_state = 0;
+  return 1;
 }
 
 int foo(headers_lists_t * headers){
@@ -98,8 +96,9 @@ void test_http_init_server_success(void)
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
-    h2_receive_frame_fake.return_val=0;
     sock_destroy_fake.return_val=0;
+
+    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
 
     int returnVals[2] = { 0, -1 };
     SET_RETURN_SEQ(h2_server_init_connection, returnVals, 2);
