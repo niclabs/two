@@ -106,6 +106,6 @@ int http_read(hstates_t *hs, uint8_t *buf, int len);
  * @return    0        The list was emptied
  * @return    1        There was an error
  */
-int http_clear_header_list(hstates_t *hs, int index);
+int http_clear_header_list(hstates_t *hs, int index, int flag);
 
 #endif /* HTTP_BRIDGE_H */
