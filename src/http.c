@@ -61,9 +61,15 @@ int http_init_server(hstates_t *hs, uint16_t port)
         }
 
         while (hs->connection_state == 1) {
-            if (h2_receive_frame(hs) < 1) {
-              break;
-            }
+          if (h2_receive_frame(hs) < 1) {
+            break;
+          }
+          if (hs->keep_receiving == 1){
+            continue;
+          }
+          if (hs->new_headers == 1){
+            get_receive(hs);
+          }
         }
 
         if (sock_destroy(hs->socket)==-1){
