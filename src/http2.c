@@ -427,7 +427,7 @@ int h2_receive_frame(hstates_t *st){
             uint8_t headers_block_fragment[64];
             uint8_t padding[32];
             rc = read_headers_payload(buff_read, &header, &hpl, headers_block_fragment, padding);
-            if(rc != 0){
+            if(rc == 0 || rc > header.length){
                 ERROR("Error in headers payload");
                 return rc;
             }
