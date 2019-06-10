@@ -482,6 +482,9 @@ void test_handle_headers_payload(void){
   frame_header_t head;
   headers_payload_t hpl;
   hstates_t st;
+  st.h2s.waiting_for_end_headers_flag = 0;
+  st.keep_receiving = 0;
+  st.h2s.header_block_fragments_pointer = 0;
   get_header_block_fragment_size_fake.custom_fake = 20;
   buffer_copy_fake.custom_fake = 2;
   is_flag_set_fake.custom_fake = 0;
@@ -509,5 +512,6 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_continuation_condition);
     UNIT_TEST(test_check_incoming_continuation_condition_errors);
+    //UNIT_TEST(test_handle_headers_payload);
     return UNIT_TESTS_END();
 }
