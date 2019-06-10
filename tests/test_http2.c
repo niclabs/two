@@ -10,13 +10,9 @@ extern int send_settings_ack(hstates_t *st);
 extern int check_for_settings_ack(frame_header_t *header, hstates_t *st);
 extern int handle_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st);
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
-
+extern int check_incoming_headers_condition(frame_header_t *header, hstates_t *st);
+extern int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstates_t *st);
  /*---------------- Mock functions ---------------------------*/
-
-FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
-FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
-FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);//TODO fix this
-FAKE_VALUE_FUNC(uint32_t, get_header_list_size,table_pair_t* , uint8_t );//TODO fix this
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
  int size = 0;
@@ -67,24 +63,29 @@ FAKE_VALUE_FUNC(int, is_flag_set, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, bytes_to_settings_payload, uint8_t*, int, settings_payload_t*, settings_pair_t*);
 FAKE_VALUE_FUNC(int, bytes_to_frame_header, uint8_t*, int , frame_header_t*);
 FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*, frame_header_t*, settings_payload_t*, settings_pair_t*);
-
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 FAKE_VALUE_FUNC(int, get_header_block_fragment_size,frame_header_t*, headers_payload_t*);
 FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, table_pair_t*, uint8_t);
+FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
+FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
+FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t)
+FAKE_VALUE_FUNC(uint32_t, get_header_list_size, table_pair_t*, uint8_t)
 
-
-#define FFF_FAKES_LIST(FAKE)         \
-    FAKE(verify_setting)             \
-    FAKE(create_settings_ack_frame)  \
-    FAKE(frame_to_bytes)             \
-    FAKE(is_flag_set)                \
-    FAKE(bytes_to_settings_payload)  \
-    FAKE(bytes_to_frame_header)      \
-    FAKE(create_settings_frame)       \
-    FAKE(buffer_copy)                 \
-    FAKE(get_header_block_fragment_size)\
-    FAKE(receive_header_block)
-
+#define FFF_FAKES_LIST(FAKE)              \
+    FAKE(verify_setting)                  \
+    FAKE(create_settings_ack_frame)       \
+    FAKE(frame_to_bytes)                  \
+    FAKE(is_flag_set)                     \
+    FAKE(bytes_to_settings_payload)       \
+    FAKE(bytes_to_frame_header)           \
+    FAKE(create_settings_frame)           \
+    FAKE(buffer_copy)                     \
+    FAKE(get_header_block_fragment_size)  \
+    FAKE(receive_header_block)            \
+    FAKE(read_headers_payload)            \
+    FAKE(read_continuation_payload)    \
+    FAKE(get_setting_value)               \
+    FAKE(get_header_list_size)            \
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
   return 0;
@@ -147,6 +148,8 @@ void test_init_variables(void){
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[4] == init_vals[4], "MFS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[5] == init_vals[5], "MHLS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 0, "WAIT must be 0");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.stream_id == 0, "Current stream id must be 0");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.state == 0, "Current stream state must be 0");
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
 }
 
@@ -382,6 +385,66 @@ void test_h2_server_init_connection(void){
   TEST_ASSERT_MESSAGE(rc==0, "return code of h2_server_init_connection must be 0");
 }
 
+void test_check_incoming_headers_condition(void){
+  frame_header_t head;
+  head.stream_id = 2440;
+  hstates_t st;
+  st.h2s.waiting_for_end_headers_flag = 0;
+  st.h2s.current_stream.stream_id = 2440;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  int rc = check_incoming_headers_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+
+}
+
+void test_check_incoming_headers_condition_error(void){
+  frame_header_t head;
+  hstates_t st;
+  st.h2s.waiting_for_end_headers_flag = 1;
+  int rc = check_incoming_headers_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1");
+}
+
+void test_check_incoming_headers_condition_creation_of_stream(void){
+  frame_header_t head;
+  head.stream_id = 2440;
+  hstates_t st;
+  st.h2s.waiting_for_end_headers_flag = 0;
+  st.h2s.current_stream.stream_id = 0;
+  st.h2s.current_stream.state = 0;
+  int rc = check_incoming_headers_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+  st.h2s.current_stream.stream_id = 2438;
+  st.h2s.current_stream.state = STREAM_CLOSED;
+  rc = check_incoming_headers_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+
+}
+
+void test_check_incoming_headers_condition_mismatch(void){
+  frame_header_t head;
+  head.stream_id = 2440;
+  hstates_t st;
+  st.h2s.waiting_for_end_headers_flag = 0;
+  st.h2s.current_stream.stream_id = 2438;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  int rc = check_incoming_headers_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2438, "Stream id must be 2438");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+  st.h2s.current_stream.stream_id = 2440;
+  st.h2s.current_stream.state = STREAM_CLOSED;
+  rc = check_incoming_headers_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -2, "Return code must be -2");
+}
+
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -396,5 +459,9 @@ int main(void)
     UNIT_TEST(test_h2_read_setting_from);
     UNIT_TEST(test_h2_client_init_connection);
     UNIT_TEST(test_h2_server_init_connection);
+    UNIT_TEST(test_check_incoming_headers_condition);
+    UNIT_TEST(test_check_incoming_headers_condition_error);
+    UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
+    UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     return UNIT_TESTS_END();
 }
