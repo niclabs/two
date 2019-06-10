@@ -481,8 +481,13 @@ void test_http_set_header_fail_list_full(void)
 void test_http_get_header_success(void)
 {
     hstates_t hs;
-    http_set_header(&hs.h_lists, "something", "something two");
-    http_set_header(&hs.h_lists, "settings", "server:on");
+
+    strcpy(hs.h_lists.header_list_in[0].name, "something1");
+    strcpy(hs.h_lists.header_list_in[0].value, "one");
+    strcpy(hs.h_lists.header_list_in[1].name, "settings");
+    strcpy(hs.h_lists.header_list_in[1].value, "server:on");
+
+    hs.h_lists.header_list_count_in = 2;
 
     char *buf = http_get_header(&hs.h_lists, "settings");
 
