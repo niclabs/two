@@ -12,6 +12,7 @@ extern int handle_settings_payload(uint8_t *bf, frame_header_t *h, settings_payl
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
 extern int check_incoming_headers_condition(frame_header_t *header, hstates_t *st);
 extern int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstates_t *st);
+extern int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -444,6 +445,49 @@ void test_check_incoming_headers_condition_mismatch(void){
   TEST_ASSERT_MESSAGE(rc == -2, "Return code must be -2");
 }
 
+void test_check_incoming_continuation_condition(void){
+  frame_header_t head;
+  hstates_t st;
+  head.stream_id = 440;
+  st.h2s.current_stream.stream_id = 440;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  st.h2s.waiting_for_end_headers_flag = 1;
+  int rc = check_incoming_continuation_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "return code must be 0");
+}
+
+void test_check_incoming_continuation_condition_errors(void){
+  frame_header_t head;
+  hstates_t st;
+  head.stream_id = 0;
+  st.h2s.current_stream.stream_id = 440;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  st.h2s.waiting_for_end_headers_flag = 1;
+  int rc = check_incoming_continuation_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (incoming id equals 0)");
+  head.stream_id = 442;
+  rc = check_incoming_continuation_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (stream mistmatch)");
+  head.stream_id = 440;
+  st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+  rc = check_incoming_continuation_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -2, "return code must be -1 (strean not open)");
+  st.h2s.waiting_for_end_headers_flag = 0;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  rc = check_incoming_continuation_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (not previous headers)");
+}
+
+void test_handle_headers_payload(void){
+  frame_header_t head;
+  headers_payload_t hpl;
+  hstates_t st;
+  get_header_block_fragment_size_fake.custom_fake = 20;
+  buffer_copy_fake.custom_fake = 2;
+  is_flag_set_fake.custom_fake = 0;
+  int rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+}
 
 int main(void)
 {
@@ -463,5 +507,7 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_error);
     UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
+    UNIT_TEST(test_check_incoming_continuation_condition);
+    UNIT_TEST(test_check_incoming_continuation_condition_errors);
     return UNIT_TESTS_END();
 }
