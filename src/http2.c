@@ -232,18 +232,18 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
   if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list, st->h_lists.header_list_count);
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list_in, st->h_lists.header_list_count_in);
       if(rc < 1){
         ERROR("Error was found receiving header_block");
         return -1;
       }
-      st->h_lists.header_list_count = rc;
+      st->h_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
       if(st->h2s.received_end_stream == 1){
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(st->h_lists.header_list, st->h_lists.header_list_count);
+      uint32_t header_list_size = get_header_list_size(st->h_lists.header_list_in, st->h_lists.header_list_count_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         ERROR("Header list size greater than max alloweed. Send HTTP 431");
@@ -350,14 +350,14 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   st->h2s.header_block_fragments_pointer += rc;
   if(is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list, st->h_lists.header_list_count);
-      st->h_lists.header_list_count = rc;
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list_in, st->h_lists.header_list_count_in);
+      st->h_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;
       if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEASDER FRAME, THEN CLOSE THE STREAM
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(st->h_lists.header_list, st->h_lists.header_list_count);
+      uint32_t header_list_size = get_header_list_size(st->h_lists.header_list_in, st->h_lists.header_list_count_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         ERROR("Header list size greater than max alloweed. Send HTTP 431");
