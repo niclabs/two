@@ -331,6 +331,32 @@ void test_handle_settings_payload(void){
   TEST_ASSERT_MESSAGE(size == 9, "Expected 9 bytes on buffer");
 }
 
+void test_handle_settings_payload_errors(void){
+  settings_pair_t pair1 = {0x3, 12345};
+  settings_pair_t pair2 = {0x4, 12345};
+  settings_pair_t pair3 = {0x5, 12345};
+  settings_pair_t pair4 = {0x6, 12345};
+  settings_pair_t pairs[4] = {pair1,pair2,pair3,pair4};
+  settings_payload_t payload = {pairs, 4};
+  frame_header_t header_sett = {24, 0x4, 0x0|0x1, 0x0, 0};
+  hstates_t hdummy;
+  h2states_t dummy = {{1,1,1,1,1,1},
+                      {1,1,1,1,1,1},
+                      0};
+  hdummy.h2s = dummy;
+  // First error, bytes to settings payload fail
+  int bytes_return[2] = {-1, 24};
+  SET_RETURN_SEQ(bytes_to_settings_payload, bytes_return, 2);
+  create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
+  int verify_return[1] = {-1};
+  SET_RETURN_SEQ(verify_setting, verify_return, 2);
+  frame_to_bytes_fake.custom_fake = frame_bytes_return_9;
+  int rc = handle_settings_payload(buffer, &header_sett, &payload, pairs, &hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in bytes to settings payload)");
+  rc = handle_settings_payload(buffer, &header_sett, &payload, pairs, &hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in update settings table)");
+}
+
 void test_read_frame(void){
   hstates_t hst;
   frame_header_t header = {36, 0x4, 0x0, 0x0, 0};
@@ -809,6 +835,7 @@ int main(void)
     UNIT_TEST(test_check_for_settings_ack);
     UNIT_TEST(test_check_for_settings_ack_errors);
     UNIT_TEST(test_handle_settings_payload);
+    UNIT_TEST(test_handle_settings_payload_errors);
     UNIT_TEST(test_read_frame);
     UNIT_TEST(test_read_frame_error);
     UNIT_TEST(test_h2_send_local_settings);

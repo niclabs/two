@@ -150,7 +150,7 @@ int check_for_settings_ack(frame_header_t *header, hstates_t *st){
 int handle_settings_payload(uint8_t *buff_read, frame_header_t *header, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st){
     int size = bytes_to_settings_payload(buff_read, header->length, spl, pairs);
     if(size != header->length){
-        ERROR("Error in byte to settings payload coding");
+        ERROR("Error in byte to settings payload coding. INTERNAL ERROR");
         return -1;
     }
     if(!update_settings_table(spl, REMOTE, st)){
