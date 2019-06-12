@@ -47,7 +47,7 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st)
         rc += verify_setting(spl->pairs[i].identifier, spl->pairs[i].value);
     }
     if(rc != 0){
-        puts("Error: invalid setting found");
+        ERROR("Error: invalid setting found");
         return -1;
     }
     if(place == REMOTE){
@@ -67,7 +67,7 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st)
         return 0;
     }
     else{
-        puts("Error: Not a valid table to update");
+        ERROR("Error: Not a valid table to update");
         return -1;
     }
 }
@@ -85,14 +85,14 @@ int send_settings_ack(hstates_t * st){
     int rc;
     rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
     if(rc){
-        puts("Error in Settings ACK creation!");
+        ERROR("Error in Settings ACK creation!");
         return -1;
     }
     uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     rc = http_write(st, byte_ack, size_byte_ack);
     if(rc != size_byte_ack){
-        puts("Error in Settings ACK sending");
+        ERROR("Error in Settings ACK sending");
         return -1;
     }
     return 0;
@@ -107,17 +107,17 @@ int send_settings_ack(hstates_t * st){
 */
 int check_for_settings_ack(frame_header_t *header, hstates_t *st){
     if(header->type != 0x4){
-        puts("Read settings payload error, header type is not SETTINGS");
+        ERROR("Read settings payload error, header type is not SETTINGS");
         return -1;
     }
     else if(header->stream_id != 0){
-        puts("Protocol Error: stream id on SETTINGS FRAME is not zero");
+        ERROR("Protocol Error: stream id on SETTINGS FRAME is not zero");
         return -1;
     }
         /*Check if ACK is set*/
     else if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
         if(header->length != 0){
-            puts("Frame Size Error: ACK flag is set, but payload size is not zero");
+            ERROR("Frame Size Error: ACK flag is set, but payload size is not zero");
             return -1;
         }
         else{
@@ -126,7 +126,7 @@ int check_for_settings_ack(frame_header_t *header, hstates_t *st){
                 return 1;
             }
             else{
-                puts("ACK received but not expected");
+                WARN("ACK received but not expected");
                 return 1;
             }
         }
@@ -150,7 +150,7 @@ int check_for_settings_ack(frame_header_t *header, hstates_t *st){
 int handle_settings_payload(uint8_t *buff_read, frame_header_t *header, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st){
     int size = bytes_to_settings_payload(buff_read, header->length, spl, pairs);
     if(size != header->length){
-        puts("Error in byte to settings payload coding");
+        ERROR("Error in byte to settings payload coding");
         return -1;
     }
     if(!update_settings_table(spl, REMOTE, st)){
@@ -174,13 +174,13 @@ int handle_settings_payload(uint8_t *buff_read, frame_header_t *header, settings
 int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
     int rc = read_n_bytes(buff_read, 9, st);
     if(rc != 9){
-        puts("Error reading bytes from http");
+        ERROR("Error reading bytes from http");
         return -1;
     }
     /*Must be 0*/
     rc = bytes_to_frame_header(buff_read, 9, header);
     if(rc){
-        puts("Error coding bytes to frame header");
+        ERROR("Error coding bytes to frame header");
         return -1;
     }
     if(header->length > 256){
@@ -189,7 +189,7 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
     }
     rc = read_n_bytes(buff_read, header->length, st);
     if(rc != header->length){
-        puts("Error reading bytes from http");
+        ERROR("Error reading bytes from http");
         return -1;
     }
     return 0;
@@ -364,7 +364,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
       uint32_t header_list_size = get_header_list_size(st->h_lists.header_list_in, st->h_lists.header_list_count_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
-        ERROR("Header list size greater than max alloweed. Send HTTP 431");
+        WARN("Header list size greater than max alloweed. Send HTTP 431");
         st->keep_receiving = 0;
         //TODO send error and finish stream
         return 0;
@@ -394,7 +394,7 @@ int h2_send_local_settings(hstates_t *st){
     rc = create_settings_frame(ids, st->h2s.local_settings, 6, &mysettingframe,
                                &mysettingframeheader, &mysettings, mypairs);
     if(rc){
-        puts("Error in Settings Frame creation");
+        ERROR("Error in Settings Frame creation");
         return -1;
     }
     uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
@@ -402,7 +402,7 @@ int h2_send_local_settings(hstates_t *st){
     /*Assuming that http_write returns the number of bytes written*/
     rc = http_write(st, byte_mysettings, size_byte_mysettings);
     if(rc != size_byte_mysettings){
-        puts("Error in local settings writing");
+        ERROR("Error in local settings writing");
         return -1;
     }
     /*Settings were sent, so we expect an ack*/
@@ -431,7 +431,7 @@ uint32_t h2_read_setting_from(uint8_t place, uint8_t param, hstates_t *st){
         return st->h2s.remote_settings[--param];
     }
     else{
-        puts("Error: not a valid table to read from");
+        ERROR("Error: not a valid table to read from");
         return -1;
     }
     return -1;
@@ -458,12 +458,12 @@ int h2_client_init_connection(hstates_t *st){
     }
     rc = http_write(st, preface_buff,24);
     if(rc != 24){
-        puts("Error in preface sending");
+        ERROR("Error in preface sending");
         return -1;
     }
     puts("Client: sending local settings...");
     if((rc = h2_send_local_settings(st)) < 0){
-        puts("Error in local settings sending");
+        ERROR("Error in local settings sending");
         return -1;
     }
     puts("Client: init connection done");
@@ -487,18 +487,18 @@ int h2_server_init_connection(hstates_t *st){
     /*We read the first 24 byes*/
     rc = read_n_bytes(preface_buff, 24, st);
     if(rc != 24){
-        puts("Error in reading preface");
+        ERROR("Error in reading preface");
         return -1;
     }
     puts("Server: 24 bytes read");
     if(strcmp(preface, (char*)preface_buff) != 0){
-        puts("Error in preface receiving");
+        ERROR("Error in preface receiving");
         return -1;
     }
     /*Server sends local settings to endpoint*/
     puts("Server: sending local settings...");
     if((rc = h2_send_local_settings(st)) < 0){
-        puts("Error in local settings sending");
+        ERROR("Error in local settings sending");
         return -1;
     }
     puts("Server: init connection done");
