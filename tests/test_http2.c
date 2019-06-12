@@ -210,6 +210,31 @@ void test_update_settings_table(void){
 
 }
 
+void test_update_settings_table_errors(void){
+  settings_pair_t pair1 = {0x1, 12345};
+  settings_pair_t pair2 = {0x2, 0};
+  settings_pair_t pair3 = {0x3, 12345};
+  settings_pair_t pair4 = {0x4, 12345};
+  settings_pair_t pair5 = {0x5, 12345};
+  settings_pair_t pair6 = {0x6, 12345};
+  settings_pair_t pairs[6] = {pair1,pair2,pair3,pair4,pair5,pair6};
+  settings_payload_t payload = {pairs, 6};
+  hstates_t hdummy;
+  h2states_t dummy = {{1,1,1,1,1,1},
+                      {1,1,1,1,1,1},
+                      0};
+  hdummy.h2s = dummy;
+  int verify_return[12];
+  memset(verify_return, 0, sizeof(verify_return));
+  // First error, one verification fails
+  verify_return[3] = -1;
+  SET_RETURN_SEQ(verify_setting, verify_return, 12);
+  int rc = update_settings_table(&payload, LOCAL, &hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1, invalid setting inserted");
+  rc = update_settings_table(&payload, 5, &hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1, not valid table");
+}
+
 void test_send_settings_ack(void){
   hstates_t hdummy;
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
@@ -745,6 +770,7 @@ int main(void)
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_init_variables);
     UNIT_TEST(test_update_settings_table);
+    UNIT_TEST(test_update_settings_table_errors);
     UNIT_TEST(test_send_settings_ack);
     UNIT_TEST(test_check_for_settings_ack);
     UNIT_TEST(test_handle_settings_payload);
