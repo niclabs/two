@@ -545,10 +545,11 @@ void test_http_get_header_fail_header_not_found(void)
     strcpy(hs.h_lists.header_list_in[0].value, "one");
     strcpy(hs.h_lists.header_list_in[1].name, "something2");
     strcpy(hs.h_lists.header_list_in[1].value, "two");
+    hs.h_lists.header_list_count_in = 2;
 
     char *buf = http_get_header(&hs.h_lists, "settings");
 
-    TEST_ASSERT_MESSAGE(buf == NULL, "Header should not be found in headers list");
+    TEST_ASSERT_MESSAGE(buf == NULL, "Header not found in headers list");
 }
 
 
@@ -617,6 +618,7 @@ void test_get_receive_fail_path_not_found(void)
     hstates_t hs;
 
     set_init_values(&hs);
+    hs.h_lists.header_list_count_in = HTTP2_MAX_HEADER_COUNT;
 
     callback_type_t foo_callback;
     http_set_function_to_path(&hs, foo_callback, "index/out");
@@ -640,6 +642,7 @@ void test_get_receive_fail_path_callback_list_empty(void)
     hstates_t hs;
 
     set_init_values(&hs);
+    hs.h_lists.header_list_count_in = HTTP2_MAX_HEADER_COUNT;
 
     strcpy(hs.h_lists.header_list_in[0].name, ":path");
     strcpy(hs.h_lists.header_list_in[0].value, "index/");
