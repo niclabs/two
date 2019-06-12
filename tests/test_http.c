@@ -613,12 +613,11 @@ void test_get_receive_fail_h2_send_headers(void)
 }
 
 
-void test_get_receive_fail_path_not_found(void)
+void test_get_receive_path_not_found(void)
 {
     hstates_t hs;
 
     set_init_values(&hs);
-    hs.h_lists.header_list_count_in = HTTP2_MAX_HEADER_COUNT;
 
     callback_type_t foo_callback;
     http_set_function_to_path(&hs, foo_callback, "index/out");
@@ -629,7 +628,7 @@ void test_get_receive_fail_path_not_found(void)
 
     int get = get_receive(&hs);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, get, "No function associated with this path");
+    TEST_ASSERT_EQUAL_MESSAGE(0, get, "No function associated with this path");
 
     TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
@@ -637,12 +636,11 @@ void test_get_receive_fail_path_not_found(void)
 }
 
 
-void test_get_receive_fail_path_callback_list_empty(void)
+void test_get_receive_path_callback_list_empty(void)
 {
     hstates_t hs;
 
     set_init_values(&hs);
-    hs.h_lists.header_list_count_in = HTTP2_MAX_HEADER_COUNT;
 
     strcpy(hs.h_lists.header_list_in[0].name, ":path");
     strcpy(hs.h_lists.header_list_in[0].value, "index/");
@@ -650,7 +648,7 @@ void test_get_receive_fail_path_callback_list_empty(void)
 
     int get = get_receive(&hs);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Path-callback list is empty");
+    TEST_ASSERT_EQUAL_MESSAGE(0, get, "Path-callback list is empty");
 
     TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
@@ -696,8 +694,8 @@ int main(void)
 
     UNIT_TEST(test_get_receive_success);
     UNIT_TEST(test_get_receive_fail_h2_send_headers);
-    UNIT_TEST(test_get_receive_fail_path_not_found);
-    UNIT_TEST(test_get_receive_fail_path_callback_list_empty);
+    UNIT_TEST(test_get_receive_path_not_found);
+    UNIT_TEST(test_get_receive_path_callback_list_empty);
 
     return UNITY_END();
 }

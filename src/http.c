@@ -241,12 +241,9 @@ int get_receive(hstates_t *hs)
     callback_type_t callback;
 
     if (hs->path_callback_list_count == 0) {
-        if (http_set_header(&hs->h_lists, ":satus", "400") < 0) {
-            http_clear_header_list(hs, -1, 1);
-            http_set_header(&hs->h_lists, ":satus", "400");
-        }
         WARN("Path-callback list is empty");
-        return -1;
+        //return value 0 => an error can be send, 1 => problems
+        return http_set_header(&hs->h_lists, ":satus", "400");
     }
 
     int i;
@@ -257,12 +254,9 @@ int get_receive(hstates_t *hs)
             break;
         }
         if (i == hs->path_callback_list_count) {
-            if (http_set_header(&hs->h_lists, ":satus", "400") < 0) {
-                http_clear_header_list(hs, -1, 1);
-                http_set_header(&hs->h_lists, ":satus", "400");
-            }
             WARN("No function associated with this path");
-            return -1;
+            //return value 0 => an error can be send, 1 => problems
+            return http_set_header(&hs->h_lists, ":satus", "400");
         }
     }
 
