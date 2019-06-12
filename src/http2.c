@@ -84,7 +84,7 @@ int send_settings_ack(hstates_t * st){
     frame_header_t ack_frame_header;
     int rc;
     rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
-    if(rc){
+    if(rc < 0){
         ERROR("Error in Settings ACK creation!");
         return -1;
     }
