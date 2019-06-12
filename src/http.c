@@ -223,7 +223,7 @@ char *http_get_header(headers_lists_t* h_lists, char *header)
 
     int k;
     for (k = 0; k <= i; k++) {
-        if (strncmp(h_lists->header_list_in[k].name, header, strlen(header)) == 0) {
+        if ((strncmp(h_lists->header_list_in[k].name, header, strlen(header)) == 0) && strlen(header)==strlen(h_lists->header_list_in[k].name)) {
             INFO("RETURNING value of '%s' header; '%s'", h_lists->header_list_in[k].name, h_lists->header_list_in[k].value);
             return h_lists->header_list_in[k].value;
         }
@@ -250,7 +250,9 @@ int get_receive(hstates_t *hs)
 
     int i;
     for (i = 0; i <= hs->path_callback_list_count; i++) {
-        if (strncmp(hs->path_callback_list[i].name, path, strlen(path)) == 0) {
+    char *path_in_list = hs->path_callback_list[i].name;
+        if ((strncmp(path_in_list, path, strlen(path)) == 0) && strlen(path) == strlen(path_in_list))
+        {
             callback.cb = hs->path_callback_list[i].ptr;
             break;
         }
