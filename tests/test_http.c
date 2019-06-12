@@ -576,7 +576,7 @@ void test_get_receive_success(void)
     TEST_ASSERT_EQUAL(0, get);
 
     TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "200", strlen("200")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].name, "ret", strlen("ret")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].value, "ok", strlen("ok")));
@@ -606,7 +606,7 @@ void test_get_receive_fail_h2_send_headers(void)
     TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Problems sending data");
 
     TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "200", strlen("200")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].name, "ret", strlen("ret")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].value, "ok", strlen("ok")));
@@ -631,7 +631,7 @@ void test_get_receive_path_not_found(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "No function associated with this path");
 
     TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "400", strlen("400")));
 }
 
@@ -651,7 +651,7 @@ void test_get_receive_path_callback_list_empty(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "Path-callback list is empty");
 
     TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
     TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "400", strlen("400")));
 }
 

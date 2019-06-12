@@ -243,7 +243,7 @@ int get_receive(hstates_t *hs)
     if (hs->path_callback_list_count == 0) {
         WARN("Path-callback list is empty");
         //return value 0 => an error can be send, 1 => problems
-        return http_set_header(&hs->h_lists, ":satus", "400");
+        return http_set_header(&hs->h_lists, ":status", "400");
     }
 
     int i;
@@ -256,11 +256,11 @@ int get_receive(hstates_t *hs)
         if (i == hs->path_callback_list_count) {
             WARN("No function associated with this path");
             //return value 0 => an error can be send, 1 => problems
-            return http_set_header(&hs->h_lists, ":satus", "400");
+            return http_set_header(&hs->h_lists, ":status", "400");
         }
     }
 
-    http_set_header(&hs->h_lists, ":satus", "200");
+    http_set_header(&hs->h_lists, ":status", "200");
 
     callback.cb(&hs->h_lists);
 
