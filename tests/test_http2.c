@@ -246,6 +246,19 @@ void test_send_settings_ack(void){
   TEST_ASSERT_MESSAGE(size == 9, "9 bytes must be written by send_settings_ack");
 }
 
+void test_send_settings_ack_errors(void){
+  hstates_t hdummy;
+  int create_return[2] = {-1, 0};
+  SET_RETURN_SEQ(create_settings_ack_frame, create_return, 2);
+  int frame_to_bytes_return[1] = {1000};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+  int rc = send_settings_ack(&hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in creation)");
+  TEST_ASSERT_MESSAGE(create_settings_ack_frame_fake.call_count = 1, "ACK creation not called");
+  rc = send_settings_ack(&hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in settings write)");
+}
+
 void test_check_for_settings_ack(void){
   hstates_t hdummy;
   h2states_t dummy = {{1,1,1,1,1,1},
@@ -772,6 +785,7 @@ int main(void)
     UNIT_TEST(test_update_settings_table);
     UNIT_TEST(test_update_settings_table_errors);
     UNIT_TEST(test_send_settings_ack);
+    UNIT_TEST(test_send_settings_ack_errors);
     UNIT_TEST(test_check_for_settings_ack);
     UNIT_TEST(test_handle_settings_payload);
     UNIT_TEST(test_read_frame);
