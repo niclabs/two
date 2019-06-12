@@ -666,7 +666,7 @@ void test_handle_continuation_payload_end_headers_flag_set(void){
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 70, "pointer must be 75, new data was written");
   TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 70, "header list count in must be 70");
-  TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waitinf for end headers must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
 }
@@ -678,9 +678,12 @@ void test_handle_continuation_payload_end_headers_end_stream_flag_set(void){
   int rc;
   // set payload size of 25 octets
   head.length = 20;
+  head.stream_id = 12;
   // assume headers payload was received before, so block fragments were loaded too
   st.h2s.header_block_fragments_pointer = 50;
-  st.h2s.received_end_stream = 0;
+  st.h2s.received_end_stream = 1;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  st.h2s.current_stream.stream_id = 12;
   // returns 20
   buffer_copy_fake.custom_fake = bc;
   int flag_returns[1] = {1};
@@ -698,7 +701,7 @@ void test_handle_continuation_payload_end_headers_end_stream_flag_set(void){
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waitinf for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
-  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE, "stream must be half closed remote");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE, "stream must be half closed remote");
   TEST_ASSERT_MESSAGE(st.h2s.received_end_stream == 0, "received end stream must be 0");
 }
 

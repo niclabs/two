@@ -357,7 +357,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
       }
       st->h_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;
-      if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEASDER FRAME, THEN CLOSE THE STREAM
+      if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
