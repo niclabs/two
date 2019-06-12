@@ -154,7 +154,7 @@ void test_http_clear_header_list_in_success_new_index_bigger(void)
     int clear = http_clear_header_list(&hs, 5, 0);
 
     TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(4,hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(4, hs.h_lists.header_list_count_in);
 }
 
 
@@ -166,7 +166,7 @@ void test_http_clear_header_list_in_success_new_invalid_index(void)
     int clear = http_clear_header_list(&hs, -6, 0);
 
     TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(0,hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
 }
 
 
@@ -178,7 +178,7 @@ void test_http_clear_header_list_in_success_new_valid_index(void)
     int clear = http_clear_header_list(&hs, 2, 0);
 
     TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(2,hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_in);
 }
 
 
@@ -190,7 +190,7 @@ void test_http_clear_header_list_out_success_new_index_bigger(void)
     int clear = http_clear_header_list(&hs, 5, 1);
 
     TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(4,hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(4, hs.h_lists.header_list_count_out);
 }
 
 
@@ -202,7 +202,7 @@ void test_http_clear_header_list_out_success_new_invalid_index(void)
     int clear = http_clear_header_list(&hs, -6, 1);
 
     TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(0,hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
 }
 
 
@@ -214,7 +214,7 @@ void test_http_clear_header_list_out_success_new_valid_index(void)
     int clear = http_clear_header_list(&hs, 2, 1);
 
     TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(2,hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_out);
 }
 
 

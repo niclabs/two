@@ -63,7 +63,7 @@ typedef struct HTTP_STATES {
     headers_lists_t h_lists;
     uint8_t path_callback_list_count;
     key_pointer_map_t path_callback_list[HTTP_MAX_CALLBACK_LIST_ENTRY];
-    uint8_t new_headers; //boolean. Notifies HTTP if new headers were written
+    uint8_t new_headers;    //boolean. Notifies HTTP if new headers were written
     uint8_t keep_receiving; //boolean. Tells HTTP to keep receiving frames
 } hstates_t;
 
@@ -106,6 +106,7 @@ int http_read(hstates_t *hs, uint8_t *buf, int len);
  * @return    0        The list was emptied
  * @return    1        There was an error
  */
-int http_clear_header_list(hstates_t *hs, int index, int flag);
+int http_clear_header_list
+    (hstates_t *hs, int index, int flag);
 
 #endif /* HTTP_BRIDGE_H */

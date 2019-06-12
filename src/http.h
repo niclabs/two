@@ -7,8 +7,8 @@
 
 #include "http_bridge.h"
 
-typedef struct CALLBACK_TYPE_S{
-  int (*cb)(headers_lists_t*);
+typedef struct CALLBACK_TYPE_S {
+    int (*cb)(headers_lists_t *);
 } callback_type_t;
 
 /*Server*/
@@ -87,7 +87,7 @@ int http_client_disconnect(hstates_t *hs);
  * @return   0      successfully added pair
  * @return   -1     There was an error
  */
-int http_set_header(headers_lists_t* h_lists, char *name, char *value);
+int http_set_header(headers_lists_t *h_lists, char *name, char *value);
 
 
 /*
@@ -98,7 +98,7 @@ int http_set_header(headers_lists_t* h_lists, char *name, char *value);
  *
  * @return              value finded
  */
-char *http_get_header(headers_lists_t* h_lists, char *header);
+char *http_get_header(headers_lists_t *h_lists, char *header);
 
 
 #endif /* HTTP_H */

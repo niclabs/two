@@ -18,15 +18,16 @@
 
 int get_receive(hstates_t *hs);
 
-void set_init_values(hstates_t *hs){
-  hs->socket_state = 0;
-  hs->h_lists.header_list_count_in = 0;
-  hs->h_lists.header_list_count_out = 0;
-  hs->path_callback_list_count = 0;
-  hs->connection_state = 0;
-  hs->server_socket_state = 0;
-  hs->keep_receiving = 0;
-  hs->new_headers = 0;
+void set_init_values(hstates_t *hs)
+{
+    hs->socket_state = 0;
+    hs->h_lists.header_list_count_in = 0;
+    hs->h_lists.header_list_count_out = 0;
+    hs->path_callback_list_count = 0;
+    hs->connection_state = 0;
+    hs->server_socket_state = 0;
+    hs->keep_receiving = 0;
+    hs->new_headers = 0;
 }
 
 /************************************Server************************************/
@@ -41,12 +42,12 @@ int http_init_server(hstates_t *hs, uint16_t port)
         return -1;
     }
 
-    hs->server_socket_state=1;
+    hs->server_socket_state = 1;
 
     if (sock_listen(hs->server_socket, port) < 0) {
         ERROR("Partial error in server creation");
-        if (sock_destroy(hs->server_socket)==0){
-          hs->server_socket_state=0;
+        if (sock_destroy(hs->server_socket) == 0) {
+            hs->server_socket_state = 0;
         }
         return -1;
     }
@@ -68,24 +69,24 @@ int http_init_server(hstates_t *hs, uint16_t port)
         }
 
         while (hs->connection_state == 1) {
-          if (h2_receive_frame(hs) < 1) {
-            break;
-          }
-          if (hs->keep_receiving == 1){
-            continue;
-          }
-          if (hs->new_headers == 1){
-            get_receive(hs);
-            http_clear_header_list(hs,-1,0);
-            http_clear_header_list(hs,-1,1);
-          }
+            if (h2_receive_frame(hs) < 1) {
+                break;
+            }
+            if (hs->keep_receiving == 1) {
+                continue;
+            }
+            if (hs->new_headers == 1) {
+                get_receive(hs);
+                http_clear_header_list(hs, -1, 0);
+                http_clear_header_list(hs, -1, 1);
+            }
         }
 
-        if (sock_destroy(hs->socket)==-1){
-          WARN("Could not destroy client socket");
+        if (sock_destroy(hs->socket) == -1) {
+            WARN("Could not destroy client socket");
         }
-        hs->connection_state=0;
-        hs->socket_state=0;
+        hs->connection_state = 0;
+        hs->socket_state = 0;
     }
 
     ERROR("Not client found");
@@ -125,26 +126,26 @@ int http_server_destroy(hstates_t *hs)
 
 int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path)
 {
-  int i = hs->path_callback_list_count;
+    int i = hs->path_callback_list_count;
 
-  if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {
-      WARN("Path-callback list is full");
-      return -1;
-  }
+    if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {
+        WARN("Path-callback list is full");
+        return -1;
+    }
 
-  strcpy(hs->path_callback_list[i].name, path);
-  hs->path_callback_list[i].ptr=callback.cb;
+    strcpy(hs->path_callback_list[i].name, path);
+    hs->path_callback_list[i].ptr = callback.cb;
 
-  hs->path_callback_list_count = i + 1;
+    hs->path_callback_list_count = i + 1;
 
-  return 0;
+    return 0;
 }
 
 
 /************************************Client************************************/
 
 
-int http_client_connect(hstates_t * hs, uint16_t port, char *ip)
+int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 {
     set_init_values(hs);
 
@@ -194,7 +195,7 @@ int http_client_disconnect(hstates_t *hs)
 
 /************************************Headers************************************/
 
-int http_set_header(headers_lists_t* h_lists, char *name, char *value)
+int http_set_header(headers_lists_t *h_lists, char *name, char *value)
 {
     int i = h_lists->header_list_count_out;
 
@@ -212,7 +213,7 @@ int http_set_header(headers_lists_t* h_lists, char *name, char *value)
 }
 
 
-char *http_get_header(headers_lists_t* h_lists, char *header)
+char *http_get_header(headers_lists_t *h_lists, char *header)
 {
     int i = h_lists->header_list_count_in;
 
@@ -223,7 +224,7 @@ char *http_get_header(headers_lists_t* h_lists, char *header)
 
     int k;
     for (k = 0; k <= i; k++) {
-        if ((strncmp(h_lists->header_list_in[k].name, header, strlen(header)) == 0) && strlen(header)==strlen(h_lists->header_list_in[k].name)) {
+        if ((strncmp(h_lists->header_list_in[k].name, header, strlen(header)) == 0) && strlen(header) == strlen(h_lists->header_list_in[k].name)) {
             INFO("RETURNING value of '%s' header; '%s'", h_lists->header_list_in[k].name, h_lists->header_list_in[k].value);
             return h_lists->header_list_in[k].value;
         }
@@ -236,13 +237,13 @@ char *http_get_header(headers_lists_t* h_lists, char *header)
 
 int get_receive(hstates_t *hs)
 {
-    char *path=http_get_header(&hs->h_lists, ":path");
+    char *path = http_get_header(&hs->h_lists, ":path");
     callback_type_t callback;
 
     if (hs->path_callback_list_count == 0) {
-        if(http_set_header(&hs->h_lists, ":satus", "400")<0){
-          http_clear_header_list(hs,-1,1);
-          http_set_header(&hs->h_lists, ":satus", "400");
+        if (http_set_header(&hs->h_lists, ":satus", "400") < 0) {
+            http_clear_header_list(hs, -1, 1);
+            http_set_header(&hs->h_lists, ":satus", "400");
         }
         WARN("Path-callback list is empty");
         return -1;
@@ -250,16 +251,15 @@ int get_receive(hstates_t *hs)
 
     int i;
     for (i = 0; i <= hs->path_callback_list_count; i++) {
-    char *path_in_list = hs->path_callback_list[i].name;
-        if ((strncmp(path_in_list, path, strlen(path)) == 0) && strlen(path) == strlen(path_in_list))
-        {
+        char *path_in_list = hs->path_callback_list[i].name;
+        if ((strncmp(path_in_list, path, strlen(path)) == 0) && strlen(path) == strlen(path_in_list)) {
             callback.cb = hs->path_callback_list[i].ptr;
             break;
         }
         if (i == hs->path_callback_list_count) {
-            if(http_set_header(&hs->h_lists, ":satus", "400")<0){
-              http_clear_header_list(hs,-1,1);
-              http_set_header(&hs->h_lists, ":satus", "400");
+            if (http_set_header(&hs->h_lists, ":satus", "400") < 0) {
+                http_clear_header_list(hs, -1, 1);
+                http_set_header(&hs->h_lists, ":satus", "400");
             }
             WARN("No function associated with this path");
             return -1;
@@ -270,9 +270,9 @@ int get_receive(hstates_t *hs)
 
     callback.cb(&hs->h_lists);
 
-    if(h2_send_headers(hs)<0){
-      ERROR("Problems sending data");
-      return -1;
+    if (h2_send_headers(hs) < 0) {
+        ERROR("Problems sending data");
+        return -1;
     }
 
     return 0;

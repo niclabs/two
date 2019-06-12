@@ -53,49 +53,54 @@ void setUp()
 }
 
 
-int h2_receive_frame_custom_fake(hstates_t * hs){
-  hs->keep_receiving = 1;
-  hs->connection_state = 0;
-  return 1;
+int h2_receive_frame_custom_fake(hstates_t *hs)
+{
+    hs->keep_receiving = 1;
+    hs->connection_state = 0;
+    return 1;
 }
 
-int foo(headers_lists_t * headers){
-  http_set_header(headers, "ret", "ok");
-  return 1;
+int foo(headers_lists_t *headers)
+{
+    http_set_header(headers, "ret", "ok");
+    return 1;
 }
 
 
-void test_set_init_values_success(void){
-  hstates_t hs;
-  hs.socket_state = 1;
-  hs.h_lists.header_list_count_in = 1;
-  hs.h_lists.header_list_count_out = 1;
-  hs.path_callback_list_count = 1;
-  hs.connection_state = 1;
-  hs.server_socket_state = 1;
-  hs.keep_receiving = 1;
-  hs.new_headers = 1;
+void test_set_init_values_success(void)
+{
+    hstates_t hs;
 
-  set_init_values(&hs);
+    hs.socket_state = 1;
+    hs.h_lists.header_list_count_in = 1;
+    hs.h_lists.header_list_count_out = 1;
+    hs.path_callback_list_count = 1;
+    hs.connection_state = 1;
+    hs.server_socket_state = 1;
+    hs.keep_receiving = 1;
+    hs.new_headers = 1;
 
-  TEST_ASSERT_EQUAL(0, hs.socket_state);
-  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-  TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
-  TEST_ASSERT_EQUAL(0, hs.path_callback_list_count);
-  TEST_ASSERT_EQUAL(0, hs.connection_state);
-  TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-  TEST_ASSERT_EQUAL(0, hs.keep_receiving);
-  TEST_ASSERT_EQUAL(0, hs.new_headers);
+    set_init_values(&hs);
+
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.path_callback_list_count);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+    TEST_ASSERT_EQUAL(0, hs.keep_receiving);
+    TEST_ASSERT_EQUAL(0, hs.new_headers);
 }
 
 
 void test_http_init_server_success(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
-    sock_destroy_fake.return_val=0;
+    sock_destroy_fake.return_val = 0;
 
     h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
 
@@ -126,6 +131,7 @@ void test_http_init_server_success(void)
 void test_http_init_server_fail_h2_server_init_connection(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = 0;
@@ -151,6 +157,7 @@ void test_http_init_server_fail_h2_server_init_connection(void)
 void test_http_init_server_fail_sock_accept(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     sock_accept_fake.return_val = -1;
@@ -175,6 +182,7 @@ void test_http_init_server_fail_sock_accept(void)
 void test_http_init_server_fail_sock_listen(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = -1;
     sock_destroy_fake.return_val = 0;
@@ -198,6 +206,7 @@ void test_http_init_server_fail_sock_listen(void)
 void test_http_init_server_fail_sock_create(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = -1;
 
     int is = http_init_server(&hs, 12);
@@ -217,6 +226,7 @@ void test_http_init_server_fail_sock_create(void)
 void test_http_server_destroy_success(void)
 {
     hstates_t hs;
+
     hs.socket_state = 1;
     hs.connection_state = 1;
     hs.server_socket_state = 1;
@@ -239,6 +249,7 @@ void test_http_server_destroy_success(void)
 void test_http_server_destroy_success_without_client(void)
 {
     hstates_t hs;
+
     hs.socket_state = 0;
     hs.connection_state = 1;
     hs.server_socket_state = 1;
@@ -260,6 +271,7 @@ void test_http_server_destroy_success_without_client(void)
 void test_http_server_destroy_fail_not_server(void)
 {
     hstates_t hs;
+
     hs.server_socket_state = 0;
 
     int d = http_server_destroy(&hs);
@@ -271,6 +283,7 @@ void test_http_server_destroy_fail_not_server(void)
 void test_http_server_destroy_fail_sock_destroy(void)
 {
     hstates_t hs;
+
     hs.socket_state = 1;
     hs.connection_state = 1;
     hs.server_socket_state = 1;
@@ -291,15 +304,17 @@ void test_http_server_destroy_fail_sock_destroy(void)
 }
 
 
-void test_http_set_function_to_path_success(void){
+void test_http_set_function_to_path_success(void)
+{
     hstates_t hs;
-    hs.path_callback_list_count=0;
+
+    hs.path_callback_list_count = 0;
     callback_type_t foo_callback;
-    foo_callback.cb=foo;
+    foo_callback.cb = foo;
 
-    int set=http_set_function_to_path(&hs, foo_callback, "index");
+    int set = http_set_function_to_path(&hs, foo_callback, "index");
 
-    TEST_ASSERT_EQUAL(0,set);
+    TEST_ASSERT_EQUAL(0, set);
 
     TEST_ASSERT_EQUAL(1, hs.path_callback_list_count);
     TEST_ASSERT_EQUAL(0, strncmp(hs.path_callback_list[0].name, "index", strlen("index")));
@@ -308,14 +323,16 @@ void test_http_set_function_to_path_success(void){
 }
 
 
-void test_http_set_function_to_path_fail_list_full(void){
+void test_http_set_function_to_path_fail_list_full(void)
+{
     hstates_t hs;
-    hs.path_callback_list_count=HTTP_MAX_CALLBACK_LIST_ENTRY;
+
+    hs.path_callback_list_count = HTTP_MAX_CALLBACK_LIST_ENTRY;
     callback_type_t foo_callback;
 
-    int set=http_set_function_to_path(&hs, foo_callback, "index");
+    int set = http_set_function_to_path(&hs, foo_callback, "index");
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1,set,"Path-callback list is full");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, set, "Path-callback list is full");
 }
 
 
@@ -323,6 +340,7 @@ void test_http_set_function_to_path_fail_list_full(void){
 void test_http_client_connect_success(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = 0;
@@ -346,6 +364,7 @@ void test_http_client_connect_success(void)
 void test_http_client_connect_fail_h2_client_init_connection(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = -1;
@@ -369,6 +388,7 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 void test_http_client_connect_fail_sock_connect(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = -1;
     sock_destroy_fake.return_val = 0;
@@ -392,6 +412,7 @@ void test_http_client_connect_fail_sock_connect(void)
 void test_http_client_connect_fail_sock_create(void)
 {
     hstates_t hs;
+
     sock_create_fake.return_val = -1;
 
     int cc = http_client_connect(&hs, 12, "::");
@@ -411,7 +432,8 @@ void test_http_client_connect_fail_sock_create(void)
 void test_http_client_disconnect_success_v1(void)
 {
     hstates_t hs;
-    hs.socket_state=0;
+
+    hs.socket_state = 0;
 
     int d = http_client_disconnect(&hs);
 
@@ -425,7 +447,8 @@ void test_http_client_disconnect_success_v1(void)
 void test_http_client_disconnect_success_v2(void)
 {
     hstates_t hs;
-    hs.socket_state=1;
+
+    hs.socket_state = 1;
 
     sock_destroy_fake.return_val = 0;
 
@@ -443,8 +466,9 @@ void test_http_client_disconnect_success_v2(void)
 void test_http_client_disconnect_fail(void)
 {
     hstates_t hs;
-    hs.socket_state=1;
-    hs.connection_state=1;
+
+    hs.socket_state = 1;
+    hs.connection_state = 1;
 
     sock_destroy_fake.return_val = -1;
 
@@ -473,10 +497,11 @@ void test_http_set_header_success(void)
 void test_http_set_header_fail_list_full(void)
 {
     hstates_t hs;
-    hs.h_lists.header_list_count_out=HTTP2_MAX_HEADER_COUNT;
+
+    hs.h_lists.header_list_count_out = HTTP2_MAX_HEADER_COUNT;
     int set = http_set_header(&hs.h_lists, "settings", "server:on");
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, set,"Headers list is full");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, set, "Headers list is full");
     TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.h_lists.header_list_count_out);
 }
 
