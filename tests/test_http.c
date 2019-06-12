@@ -513,8 +513,10 @@ void test_http_get_header_fail_header_not_found(void)
 {
     hstates_t hs;
 
-    http_set_header(&hs.h_lists, "something1", "something one");
-    http_set_header(&hs.h_lists, "something2", "something two");
+    strcpy(hs.h_lists.header_list_in[0].name, "something1");
+    strcpy(hs.h_lists.header_list_in[0].value, "one");
+    strcpy(hs.h_lists.header_list_in[1].name, "something2");
+    strcpy(hs.h_lists.header_list_in[1].value, "two");
 
     char *buf = http_get_header(&hs.h_lists, "settings");
 
