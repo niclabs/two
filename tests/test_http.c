@@ -60,7 +60,8 @@ int h2_receive_frame_custom_fake(hstates_t * hs){
 }
 
 int foo(headers_lists_t * headers){
-  (void)headers;
+  http_set_header(headers, "ret", "ok");
+  return 1;
 }
 
 
@@ -521,6 +522,109 @@ void test_http_get_header_fail_header_not_found(void)
 }
 
 
+void test_get_receive_success(void)
+{
+    hstates_t hs;
+
+    set_init_values(&hs);
+
+    callback_type_t foo_callback;
+    foo_callback.cb = foo;
+    http_set_function_to_path(&hs, foo_callback, "index/");
+
+    strcpy(hs.h_lists.header_list_in[0].name, ":path");
+    strcpy(hs.h_lists.header_list_in[0].value, "index/");
+    hs.h_lists.header_list_count_in = 1;
+
+    h2_send_headers_fake.return_val = 0;
+
+    int get = get_receive(&hs);
+
+    TEST_ASSERT_EQUAL((void *)h2_send_headers, fff.call_history[0]);
+
+    TEST_ASSERT_EQUAL(0, get);
+
+    TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "200", strlen("200")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].name, "ret", strlen("ret")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].value, "ok", strlen("ok")));
+}
+
+
+void test_get_receive_fail_h2_send_headers(void)
+{
+    hstates_t hs;
+
+    set_init_values(&hs);
+
+    callback_type_t foo_callback;
+    foo_callback.cb = foo;
+    http_set_function_to_path(&hs, foo_callback, "index/");
+
+    strcpy(hs.h_lists.header_list_in[0].name, ":path");
+    strcpy(hs.h_lists.header_list_in[0].value, "index/");
+    hs.h_lists.header_list_count_in = 1;
+
+    h2_send_headers_fake.return_val = -1;
+
+    int get = get_receive(&hs);
+
+    TEST_ASSERT_EQUAL((void *)h2_send_headers, fff.call_history[0]);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Problems sending data");
+
+    TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "200", strlen("200")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].name, "ret", strlen("ret")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].value, "ok", strlen("ok")));
+}
+
+
+void test_get_receive_fail_path_not_found(void)
+{
+    hstates_t hs;
+
+    set_init_values(&hs);
+
+    callback_type_t foo_callback;
+    http_set_function_to_path(&hs, foo_callback, "index/out");
+
+    strcpy(hs.h_lists.header_list_in[0].name, ":path");
+    strcpy(hs.h_lists.header_list_in[0].value, "index/");
+    hs.h_lists.header_list_count_in = 1;
+
+    int get = get_receive(&hs);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, get, "No function associated with this path");
+
+    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "400", strlen("400")));
+}
+
+
+void test_get_receive_fail_path_callback_list_empty(void)
+{
+    hstates_t hs;
+
+    set_init_values(&hs);
+
+    strcpy(hs.h_lists.header_list_in[0].name, ":path");
+    strcpy(hs.h_lists.header_list_in[0].value, "index/");
+    hs.h_lists.header_list_count_in = 1;
+
+    int get = get_receive(&hs);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Path-callback list is empty");
+
+    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":satus", strlen(":satus")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "400", strlen("400")));
+}
+
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -556,6 +660,11 @@ int main(void)
     UNIT_TEST(test_http_get_header_success);
     UNIT_TEST(test_http_get_header_fail_empty_table);
     UNIT_TEST(test_http_get_header_fail_header_not_found);
+
+    UNIT_TEST(test_get_receive_success);
+    UNIT_TEST(test_get_receive_fail_h2_send_headers);
+    UNIT_TEST(test_get_receive_fail_path_not_found);
+    UNIT_TEST(test_get_receive_fail_path_callback_list_empty);
 
     return UNITY_END();
 }
