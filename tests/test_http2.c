@@ -485,40 +485,138 @@ void test_check_incoming_continuation_condition_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (not previous headers)");
 }
 
-void test_handle_headers_payload(void){
+void test_handle_headers_payload_no_flags(void){
   frame_header_t head;
   headers_payload_t hpl;
   hstates_t st;
   st.h2s.header_block_fragments_pointer = 123;
+  // returns 20
   get_header_block_fragment_size_fake.custom_fake = ghbfs;
+  // returns 20
   buffer_copy_fake.custom_fake = bc;
   int flag_returns[2] = {0, 0};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
+  uint32_t get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t get_setting_value_returns[1] = {128};
+  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 1, "waiting end headers must be 1");
+  TEST_ASSERT_MESSAGE(st.keep_receiving == 1, "keep rcv must be 1");
+  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 20, "pointer must be 20");
+}
+
+void test_handle_headers_payload_just_end_stream_flag(void){
+  frame_header_t head;
+  headers_payload_t hpl;
+  hstates_t st;
+  st.h2s.header_block_fragments_pointer = 123;
+  // returns 20
+  get_header_block_fragment_size_fake.custom_fake = ghbfs;
+  // returns 20
+  buffer_copy_fake.custom_fake = bc;
+  int flag_returns[2] = {1, 0};
+  SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
+  uint32_t get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t get_setting_value_returns[1] = {128};
+  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  int rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 1, "waiting end headers must be 1");
+  TEST_ASSERT_MESSAGE(st.keep_receiving == 1, "keep rcv must be 1");
+  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 20, "pointer must be 20");
+  TEST_ASSERT_MESSAGE(st.h2s.received_end_stream == 1, "header ended strem flag was set");
+}
+
+void test_handle_headers_payload_full_message_header_no_end_stream(void){
+  frame_header_t head;
+  headers_payload_t hpl;
+  hstates_t st;
+  st.h2s.header_block_fragments_pointer = 123;
+  // returns 20
+  get_header_block_fragment_size_fake.custom_fake = ghbfs;
+  // returns 20
+  buffer_copy_fake.custom_fake = bc;
+  // we receive 25 headers
+  int rcv_returns[3] = {25};
+  SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
+  // only end_headers_flag is set
+  int flag_returns[2] = {0, 1};
+  uint32_t get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t get_setting_value_returns[1] = {128};
+  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
+  int rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting end headers must be 0. Full message received");
+  TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 20, "pointer must be 20");
+  TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 25, "count in must be 25");
+  TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
+}
+
+void test_handle_headers_payload_full_message_header_end_stream(void){
+  frame_header_t head;
+  headers_payload_t hpl;
+  hstates_t st;
+  st.h2s.header_block_fragments_pointer = 123;
+  // returns 20
+  get_header_block_fragment_size_fake.custom_fake = ghbfs;
+  // returns 20
+  buffer_copy_fake.custom_fake = bc;
+  // we receive 25 headers
+  int rcv_returns[3] = {25};
+  SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
+  // both end_stream and end_header flags set
+  int flag_returns[2] = {1, 1};
+  SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
+  uint32_t get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t get_setting_value_returns[1] = {128};
+  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  int rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting end headers must be 0. Full message received");
+  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 20, "pointer must be 20");
+  TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 25, "count in must be 25");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE, "Stream must be HALF CLOSED REMOTE");
+  TEST_ASSERT_MESSAGE(st.h2s.received_end_stream == 0, "received end stream was reverted inside function, must be 0");
+  TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
+  TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
 }
 
 void test_handle_headers_payload_errors(void){
   frame_header_t head;
   headers_payload_t hpl;
   hstates_t st;
+  // First error, header block fragment too big
   int ghbfs_returns[2] = {10000, 20};
   SET_RETURN_SEQ(get_header_block_fragment_size, ghbfs_returns, 2);
+  // Second error, buffer_copy invalid
   int bc_returns[2] = {-1, 20};
   SET_RETURN_SEQ(buffer_copy, bc_returns, 2);
-  int flag_returns[3] = {1, 0, 1, 1};
+  // Third error, receive_header_block invalid
+  int rcv_returns[2] = {0, 25};
+  SET_RETURN_SEQ(receive_header_block, rcv_returns, 2);
+  int flag_returns[4] = {0, 1, 0 ,1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 4);
-  int rcv_returns[3] = {0};
-  SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
+  // Fourth error, header list size bigger than expected
+  uint32_t get_header_list_size_returns[1] = {129};
+  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t get_setting_value_returns[1] = {128};
+  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (Internal error)");
   rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (writting error)");
   rc = handle_headers_payload(&head, &hpl, &st);
-  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-  TEST_ASSERT_MESSAGE(st.h2s.received_end_stream == 1, "Received end stream must be 1");
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (receive header error)");
   rc = handle_headers_payload(&head, &hpl, &st);
-  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (error in header block reception)");
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0 (http 431 error)");
+  TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receivig must be 0");
 }
 
 int main(void)
@@ -541,7 +639,10 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_continuation_condition);
     UNIT_TEST(test_check_incoming_continuation_condition_errors);
-    UNIT_TEST(test_handle_headers_payload);
-    //UNIT_TEST(test_handle_headers_payload_errors);
+    UNIT_TEST(test_handle_headers_payload_no_flags);
+    UNIT_TEST(test_handle_headers_payload_just_end_stream_flag);
+    UNIT_TEST(test_handle_headers_payload_full_message_header_no_end_stream);
+    UNIT_TEST(test_handle_headers_payload_full_message_header_end_stream);
+    UNIT_TEST(test_handle_headers_payload_errors);
     return UNIT_TESTS_END();
 }
