@@ -15,6 +15,9 @@
 
 #include <errno.h>
 
+/*Import of functions not declared in http.h */
+extern int get_receive(hstates_t *hs);
+extern void set_init_values(hstates_t *hs);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
