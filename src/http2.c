@@ -159,6 +159,7 @@ int handle_settings_payload(uint8_t *buff_read, frame_header_t *header, settings
     }
     else{
         /*TODO: send protocol error*/
+        ERROR("PROTOCOL ERROR: there was an error in settings payload");
         return -1;
     }
 }
