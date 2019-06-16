@@ -48,7 +48,7 @@ int read_n_bytes(uint8_t *buff_read, int n, hstates_t *st){
  while(read_bytes < n){
    incoming_bytes = http_read(st, buff_read+read_bytes, n - read_bytes);
    /* incoming_bytes equals -1 means that there was an error*/
-   if(incoming_bytes == -1){
+   if(incoming_bytes < 1){
      puts("Error in read function");
      return -1;
    }
