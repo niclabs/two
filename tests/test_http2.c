@@ -375,17 +375,30 @@ void test_read_frame(void){
 void test_read_frame_error(void){
   hstates_t hst;
   /*Header with payload greater than 256*/
-  frame_header_t header = {1024, 0x4, 0x0, 0x0, 0};
+  frame_header_t bad_header = {1024, 0x4, 0x0, 0x0, 0};
+  frame_header_t good_header = {200, 0x4, 0x0, 0x0, 0};
   uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
-  bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
-  /*We write 200 zeros for future reading*/
+  // Second error, bytes_to_frame_header return
+  int bytes_return[2] = {-1, 0};
+  SET_RETURN_SEQ(bytes_to_frame_header, bytes_return, 2);
+  // First error, there is no data to read
+  int rc = read_frame(bf, &good_header);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (read_n_bytes error)");
   int wrc = http_write(&hst, bf, 200);
   TEST_ASSERT_MESSAGE(wrc == 200, "wrc must be 200.");
   TEST_ASSERT_MESSAGE(size == 200, "size must be 200.");
-  int rc = read_frame(bf, &header);
-  TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 1, "bytes to frame header must be called once");
-  TEST_ASSERT_MESSAGE(size == 191, "read_frame must have read 9 bytes of header");
-  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1");
+  // Second error
+  rc = read_frame(bf, &good_header);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (bytes_to_frame_header error)");
+  /*We write 200 zeros for future reading*/
+  // Third error, payload size too big
+  rc = read_frame(bf, &bad_header);
+  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload size error)");
+  TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 2, "bytes to frame header must be called once");
+  TEST_ASSERT_MESSAGE(size == 182, "read_frame must have read  bytes of header");
+  // Fourth error, read_n_bytes payload reading error
+  rc = read_frame(bf, &good_header);
+  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload read error)");
 }
 
 void test_h2_send_local_settings(void){
