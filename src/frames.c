@@ -299,13 +299,17 @@ int create_continuation_frame(uint8_t * headers_block, int headers_block_size, u
  * returns compressed headers size or -1 if error
  *
  */
-int compress_headers(char* headers, int headers_size, uint8_t* compressed_headers){
+int compress_headers(table_pair_t* headers, int headers_count, uint8_t* compressed_headers){
     //TODO implement default compression
     //now it is without compression
-    for(int i =0; i<headers_size; i++){
-        compressed_headers[i] = (uint8_t)headers[i];
+    int pointer = 0;
+    for(int i = 0; i<headers_count; i++){
+        buffer_copy(compressed_headers+pointer,(uint8_t*)headers[i].name, strlen(headers[i].name));
+        pointer += strlen(headers[i].name);
+        buffer_copy(compressed_headers+pointer,(uint8_t*)headers[i].value, strlen(headers[i].value));
+        pointer += strlen(headers[i].value);
     }
-    return headers_size;
+    return pointer;
 }
 
 int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, uint8_t bool_table_compression, uint8_t bool_huffman_compression){

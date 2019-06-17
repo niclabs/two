@@ -129,7 +129,7 @@ int create_continuation_frame(uint8_t * headers_block, int headers_block_size, u
 //TODO
 
 /*Headers compresion*/
-//int compress_headers(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size);
+int compress_headers(table_pair_t* headers, int headers_count, uint8_t* compressed_headers);
 //int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size, uint8_t bool_table_compression, uint8_t bool_huffman_compression);
 
 
