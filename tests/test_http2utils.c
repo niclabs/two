@@ -18,6 +18,29 @@ void setUp(void) {
     FFF_RESET_HISTORY();
 }
 
+
+void test_read_n_bytes(void){
+  uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+  hstates_t st;
+  // http_read reading rate is 10 bytes
+  int http_return[5] = {10, 10, 10, 10, 10};
+  SET_RETURN_SEQ(http_read, http_return, 5  );
+  int rc = read_n_bytes(buff, 50, &st);
+  TEST_ASSERT_MESSAGE(rc == 50, "rc must be 50");
+  TEST_ASSERT_MESSAGE(http_read_fake.call_count == 5, "call count must be 5");
+}
+
+void test_read_n_bytes_error(void){
+  uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+  hstates_t st;
+  // http_read reading rate is 10 bytes
+  int http_return[5] = {10, 10, 10, 10, 0};
+  SET_RETURN_SEQ(http_read, http_return, 5);
+  int rc = read_n_bytes(buff, 50, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (http_read error)");
+  TEST_ASSERT_MESSAGE(http_read_fake.call_count == 5, "call count must be 5");
+}
+
 void test_get_setting_value(void){
     uint32_t settings[6];
     settings[0] = 0;
@@ -42,8 +65,6 @@ void test_get_setting_value(void){
     TEST_ASSERT_EQUAL(value_received, settings[5]);
 }
 
-
-
 void test_get_header_list_size(void){
     table_pair_t table_pair[2];
     strcpy(table_pair[0].name, "name1");//5
@@ -64,6 +85,8 @@ void test_get_header_list_size(void){
 int main(void)
 {
     UNIT_TESTS_BEGIN();
+    UNIT_TEST(test_read_n_bytes);
+    UNIT_TEST(test_read_n_bytes_error);
     UNIT_TEST(test_get_setting_value);
     UNIT_TEST(test_get_header_list_size);
 
