@@ -461,10 +461,11 @@ void test_h2_read_setting_from_errors(void){
   hdummy.h2s = dummy;
   // First error, invalid parameter
   uint32_t rc = h2_read_setting_from(LOCAL, 0x0, &hdummy);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be 0 (invalid parameter");
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (invalid parameter");
   rc = h2_read_setting_from(5, 0x1, &hdummy);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be 0 (invalid parameter");
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (invalid table");
 }
+
 
 
 void test_h2_client_init_connection(void){
@@ -489,6 +490,28 @@ void test_h2_client_init_connection(void){
   TEST_ASSERT_MESSAGE(size == 69, "client must wrote 69 bytes, 45 of settings, 24 of preface");
   TEST_ASSERT_MESSAGE(rc == 0, "return code of h2_client_init_connection must be 0");
 }
+
+void test_h2_client_init_connection_errors(void){
+  /*Depends on http_write and h2_send_local_settings*/
+  hstates_t client;
+  create_settings_frame_fake.custom_fake = create_return_zero;
+  frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
+  uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
+  // Fill the buffer, so http_write must return an error
+  int wrc = http_write(&client, bf, HTTP2_MAX_BUFFER_SIZE);
+  (void) wrc;
+  // First error, http_write
+  int rc = h2_client_init_connection(&client);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (http_write error)");
+  // Empty 24 bytes on the buffer, so writting is possible.
+  wrc = http_read(&client, bf, 24);
+  // Error in create settings frame error, so h2_send_local_settings fails
+  int create_return[1] = {-1};
+  SET_RETURN_SEQ(create_settings_frame, create_return, 1);
+  rc = h2_client_init_connection(&client);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (h2_send_local_settings error)");
+}
+
 
 void test_h2_server_init_connection(void){
   /*Depends on http_write and h2_send_local_settings*/
@@ -889,6 +912,7 @@ int main(void)
     UNIT_TEST(test_h2_read_setting_from);
     UNIT_TEST(test_h2_read_setting_from_errors);
     UNIT_TEST(test_h2_client_init_connection);
+    UNIT_TEST(test_h2_client_init_connection_errors);
     UNIT_TEST(test_h2_server_init_connection);
     UNIT_TEST(test_check_incoming_headers_condition);
     UNIT_TEST(test_check_incoming_headers_condition_error);
