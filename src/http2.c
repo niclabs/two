@@ -633,5 +633,21 @@ int h2_receive_frame(hstates_t *st){
 */
 int h2_send_headers(hstates_t *st){
   (void) st;
+  uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
+  frame_header_t header;
+  headers_payload_t hpl;
+  (void) encoded_bytes;
+  (void) header;
+  (void) hpl;
+  int cond = 1;
+  if(cond){
+    // TODO: only send 1 header
+    return -1;
+  }
+  else{
+    continuation_payload_t cpl;
+    (void) cpl;
+    return -1;
+  }
   return -1;
 }
