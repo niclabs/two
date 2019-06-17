@@ -453,6 +453,20 @@ void test_h2_read_setting_from(void){
   TEST_ASSERT_MESSAGE(answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
 }
 
+void test_h2_read_setting_from_errors(void){
+  hstates_t hdummy;
+  h2states_t dummy = {{1,2,3,4,5,6},
+                      {7,8,9,10,11,12},
+                      0};
+  hdummy.h2s = dummy;
+  // First error, invalid parameter
+  uint32_t rc = h2_read_setting_from(LOCAL, 0x0, &hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be 0 (invalid parameter");
+  rc = h2_read_setting_from(5, 0x1, &hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be 0 (invalid parameter");
+}
+
+
 void test_h2_client_init_connection(void){
   /*Depends on http_write and h2_send_local_settings*/
   hstates_t client;
@@ -873,6 +887,7 @@ int main(void)
     UNIT_TEST(test_h2_send_local_settings);
     UNIT_TEST(test_h2_send_local_settings_errors);
     UNIT_TEST(test_h2_read_setting_from);
+    UNIT_TEST(test_h2_read_setting_from_errors);
     UNIT_TEST(test_h2_client_init_connection);
     UNIT_TEST(test_h2_server_init_connection);
     UNIT_TEST(test_check_incoming_headers_condition);
