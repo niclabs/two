@@ -355,7 +355,7 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
         ERROR("Header block fragment size longer than the space given.");
         return -1;
     }
-    int rc = buffer_copy(headers_block_fragment, read_buffer+pointer, header_block_fragment_size, 0);
+    int rc = buffer_copy(headers_block_fragment, read_buffer+pointer, header_block_fragment_size);
     pointer += rc;
 
     if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
@@ -363,7 +363,7 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
             ERROR("Pad lenght longer than the space given.");
             return -1;
         }
-        rc = buffer_copy(padding, read_buffer+pointer, (int)pad_length, 0);
+        rc = buffer_copy(padding, read_buffer+pointer, (int)pad_length);
         pointer += rc;
     }
 
@@ -399,7 +399,7 @@ int receive_header_block(uint8_t* header_block_fragments, int header_block_fragm
 }
 
 int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment){
-    int rc = buffer_copy(continuation_block_fragment, buff_read, frame_header->length, 0);
+    int rc = buffer_copy(continuation_block_fragment, buff_read, frame_header->length);
     continuation_payload->header_block_fragment = continuation_block_fragment;
     return rc;
 }

@@ -220,7 +220,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
     return -1;
   }
   //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
-  rc = buffer_copy(st->h2s.header_block_fragments, hpl->header_block_fragment, hbf_size, st->h2s.header_block_fragments_pointer);
+  rc = buffer_copy(st->h2s.header_block_fragments + st->h2s.header_block_fragments_pointer, hpl->header_block_fragment, hbf_size);
   if(rc < 1){
     ERROR("Headers' header block fragment were not written or paylaod was empty");
     return -1;
@@ -343,7 +343,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
     return -1;
   }
   //receive fragments and save those on the st->h2s.header_block_fragments buffer
-  rc = buffer_copy(st->h2s.header_block_fragments, contpl->header_block_fragment, header->length, st->h2s.header_block_fragments_pointer);
+  rc = buffer_copy(st->h2s.header_block_fragments + st->h2s.header_block_fragments_pointer, contpl->header_block_fragment, header->length);
   if(rc < 1){
     ERROR("Continuation block fragment was not written or payload was empty");
     return -1;
