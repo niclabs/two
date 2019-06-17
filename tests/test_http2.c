@@ -57,6 +57,11 @@ int read_n_bytes(uint8_t *buff_read, int n, hstates_t *st){
  return read_bytes;
 }
 
+int clean_buffer(void){
+  size = 0;
+  return 0;
+}
+
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, verify_setting, uint16_t, uint32_t);
 FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t*);
@@ -547,6 +552,39 @@ void test_h2_server_init_connection(void){
   TEST_ASSERT_MESSAGE(rc==0, "return code of h2_server_init_connection must be 0");
 }
 
+void test_h2_server_init_connection_errors(void){
+  /*Depends on http_write and h2_send_local_settings*/
+  hstates_t server;
+  create_settings_frame_fake.custom_fake = create_return_zero;
+  frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
+  // First error, we read and no preface is found inside buffer
+  int rc = h2_server_init_connection(&server);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (read_n_bytes error)");
+  char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+  uint8_t preface_buff[HTTP2_MAX_BUFFER_SIZE] = { 0 };
+  // Second error, garbage was written before the correct string
+  int wrc = http_write(&server, preface_buff, 1);
+  uint8_t i = 0;
+  /*We load the fake buffer with the preface*/
+  while(preface[i] != '\0'){
+    preface_buff[i] = preface[i];
+    i++;
+  }
+  wrc = http_write(&server, preface_buff,24);
+  TEST_ASSERT_MESSAGE(wrc == 24, "Fake buffer not written");
+  rc = h2_server_init_connection(&server);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (strcmp error (PRI *... was not found))");
+  rc = clean_buffer();
+  // Writting the correct preface
+  wrc = http_write(&server, preface_buff,24);
+  TEST_ASSERT_MESSAGE(wrc == 24, "Fake buffer not written");
+  wrc = http_write(&server, preface_buff, HTTP2_MAX_BUFFER_SIZE - 24);
+  TEST_ASSERT_MESSAGE(wrc == HTTP2_MAX_BUFFER_SIZE - 24, "Fake buffer not written (MAX BUFFER)");
+  rc = h2_server_init_connection(&server);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (h2_send_local_settings error)");
+
+}
+
 void test_check_incoming_headers_condition(void){
   frame_header_t head;
   head.stream_id = 2440;
@@ -914,6 +952,7 @@ int main(void)
     UNIT_TEST(test_h2_client_init_connection);
     UNIT_TEST(test_h2_client_init_connection_errors);
     UNIT_TEST(test_h2_server_init_connection);
+    UNIT_TEST(test_h2_server_init_connection_errors);
     UNIT_TEST(test_check_incoming_headers_condition);
     UNIT_TEST(test_check_incoming_headers_condition_error);
     UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
