@@ -372,7 +372,7 @@ void test_read_frame(void){
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
 }
 
-void test_read_frame_error(void){
+void test_read_frame_errors(void){
   hstates_t hst;
   /*Header with payload greater than 256*/
   frame_header_t bad_header = {1024, 0x4, 0x0, 0x0, 0};
@@ -416,6 +416,25 @@ void test_h2_send_local_settings(void){
   TEST_ASSERT_MESSAGE(size == 45, "send local settings must have written 45 bytes");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 1, "wait_setting_ack must be 1. Settings were sent");
   TEST_ASSERT_MESSAGE(rc == 0, "return code of h2_send_local_settings must be 0");
+}
+
+void test_h2_send_local_settings_errors(void){
+  /*Depends on create_settings_frame, frame_to_bytes and http_write*/
+  hstates_t hdummy;
+  h2states_t dummy = {{1,1,1,1,1,1},
+                      {1,1,1,1,1,1},
+                      0};
+  hdummy.h2s = dummy;
+  // First error, create settings frame error
+  int create_return[2] = {-1, 0};
+  SET_RETURN_SEQ(create_settings_frame, create_return, 2);
+  // Second error, http_write error
+  int frame_return[2] = {1000, 12};
+  SET_RETURN_SEQ(frame_to_bytes, frame_return, 2);
+  int rc = h2_send_local_settings(&hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (create_settings_frame error)");
+  rc = h2_send_local_settings(&hdummy);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (http_write error)");
 }
 
 void test_h2_read_setting_from(void){
@@ -850,8 +869,9 @@ int main(void)
     UNIT_TEST(test_handle_settings_payload);
     UNIT_TEST(test_handle_settings_payload_errors);
     UNIT_TEST(test_read_frame);
-    UNIT_TEST(test_read_frame_error);
+    UNIT_TEST(test_read_frame_errors);
     UNIT_TEST(test_h2_send_local_settings);
+    UNIT_TEST(test_h2_send_local_settings_errors);
     UNIT_TEST(test_h2_read_setting_from);
     UNIT_TEST(test_h2_client_init_connection);
     UNIT_TEST(test_h2_server_init_connection);
