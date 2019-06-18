@@ -52,6 +52,12 @@ int http_init_server(hstates_t *hs, uint16_t port)
         return -1;
     }
 
+    return 0;
+}
+
+
+int http_start_server(hstates_t *hs)
+{
     printf("Server waiting for a client\n");
 
 

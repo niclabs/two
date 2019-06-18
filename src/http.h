@@ -24,6 +24,9 @@ typedef struct CALLBACK_TYPE_S {
 int http_init_server(hstates_t *hs, uint16_t port);
 
 
+http_start_server(hstates_t *hs);
+
+
 /*
  * Stop and destroy server if it is running
  *
