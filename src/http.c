@@ -75,7 +75,7 @@ int http_start_server(hstates_t *hs)
         }
 
         while (hs->connection_state == 1) {
-            if (h2_receive_frame(hs) < 1) {
+            if (h2_receive_frame(hs) < 0) {
                 break;
             }
             if (hs->keep_receiving == 1) {
