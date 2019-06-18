@@ -102,77 +102,13 @@ void test_http_init_server_success(void)
 
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
-    sock_accept_fake.return_val = 0;
-    sock_destroy_fake.return_val = 0;
-
-    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
-
-    int returnVals[2] = { 0, -1 };
-    SET_RETURN_SEQ(h2_server_init_connection, returnVals, 2);
 
     int is = http_init_server(&hs, 12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[3]);
-    TEST_ASSERT_EQUAL((void *)h2_receive_frame, fff.call_history[4]);
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[5]);
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[6]);
-    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[7]);
 
-    TEST_ASSERT_EQUAL(-1, is);
-
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(1, hs.socket_state);
-    TEST_ASSERT_EQUAL(1, hs.server_socket_state);
-}
-
-
-void test_http_init_server_fail_h2_server_init_connection(void)
-{
-    hstates_t hs;
-
-    sock_create_fake.return_val = 0;
-    sock_listen_fake.return_val = 0;
-    sock_accept_fake.return_val = 0;
-    h2_server_init_connection_fake.return_val = -1;
-
-    int is = http_init_server(&hs, 12);
-
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[3]);
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
-
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(1, hs.socket_state);
-    TEST_ASSERT_EQUAL(1, hs.server_socket_state);
-}
-
-
-void test_http_init_server_fail_sock_accept(void)
-{
-    hstates_t hs;
-
-    sock_create_fake.return_val = 0;
-    sock_listen_fake.return_val = 0;
-    sock_accept_fake.return_val = -1;
-    sock_destroy_fake.return_val = 0;
-
-    int is = http_init_server(&hs, 12);
-
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[2]);
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Not client found");
+    TEST_ASSERT_EQUAL(0, is);
 
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
@@ -216,13 +152,90 @@ void test_http_init_server_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Server could not be created");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Error in server creation");
 
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+}
+
+
+void test_http_start_server_success(void)
+{
+    hstates_t hs;
+    set_init_values(&hs);
+    hs.server_socket_state = 1;
+
+    sock_accept_fake.return_val = 0;
+    sock_destroy_fake.return_val = 0;
+
+    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
+
+    int returnVals[2] = { 0, -1 };
+    SET_RETURN_SEQ(h2_server_init_connection, returnVals, 2);
+
+    int is = http_start_server(&hs);
+
+    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[1]);
+    TEST_ASSERT_EQUAL((void *)h2_receive_frame, fff.call_history[2]);
+    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[3]);
+    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[4]);
+    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[5]);
+
+    TEST_ASSERT_EQUAL(-1, is);
+
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(1, hs.socket_state);
+}
+
+
+void test_http_start_server_fail_h2_server_init_connection(void)
+{
+    hstates_t hs;
+    set_init_values(&hs);
+    hs.server_socket_state = 1;
+
+    sock_accept_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = -1;
+
+    int is = http_start_server(&hs);
+
+    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[1]);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
+
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(1, hs.socket_state);
+}
+
+
+void test_http_start_server_fail_sock_accept(void)
+{
+    hstates_t hs;
+    set_init_values(&hs);
+    hs.server_socket_state = 1;
+
+    sock_accept_fake.return_val = -1;
+    sock_destroy_fake.return_val = 0;
+
+    int is = http_start_server(&hs);
+
+    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[0]);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Not client found");
+
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
 }
 
 
@@ -663,10 +676,12 @@ int main(void)
     UNIT_TEST(test_set_init_values_success);
 
     UNIT_TEST(test_http_init_server_success);
-    UNIT_TEST(test_http_init_server_fail_h2_server_init_connection);
-    UNIT_TEST(test_http_init_server_fail_sock_accept);
     UNIT_TEST(test_http_init_server_fail_sock_listen);
     UNIT_TEST(test_http_init_server_fail_sock_create);
+
+    UNIT_TEST(test_http_start_server_success);
+    UNIT_TEST(test_http_start_server_fail_h2_server_init_connection);
+    UNIT_TEST(test_http_start_server_fail_sock_accept);
 
     UNIT_TEST(test_http_server_destroy_success);
     UNIT_TEST(test_http_server_destroy_success_without_client);
