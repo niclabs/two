@@ -1,7 +1,6 @@
 /*
-   This API contains the HTTP methods to be used by
-   HTTP/2
- */
+   This API contains the methods in HTTP layer
+*/
 #ifndef HTTP_H
 #define HTTP_H
 
@@ -13,27 +12,36 @@ typedef struct CALLBACK_TYPE_S {
 
 /*Server*/
 /*
- * Given a port number this function initialize a server
+ * Given a port number and a struct for server information, this function
+ * initialize a server
  *
- * @param    hs      struct for server information
- * @param    port    port number
+ * @param    hs         Struct for server information
+ * @param    port       Port number
  *
- * @return   0       Server was successfully initialized
- * @return   -1      Server wasn't initialized
+ * @return   0          Server was successfully initialized
+ * @return   -1         Server wasn't initialized
  */
 int http_init_server(hstates_t *hs, uint16_t port);
 
 
-http_start_server(hstates_t *hs);
+/*
+ * Given a struct with server information, this function starts the server
+ *
+ * @param    hs         Struct with server information
+ *
+ * @return   0          Server was successfully started
+ * @return   -1         There was an error in the process
+ */
+int http_start_server(hstates_t *hs);
 
 
 /*
  * Stop and destroy server if it is running
  *
- * @param    hs      struct with server information
+ * @param    hs         Struct with server information
  *
- * @return   0       Server was successfully destroyed
- * @return   -1      Server wasn't destroyed
+ * @return   0          Server was successfully destroyed
+ * @return   -1         Server wasn't destroyed
  */
 int http_server_destroy(hstates_t *hs);
 
@@ -41,11 +49,12 @@ int http_server_destroy(hstates_t *hs);
 /*
  * Set an internal server function to a specific path
  *
- * @param    callback   function name
- * @param    path       specific path
+ * @param    hs         Struct with server information
+ * @param    callback   Function name
+ * @param    path       Specific path
  *
- * @return   0          the action was successful
- * @return   -1         the action fail
+ * @return   0          The action was successful
+ * @return   -1         The action fail
  */
 int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path);
 
@@ -56,12 +65,12 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
 /*
  * Start a connection from client to server
  *
- * @param    hs     struct for client information
- * @param    port   port number
- * @param    ip     adress
+ * @param    hs         Struct with client information
+ * @param    port       Port number
+ * @param    ip         Server IP address
  *
- * @return   0      successfully started connection
- * @return   -1     the connection fail
+ * @return   0          Successfully started connection
+ * @return   -1         The connection fail
  */
 int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
 
@@ -69,26 +78,25 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
 /*
  * Stop the connection between client and server
  *
- * @param    hs     struct with client information
+ * @param    hs         Struct with client information
  *
- * @return    0    connection was stopped
- * @return    -1   failed to stop connection
+ * @return    0         Connection was stopped
+ * @return    -1        Failed to stop connection
  */
 int http_client_disconnect(hstates_t *hs);
 
 
 
 /*Headers*/
-
 /*
  * Add a header and its value to the headers list
  *
- * @param    hs        struct with headers information
- * @param    name      new headers name
- * @param    value     new headers value
+ * @param    hs         Struct with server/client and headers information
+ * @param    name       New headers name
+ * @param    value      New headers value
  *
- * @return   0      successfully added pair
- * @return   -1     There was an error
+ * @return   0          Successfully added pair
+ * @return   -1         There was an error in the process
  */
 int http_set_header(headers_lists_t *h_lists, char *name, char *value);
 
@@ -96,10 +104,10 @@ int http_set_header(headers_lists_t *h_lists, char *name, char *value);
 /*
  * Search by a value of a header in the header list
  *
- * @param    hs         struct with headers information
+ * @param    hs         Struct with server/client and headers information
  * @param    header     Header name
  *
- * @return              value finded
+ * @return              Value finded
  */
 char *http_get_header(headers_lists_t *h_lists, char *header);
 
