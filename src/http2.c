@@ -638,7 +638,7 @@ int h2_send_headers(hstates_t *st){
   frame_header_t frame_header;
   headers_payload_t headers_payload;
 
-  uint32_t stream_id = 0;//TODO check this if is a response, must be send on the same stream, if request, new stream
+  uint32_t stream_id = 1;//TODO check this if is a response, must be send on the same stream, if request, new stream. now stream is set to 1
 
   uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
 
