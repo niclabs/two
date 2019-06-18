@@ -1,7 +1,7 @@
 /*
-   This API contains the HTTP methods to be used by
-   HTTP/2
- */
+   This API contains the internal methods in HTTP layer to be used by HTTP/2
+   and HTTP
+*/
 #ifndef HTTP_BRIDGE_H
 #define HTTP_BRIDGE_H
 
@@ -10,12 +10,10 @@
 #include "sock.h"
 #include "table.h"
 
+/*--------------------HTTP2 structures and static values--------------------*/
+
 #define HTTP2_MAX_HEADER_COUNT 32
 #define HTTP2_MAX_HBF_BUFFER 128
-
-#define HTTP_MAX_CALLBACK_LIST_ENTRY 32
-
-/*-----HTTP2 structures-----*/
 
 typedef enum {
     STREAM_IDLE,
@@ -43,7 +41,10 @@ typedef struct HTTP2_STATES {
     uint8_t received_end_stream;
 } h2states_t;
 
-/*-----HTTP structures-----*/
+
+/*---------------------HTTP structures and static values--------------------*/
+
+#define HTTP_MAX_CALLBACK_LIST_ENTRY 32
 
 typedef struct HEADERS_LISTS_S {
     uint8_t header_list_count_in;
@@ -67,40 +68,42 @@ typedef struct HTTP_STATES {
     uint8_t keep_receiving; //boolean. Tells HTTP to keep receiving frames
 } hstates_t;
 
-
+/*--------------------------------------------------------------------------*/
 
 
 /*
  * Write in the socket with the client
  *
- * @param    hs    http states struct
- * @param    buf   buffer with the data to writte
- * @param    len   buffer length
+ * @param    hs        Struct with server/client information
+ * @param    buf       Buffer with the data to writte
+ * @param    len       Buffer length
  *
- * @return >0   number of bytes written
- * @return 0    if connection was closed on the other side
- * @return -1   on error
+ * @return   >0        Number of bytes written
+ * @return   0         If connection was closed on the other side
+ * @return   -1        On error
  */
 int http_write(hstates_t *hs, uint8_t *buf, int len);
+
 
 /*
  * Read the data from the socket with the client
  *
- * @param    hs    http states struct
- * @param    buf   buffer where the data will be write
- * @param    len   buffer length
+ * @param    hs        Struct with server/client information
+ * @param    buf       Buffer where the data will be write
+ * @param    len       Buffer length
  *
- * @return   >0    number of bytes read
- * @return   0     if connection was closed on the other side
- * @return   -1    on error
+ * @return   >0        Number of bytes read
+ * @return   0         If connection was closed on the other side
+ * @return   -1        On error
  */
 int http_read(hstates_t *hs, uint8_t *buf, int len);
+
 
 /*
  * Empty the list of headers in hstates_t struct
  *
- * @param    hs        struct with headers information
- * @param    index     header index in the headers list to be maintained,
+ * @param    hs        Struct with server/client and headers information
+ * @param    index     Header index in the headers list to be maintained,
  *                     invalid index to delete the entire table
  *
  * @return    0        The list was emptied
@@ -108,5 +111,6 @@ int http_read(hstates_t *hs, uint8_t *buf, int len);
  */
 int http_clear_header_list
     (hstates_t *hs, int index, int flag);
+
 
 #endif /* HTTP_BRIDGE_H */
