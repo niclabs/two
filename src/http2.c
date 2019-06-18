@@ -632,22 +632,47 @@ int h2_receive_frame(hstates_t *st){
 * Output: 0 if process was made successfully, -1 if not.
 */
 int h2_send_headers(hstates_t *st){
-  (void) st;
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-  frame_header_t header;
-  headers_payload_t hpl;
-  (void) encoded_bytes;
-  (void) header;
-  (void) hpl;
-  int cond = 1;
-  if(cond){
-    // TODO: only send 1 header
-    return -1;
+  int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
+
+  frame_header_t frame_header;
+  headers_payload_t headers_payload;
+
+  uint32_t stream_id = 0;//TODO check this if is a response, must be send on the same stream, if request, new stream
+
+  uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
+
+    //not being considered dependencies nor padding.
+
+  if(size <= max_frame_size){ //if headers can be send in only one frame
+      //only send 1 header
+      create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload);
+      //set flags
+      frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+      int bytes_size = headers_frame_to_bytes(&frame_header, &headers_payload, encoded_bytes);//reutilizo encoded_bytes
+      http_write(st,encoded_bytes,bytes_size);
+      return 0;
   }
-  else{
-    continuation_payload_t cpl;
-    (void) cpl;
-    return -1;
+  else{//if headers must be send with one or more continuation frames
+      int remaining = size;
+      //send Header Frame
+      create_headers_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &headers_payload);
+      int bytes_size = headers_frame_to_bytes(&frame_header, &headers_payload, encoded_bytes);//reutilizo encoded_bytes
+      http_write(st,encoded_bytes,bytes_size);
+      remaining -= size;
+      //Send continuation Frames
+      continuation_payload_t continuation_payload;
+      while(remaining > max_frame_size){
+          create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload);
+          int bytes_size = continuation_frame_to_bytes(&frame_header, &continuation_payload, encoded_bytes);//reutilizo encoded_bytes
+          http_write(st,encoded_bytes,bytes_size);
+      }
+      //send last continuation frame
+      create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload);
+      //set flags
+      frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+      bytes_size = continuation_frame_to_bytes(&frame_header, &continuation_payload, encoded_bytes);//reutilizo encoded_bytes
+      http_write(st,encoded_bytes,bytes_size);
+      return 0;
   }
-  return -1;
 }

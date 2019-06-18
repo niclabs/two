@@ -257,7 +257,7 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set){
     return new_flag;
 }
 
-int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, headers_payload_t* headers_payload){
+int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, headers_payload_t* headers_payload){
     uint8_t type = HEADERS_TYPE;
     uint8_t flags = 0x0;
     uint8_t length = headers_block_size; //no padding, no dependency. fix if this is impolemented
@@ -267,16 +267,34 @@ int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32
     frame_header ->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
-
-    headers_payload->header_block_fragment = headers_block;//TODO check this
-
-    frame->frame_header = frame_header;
-    frame->payload = headers_payload;
-
+    buffer_copy(headers_payload->header_block_fragment, headers_block, headers_block_size);
     return 0;
 }
 
-int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, continuation_payload_t* continuation_payload){
+int headers_frame_to_bytes(frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* byte_array){
+    int pointer = 0;
+    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
+        buffer_copy(byte_array+pointer, headers_payload->padding, headers_payload->pad_length);
+        pointer+=headers_payload->pad_length;
+    }
+    if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){ //if priority flag is set
+        //TODO not implemented yet
+        return -1;
+    }
+    //header block fragment
+    int header_block_fragment_size = get_header_block_fragment_size(frame_header,headers_payload);//7(int)frame_header->length-pad_length-pointer;
+    buffer_copy(byte_array+pointer, headers_payload->header_block_fragment, header_block_fragment_size);
+    pointer += header_block_fragment_size;
+
+    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
+        int rc = buffer_copy(byte_array+pointer, headers_payload->padding, headers_payload->pad_length);
+        pointer += rc;
+    }
+    return pointer;
+}
+
+
+int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, continuation_payload_t* continuation_payload){
     uint8_t type = CONTINUATION_TYPE;
     uint8_t flags = 0x0;
     uint8_t length = headers_block_size; //no padding, no dependency. fix if this is impolemented
@@ -287,23 +305,27 @@ int create_continuation_frame(uint8_t * headers_block, int headers_block_size, u
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
 
-    continuation_payload->header_block_fragment = headers_block;//TODO check this
+    buffer_copy(continuation_payload->header_block_fragment, headers_block, headers_block_size);
 
-    frame->frame_header = frame_header;
-    frame->payload = continuation_payload;
 
     return 0;
 }
+
+int continuation_frame_to_bytes(frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t* byte_array){
+    int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
+    return rc;
+}
+
 
 /*
  * returns compressed headers size or -1 if error
  *
  */
-int compress_headers(table_pair_t* headers, int headers_count, uint8_t* compressed_headers){
+int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* compressed_headers){
     //TODO implement default compression
     //now it is without compression
     int pointer = 0;
-    for(int i = 0; i<headers_count; i++){
+    for(uint8_t i = 0; i<headers_count; i++){
         buffer_copy(compressed_headers+pointer,(uint8_t*)headers[i].name, strlen(headers[i].name));
         pointer += strlen(headers[i].name);
         buffer_copy(compressed_headers+pointer,(uint8_t*)headers[i].value, strlen(headers[i].value));

@@ -120,16 +120,16 @@ int create_settings_ack_frame(frame_t * frame, frame_header_t* frame_header);
 
 
 /*header payload methods*/
-int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, headers_payload_t* headers_payload);
-
+int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, headers_payload_t* headers_payload);
+int headers_frame_to_bytes(frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* byte_array);
 /*continuation payload methods*/
-int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_t * frame, frame_header_t* frame_header, continuation_payload_t* continuation_payload);
-
+int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, continuation_payload_t* continuation_payload);
+int continuation_frame_to_bytes(frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t* byte_array);
 
 //TODO
 
 /*Headers compresion*/
-int compress_headers(table_pair_t* headers, int headers_count, uint8_t* compressed_headers);
+int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* compressed_headers);
 //int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size, uint8_t bool_table_compression, uint8_t bool_huffman_compression);
 
 
