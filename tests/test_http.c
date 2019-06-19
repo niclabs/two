@@ -115,6 +115,7 @@ void test_http_init_server_success(void)
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
+    TEST_ASSERT_EQUAL(1, hs.is_server);
 }
 
 
@@ -139,6 +140,7 @@ void test_http_init_server_fail_sock_listen(void)
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+    TEST_ASSERT_EQUAL(1, hs.is_server);
 }
 
 
@@ -159,6 +161,7 @@ void test_http_init_server_fail_sock_create(void)
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+    TEST_ASSERT_EQUAL(1, hs.is_server);
 }
 
 
@@ -374,6 +377,7 @@ void test_http_client_connect_success(void)
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.is_server);
 }
 
 
@@ -398,6 +402,7 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.is_server);
 }
 
 
@@ -422,6 +427,7 @@ void test_http_client_connect_fail_sock_connect(void)
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.is_server);
 }
 
 
