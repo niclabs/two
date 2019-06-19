@@ -37,6 +37,8 @@ int http_init_server(hstates_t *hs, uint16_t port)
 {
     set_init_values(hs);
 
+    hs->is_server=1;
+
     if (sock_create(hs->server_socket) < 0) {
         ERROR("Error in server creation");
         return -1;
@@ -154,6 +156,8 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
 int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 {
     set_init_values(hs);
+
+    hs->is_server=0;
 
     if (sock_create(hs->socket) < 0) {
         ERROR("Error on client creation");
