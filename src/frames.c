@@ -174,9 +174,16 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
         case 0x8://Window update
             printf("TODO: Window update frame. Not implemented yet.");
             return -1;
-        case 0x9://Continuation
-            printf("TODO: Continuation frame. Not implemented yet.");
-            return -1;
+        case 0x9: {//Continuation
+            uint8_t frame_header_bytes[9];
+            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
+            continuation_payload_t *continuation_payload = ((continuation_payload_t *) (frame->payload));
+            uint8_t continuation_bytes[length];
+            int size = continuation_payload_to_bytes(frame_header, continuation_payload, continuation_bytes);
+            int new_size = append_byte_arrays(bytes, frame_header_bytes, continuation_bytes, frame_header_bytes_size,
+                                              size);
+            return new_size;
+        }
         default:
             printf("Error: Type not found");
             return -1;
