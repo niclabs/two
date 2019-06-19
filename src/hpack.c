@@ -348,9 +348,9 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* va
 };
 
 
-int decode(uint8_t *encoded_buffer){
+/*int decode(uint8_t *encoded_buffer){
 
-}
+}*/
 
 
 hpack_preamble_t get_preamble(uint8_t preamble){
@@ -440,7 +440,7 @@ int decode_literal_header_field_incremental_index(uint8_t* header_block, char* n
     return -1;
 }
 int decode_literal_header_field_without_indexing(uint8_t* header_block, char* name, char* value){
-    //int pointer = 0;
+    int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
     if(index == 0){
         pointer += 1;
@@ -449,7 +449,7 @@ int decode_literal_header_field_without_indexing(uint8_t* header_block, char* na
         int name_length = decode_integer(header_block+pointer, 7);
         pointer += encoded_integer_size(name_length,7);
         //decode name
-        strncpy(name,header_block+pointer, name_length);
+        strncpy(name,(char*)header_block+pointer, name_length);
         pointer += name_length;
     }
     else{
@@ -460,7 +460,7 @@ int decode_literal_header_field_without_indexing(uint8_t* header_block, char* na
     int value_length = decode_integer(header_block+pointer, 7);
     pointer += encoded_integer_size(value_length,7);
     //decode value
-    strncpy(value,header_block+pointer, value_length);
+    strncpy(value,(char*)header_block+pointer, value_length);
     pointer += value_length;
     return pointer;
 }
