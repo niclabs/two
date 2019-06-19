@@ -784,6 +784,10 @@ int send_headers(hstates_t *st, uint8_t end_stream){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_request(hstates_t *st){
+  if(st->h_lists.header_list_count_out == 0){
+    ERROR("There were no headers to write");
+    return -1;
+  }
   int rc = send_headers(st, 0);
   if(rc < 0){
     ERROR("Error was found sending headers");
@@ -801,6 +805,10 @@ int h2_send_request(hstates_t *st){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_response(hstates_t *st){
+  if(st->h_lists.header_list_count_out == 0){
+    ERROR("There were no headers to write");
+    return -1;
+  }
   int rc = send_headers(st, 1);
   if(rc < 0){
     ERROR("Error was found sending headers");
