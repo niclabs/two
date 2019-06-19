@@ -680,9 +680,8 @@ int send_headers(hstates_t *st, uint8_t end_stream){
   }
   stream_id = st->h2s.current_stream.stream_id;
 
-
+  int rc;
   frame_t frame;
-
   frame_header_t frame_header;
   headers_payload_t headers_payload;
   uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
@@ -695,7 +694,11 @@ int send_headers(hstates_t *st, uint8_t end_stream){
   if(size <= max_frame_size){ //if headers can be send in only one frame
       //only send 1 header
 
-      create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+      rc = create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+      if(rc < 0){
+        ERROR("Error creating headers frame. INTERNAL ERROR");
+        return rc;
+      }
       //set flags
       frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
 
@@ -706,14 +709,22 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       frame.frame_header = &frame_header;
       frame.payload = (void*)&headers_payload;
       int bytes_size = frame_to_bytes(&frame, encoded_bytes);
-      http_write(st,encoded_bytes,bytes_size);
+      rc = http_write(st,encoded_bytes,bytes_size);
+      if(rc != bytes_size){
+        ERROR("Error writting headers frame. INTERNAL ERROR");
+        return rc;
+      }
       return 0;
   }
   else{//if headers must be send with one or more continuation frames
       int remaining = size;
       //send Header Frame
 
-      create_headers_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+      rc = create_headers_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+      if(rc < 0){
+        ERROR("Error creating headers frame. INTERNAL ERROR");
+        return rc;
+      }
       if(end_stream){
           frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
       }
@@ -722,25 +733,45 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       frame.payload = (void*)&headers_payload;
       int bytes_size = frame_to_bytes(&frame, encoded_bytes);
 
-      http_write(st,encoded_bytes,bytes_size);
+      rc = http_write(st,encoded_bytes,bytes_size);
+      if(rc != bytes_size){
+        ERROR("Error writting headers frame. INTERNAL ERROR");
+        return rc;
+      }
       remaining -= size;
       //Send continuation Frames
       continuation_payload_t continuation_payload;
       while(remaining > max_frame_size){
-          create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+          rc = create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+          if(rc < 0){
+            ERROR("Error creating continuation frame. INTERNAL ERROR");
+            return rc;
+          }
           frame.frame_header = &frame_header;
           frame.payload = (void*)&continuation_payload;
           int bytes_size = frame_to_bytes(&frame, encoded_bytes);
-          http_write(st,encoded_bytes,bytes_size);
+          rc = http_write(st,encoded_bytes,bytes_size);
+          if(rc != bytes_size){
+            ERROR("Error writting continuation frame. INTERNAL ERROR");
+            return rc;
+          }
       }
       //send last continuation frame
-      create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+      rc = create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+      if(rc < 0){
+        ERROR("Error creating continuation frame. INTERNAL ERROR");
+        return rc;
+      }
       //set flags
       frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
       frame.frame_header = &frame_header;
       frame.payload = (void*)&continuation_payload;
       bytes_size = frame_to_bytes(&frame, encoded_bytes);
-      http_write(st,encoded_bytes,bytes_size);
+      rc = http_write(st,encoded_bytes,bytes_size);
+      if(rc != bytes_size){
+        ERROR("Error writting headers frame. INTERNAL ERROR");
+        return rc;
+      }
       return 0;
   }
 }
