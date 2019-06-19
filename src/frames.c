@@ -427,16 +427,8 @@ int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload
 }
 
 int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, table_pair_t* header_list, uint8_t table_index){//return size of header_list (header_count)
-    (void)header_block_fragments;
-    (void)header_block_fragments_pointer;
-    (void)header_list;
-    (void)table_index;
-
-
-
-    //int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, header_list, table_index);
-    //(void)rc;
-    return -1;
+    int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, header_list, table_index);
+    return rc;
 }
 
 int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment){
