@@ -61,8 +61,23 @@ int h2_server_init_connection(hstates_t *st);
 */
 int h2_receive_frame(hstates_t *st);
 
+/*
+* Function: h2_send_request
+* Given a set of headers, generates and sends an http2 message to endpoint. The
+* message is a request, so it must create a new stream.
+* Input: -> st: pointer to hstates_t struct where headers are stored
+* Output: 0 if generation and sent was successfull, -1 if not
+*/
 int h2_send_request(hstates_t *st);
 
+/*
+* Function: h2_send_response
+* Given a set of headers, generates and sends an http2 message to endpoint. The
+* message is a response, so it must be sent through an existent stream, closing
+* the current stream.
+* Input: -> st: pointer to hstates_t struct where headers are stored
+* Output: 0 if generation and sent was successfull, -1 if not
+*/
 int h2_send_response(hstates_t *st);
 
 #endif /*HTTP2_H*/
