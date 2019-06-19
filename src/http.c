@@ -185,6 +185,13 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 }
 
 
+int http_get(hstates_t *hs, char *path, char *accept_type){
+  http_set_header(&hs->h_lists, ":path", path);
+  http_set_header(&hs->h_lists, "accept", accept_type);
+  return 1;
+}
+
+
 int http_client_disconnect(hstates_t *hs)
 {
     if (hs->socket_state == 1) {

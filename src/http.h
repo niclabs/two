@@ -75,6 +75,9 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
 int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
 
 
+int http_get(hstates_t *hs, char *path, char *accept_type);
+
+
 /*
  * Stop the connection between client and server
  *
