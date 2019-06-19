@@ -187,7 +187,10 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 
 int http_get(hstates_t *hs, char *path, char *accept_type){
   http_set_header(&hs->h_lists, ":path", path);
-  http_set_header(&hs->h_lists, "accept", accept_type);
+  if (http_set_header(&hs->h_lists, "accept", accept_type)==0){
+    printf("funciona\n");
+  }
+  h2_send_response(hs);
   return 1;
 }
 
