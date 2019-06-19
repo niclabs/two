@@ -128,7 +128,7 @@ int continuation_frame_to_bytes(frame_header_t* frame_header, continuation_paylo
 
 //TODO
 
-/*Headers compresion*/
+/*Headers compression*/
 int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* compressed_headers);
 //int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size, uint8_t bool_table_compression, uint8_t bool_huffman_compression);
 
