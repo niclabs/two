@@ -39,7 +39,7 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array){
 */
 int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header){
     if(size < 9){
-        printf("ERROR: frameHeader size too small, %d\n", size);
+        ERROR("frameHeader size too small, %d\n", size);
         return -1;
     }
     frame_header->length = bytes_to_uint32_24(byte_array);
@@ -127,9 +127,15 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
             printf("TODO: Data Frame. Not implemented yet.");
 
             return -1;
-        case 0x1://Header
-            printf("TODO: Header Frame. Not implemented yet.");
-            return -1;
+        case 0x1: {//Header
+            uint8_t frame_header_bytes[9];
+            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
+            headers_payload_t *headers_payload = ((headers_payload_t *) (frame->payload));
+            uint8_t headers_bytes[length];
+            int size = headers_payload_to_bytes(frame_header, headers_payload, headers_bytes);
+            int new_size = append_byte_arrays(bytes, frame_header_bytes, headers_bytes, frame_header_bytes_size, size);
+            return new_size;
+        }
         case 0x2://Priority
             printf("TODO: Priority Frame. Not implemented yet.");
             return -1;
@@ -257,8 +263,8 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set){
     return new_flag;
 }
 
-int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, headers_payload_t* headers_payload){
-    uint8_t type = HEADERS_TYPE;
+int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* header_block_fragment){
+    frame_type_t type = HEADERS_TYPE;
     uint8_t flags = 0x0;
     uint8_t length = headers_block_size; //no padding, no dependency. fix if this is impolemented
 
@@ -267,11 +273,12 @@ int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32
     frame_header ->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
-    buffer_copy(headers_payload->header_block_fragment, headers_block, headers_block_size);
+    buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    headers_payload->header_block_fragment = header_block_fragment;
     return 0;
 }
 
-int headers_frame_to_bytes(frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* byte_array){
+int headers_payload_to_bytes(frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* byte_array){
     int pointer = 0;
     if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
         buffer_copy(byte_array+pointer, headers_payload->padding, headers_payload->pad_length);
@@ -294,10 +301,10 @@ int headers_frame_to_bytes(frame_header_t* frame_header, headers_payload_t* head
 }
 
 
-int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, continuation_payload_t* continuation_payload){
+int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t *header_block_fragment){
     uint8_t type = CONTINUATION_TYPE;
     uint8_t flags = 0x0;
-    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is impolemented
+    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is implemented
 
     frame_header->length = length;
     frame_header->type = type;
@@ -305,13 +312,13 @@ int create_continuation_frame(uint8_t * headers_block, int headers_block_size, u
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
 
-    buffer_copy(continuation_payload->header_block_fragment, headers_block, headers_block_size);
-
+    buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    continuation_payload->header_block_fragment = header_block_fragment;
 
     return 0;
 }
 
-int continuation_frame_to_bytes(frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t* byte_array){
+int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t* byte_array){
     int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
     return rc;
 }

@@ -80,10 +80,10 @@ FAKE_VALUE_FUNC(uint32_t, get_header_list_size, table_pair_t*, uint8_t);
 
 
 FAKE_VALUE_FUNC( int, compress_headers, table_pair_t* , uint8_t , uint8_t* );
-FAKE_VALUE_FUNC( int, create_headers_frame, uint8_t * , int , uint32_t , frame_header_t* , headers_payload_t* );
-FAKE_VALUE_FUNC( int, headers_frame_to_bytes, frame_header_t* , headers_payload_t* , uint8_t* );
-FAKE_VALUE_FUNC( int, create_continuation_frame, uint8_t * , int , uint32_t , frame_header_t* , continuation_payload_t* );
-FAKE_VALUE_FUNC( int, continuation_frame_to_bytes, frame_header_t* , continuation_payload_t* , uint8_t* );
+FAKE_VALUE_FUNC( int, create_headers_frame, uint8_t * , int , uint32_t , frame_header_t* , headers_payload_t* ,uint8_t*);
+FAKE_VALUE_FUNC( int, headers_payload_to_bytes, frame_header_t* , headers_payload_t* , uint8_t* );
+FAKE_VALUE_FUNC( int, create_continuation_frame, uint8_t * , int , uint32_t , frame_header_t* , continuation_payload_t* , uint8_t*);
+FAKE_VALUE_FUNC( int, continuation_payload_to_bytes, frame_header_t* , continuation_payload_t* , uint8_t* );
 FAKE_VALUE_FUNC( uint8_t, set_flag, uint8_t , uint8_t );
 
 
@@ -104,10 +104,10 @@ FAKE_VALUE_FUNC( uint8_t, set_flag, uint8_t , uint8_t );
     FAKE(get_setting_value)               \
     FAKE(get_header_list_size)            \
     FAKE(compress_headers)            \
-    FAKE(headers_frame_to_bytes)            \
+    FAKE(headers_payload_to_bytes)            \
     FAKE(create_headers_frame)            \
     FAKE(create_continuation_frame)            \
-    FAKE(continuation_frame_to_bytes)            \
+    FAKE(continuation_payload_to_bytes)            \
     FAKE(set_flag)            \
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){

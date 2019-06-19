@@ -636,6 +636,7 @@ int h2_receive_frame(hstates_t *st){
 int send_headers(hstates_t *st, uint8_t end_stream){
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
   int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
+
   uint32_t stream_id;
   if(end_stream){ // The message is a response
     if(st->h2s.current_stream.state != STREAM_OPEN){
@@ -679,8 +680,12 @@ int send_headers(hstates_t *st, uint8_t end_stream){
   }
   stream_id = st->h2s.current_stream.stream_id;
 
+
+  frame_t frame;
+
   frame_header_t frame_header;
   headers_payload_t headers_payload;
+  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
 
 
   uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
@@ -689,38 +694,52 @@ int send_headers(hstates_t *st, uint8_t end_stream){
 
   if(size <= max_frame_size){ //if headers can be send in only one frame
       //only send 1 header
-      create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload);
+
+      create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
       //set flags
       frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+
       if(end_stream){
         frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
       }
-      int bytes_size = headers_frame_to_bytes(&frame_header, &headers_payload, encoded_bytes);//reutilizo encoded_bytes
+
+      frame.frame_header = &frame_header;
+      frame.payload = (void*)&headers_payload;
+      int bytes_size = frame_to_bytes(&frame, encoded_bytes);
       http_write(st,encoded_bytes,bytes_size);
       return 0;
   }
   else{//if headers must be send with one or more continuation frames
       int remaining = size;
       //send Header Frame
-      create_headers_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &headers_payload);
+
+      create_headers_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
       if(end_stream){
-        frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
+          frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
       }
-      int bytes_size = headers_frame_to_bytes(&frame_header, &headers_payload, encoded_bytes);//reutilizo encoded_bytes
+
+      frame.frame_header = &frame_header;
+      frame.payload = (void*)&headers_payload;
+      int bytes_size = frame_to_bytes(&frame, encoded_bytes);
+
       http_write(st,encoded_bytes,bytes_size);
       remaining -= size;
       //Send continuation Frames
       continuation_payload_t continuation_payload;
       while(remaining > max_frame_size){
-          create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload);
-          int bytes_size = continuation_frame_to_bytes(&frame_header, &continuation_payload, encoded_bytes);//reutilizo encoded_bytes
+          create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+          frame.frame_header = &frame_header;
+          frame.payload = (void*)&continuation_payload;
+          int bytes_size = frame_to_bytes(&frame, encoded_bytes);
           http_write(st,encoded_bytes,bytes_size);
       }
       //send last continuation frame
-      create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload);
+      create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
       //set flags
       frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
-      bytes_size = continuation_frame_to_bytes(&frame_header, &continuation_payload, encoded_bytes);//reutilizo encoded_bytes
+      frame.frame_header = &frame_header;
+      frame.payload = (void*)&continuation_payload;
+      bytes_size = frame_to_bytes(&frame, encoded_bytes);
       http_write(st,encoded_bytes,bytes_size);
       return 0;
   }
