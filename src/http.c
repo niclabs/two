@@ -190,7 +190,7 @@ int http_get(hstates_t *hs, char *path, char *accept_type){
   if (http_set_header(&hs->h_lists, "accept", accept_type)==0){
     printf("funciona\n");
   }
-  h2_send_response(hs);
+  h2_send_request(hs);
   return 1;
 }
 
