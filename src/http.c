@@ -270,7 +270,7 @@ int get_receive(hstates_t *hs)
 
     callback.cb(&hs->h_lists);
 
-    if (h2_send_headers(hs) < 0) {
+    if (h2_send_response(hs) < 0) {
         ERROR("Problems sending data");
         return -1;
     }

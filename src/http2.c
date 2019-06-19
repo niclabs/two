@@ -625,13 +625,14 @@ int h2_receive_frame(hstates_t *st){
 }
 
 /*
-* Function: h2_send_headers
+* Function: send_headers
 * Given an hstates struct, builds and sends a message to endpoint. The message
 * is a sequence of a HEADER FRAME followed by 0 or more CONTINUATION FRAMES.
 * Input: -> st: hstates_t struct where headers are written
 * Output: 0 if process was made successfully, -1 if not.
 */
-int h2_send_headers(hstates_t *st){
+int send_headers(hstates_t *st, int end_stream){
+  (void) end_stream;
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
   int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
 
@@ -675,4 +676,14 @@ int h2_send_headers(hstates_t *st){
       http_write(st,encoded_bytes,bytes_size);
       return 0;
   }
+}
+
+int h2_send_request(hstates_t *st){
+  send_headers(st, 0);
+  return 0;
+}
+
+int h2_send_response(hstates_t *st){
+  send_headers(st, 1);
+  return 0;
 }
