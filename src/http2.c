@@ -693,7 +693,11 @@ int send_headers(hstates_t *st, int end_stream){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_request(hstates_t *st){
-  send_headers(st, 0);
+  int rc = send_headers(st, 0);
+  if(rc < 0){
+    ERROR("Error was found sending headers");
+    return rc;
+  }
   return 0;
 }
 
@@ -706,6 +710,10 @@ int h2_send_request(hstates_t *st){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_response(hstates_t *st){
-  send_headers(st, 1);
+  int rc = send_headers(st, 1);
+  if(rc < 0){
+    ERROR("Error was found sending headers");
+    return rc;
+  }
   return 0;
 }
