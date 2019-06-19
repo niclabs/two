@@ -11,6 +11,7 @@
 
 #include "logging.h"
 #include "http.h"
+#include "client.h"
 
 #define PORT (8888)
 
@@ -53,7 +54,7 @@ int main(int argc, char **argv){
         }
 
         uint16_t port = atoi(argv[2]);
-        http_client_connect(&http_global_state, port, argv[3]);
+        pseudoclient(&http_global_state, port, argv[3]);
     }
     else
     {
