@@ -170,6 +170,14 @@ int uint32_31_to_byte_array_custom_fake_0(uint32_t num, uint8_t* byte_array){
     byte_array[3] = 0;
     return 0;
 }
+
+int uint32_31_to_byte_array_custom_fake_1(uint32_t num, uint8_t* byte_array){
+    byte_array[0] = 0;
+    byte_array[1] = 0;
+    byte_array[2] = 0;
+    byte_array[3] = 1;
+    return 1;
+}
 void test_frame_header_to_bytes(void) {
     uint32_t length = 6;
     uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_6 ;//length
@@ -460,7 +468,7 @@ int append_byte_arrays_custom_fake(uint8_t *dest, uint8_t *array1, uint8_t *arra
 
 
 
-void test_frame_to_bytes(void){
+void test_frame_to_bytes_settings(void){
     int count = 2;
     uint16_t ids[count];
     uint32_t values[count];
@@ -499,6 +507,9 @@ void test_frame_to_bytes(void){
         TEST_ASSERT_EQUAL(expected_bytes[i],result_bytes[i]);
     }
 }
+
+
+
 
 
 void test_create_headers_frame(void){
@@ -566,6 +577,40 @@ void test_headers_payload_to_bytes(void){
     }
 }
 
+void test_frame_to_bytes_headers(void){
+    uint8_t headers_block[6] = {1,2,3,4,5,6};
+    int headers_block_size = 6;
+    uint32_t stream_id = 1;
+    frame_header_t frame_header;
+    headers_payload_t headers_payload;
+    uint8_t header_block_fragment[6];
+
+
+    append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
+    uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_6;
+    uint32_31_to_byte_array_fake.custom_fake = uint32_31_to_byte_array_custom_fake_1;
+    uint16_to_byte_array_fake.custom_fake = uint16_to_byte_array_custom_fake_num;
+    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
+
+    create_headers_frame(headers_block, headers_block_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+    frame_t frame;
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&headers_payload;
+
+    uint8_t result_bytes[15];
+    int size = frame_to_bytes(&frame,result_bytes);
+
+    TEST_ASSERT_EQUAL(15,size);
+    uint8_t expected_bytes[] = {0,0,6, HEADERS_TYPE,0, 0,0,0,1,
+                                1,2,3,4,5,6};
+    for (int i = 0; i < size; i++){
+        TEST_ASSERT_EQUAL(expected_bytes[i],result_bytes[i]);
+    }
+}
+
+
 void test_continuation_payload_to_bytes(void){
     uint8_t headers_block[6] = {1,2,3,4,5,6};
     int headers_block_size = 6;
@@ -586,6 +631,38 @@ void test_continuation_payload_to_bytes(void){
     }
 }
 
+void test_frame_to_bytes_continuation(void){
+    uint8_t headers_block[6] = {1,2,3,4,5,6};
+    int headers_block_size = 6;
+    uint32_t stream_id = 1;
+    frame_header_t frame_header;
+    continuation_payload_t continuation_payload;
+    uint8_t header_block_fragment[6];
+
+
+    append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
+    uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_6;
+    uint32_31_to_byte_array_fake.custom_fake = uint32_31_to_byte_array_custom_fake_1;
+    uint16_to_byte_array_fake.custom_fake = uint16_to_byte_array_custom_fake_num;
+    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
+
+    create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+    frame_t frame;
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&continuation_payload;
+
+    uint8_t result_bytes[15];
+    int size = frame_to_bytes(&frame,result_bytes);
+
+    TEST_ASSERT_EQUAL(15,size);
+    uint8_t expected_bytes[] = {0,0,6, CONTINUATION_TYPE,0, 0,0,0,1,
+                                1,2,3,4,5,6};
+    for (int i = 0; i < size; i++){
+        TEST_ASSERT_EQUAL(expected_bytes[i],result_bytes[i]);
+    }
+}
 
 
 
@@ -606,13 +683,19 @@ int main(void)
     UNIT_TEST(test_bytes_to_settings_payload);
 
     UNIT_TEST(test_create_settings_ack_frame);
-    UNIT_TEST(test_frame_to_bytes);
+    UNIT_TEST(test_frame_to_bytes_settings);
     UNIT_TEST(test_read_headers_payload);
     UNIT_TEST(test_read_continuation_payload);
     UNIT_TEST(test_create_headers_frame);
     UNIT_TEST(test_create_continuation_frame);
 
     UNIT_TEST(test_headers_payload_to_bytes);
+
+    UNIT_TEST(test_frame_to_bytes_headers)
+
+    UNIT_TEST(test_frame_to_bytes_continuation)
+
+    //UNIT_TEST(test_frame_to_bytes_continuation)
     UNIT_TEST(test_continuation_payload_to_bytes);
 
 
