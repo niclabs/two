@@ -509,7 +509,7 @@ int h2_server_init_connection(hstates_t *st){
 /*
 * Function: h2_receive_frame
 * Receives a frame from endpoint, decodes it and works with it.
-* Input: void
+* Input: -> st: pointer to hstates_t struct where connection variables are stored
 * Output: 0 if no problem was found. -1 if error was found.
 */
 int h2_receive_frame(hstates_t *st){
