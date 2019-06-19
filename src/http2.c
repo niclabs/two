@@ -633,14 +633,55 @@ int h2_receive_frame(hstates_t *st){
         -> end_stream: boolean that indicates if end_stream flag needs to be set
 * Output: 0 if process was made successfully, -1 if not.
 */
-int send_headers(hstates_t *st, int end_stream){
+int send_headers(hstates_t *st, uint8_t end_stream){
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
   int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
+  uint32_t stream_id;
+  if(end_stream){ // The message is a response
+    if(st->h2s.current_stream.state != STREAM_OPEN){
+      ERROR("Current stream was closed!");
+      return -1;
+    }
+    else if(st->h2s.current_stream.stream_id == 0){
+      ERROR("Current stream was not initialized!");
+      return -1;
+    }
+  }
+  else{ // The message is a request, we open a new stream
+    if(st->is_server){ // server must use even numbers
+      if(st->h2s.current_stream.stream_id == 0){
+        st->h2s.current_stream.stream_id = 2;
+        st->h2s.current_stream.state = STREAM_OPEN;
+      }
+      else if(st->h2s.current_stream.state != STREAM_CLOSED){
+          ERROR("Current stream was not closed!");
+          return -1;
+      }
+      else{ //stream is closed and id is not zero
+        st->h2s.current_stream.stream_id = st->h2s.current_stream.stream_id%2 ? 1 : 2;
+        st->h2s.current_stream.state = STREAM_OPEN;
+      }
+    }
+    else{ // client must use odd numbers
+      if(st->h2s.current_stream.stream_id == 0){
+        st->h2s.current_stream.stream_id = 3;
+        st->h2s.current_stream.state = STREAM_OPEN;
+      }
+      else if(st->h2s.current_stream.state != STREAM_CLOSED){
+          ERROR("Current stream was not closed!");
+          return -1;
+      }
+      else{ //stream is closed and id is not zero
+        st->h2s.current_stream.stream_id = st->h2s.current_stream.stream_id%2 ? 2 : 1;
+        st->h2s.current_stream.state = STREAM_OPEN;
+      }
+    }
+  }
+  stream_id = st->h2s.current_stream.stream_id;
 
   frame_header_t frame_header;
   headers_payload_t headers_payload;
 
-  uint32_t stream_id = 1;//TODO check this if is a response, must be send on the same stream, if request, new stream. now stream is set to 1
 
   uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
 
