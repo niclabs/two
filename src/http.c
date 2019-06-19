@@ -39,16 +39,16 @@ int http_init_server(hstates_t *hs, uint16_t port)
 
     hs->is_server=1;
 
-    if (sock_create(hs->server_socket) < 0) {
+    if (sock_create(&hs->server_socket) < 0) {
         ERROR("Error in server creation");
         return -1;
     }
 
     hs->server_socket_state = 1;
 
-    if (sock_listen(hs->server_socket, port) < 0) {
+    if (sock_listen(&hs->server_socket, port) < 0) {
         ERROR("Partial error in server creation");
-        if (sock_destroy(hs->server_socket) == 0) {
+        if (sock_destroy(&hs->server_socket) == 0) {
             hs->server_socket_state = 0;
         }
         return -1;
@@ -63,7 +63,7 @@ int http_start_server(hstates_t *hs)
     printf("Server waiting for a client\n");
 
 
-    while (sock_accept(hs->server_socket, hs->socket) >= 0) {
+    while (sock_accept(&hs->server_socket, &hs->socket) >= 0) {
 
         printf("Client found and connected\n");
 
@@ -90,7 +90,7 @@ int http_start_server(hstates_t *hs)
             }
         }
 
-        if (sock_destroy(hs->socket) == -1) {
+        if (sock_destroy(&hs->socket) == -1) {
             WARN("Could not destroy client socket");
         }
         hs->connection_state = 0;
@@ -111,7 +111,7 @@ int http_server_destroy(hstates_t *hs)
     }
 
     if (hs->socket_state == 1) {
-        if (sock_destroy(hs->socket) < 0) {
+        if (sock_destroy(&hs->socket) < 0) {
             WARN("Client still connected");
         }
     }
@@ -119,7 +119,7 @@ int http_server_destroy(hstates_t *hs)
     hs->socket_state = 0;
     hs->connection_state = 0;
 
-    if (sock_destroy(hs->server_socket) < 0) {
+    if (sock_destroy(&hs->server_socket) < 0) {
         ERROR("Error in server disconnection");
         return -1;
     }
@@ -159,14 +159,14 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 
     hs->is_server=0;
 
-    if (sock_create(hs->socket) < 0) {
+    if (sock_create(&hs->socket) < 0) {
         ERROR("Error on client creation");
         return -1;
     }
 
     hs->socket_state = 1;
 
-    if (sock_connect(hs->socket, ip, port) < 0) {
+    if (sock_connect(&hs->socket, ip, port) < 0) {
         ERROR("Error on client connection");
         http_client_disconnect(hs);
         return -1;
@@ -195,7 +195,7 @@ int http_get(hstates_t *hs, char *path, char *accept_type){
 int http_client_disconnect(hstates_t *hs)
 {
     if (hs->socket_state == 1) {
-        if (sock_destroy(hs->socket) < 0) {
+        if (sock_destroy(&hs->socket) < 0) {
             ERROR("Error in client disconnection");
             return -1;
         }

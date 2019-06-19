@@ -57,9 +57,9 @@ typedef struct HEADERS_LISTS_S {
 typedef struct HTTP_STATES {
     uint8_t connection_state;
     uint8_t socket_state;
-    sock_t *socket; // client socket
+    sock_t socket; // client socket
     uint8_t server_socket_state;
-    sock_t *server_socket;
+    sock_t server_socket;
     uint8_t is_server; // boolean flag to know if current hstates if server or client
     h2states_t h2s;
     headers_lists_t h_lists;

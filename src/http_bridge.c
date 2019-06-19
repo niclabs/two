@@ -21,7 +21,7 @@ int http_write(hstates_t *hs, uint8_t *buf, int len)
     int wr = 0;
 
     if (hs->socket_state == 1) {
-        wr = sock_write(hs->socket, (char *)buf, len);
+        wr = sock_write(&hs->socket, (char *)buf, len);
     }
     else {
         ERROR("No client connected found");
@@ -44,7 +44,7 @@ int http_read(hstates_t *hs, uint8_t *buf, int len)
     int rd = 0;
 
     if (hs->socket_state == 1) {
-        rd = sock_read(hs->socket, (char *)buf, len, 0);
+        rd = sock_read(&hs->socket, (char *)buf, len, 0);
     }
     else {
         ERROR("No client connected found");
