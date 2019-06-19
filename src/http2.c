@@ -197,6 +197,48 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 }
 
 /*
+* Function: check_incoming_headers_condition
+* Checks the incoming frame stream_id and the current stream stream_id and
+* verifies its correctness. Creates a new stream if needed.
+* Input: -> header: header of the incoming headers frame
+*        -> st: hstates_t struct where stream variables are stored
+* Ouput: 0 if no errors were found, -1 if protocol error was found, -2 if
+* stream closed error was found.
+*/
+int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
+  // Check if stream is not created or previous one is closed
+  if(st->h2s.waiting_for_end_headers_flag){
+    //protocol error
+    ERROR("CONTINUATION frame was expected");
+    return -1;
+  }
+  else if(st->h2s.current_stream.stream_id == 0 ||
+      (st->h2s.current_stream.state == STREAM_CLOSED &&
+      st->h2s.current_stream.stream_id < header->stream_id)){
+      //we create a new stream
+      st->h2s.current_stream.stream_id = header->stream_id;
+      st->h2s.current_stream.state = STREAM_OPEN;
+      return 0;
+  }
+  // Stream id mismatch
+  else if(header->stream_id != st->h2s.current_stream.stream_id){
+      //protocol error
+      ERROR("Stream ids do not match.");
+      return -1;
+  }
+  // Current stream is not open
+  else if(st->h2s.current_stream.state != STREAM_OPEN){
+      //stream closed error
+      ERROR("Current stream is not open.");
+      return -2;
+  }
+  else{
+    return 0;
+  }
+}
+
+
+/*
 * Function: handle_headers_payload
 * Does all the operations related to an incoming HEADERS FRAME.
 * Input: -> header: pointer to the headers frame header (frame_header_t)
@@ -257,47 +299,6 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       st->keep_receiving = 0;
   }
   return 0;
-}
-
-/*
-* Function: check_incoming_headers_condition
-* Checks the incoming frame stream_id and the current stream stream_id and
-* verifies its correctness. Creates a new stream if needed.
-* Input: -> header: header of the incoming headers frame
-*        -> st: hstates_t struct where stream variables are stored
-* Ouput: 0 if no errors were found, -1 if protocol error was found, -2 if
-* stream closed error was found.
-*/
-int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
-  // Check if stream is not created or previous one is closed
-  if(st->h2s.waiting_for_end_headers_flag){
-    //protocol error
-    ERROR("CONTINUATION frame was expected");
-    return -1;
-  }
-  else if(st->h2s.current_stream.stream_id == 0 ||
-      (st->h2s.current_stream.state == STREAM_CLOSED &&
-      st->h2s.current_stream.stream_id < header->stream_id)){
-      //we create a new stream
-      st->h2s.current_stream.stream_id = header->stream_id;
-      st->h2s.current_stream.state = STREAM_OPEN;
-      return 0;
-  }
-  // Stream id mismatch
-  else if(header->stream_id != st->h2s.current_stream.stream_id){
-      //protocol error
-      ERROR("Stream ids do not match.");
-      return -1;
-  }
-  // Current stream is not open
-  else if(st->h2s.current_stream.state != STREAM_OPEN){
-      //stream closed error
-      ERROR("Current stream is not open.");
-      return -2;
-  }
-  else{
-    return 0;
-  }
 }
 
 /*
