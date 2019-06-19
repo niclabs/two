@@ -333,7 +333,8 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* va
         pointer += encode_integer(index, prefix, encoded_buffer + pointer);
         encoded_buffer[0] |= preamble;//set first bit
         if(preamble == (uint8_t)INDEXED_HEADER_FIELD){/*indexed header field representation in static or dynamic table*/
-
+            //TODO not implemented yet
+            ERROR("Not implemented yet!");
             return pointer;
         }else{
             if(index==(uint8_t)0){
