@@ -340,10 +340,8 @@ int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* comp
     //now it is without compression
     int pointer = 0;
     for(uint8_t i = 0; i<headers_count; i++){
-        buffer_copy(compressed_headers+pointer,(uint8_t*)headers[i].name, strlen(headers[i].name));
-        pointer += strlen(headers[i].name);
-        buffer_copy(compressed_headers+pointer,(uint8_t*)headers[i].value, strlen(headers[i].value));
-        pointer += strlen(headers[i].value);
+        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0,headers[i].value, 0, headers[i].name,  0, compressed_headers+pointer);
+        pointer += rc;
     }
     return pointer;
 }
@@ -433,6 +431,9 @@ int receive_header_block(uint8_t* header_block_fragments, int header_block_fragm
     (void)header_block_fragments_pointer;
     (void)header_list;
     (void)table_index;
+
+
+
     //int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, header_list, table_index);
     //(void)rc;
     return -1;
