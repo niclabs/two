@@ -62,6 +62,7 @@ int h2_server_init_connection(hstates_t *st);
 int h2_receive_frame(hstates_t *st);
 
 int h2_send_request(hstates_t *st);
+
 int h2_send_response(hstates_t *st);
 
 #endif /*HTTP2_H*/

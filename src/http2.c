@@ -629,10 +629,10 @@ int h2_receive_frame(hstates_t *st){
 * Given an hstates struct, builds and sends a message to endpoint. The message
 * is a sequence of a HEADER FRAME followed by 0 or more CONTINUATION FRAMES.
 * Input: -> st: hstates_t struct where headers are written
+        -> end_stream: boolean that indicates if end_stream flag needs to be set
 * Output: 0 if process was made successfully, -1 if not.
 */
 int send_headers(hstates_t *st, int end_stream){
-  (void) end_stream;
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
   int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
 
@@ -650,6 +650,9 @@ int send_headers(hstates_t *st, int end_stream){
       create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload);
       //set flags
       frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+      if(end_stream){
+        frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
+      }
       int bytes_size = headers_frame_to_bytes(&frame_header, &headers_payload, encoded_bytes);//reutilizo encoded_bytes
       http_write(st,encoded_bytes,bytes_size);
       return 0;
@@ -658,6 +661,9 @@ int send_headers(hstates_t *st, int end_stream){
       int remaining = size;
       //send Header Frame
       create_headers_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &headers_payload);
+      if(end_stream){
+        frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
+      }
       int bytes_size = headers_frame_to_bytes(&frame_header, &headers_payload, encoded_bytes);//reutilizo encoded_bytes
       http_write(st,encoded_bytes,bytes_size);
       remaining -= size;
