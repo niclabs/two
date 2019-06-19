@@ -28,7 +28,7 @@ FAKE_VALUE_FUNC(int, sock_destroy, sock_t *);
 FAKE_VALUE_FUNC(int, h2_client_init_connection, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_server_init_connection, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_receive_frame, hstates_t *);
-FAKE_VALUE_FUNC(int, h2_send_headers, hstates_t *);
+FAKE_VALUE_FUNC(int, h2_send_response, hstates_t *);
 FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 
 
@@ -42,7 +42,7 @@ FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
     FAKE(h2_client_init_connection)       \
     FAKE(h2_server_init_connection)       \
     FAKE(h2_receive_frame)                \
-    FAKE(h2_send_headers)                 \
+    FAKE(h2_send_response)                 \
     FAKE(http_clear_header_list)                 \
 
 
@@ -580,11 +580,11 @@ void test_get_receive_success(void)
     strcpy(hs.h_lists.header_list_in[0].value, "index/");
     hs.h_lists.header_list_count_in = 1;
 
-    h2_send_headers_fake.return_val = 0;
+    h2_send_response_fake.return_val = 0;
 
     int get = get_receive(&hs);
 
-    TEST_ASSERT_EQUAL((void *)h2_send_headers, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
     TEST_ASSERT_EQUAL(0, get);
 
@@ -596,7 +596,7 @@ void test_get_receive_success(void)
 }
 
 
-void test_get_receive_fail_h2_send_headers(void)
+void test_get_receive_fail_h2_send_response(void)
 {
     hstates_t hs;
 
@@ -610,11 +610,11 @@ void test_get_receive_fail_h2_send_headers(void)
     strcpy(hs.h_lists.header_list_in[0].value, "index/");
     hs.h_lists.header_list_count_in = 1;
 
-    h2_send_headers_fake.return_val = -1;
+    h2_send_response_fake.return_val = -1;
 
     int get = get_receive(&hs);
 
-    TEST_ASSERT_EQUAL((void *)h2_send_headers, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Problems sending data");
 
@@ -708,7 +708,7 @@ int main(void)
     UNIT_TEST(test_http_get_header_fail_header_not_found);
 
     UNIT_TEST(test_get_receive_success);
-    UNIT_TEST(test_get_receive_fail_h2_send_headers);
+    UNIT_TEST(test_get_receive_fail_h2_send_response);
     UNIT_TEST(test_get_receive_path_not_found);
     UNIT_TEST(test_get_receive_path_callback_list_empty);
 
