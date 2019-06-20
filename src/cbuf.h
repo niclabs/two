@@ -37,4 +37,9 @@ int cbuf_write(cbuf_t * cbuf, void * src, int len);
  * Read data from the circular buffer
  */
 int cbuf_read(cbuf_t * cbuf, void * dst, int len);
+
+/**
+ * Return available read size
+ */
+int cbuf_size(cbuf_t * cbuf);
 #endif /* CBUF_H */

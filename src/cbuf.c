@@ -70,3 +70,7 @@ int cbuf_read(cbuf_t *cbuf, void *dst, int len)
 
     return bytes;
 }
+
+int cbuf_size(cbuf_t * cbuf) {
+    return cbuf->count;
+}
