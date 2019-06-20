@@ -22,7 +22,6 @@ int http_write(hstates_t *hs, uint8_t *buf, int len)
 
     if (hs->socket_state == 1) {
         wr = sock_write(&hs->socket, (char *)buf, len);
-        DEBUG("writing: %s, %d bytes written", (char*)buf, wr);
     }
     else {
         ERROR("No client connected found");

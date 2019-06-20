@@ -188,7 +188,6 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
         printf("Error: Payload's size (%u) too big (>256)\n", header->length);
         return -1;
     }
-    DEBUG("header->length:  %u", header->length);
     rc = read_n_bytes(buff_read, header->length, st);
     if(rc != header->length){
         ERROR("Error reading bytes from http");

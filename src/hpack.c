@@ -446,23 +446,18 @@ int decode_literal_header_field_without_indexing(uint8_t* header_block, char* na
     int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
     if(index == 0){
-        DEBUG("Debería ser indice == 0. ok for now");
         pointer += 1;
         //decode huffman name
         //decode name length
         int name_length = decode_integer(header_block+pointer, 7);
-        DEBUG("decode name length: %d", name_length);
         pointer += encoded_integer_size(name_length,7);
-        DEBUG("1pointer is: %d", pointer);
         //decode name
-
         char* rc = strncpy(name,(char*)header_block+pointer, name_length);
         if(rc<=(char*)0){
             ERROR("Error en strncpy");
             return -1;
         }
         pointer += name_length;
-        DEBUG("2pointer is: %d", pointer);
     }
     else{
         //TODO find name in table
@@ -471,14 +466,11 @@ int decode_literal_header_field_without_indexing(uint8_t* header_block, char* na
     }
     //decode value length
     int value_length = decode_integer(header_block+pointer, 7);
-    DEBUG("decode value length: %d", value_length);
     pointer += encoded_integer_size(value_length,7);
-    DEBUG("3pointer is: %d", pointer);
     //decode value
     strncpy(value,(char*)header_block+pointer, value_length);
     pointer += value_length;
 
-    DEBUG("4pointer is: %d", pointer);
     return pointer;
 }
 
