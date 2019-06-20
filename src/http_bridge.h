@@ -5,15 +5,13 @@
 #ifndef HTTP_BRIDGE_H
 #define HTTP_BRIDGE_H
 
+
 #include <stdlib.h>
 #include <stdint.h>
 #include "sock.h"
 #include "table.h"
 
-/*--------------------HTTP2 structures and static values--------------------*/
 
-#define HTTP2_MAX_HEADER_COUNT 32
-#define HTTP2_MAX_HBF_BUFFER 128
 
 typedef enum {
     STREAM_IDLE,
@@ -46,12 +44,6 @@ typedef struct HTTP2_STATES {
 
 #define HTTP_MAX_CALLBACK_LIST_ENTRY 32
 
-typedef struct HEADERS_LISTS_S {
-    uint8_t header_list_count_in;
-    table_pair_t header_list_in[HTTP2_MAX_HEADER_COUNT];
-    uint8_t header_list_count_out;
-    table_pair_t header_list_out[HTTP2_MAX_HEADER_COUNT];
-} headers_lists_t;
 
 
 typedef struct HTTP_STATES {

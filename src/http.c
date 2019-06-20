@@ -87,6 +87,7 @@ int http_start_server(hstates_t *hs)
                 get_receive(hs);
                 http_clear_header_list(hs, -1, 0);
                 http_clear_header_list(hs, -1, 1);
+                hs->new_headers = 0;
             }
         }
 
@@ -159,7 +160,7 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 
     hs->is_server=0;
 
-    if (sock_create(&hs->socket) < 0) {
+    if (sock_create(&(hs->socket)) < 0) {
         ERROR("Error on client creation");
         return -1;
     }
@@ -184,6 +185,29 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
     return 0;
 }
 
+int http_start_client(hstates_t* hs){
+    while (hs->connection_state == 1) {
+        if (h2_receive_frame(hs) < 0) {
+            break;
+        }
+        if (hs->keep_receiving == 1) {
+            continue;
+        }
+        if (hs->new_headers == 1) {
+            get_receive(hs);
+            http_clear_header_list(hs, -1, 0);
+            http_clear_header_list(hs, -1, 1);
+        }
+    }
+    hs->connection_state = 0;
+    hs->socket_state = 0;
+    if (sock_destroy(&hs->socket) == -1) {
+        WARN("Could not destroy client socket");
+        return -1;
+    }
+    return 0;
+}
+
 
 int http_get(hstates_t *hs, char *path, char *accept_type){
   http_set_header(&hs->h_lists, ":path", path);
@@ -191,6 +215,7 @@ int http_get(hstates_t *hs, char *path, char *accept_type){
     printf("funciona\n");
   }
   h2_send_request(hs);
+  printf("envía h2 request\n");
   return 1;
 }
 
@@ -243,7 +268,7 @@ char *http_get_header(headers_lists_t *h_lists, char *header)
     }
 
     int k;
-    for (k = 0; k <= i; k++) {
+    for (k = 0; k < i; k++) {
         if ((strncmp(h_lists->header_list_in[k].name, header, strlen(header)) == 0) && strlen(header) == strlen(h_lists->header_list_in[k].name)) {
             INFO("RETURNING value of '%s' header; '%s'", h_lists->header_list_in[k].name, h_lists->header_list_in[k].value);
             return h_lists->header_list_in[k].value;

@@ -175,7 +175,7 @@ int handle_settings_payload(uint8_t *buff_read, frame_header_t *header, settings
 int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
     int rc = read_n_bytes(buff_read, 9, st);
     if(rc != 9){
-        ERROR("Error reading bytes from http");
+        ERROR("Error reading bytes from http, read %d bytes", rc);
         return -1;
     }
     /*Must be 0*/
@@ -188,6 +188,7 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
         printf("Error: Payload's size (%u) too big (>256)\n", header->length);
         return -1;
     }
+    DEBUG("header->length:  %u", header->length);
     rc = read_n_bytes(buff_read, header->length, st);
     if(rc != header->length){
         ERROR("Error reading bytes from http");
@@ -275,8 +276,8 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
   if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list_in, st->h_lists.header_list_count_in);
-      if(rc < 1){
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->h_lists));
+      if(rc < 0){
         ERROR("Error was found receiving header_block");
         return -1;
       }
@@ -352,10 +353,18 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   st->h2s.header_block_fragments_pointer += rc;
   if(is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,st->h_lists.header_list_in, st->h_lists.header_list_count_in);
-      if(rc < 1){
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->h_lists)); //TODO check this: rc is the byte read from the header
+
+      if(rc < 0){
         ERROR("Error was found receiving header_block");
         return -1;
+      }
+      if(rc!= st->h2s.header_block_fragments_pointer){
+          ERROR("ERROR still exists fragments to receive.");
+          return -1;
+      }
+      else{//all fragments already received.
+          st->h2s.header_block_fragments_pointer = 0;
       }
       st->h_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;
