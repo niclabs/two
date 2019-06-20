@@ -135,6 +135,7 @@ int http_server_destroy(hstates_t *hs)
 
 int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path)
 {
+    INFO("setting function to path '%s'", path)
     int i = hs->path_callback_list_count;
 
     if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {
@@ -212,10 +213,13 @@ int http_start_client(hstates_t* hs){
 int http_get(hstates_t *hs, char *path, char *accept_type){
   http_set_header(&hs->h_lists, ":path", path);
   if (http_set_header(&hs->h_lists, "accept", accept_type)==0){
-    printf("funciona\n");
+        printf("funciona\n");
+  }
+  else{
+      ERROR("Cannot send headers");
+      return -1;
   }
   h2_send_request(hs);
-  printf("envía h2 request\n");
   return 1;
 }
 
@@ -275,7 +279,7 @@ char *http_get_header(headers_lists_t *h_lists, char *header)
         }
     }
 
-    WARN("Header not found in headers list");
+    WARN("Header '%s' not found in headers list", header);
     return NULL;
 }
 
@@ -305,8 +309,8 @@ int get_receive(hstates_t *hs)
         }
     }
 
+    INFO("Callback");
     http_set_header(&hs->h_lists, ":status", "200");
-
     callback.cb(&hs->h_lists);
 
     if (h2_send_response(hs) < 0) {
