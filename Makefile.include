@@ -146,7 +146,7 @@ all: $(BINFILE)
 # Link the executable
 $(BINFILE): $(OBJECTS)
 	@echo "Linking: $@"
-	$(Q)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	$(Q)$(CC) $(OBJECTS) $(LDFLAGS)  -lm -o $@
 
 # Add dependency files, if they exist
 -include $(DEPS)
