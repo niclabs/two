@@ -26,7 +26,7 @@ FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int)
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 
 FAKE_VALUE_FUNC(int, encode, hpack_preamble_t , uint32_t , uint32_t ,char*, uint8_t , char*, uint8_t , uint8_t*);
-FAKE_VALUE_FUNC(int, decode_header_block, uint8_t* , uint8_t , table_pair_t* , uint8_t );
+FAKE_VALUE_FUNC(int, decode_header_block, uint8_t* , uint8_t , headers_lists_t*);
 
 
 /* List of fakes used by this unit tester */
