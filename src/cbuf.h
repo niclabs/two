@@ -5,9 +5,11 @@
  * Circular buffer definition functions
  *
  * A circular buffer allows to read and write from a buffer
- * using all allocated memory. Write operations reduce
- * the free size and read operations increase the size by
- * maintaining a read and write pointer
+ * using all allocated memory. Write operations reduce 
+ * the available space and read operations increase
+ * the available buffer. This obviously also means that 
+ * data can only be read once from the buffer using the cbuf_read()
+ * call.
  **/
 
 
