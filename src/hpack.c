@@ -2,6 +2,7 @@
 #include "logging.h"
 #include <math.h>
 #include "hpack_utils.h"
+#include <stdio.h>
 /*
  *
  * returns compressed headers size or -1 if error
@@ -39,7 +40,7 @@ uint32_t get_octets_length(uint32_t num, uint8_t prefix){
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
     if(num >= p){
-        uint32_t k = 0;//TODO fix LOG log(num - p) / log(128);
+        uint32_t k = log(num - p) / log(128);
         return k + 2;
     }else{
         return 1;
@@ -57,7 +58,7 @@ int encoded_integer_size(uint32_t integer, uint8_t prefix){
         b0 = b0 << (8 - prefix);
         b0 = b0 >> (8 - prefix);
         integer = integer - b0;
-        int k = 0;//TODO fix LOG log(integer) / log(128);
+        int k = log(integer) / log(128);
         octets_size = k + 2;
     }
     return octets_size;
@@ -70,21 +71,23 @@ int encoded_integer_size(uint32_t integer, uint8_t prefix){
  * encode an integer with the given prefix
  * and save the encoded integer in "encoded_integer"
  * encoded_integer must be an array of the size calculated by encoded_integer_size
- * returns the encoded_intege_size
+ * returns the encoded_integer_size
  */
 int encode_integer(uint32_t integer, uint8_t prefix, uint8_t* encoded_integer){
-    int octets_size;
+    int octets_size = 0;
     uint32_t max_first_octet = (1<<prefix)-1;
     if(integer < max_first_octet){
         encoded_integer[0] = (uint8_t)(integer << (8 - prefix));
         encoded_integer[0] = (uint8_t)encoded_integer[0] >> (8 - prefix);
+        octets_size = 1;
     }else{
         uint8_t b0 = 255;
         b0 = b0 << (8 - prefix);
         b0 = b0 >> (8 - prefix);
         integer = integer - b0;
-        int k = 0;//TODO fix LOG log(integer)/log(128);
+        int k = log(integer)/log(128);
         octets_size = k+2;
+
         encoded_integer[0] = b0;
 
         int i = 1;
