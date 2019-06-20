@@ -1,13 +1,19 @@
-CONTIKI_PROJECT = two
+CONTIKI_PROJECT = test_server
 all: $(CONTIKI_PROJECT)
 
 SRCDIR ?= ../src
 CONTIKI ?= ../build/contiki
 
 PROJECTDIRS += $(SRCDIR)
-PROJECT_SOURCEFILES=http.c sock.c http_bridge.c http2.c http2utils.c frames.c utils.c
+PROJECT_SOURCEFILES=sock.c cbuf.c
 
 DEFINES += WITH_CONTIKI
 
-#UIP_CONF_IPV6=1
+#linker optimizations
+SMALL=1
+
+# Contiki configurations
+CONTIKI_WITH_IPV6=1
+CONTIKI_WITH_RPL=0
+
 include $(CONTIKI)/Makefile.include
