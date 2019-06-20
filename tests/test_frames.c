@@ -88,8 +88,8 @@ void test_read_headers_payload(void){
     /*result*/
     headers_payload_t headers_payload;
     uint8_t headers_block_fragment[64];
-    uint8_t padding[32];
-    int rc = read_headers_payload(read_buffer, &expected_frame_header, &headers_payload, headers_block_fragment, padding);
+    //uint8_t padding[32]; //not implemented yet!
+    int rc = read_headers_payload(read_buffer, &expected_frame_header, &headers_payload, headers_block_fragment, NULL);
 
     TEST_ASSERT_EQUAL(expected_frame_header.length, rc);//se leyeron 9 bytes
     for(int i =0; i<expected_frame_header.length; i++) {

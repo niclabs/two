@@ -273,7 +273,7 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set){
 int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* header_block_fragment){
     frame_type_t type = HEADERS_TYPE;
     uint8_t flags = 0x0;
-    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is impolemented
+    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is implemented
 
     frame_header->length = length;
     frame_header->type = type;
@@ -287,23 +287,29 @@ int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32
 
 int headers_payload_to_bytes(frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* byte_array){
     int pointer = 0;
-    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
-        buffer_copy(byte_array+pointer, headers_payload->padding, headers_payload->pad_length);
-        pointer+=headers_payload->pad_length;
-    }
-    if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){ //if priority flag is set
-        //TODO not implemented yet
-        return -1;
-    }
+
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
+    //    buffer_copy(byte_array+pointer, headers_payload->padding, headers_payload->pad_length);
+    //    pointer+=headers_payload->pad_length;
+    //}
+
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){ //if priority flag is set
+    //    ERROR("not implemented yet");
+    //    return -1;
+    //}
+
     //header block fragment
     int header_block_fragment_size = get_header_block_fragment_size(frame_header,headers_payload);//7(int)frame_header->length-pad_length-pointer;
     buffer_copy(byte_array+pointer, headers_payload->header_block_fragment, header_block_fragment_size);
     pointer += header_block_fragment_size;
 
-    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
-        int rc = buffer_copy(byte_array+pointer, headers_payload->padding, headers_payload->pad_length);
-        pointer += rc;
-    }
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
+    //    int rc = buffer_copy(byte_array+pointer, headers_payload->padding, headers_payload->pad_length);
+    //    pointer += rc;
+    //}
     return pointer;
 }
 
@@ -373,19 +379,23 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
     //uint8_t padding[32]; //only if padded flag is set. Size = pad_length
 
     int pointer = 0;
-    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
-        pad_length = read_buffer[pointer];
-        pointer +=1;
-        ERROR("Header with padding");
-    }
-    if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){ //if priority flag is set
-        exclusive_dependency = ((uint8_t)128)&read_buffer[pointer];
-        stream_dependency = (uint32_t) bytes_to_uint32_31(read_buffer+pointer);
-        pointer +=4;
-        weight = read_buffer[pointer];
-        pointer +=1;
-        ERROR("Header with priority");
-    }
+
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)){ //if padded flag is set read padding length
+    //    pad_length = read_buffer[pointer];
+    //    pointer +=1;
+    //    ERROR("Header with padding");
+    //}
+
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){ //if priority flag is set
+     //   exclusive_dependency = ((uint8_t)128)&read_buffer[pointer];
+     //   stream_dependency = (uint32_t) bytes_to_uint32_31(read_buffer+pointer);
+     //   pointer +=4;
+     //   weight = read_buffer[pointer];
+     //   pointer +=1;
+     //   ERROR("Header with priority");
+    //}
 
     //header block fragment
     int header_block_fragment_size = get_header_block_fragment_size(frame_header,headers_payload);//7(int)frame_header->length-pad_length-pointer;
@@ -396,33 +406,36 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
     int rc = buffer_copy(headers_block_fragment, read_buffer+pointer, header_block_fragment_size);
     pointer += rc;
 
-    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
-        if(pad_length>=32){
-            ERROR("Pad lenght longer than the space given.");
-            return -1;
-        }
-        rc = buffer_copy(padding, read_buffer+pointer, (int)pad_length);
-        pointer += rc;
-    }
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding
+    //    if(pad_length>=32){
+    //        ERROR("Pad lenght longer than the space given.");
+    //        return -1;
+    //    }
+    //    rc = buffer_copy(padding, read_buffer+pointer, (int)pad_length);
+    //    pointer += rc;
+    //}
 
-    headers_payload->pad_length = pad_length;
-    headers_payload->exclusive_dependency = exclusive_dependency;
-    headers_payload->stream_dependency = stream_dependency;
-    headers_payload->weight = weight;
+    //headers_payload->pad_length = pad_length;//not implemented yet!
+    //headers_payload->exclusive_dependency = exclusive_dependency;//not implemented yet!
+    //headers_payload->stream_dependency = stream_dependency;//not implemented yet!
+    //headers_payload->weight = weight;//not implemented yet!
     headers_payload->header_block_fragment = headers_block_fragment;
-    headers_payload->padding = padding;
+    //headers_payload->padding = padding;//not implemented yet!
     return pointer;
 }
 
 int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload){
     int priority_length = 0;
-    if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){
-        priority_length = 5;
-    }
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){
+    //    priority_length = 5;
+    //}
     int pad_length = 0;
-    if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) {
-        pad_length = headers_payload->pad_length + 1; //plus one for the pad_length byte.
-    }
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) {
+    //    pad_length = headers_payload->pad_length + 1; //plus one for the pad_length byte.
+    //}
     return frame_header->length - pad_length - priority_length;
 }
 
