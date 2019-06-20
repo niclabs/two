@@ -135,7 +135,7 @@ int http_server_destroy(hstates_t *hs)
 
 int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path)
 {
-    INFO("setting function to path '%s'", path)
+    INFO("setting function to path '%s'", path);
     int i = hs->path_callback_list_count;
 
     if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {

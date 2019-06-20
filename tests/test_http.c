@@ -30,10 +30,12 @@ FAKE_VALUE_FUNC(int, h2_server_init_connection, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_receive_frame, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_send_response, hstates_t *);
 FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
+FAKE_VALUE_FUNC(int, h2_send_request, hstates_t *);
+
 
 
 /* List of fakes used by this unit tester */
-#define FFF_FAKES_LIST(FAKE)            \
+#define FFF_FAKES_LIST(FAKE)              \
     FAKE(sock_create)                     \
     FAKE(sock_listen)                     \
     FAKE(sock_accept)                     \
@@ -42,8 +44,9 @@ FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
     FAKE(h2_client_init_connection)       \
     FAKE(h2_server_init_connection)       \
     FAKE(h2_receive_frame)                \
-    FAKE(h2_send_response)                 \
-    FAKE(http_clear_header_list)                 \
+    FAKE(h2_send_response)                \
+    FAKE(http_clear_header_list)          \
+    FAKE(h2_send_request)                 \
 
 
 void setUp()
