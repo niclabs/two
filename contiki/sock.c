@@ -48,6 +48,16 @@ LIST(socket_list);
 // Define sock process
 PROCESS(sock_process, "TCP sockets");
 
+static struct sock_socket * find_socket_for_port(uint16_t port) {
+    struct sock_socket * s;
+    for (s = list_head(socket_list); s != NULL; s = list_item_next(s)) {
+        if (s->port == port) {
+            return s;
+        }
+    }
+    return NULL;
+}
+
 static void sock_init(void)
 {
     static uint8_t inited = 0;
@@ -71,29 +81,10 @@ int sock_create(sock_t *sock)
     // Initialize socket library
     sock_init();
 
-    // Check if there is enough memory available
-    if (memb_numfree(&sockets) <= 0) {
-        errno = ENOMEM;
-        return -1;
-    }
-
-    // ALlocate memory for socket
-    struct sock_socket * s = memb_alloc(&sockets);
-    s->port = 0;
-    
-    // Initialize input and output buffers
-    cbuf_init(&s->cin, s->in, sizeof(s->in));
-    cbuf_init(&s->cout, s->out, sizeof(s->out));
-
-    s->process = PROCESS_CURRENT();
-    s->flags = SOCKET_FLAGS_NONE;
-
-    sock->socket = s;
+    sock->port = 0;
     sock->state = SOCK_OPENED;
 
-    // add socket to the list for later retrieval
-    list_add(socket_list, s);
-
+    
     return 0;
 }
 
@@ -104,32 +95,42 @@ int sock_listen(sock_t *sock, uint16_t port)
         return -1;
     }
 
-    if (sock->socket == NULL) {
-        errno = ENOTSOCK;
+    if (sock->socket != NULL) {
+        errno = EBADF;
         return -1;
     }
 
-    // Is the socket already connected to any port
-    if (sock->socket->port != 0 && (sock->socket->flags & SOCKET_FLAGS_LISTENING) != 0) {
-        errno = EALREADY;
+    if (find_socket_for_port(sock->port) != NULL) {
+        errno = EADDRINUSE;
+        return -1;
+    }
+   
+    // Check if there is enough memory available
+    if (memb_numfree(&sockets) <= 0) {
+        errno = ENOMEM;
         return -1;
     }
 
-    // check if there is another socket listening to the same port
-    struct sock_socket * s;
-    for (s = list_head(socket_list); s != NULL; s = list_item_next(s)) {
-        if (s != sock->socket && s->port == port) {
-            errno = EADDRINUSE;
-            return -1;
-        }
-    }
+    // ALlocate memory for socket
+    struct sock_socket * s = memb_alloc(&sockets);
+    
+    // Initialize input and output buffers
+    cbuf_init(&s->cin, s->in, sizeof(s->in));
+    cbuf_init(&s->cout, s->out, sizeof(s->out));
+
+    s->port = port;
+    s->process = PROCESS_CURRENT();
+    s->flags = SOCKET_FLAGS_NONE;
+
+    // add socket to the list for later retrieval
+    list_add(socket_list, s);
 
     // Let know UIP that we are accepting connections on the specified port
     PROCESS_CONTEXT_BEGIN(&sock_process);
     tcp_listen(UIP_HTONS(port));
     PROCESS_CONTEXT_END();
 
-    sock->socket->port = port;
+    sock->port = port;
     sock->socket->flags |= SOCKET_FLAGS_LISTENING;
     sock->state = SOCK_LISTENING;
     return 0;
@@ -204,9 +205,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 		return -1;
 	}
 
-    int bytes = cbuf_push(&sock->socket->cout, buf, len);
-
-    return bytes;
+    return cbuf_push(&sock->socket->cout, buf, len);
 }
 
 int sock_destroy(sock_t *sock)

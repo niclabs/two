@@ -43,6 +43,7 @@ typedef struct {
     int state;
 #ifdef WITH_CONTIKI
     struct pt pt;
+    uint16_t port;
 #endif
 } sock_t;
 
