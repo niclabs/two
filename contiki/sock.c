@@ -16,13 +16,26 @@
 enum {
     SOCKET_FLAGS_NONE = 0x00,
     SOCKET_FLAGS_LISTENING = 0x01,
-    SOCKET_FLAGS_CLOSING = 0x02
+    SOCKET_FLAGS_SENDING = 0x02,
+    SOCKET_FLAGS_CLOSING = 0x04
 };
 
 struct sock_socket {
+    // Socket buffers
     uint8_t in[SOCK_BUFFER_SIZE];
+    uint8_t out[SOCK_BUFFER_SIZE];
+   
+    // circular buffers to manage data
     cbuf_t cin;
+    cbuf_t cout;
+
+    // last send length
+    uint16_t last_send;
+
+    // listen port
     uint16_t port;
+
+    // socket state
     uint8_t flags;
     
     struct process * process;
@@ -68,8 +81,9 @@ int sock_create(sock_t *sock)
     struct sock_socket * s = memb_alloc(&sockets);
     s->port = 0;
     
-    // Initialize input buffer
+    // Initialize input and output buffers
     cbuf_init(&s->cin, s->in, sizeof(s->in));
+    cbuf_init(&s->cout, s->out, sizeof(s->out));
 
     s->process = PROCESS_CURRENT();
     s->flags = SOCKET_FLAGS_NONE;
@@ -175,7 +189,24 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    return 0;
+    if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (sock->socket == NULL) {
+		errno = ENOTSOCK;
+		return -1;
+	}
+
+	if (buf == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+    int bytes = cbuf_write(&sock->socket->cout, buf, len);
+
+    return bytes;
 }
 
 int sock_destroy(sock_t *sock)
@@ -237,6 +268,46 @@ PT_THREAD(sock_wait_data(sock_t * sock))
     PT_END(&sock->pt);
 }
 
+void send_data(struct sock_socket * s) 
+{
+    if (s == NULL || s->flags & SOCKET_FLAGS_SENDING || cbuf_len(&s->cout) == 0) return;
+
+    int len = MIN(cbuf_len(&s->cout), uip_mss());
+    uint8_t buf[len];    
+
+    // Copy data to send buffer
+    cbuf_peek(&s->cout, buf, len);
+
+    // Send data
+    uip_send(buf, len);
+
+    s->flags |= SOCKET_FLAGS_SENDING;
+    s->last_send = len;
+}
+
+void handle_ack(struct sock_socket * s) {
+    if (s == NULL || (s->flags & SOCKET_FLAGS_SENDING) == 0)  return;
+
+    // remove data from send buffer
+    cbuf_read(&s->cout, NULL, s->last_send);
+
+    s->flags &= ~SOCKET_FLAGS_SENDING;
+    s->last_send = 0;
+
+    // send next data
+    send_data(s);
+}
+
+void handle_rexmit(struct sock_socket * s) {
+    if (s == NULL || (s->flags & SOCKET_FLAGS_SENDING) == 0)  return;
+    
+    s->flags &= ~SOCKET_FLAGS_SENDING;
+    s->last_send = 0;
+    
+    // re-send data
+    send_data(s);
+}
+
 void handle_tcp_event(void *state)
 {
     struct sock_socket *s = (struct sock_socket *)state;
@@ -262,7 +333,10 @@ void handle_tcp_event(void *state)
             uip_abort();
         }
         else {
-            // TODO: should we check for new data here?
+            if (uip_newdata()) {
+                cbuf_write(&s->cin, uip_appdata, uip_datalen());
+            }
+            send_data(s);
            
             // Notify the process of a new event
             process_post(s->process, PROCESS_EVENT_CONTINUE, NULL);
@@ -289,6 +363,18 @@ void handle_tcp_event(void *state)
 
     if (uip_newdata()) {
         cbuf_write(&s->cin, uip_appdata, uip_datalen());
+    }
+
+    if (uip_acked()) {
+        handle_ack(s);
+    }
+
+    if (uip_rexmit()) {
+        handle_rexmit(s);
+    }
+
+    if (uip_newdata() || uip_poll()) {
+        send_data(s);
     }
 
     // Notify the original process of the event
