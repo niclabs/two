@@ -326,7 +326,6 @@ int get_receive(hstates_t *hs)
         }
     }
 
-    INFO("Callback");
     http_set_header(&hs->h_lists, ":status", "200");
     callback.cb(&hs->h_lists);
 
