@@ -15,8 +15,8 @@
 
 typedef struct {
     void * ptr;
-    int size;
-    int count;
+    int maxlen;
+    int len;
 
     // read and write pointer
     void * readptr;
@@ -28,7 +28,7 @@ typedef struct {
  * Initialize circular buffer with the specified
  * memory pointer and length
  */
-void cbuf_init(cbuf_t * cbuf, void * buf, int len);
+void cbuf_init(cbuf_t * cbuf, void * buf, int maxlen);
 
 /**
  * Write data to the circular buffer
@@ -43,5 +43,5 @@ int cbuf_read(cbuf_t * cbuf, void * dst, int len);
 /**
  * Return available read size
  */
-int cbuf_size(cbuf_t * cbuf);
+int cbuf_len(cbuf_t * cbuf);
 #endif /* CBUF_H */

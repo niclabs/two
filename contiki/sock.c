@@ -232,7 +232,7 @@ PT_THREAD(sock_wait_data(sock_t * sock))
     }
 
     // Wait while there is no data in the socket
-    PT_WAIT_WHILE(&sock->pt, cbuf_size(&sock->socket->cin) == 0);
+    PT_WAIT_WHILE(&sock->pt, cbuf_len(&sock->socket->cin) == 0);
 
     PT_END(&sock->pt);
 }
