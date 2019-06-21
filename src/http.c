@@ -220,6 +220,20 @@ int http_get(hstates_t *hs, char *path, char *accept_type){
       return -1;
   }
   h2_send_request(hs);
+
+  while (hs->connection_state == 1) {
+      if (h2_receive_frame(hs) < 0) {
+          break;
+      }
+      if (hs->keep_receiving == 1) {
+          continue;
+      }
+      if (hs->new_headers == 1) {
+          printf("Recibí cosas\n");
+      }
+  }
+
+  
   return 1;
 }
 
