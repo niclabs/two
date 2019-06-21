@@ -16,7 +16,7 @@ void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen)
     cbuf->len = 0;
 }
 
-int cbuf_write(cbuf_t *cbuf, void *src, int len)
+int cbuf_push(cbuf_t *cbuf, void *src, int len)
 {
     int bytes = 0;
     while (len > 0 && cbuf->len < cbuf->maxlen) {
@@ -43,7 +43,7 @@ int cbuf_write(cbuf_t *cbuf, void *src, int len)
     return bytes;
 }
 
-int cbuf_read(cbuf_t *cbuf, void *dst, int len)
+int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
 {
     int bytes = 0;
 

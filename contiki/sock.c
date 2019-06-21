@@ -185,7 +185,7 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
 	}
 
 	// Read from readptr into buf
-    return cbuf_read(&sock->socket->cin, buf, len);
+    return cbuf_pop(&sock->socket->cin, buf, len);
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
@@ -204,7 +204,7 @@ int sock_write(sock_t * sock, char * buf, int len) {
 		return -1;
 	}
 
-    int bytes = cbuf_write(&sock->socket->cout, buf, len);
+    int bytes = cbuf_push(&sock->socket->cout, buf, len);
 
     return bytes;
 }
@@ -289,7 +289,7 @@ void handle_ack(struct sock_socket * s) {
     if (s == NULL || (s->flags & SOCKET_FLAGS_SENDING) == 0)  return;
 
     // remove data from send buffer
-    cbuf_read(&s->cout, NULL, s->last_send);
+    cbuf_pop(&s->cout, NULL, s->last_send);
 
     s->flags &= ~SOCKET_FLAGS_SENDING;
     s->last_send = 0;
@@ -334,7 +334,7 @@ void handle_tcp_event(void *state)
         }
         else {
             if (uip_newdata()) {
-                cbuf_write(&s->cin, uip_appdata, uip_datalen());
+                cbuf_push(&s->cin, uip_appdata, uip_datalen());
             }
             send_data(s);
            
@@ -362,7 +362,7 @@ void handle_tcp_event(void *state)
     }
 
     if (uip_newdata()) {
-        cbuf_write(&s->cin, uip_appdata, uip_datalen());
+        cbuf_push(&s->cin, uip_appdata, uip_datalen());
     }
 
     if (uip_acked()) {
