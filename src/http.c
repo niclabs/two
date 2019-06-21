@@ -37,7 +37,7 @@ int http_init_server(hstates_t *hs, uint16_t port)
 {
     set_init_values(hs);
 
-    hs->is_server=1;
+    hs->is_server = 1;
 
     if (sock_create(&hs->server_socket) < 0) {
         ERROR("Error in server creation");
@@ -159,7 +159,7 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 {
     set_init_values(hs);
 
-    hs->is_server=0;
+    hs->is_server = 0;
 
     if (sock_create(&(hs->socket)) < 0) {
         ERROR("Error on client creation");
@@ -186,7 +186,8 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
     return 0;
 }
 
-int http_start_client(hstates_t* hs){
+int http_start_client(hstates_t *hs)
+{
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
             break;
@@ -210,34 +211,36 @@ int http_start_client(hstates_t* hs){
 }
 
 
-int http_get(hstates_t *hs, char *path, char *host, char *accept_type){
-  int method = http_set_header(&hs->h_lists, ":method", "GET");
-  int scheme = http_set_header(&hs->h_lists, ":scheme", "https");
-  int set_path = http_set_header(&hs->h_lists, ":path", path);
-  int set_host = http_set_header(&hs->h_lists, "host", host);
-  int set_accept = http_set_header(&hs->h_lists, "accept", accept_type);
-  if (method<0 || scheme<0 || set_path<0 || set_host<0 || set_accept<0){
-    ERROR("Cannot add headers to query");
-    return -1;
-  }
-  if (h2_send_request(hs)<0){
-    ERROR("Cannot send query");
-    return -1;
-  }
+int http_get(hstates_t *hs, char *path, char *host, char *accept_type)
+{
+    int method = http_set_header(&hs->h_lists, ":method", "GET");
+    int scheme = http_set_header(&hs->h_lists, ":scheme", "https");
+    int set_path = http_set_header(&hs->h_lists, ":path", path);
+    int set_host = http_set_header(&hs->h_lists, "host", host);
+    int set_accept = http_set_header(&hs->h_lists, "accept", accept_type);
 
-  while (hs->connection_state == 1) {
-      if (h2_receive_frame(hs) < 0) {
-          break;
-      }
-      if (hs->keep_receiving == 1) {
-          continue;
-      }
-      if (hs->new_headers == 1) {
-          return 0;
-      }
-  }
+    if (method < 0 || scheme < 0 || set_path < 0 || set_host < 0 || set_accept < 0) {
+        ERROR("Cannot add headers to query");
+        return -1;
+    }
+    if (h2_send_request(hs) < 0) {
+        ERROR("Cannot send query");
+        return -1;
+    }
 
-  return -1;
+    while (hs->connection_state == 1) {
+        if (h2_receive_frame(hs) < 0) {
+            break;
+        }
+        if (hs->keep_receiving == 1) {
+            continue;
+        }
+        if (hs->new_headers == 1) {
+            return 0;
+        }
+    }
+
+    return -1;
 }
 
 
