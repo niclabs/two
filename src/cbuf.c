@@ -52,7 +52,11 @@ int cbuf_read(cbuf_t *cbuf, void *dst, int len)
         if (cbuf->readptr < cbuf->writeptr) {
             copylen = MIN(len, cbuf->writeptr - cbuf->readptr);
         }
-        memcpy(dst, cbuf->readptr, copylen);
+       
+        // if dst is NULL, calls to read will only increase the read pointer
+        if (dst != NULL) { 
+            memcpy(dst, cbuf->readptr, copylen);
+        }
 
         // Update read pointer
         cbuf->readptr = cbuf->ptr + (cbuf->readptr - cbuf->ptr + copylen) % cbuf->maxlen;
