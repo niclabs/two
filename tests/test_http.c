@@ -454,6 +454,85 @@ void test_http_client_connect_fail_sock_create(void)
 }
 
 
+void test_http_get_success(){
+  hstates_t hs;
+  set_init_values(&hs);
+  hs.connection_state=1;
+  hs.keep_receiving=0;
+  hs.new_headers=1;
+
+  h2_send_request_fake.return_val = 0;
+  h2_receive_frame_fake.return_val = 0;
+
+  int hg=http_get(&hs, "index", "example.org","text");
+
+  TEST_ASSERT_EQUAL(0, hg);
+
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].name, ":path", strlen(":path")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].value, "index", strlen("index")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].name, "host", strlen("host")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].value, "example.org", strlen("example.org")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].name, "accept", strlen("accept")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].value, "text", strlen("text")));
+}
+
+
+void test_http_get_fail(){
+  hstates_t hs;
+  set_init_values(&hs);
+  hs.connection_state=1;
+  hs.keep_receiving=0;
+  hs.new_headers=1;
+
+  h2_send_request_fake.return_val = 0;
+  h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
+
+  int hg=http_get(&hs, "index", "example.org","text");
+
+  TEST_ASSERT_EQUAL(-1, hg);
+
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].name, ":path", strlen(":path")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].value, "index", strlen("index")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].name, "host", strlen("host")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].value, "example.org", strlen("example.org")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].name, "accept", strlen("accept")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].value, "text", strlen("text")));
+}
+
+
+void test_http_get_fail_h2_send_request(){
+  hstates_t hs;
+  set_init_values(&hs);
+
+  h2_send_request_fake.return_val = -1;
+
+  int hg=http_get(&hs, "index", "example.org","text");
+
+  TEST_ASSERT_EQUAL(-1, hg);
+
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].name, ":path", strlen(":path")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].value, "index", strlen("index")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].name, "host", strlen("host")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].value, "example.org", strlen("example.org")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].name, "accept", strlen("accept")));
+  TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].value, "text", strlen("text")));
+}
+
+
+void test_http_get_fail_headers_list_full(){
+  hstates_t hs;
+  set_init_values(&hs);
+  hs.h_lists.header_list_count_in = (uint8_t) 256;
+  hs.h_lists.header_list_count_out = (uint8_t) 256;
+
+  h2_send_request_fake.return_val = -1;
+
+  int hg=http_get(&hs, "index", "example.org","text");
+
+  TEST_ASSERT_EQUAL_MESSAGE(-1, hg, "Cannot send query");
+}
+
+
 void test_http_client_disconnect_success_v1(void)
 {
     hstates_t hs;
@@ -704,6 +783,11 @@ int main(void)
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
+
+    UNIT_TEST(test_http_get_success);
+    UNIT_TEST(test_http_get_fail);
+    UNIT_TEST(test_http_get_fail_h2_send_request);
+    UNIT_TEST(test_http_get_fail_headers_list_full);
 
     UNIT_TEST(test_http_client_disconnect_success_v1);
     UNIT_TEST(test_http_client_disconnect_success_v2);
