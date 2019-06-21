@@ -591,6 +591,7 @@ void test_http_client_disconnect_fail(void)
 void test_http_set_header_success(void)
 {
     hstates_t hs;
+    hs.h_lists.header_list_count_out=0;
     int set = http_set_header(&hs.h_lists, "settings", "server:on");
 
     TEST_ASSERT_EQUAL(0, set);
