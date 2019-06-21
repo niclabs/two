@@ -41,6 +41,12 @@ int cbuf_write(cbuf_t * cbuf, void * src, int len);
 int cbuf_read(cbuf_t * cbuf, void * dst, int len);
 
 /**
+ * Peek data from the circular buffer without altering
+ * the read pointer
+ */
+int cbuf_peek(cbuf_t * cbuf, void * dst, int len);
+
+/**
  * Return available read size
  */
 int cbuf_len(cbuf_t * cbuf);

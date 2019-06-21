@@ -71,6 +71,37 @@ int cbuf_read(cbuf_t *cbuf, void *dst, int len)
     return bytes;
 }
 
+int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
+{
+    int bytes = 0;
+    int cbuflen = cbuf->len;
+    void * readptr = cbuf->readptr;
+
+    while (len > 0 && cbuflen > 0) {
+        int copylen = MIN(len, cbuf->maxlen - (readptr - cbuf->ptr));
+        if (readptr < cbuf->writeptr) {
+            copylen = MIN(len, cbuf->writeptr - readptr);
+        }
+        memcpy(dst, readptr, copylen);
+
+        // Update read pointer
+        readptr = cbuf->ptr + (readptr - cbuf->ptr + copylen) % cbuf->maxlen;
+
+        // Update used count
+        cbuflen -= copylen;
+
+        // update result
+        bytes += copylen;
+
+        // Update pointers
+        dst += copylen;
+        len -= copylen;
+    }
+
+    return bytes;
+}
+
+
 int cbuf_len(cbuf_t * cbuf) {
     return cbuf->len;
 }
