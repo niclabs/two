@@ -75,6 +75,16 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
 int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
 
 
+/*
+ * Send a GET request to server and wait for an answer
+ *
+ * @param    hs             Struct with client information
+ * @param    path           Path where looking for answer
+ * @param    accept_type    Type accepted for answer
+ *
+ * @return   0          The action was successful
+ * @return   -1         The action failed
+ */
 int http_get(hstates_t *hs, char *path, char *accept_type);
 
 
