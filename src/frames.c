@@ -375,6 +375,11 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
     uint8_t exclusive_dependency = 0; // only if priority flag is set
     uint32_t stream_dependency = 0; // only if priority flag is set
     uint8_t weight = 0; // only if priority flag is set
+    (void) pad_length;
+    (void) exclusive_dependency;
+    (void) stream_dependency;
+    (void) weight;
+    (void) padding;
     //uint8_t header_block_fragment[64]; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
     //uint8_t padding[32]; //only if padded flag is set. Size = pad_length
 
@@ -436,6 +441,7 @@ int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload
     //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) {
     //    pad_length = headers_payload->pad_length + 1; //plus one for the pad_length byte.
     //}
+    (void) headers_payload;
     return frame_header->length - pad_length - priority_length;
 }
 
