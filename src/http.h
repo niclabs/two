@@ -80,12 +80,13 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
  *
  * @param    hs             Struct with client information
  * @param    path           Path where looking for answer
+ * @param    host           host for query
  * @param    accept_type    Type accepted for answer
  *
  * @return   0          The action was successful
  * @return   -1         The action failed
  */
-int http_get(hstates_t *hs, char *path, char *accept_type);
+int http_get(hstates_t *hs, char *path, char *host, char *accept_type);
 
 
 /*
