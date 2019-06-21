@@ -292,7 +292,6 @@ void handle_ack(struct sock_socket * s) {
     cbuf_pop(&s->cout, NULL, s->last_send);
 
     s->flags &= ~SOCKET_FLAGS_SENDING;
-    s->last_send = 0;
 
     // send next data
     send_data(s);
@@ -302,7 +301,6 @@ void handle_rexmit(struct sock_socket * s) {
     if (s == NULL || (s->flags & SOCKET_FLAGS_SENDING) == 0)  return;
     
     s->flags &= ~SOCKET_FLAGS_SENDING;
-    s->last_send = 0;
     
     // re-send data
     send_data(s);
