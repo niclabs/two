@@ -237,7 +237,7 @@ PT_THREAD(sock_wait_data(sock_t * sock))
     PT_END(&sock->pt);
 }
 
-void sock_handle_tcp_event(void *state)
+void handle_tcp_event(void *state)
 {
     struct sock_socket *s = (struct sock_socket *)state;
 
@@ -304,7 +304,7 @@ PROCESS_THREAD(sock_process, ev, data){
         // Wait untill we receive a TCP event
         PROCESS_WAIT_EVENT_UNTIL(ev == tcpip_event);
 
-        sock_handle_tcp_event(data);
+        handle_tcp_event(data);
     }
     PROCESS_END();
 }
