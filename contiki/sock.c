@@ -100,7 +100,7 @@ int sock_listen(sock_t *sock, uint16_t port)
         return -1;
     }
 
-    if (find_socket_for_port(sock->port) != NULL) {
+    if (find_socket_for_port(port) != NULL) {
         errno = EADDRINUSE;
         return -1;
     }
