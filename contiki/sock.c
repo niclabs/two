@@ -261,8 +261,8 @@ PT_THREAD(sock_wait_data(sock_t * sock))
         return -1;
     }
 
-    // Wait while there is no data in the socket
-    PT_WAIT_WHILE(&sock->pt, cbuf_len(&sock->socket->cin) == 0);
+    // Wait while there is no data in the socket or server
+    PT_WAIT_WHILE(&sock->pt, cbuf_len(&sock->socket->cin) == 0 && (sock->socket->flags & SOCKET_FLAGS_LISTENING) == 0);
 
     PT_END(&sock->pt);
 }
