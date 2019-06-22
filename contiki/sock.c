@@ -17,7 +17,8 @@ enum {
     SOCKET_FLAGS_NONE = 0x00,
     SOCKET_FLAGS_LISTENING = 0x01,
     SOCKET_FLAGS_SENDING = 0x02,
-    SOCKET_FLAGS_CLOSING = 0x04
+    SOCKET_FLAGS_CLOSING = 0x04,
+    SOCKET_FLAGS_UNLISTEN = 0x08
 };
 
 struct sock_socket {
@@ -121,6 +122,7 @@ int sock_listen(sock_t *sock, uint16_t port)
     s->port = port;
     s->process = PROCESS_CURRENT();
     s->flags = SOCKET_FLAGS_NONE;
+    s->flags |= SOCKET_FLAGS_LISTENING;
 
     // add socket to the list for later retrieval
     list_add(socket_list, s);
@@ -131,7 +133,7 @@ int sock_listen(sock_t *sock, uint16_t port)
     PROCESS_CONTEXT_END();
 
     sock->port = port;
-    sock->socket->flags |= SOCKET_FLAGS_LISTENING;
+    sock->socket = s;
     sock->state = SOCK_LISTENING;
     return 0;
 }
@@ -220,8 +222,11 @@ int sock_destroy(sock_t *sock)
         return -1;
     }
 
-    // Free the memory
-    memb_free(&sockets, sock->socket); 
+
+    sock->socket->flags |= SOCKET_FLAGS_CLOSING;
+    if (sock->port != 0) { // sock is a server
+        sock->socket->flags |= SOCKET_FLAGS_UNLISTEN;
+    }
 
     sock->socket = NULL;
     sock->state = SOCK_CLOSED;
@@ -305,6 +310,13 @@ void handle_rexmit(struct sock_socket * s) {
     send_data(s);
 }
 
+void relisten(struct sock_socket *s)
+{
+    if(s != NULL && s->port != 0) {
+        s->flags |= SOCKET_FLAGS_LISTENING;
+    }
+}
+
 void handle_tcp_event(void *state)
 {
     struct sock_socket *s = (struct sock_socket *)state;
@@ -348,9 +360,9 @@ void handle_tcp_event(void *state)
     }
 
     if (uip_timedout() || uip_aborted() || uip_closed()) { // Connection timed out
-        s->flags |= SOCKET_FLAGS_LISTENING;
-
         tcp_markconn(uip_conn, NULL);
+
+        relisten(s);
 
         // Notify the original process of the event
         process_post(s->process, PROCESS_EVENT_CONTINUE, NULL);
@@ -372,6 +384,35 @@ void handle_tcp_event(void *state)
 
     if (uip_newdata() || uip_poll()) {
         send_data(s);
+    }
+
+    if(cbuf_len(&s->cout) == 0 && s->flags & SOCKET_FLAGS_CLOSING) {
+        s->flags &= ~SOCKET_FLAGS_CLOSING;
+
+        // Close the connection
+        uip_close();
+
+        // Detach the socket from the connection
+        tcp_markconn(uip_conn, NULL);
+        
+        // Start waiting for new clients
+        relisten(s);
+    }
+
+    if (cbuf_len(&s->cout) == 0 && s->flags & SOCKET_FLAGS_UNLISTEN) {
+        s->flags &= ~SOCKET_FLAGS_LISTENING;
+        s->flags &= ~SOCKET_FLAGS_UNLISTEN;
+
+        // Stop listening on the port
+        PROCESS_CONTEXT_BEGIN(&sock_process);
+        tcp_unlisten(UIP_HTONS(s->port));
+        PROCESS_CONTEXT_END();
+
+        // Remove socket from the list
+        list_remove(socket_list, s);
+
+        // Free the memory
+        memb_free(&sockets, s); 
     }
 
     // Notify the original process of the event
