@@ -37,9 +37,9 @@ PROCESS_THREAD(test_sock_process, ev, data){
             char buf[8];
             int bytes = 0;
             PROCESS_SOCK_WAIT_DATA(&client); 
-            if ((bytes = sock_read(&client, buf, sizeof(buf), 0)) < 0) {
+            if ((bytes = sock_read(&client, buf, sizeof(buf), 0)) <= 0) {
                 ERROR("Could not read data");
-                continue;
+                break;
             } 
 			
 			if (bytes > 0) {
