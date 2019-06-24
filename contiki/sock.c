@@ -146,13 +146,13 @@ int sock_accept(sock_t *server, sock_t *client)
         return -1;
     }
 
-    if ((server->socket == NULL)) {
-        errno = ENOTSOCK;
+    if ((server->state == SOCK_CLOSED) || (server->socket == NULL)) {
+        errno = EBADF;
         return -1;
     }
 
     if ((server->socket->flags & SOCKET_FLAGS_LISTENING) != 0)  {
-        errno = ENOTCONN;
+        errno = EISCONN;
         return -1;
     }
 
@@ -222,7 +222,6 @@ int sock_destroy(sock_t *sock)
         return -1;
     }
 
-
     sock->socket->flags |= SOCKET_FLAGS_CLOSING;
     if (sock->port != 0) { // sock is a server
         sock->socket->flags |= SOCKET_FLAGS_UNLISTEN;
@@ -238,13 +237,11 @@ PT_THREAD(sock_wait_client(sock_t * sock))
     PT_BEGIN(&sock->pt);
 
     if (sock == NULL) {
-        errno = EINVAL;
-        return -1;
+        PT_EXIT(&sock->pt);
     }
     
-    if (sock->socket == NULL) {
-        errno = ENOTSOCK;
-        return -1;
+    if (sock->state == SOCK_CLOSED || sock->socket == NULL) {
+        PT_EXIT(&sock->pt);
     }
 
     PT_WAIT_WHILE(&sock->pt, (sock->socket->flags & SOCKET_FLAGS_LISTENING) != 0);
@@ -257,13 +254,11 @@ PT_THREAD(sock_wait_data(sock_t * sock))
     PT_BEGIN(&sock->pt);
     
     if (sock == NULL) {
-        errno = EINVAL;
-        return -1;
+        PT_EXIT(&sock->pt);
     }
     
-    if (sock->socket == NULL) {
-        errno = ENOTSOCK;
-        return -1;
+    if (sock->state == SOCK_CLOSED || sock->socket == NULL) {
+        PT_EXIT(&sock->pt);
     }
 
     // Wait while there is no data in the socket or server
@@ -328,6 +323,7 @@ void handle_tcp_event(void *state)
                 if ((s->flags & SOCKET_FLAGS_LISTENING) != 0 && uip_conn->lport == UIP_HTONS(s->port)) {
                     // Set socket state to connected
                     s->flags &= ~SOCKET_FLAGS_LISTENING;
+                    s->flags &= ~SOCKET_FLAGS_CLOSING;
 
                     // Attach socket state to uip_connection
                     tcp_markconn(uip_conn, s);
@@ -386,22 +382,11 @@ void handle_tcp_event(void *state)
         send_data(s);
     }
 
-    if(cbuf_len(&s->cout) == 0 && s->flags & SOCKET_FLAGS_CLOSING) {
-        s->flags &= ~SOCKET_FLAGS_CLOSING;
-
-        // Close the connection
-        uip_close();
-
-        // Detach the socket from the connection
-        tcp_markconn(uip_conn, NULL);
-        
-        // Start waiting for new clients
-        relisten(s);
-    }
-
     if (cbuf_len(&s->cout) == 0 && s->flags & SOCKET_FLAGS_UNLISTEN) {
+        // Unset all flags
         s->flags &= ~SOCKET_FLAGS_LISTENING;
         s->flags &= ~SOCKET_FLAGS_UNLISTEN;
+        s->flags &= ~SOCKET_FLAGS_CLOSING;
 
         // Stop listening on the port
         PROCESS_CONTEXT_BEGIN(&sock_process);
@@ -413,6 +398,28 @@ void handle_tcp_event(void *state)
 
         // Free the memory
         memb_free(&sockets, s); 
+    } 
+    else if(cbuf_len(&s->cout) == 0 && s->flags & SOCKET_FLAGS_CLOSING) {
+        // unset the closing flag
+        s->flags &= ~SOCKET_FLAGS_CLOSING;
+
+        // Close the connection
+        uip_close();
+
+        // Detach the socket from the connection
+        tcp_markconn(uip_conn, NULL);
+
+        if (s ->port == 0) { // a client socket is closing
+            // Remove socket from the list
+            list_remove(socket_list, s);
+
+            // Free the memory
+            memb_free(&sockets, s); 
+        }
+        else {
+            // Start waiting for new clients
+            relisten(s);
+        }
     }
 
     // Notify the original process of the event
