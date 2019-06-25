@@ -15,6 +15,7 @@ extern int check_incoming_headers_condition(frame_header_t *header, hstates_t *s
 extern int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstates_t *st);
 extern int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st);
 extern int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, hstates_t *st);
+extern int send_headers_stream_verification(hstates_t *st, uint8_t end_stream);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -959,6 +960,23 @@ void test_handle_continuation_payload_errors(void){
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
 }
 
+void test_send_headers_stream_verification_response_not_open(void){
+  hstates_t hst;
+  init_variables(&hst);
+  int rc;
+  rc = send_headers_stream_verification(&hst, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, stream was not open");
+}
+
+void test_send_headers_stream_verification_response_not_init(void){
+  hstates_t hst;
+  init_variables(&hst);
+  hst.h2s.current_stream.state = STREAM_OPEN;
+  int rc;
+  rc = send_headers_stream_verification(&hst, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, stream was not initialized");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -996,5 +1014,7 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream_flag_set);
     UNIT_TEST(test_handle_continuation_payload_errors);
+    UNIT_TEST(test_send_headers_stream_verification_response_not_open);
+    UNIT_TEST(test_send_headers_stream_verification_response_not_init);
     return UNIT_TESTS_END();
 }

@@ -731,7 +731,7 @@ int h2_receive_frame(hstates_t *st){
 int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
   if(end_stream){ // The message is a response
     if(st->h2s.current_stream.state != STREAM_OPEN){
-      ERROR("Current stream was closed!");
+      ERROR("Current stream was not open!");
       return -1;
     }
     else if(st->h2s.current_stream.stream_id == 0){
