@@ -405,7 +405,7 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     /*check flow control*/
     //TODO flow control
     int rc = flow_control_receive_data(st, data_length);
-    if(rc<0){
+    if(rc < 0){
         ERROR("flow control error");
         return -1;
     }

@@ -99,6 +99,15 @@ typedef enum{
 }data_flag_t;
 
 
+/*WINDOW_UPDATE FRAME*/
+
+typedef struct{
+    uint8_t:1 reserved;
+    uint32_t:31 window_size_increment;
+}window_update_payload_t;
+
+
+
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t* frame_header, uint8_t* byte_array);
 int bytes_to_frame_header(uint8_t* byte_array, int size, frame_header_t* frame_header);
@@ -152,6 +161,10 @@ int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_pay
 int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data);
 
 
+/*Window_update frame methods*/
+int create_window_update_frame(frame_header_t* frame_header, window_update_payload_t* window_update_payload, int window_size_increment);
+int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_payload_t* window_update_payload, uint8_t* byte_array);
+int read_window_update_payload(uint8_t* buff_read, frame_header_t* frame_header, window_update_payload_t* window_update_payload);
 
 /*
 void* byteToPayloadDispatcher[10];

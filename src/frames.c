@@ -498,3 +498,39 @@ int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_pay
     data_payload->data = data;
     return length;
 }
+
+
+
+int create_window_update_frame(frame_header_t* frame_header, window_update_payload_t* window_update_payload, int window_size_increment, uint32_t stream_id){
+    frame_header->stream_id = stream_id;
+    frame_header->type = WINDOW_UPDATE_TYPE;
+    frame_header->length = 4;
+
+    window_update_payload->reserved = 0;
+    if(window_size_increment==0){
+        ERROR("trying to create window_update with increment 0!");
+        return -1;
+    }
+    window_update_payload->window_size_increment=window_size_increment;
+    return 0;
+}
+
+int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_payload_t* window_update_payload, uint8_t* byte_array){
+    byte_array[0] = 0;
+    int rc = uint32_31_to_byte_array(window_update_payload,byte_array);
+    if(rc<0){
+        ERROR("error while passing uint32_31 to byte_array");
+        return -1;
+    }
+    return 4;//bytes
+}
+
+int read_window_update_payload(uint8_t* buff_read, frame_header_t* frame_header, window_update_payload_t* window_update_payload){
+    if(frame_header->length!=4){
+        ERROR("Length != 4, protocol_error");
+        return -1;
+    }
+    uint32_t window_size_increment = bytes_to_uint32_31(buff_read);
+    window_update_payload->window_size_increment = window_size_increment;
+    return 0;
+}
