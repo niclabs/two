@@ -283,6 +283,13 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
         ERROR("Error was found receiving header_block");
         return -1;
       }
+      if(rc!= st->h2s.header_block_fragments_pointer){
+          ERROR("ERROR still exists fragments to receive.");
+          return -1;
+      }
+      else{//all fragments already received.
+          st->h2s.header_block_fragments_pointer = 0;
+      }
       st->h_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
       if(st->h2s.received_end_stream == 1){
