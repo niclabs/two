@@ -27,12 +27,20 @@ typedef enum
     FATAL
 } level_t;
 
+#ifdef WITH_CONTIKI
+#define LOG_EXIT(code) process_exit(PROCESS_CURRENT())
+#define LOG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define LOG_EXIT(code) exit(code)
+#define LOG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
+#endif
+
 #ifndef ENABLE_DEBUG
 #define ENABLE_DEBUG (0)
 #define LOG_CONTEXT(func, file, line)
 #else
 #define LEVEL (DEBUG)
-#define LOG_CONTEXT(func, file, line) fprintf(stderr, "; at %s:%d in %s()", file, line, func)
+#define LOG_CONTEXT(func, file, line) LOG_PRINTF("; at %s:%d in %s()", file, line, func)
 #endif
 
 #ifndef LEVEL
@@ -46,27 +54,27 @@ typedef enum
     {                                                                                                                \
         if (level >= LEVEL)                                                                                          \
         {                                                                                                            \
-            fprintf(stderr, "[" LEVEL_STR(level) "] " msg, ##__VA_ARGS__);                                           \
+            LOG_PRINTF("[" LEVEL_STR(level) "] " msg, ##__VA_ARGS__);                                                \
             switch (level)                                                                                           \
             {                                                                                                        \
             case DEBUG:                                                                                              \
             case INFO:                                                                                               \
             case WARN:                                                                                               \
                 LOG_CONTEXT(func, file, line);                                                                       \
-                fprintf(stderr, "\n");                                                                               \
+                LOG_PRINTF("\n");                                                                                    \
                 break;                                                                                               \
             case ERROR:                                                                                              \
             case FATAL:                                                                                              \
                 if (errno > 0)                                                                                       \
                 {                                                                                                    \
-                    fprintf(stderr, " (%s)", strerror(errno));                                                       \
+                    LOG_PRINTF(" (%s)", strerror(errno));                                                            \
                 }                                                                                                    \
                 LOG_CONTEXT(func, file, line);                                                                       \
-                fprintf(stderr, "\n");                                                                               \
+                LOG_PRINTF("\n");                                                                                    \
                 break;                                                                                               \
             }                                                                                                        \
         }                                                                                                            \
-        if (level == FATAL) exit(EXIT_FAILURE);                                                                      \
+        if (level == FATAL) LOG_EXIT(EXIT_FAILURE);                                                                  \
     } while (0)
 
 // Macro to print debugging messages
