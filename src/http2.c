@@ -750,7 +750,7 @@ int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
           return -1;
       }
       else{ //stream is closed and id is not zero
-        st->h2s.current_stream.stream_id = st->h2s.current_stream.stream_id%2 ? 1 : 2;
+        st->h2s.current_stream.stream_id += st->h2s.current_stream.stream_id%2 ? 1 : 2;
         st->h2s.current_stream.state = STREAM_OPEN;
       }
     }
@@ -764,7 +764,7 @@ int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
           return -1;
       }
       else{ //stream is closed and id is not zero
-        st->h2s.current_stream.stream_id = st->h2s.current_stream.stream_id%2 ? 2 : 1;
+        st->h2s.current_stream.stream_id += st->h2s.current_stream.stream_id%2 ? 2 : 1;
         st->h2s.current_stream.state = STREAM_OPEN;
       }
     }
