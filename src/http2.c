@@ -400,6 +400,16 @@ int flow_control_receive_data(hstates_t* st, uint32_t length){
     return 0;
 }
 
+
+int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment){
+    if(window_size_increment>st->h2s.window_used){
+        ERROR("Increment to big. protocol_error");
+        return -1;
+    }
+    st->h2s.window_used -= window_size_increment;
+    return 0;
+}
+
 int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
     uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
     /*check flow control*/
@@ -649,11 +659,21 @@ int h2_receive_frame(hstates_t *st){
         case GOAWAY_TYPE://Go Avaw
             WARN("TODO: Go away frame. Not implemented yet.");
             return -1;
-        case WINDOW_UPDATE_TYPE://Window update
-
-
-            WARN("TODO: Window update frame. Not implemented yet.");
-            return -1;
+        case WINDOW_UPDATE_TYPE: {//Window update
+            window_update_payload_t window_update_payload;
+            int rc = read_window_update_payload(buff_read, &header, &window_update_payload);
+            if (rc < 1) {
+                ERROR("Error in reading window_update_payload ");
+                return -1;
+            }
+            uint32_t window_size_increment = window_update_payload.window_size_increment;
+            rc = flow_control_receive_window_update(st, window_size_increment);
+                if(rc < 0){
+                    ERROR("ERROR in flow control, receiving window update");
+                    return -1;
+                }
+            return 0;
+        }
         case CONTINUATION_TYPE:{//Continuation
             //returns -1 if protocol error, -2 if stream closed, 0 if no errors
             rc = check_incoming_continuation_condition(&header, st);
