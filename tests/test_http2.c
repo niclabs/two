@@ -881,7 +881,7 @@ void test_handle_continuation_payload_end_headers_flag_set(void){
   SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 70, "pointer must be 75, new data was written");
+  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0, fragments were received");
   TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 70, "header list count in must be 70");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
@@ -913,7 +913,7 @@ void test_handle_continuation_payload_end_headers_end_stream_flag_set(void){
   SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 70, "pointer must be 75, new data was written");
+  TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0, fragments were received");
   TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 70, "header list count in must be 70");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waitinf for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
@@ -991,8 +991,8 @@ int main(void)
     UNIT_TEST(test_handle_headers_payload_full_message_header_end_stream);
     UNIT_TEST(test_handle_headers_payload_errors);
     UNIT_TEST(test_handle_continuation_payload_no_end_headers_flag_set);
-    //UNIT_TEST(test_handle_continuation_payload_end_headers_flag_set); //**//
-    //UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream_flag_set); //**//
+    UNIT_TEST(test_handle_continuation_payload_end_headers_flag_set);
+    UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream_flag_set);
     //UNIT_TEST(test_handle_continuation_payload_errors); //**//
     return UNIT_TESTS_END();
 }
