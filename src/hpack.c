@@ -2,6 +2,7 @@
 #include "logging.h"
 #include <math.h>
 #include "hpack_utils.h"
+#include "table.h"
 #include <stdio.h>
 /*
  *
@@ -126,10 +127,10 @@ int encode_huffman_word(char* str, uint8_t* encoded_word){
 
 int encode_huffman_string(char* str, uint8_t* encoded_string){
 
-    uint8_t encoded_word[64];
+    uint8_t encoded_word[HTTP2_MAX_HBF_BUFFER];
     int encoded_word_length = encode_huffman_word(str, encoded_word); //save de encoded word in "encoded_word" and returns the length of the encoded word
 
-    if(encoded_word_length>=64){
+    if(encoded_word_length>=HTTP2_MAX_HBF_BUFFER){
         ERROR("word too big, does not fit on the encoded_word_buffer");
         return -1;
     }
@@ -167,10 +168,10 @@ uint8_t find_prefix_size(hpack_preamble_t octet){
 };
 
 int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
-    uint8_t encoded_string[64];
+    uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
     int pointer = 0;
     int encoded_size = encode_huffman_string(string, encoded_string);
-    if(encoded_size>=64){
+    if(encoded_size>=HTTP2_MAX_HBF_BUFFER){
         ERROR("string encoded size too big");
         return -1;
     }

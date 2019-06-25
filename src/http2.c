@@ -91,6 +91,7 @@ int send_settings_ack(hstates_t * st){
     uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     rc = http_write(st, byte_ack, size_byte_ack);
+    INFO("Sending settings ACK");
     if(rc != size_byte_ack){
         ERROR("Error in Settings ACK sending");
         return -1;
@@ -411,6 +412,7 @@ int h2_send_local_settings(hstates_t *st){
     int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
     /*Assuming that http_write returns the number of bytes written*/
     rc = http_write(st, byte_mysettings, size_byte_mysettings);
+    INFO("Sending settings");
     if(rc != size_byte_mysettings){
         ERROR("Error in local settings writing");
         return -1;
@@ -467,6 +469,7 @@ int h2_client_init_connection(hstates_t *st){
         i++;
     }
     rc = http_write(st, preface_buff,24);
+    INFO("Sending preface");
     if(rc != 24){
         ERROR("Error in preface sending");
         return -1;
@@ -522,6 +525,8 @@ int h2_server_init_connection(hstates_t *st){
 * Output: 0 if no problem was found. -1 if error was found.
 */
 int h2_receive_frame(hstates_t *st){
+    INFO("h2_receive_frame");
+
     uint8_t buff_read[HTTP2_MAX_BUFFER_SIZE];
     //uint8_t buff_write[HTTP2_MAX_BUFFER_SIZE]
     int rc;
@@ -547,7 +552,7 @@ int h2_receive_frame(hstates_t *st){
               return -1;
             }
             headers_payload_t hpl;
-            uint8_t headers_block_fragment[64];
+            uint8_t headers_block_fragment[HTTP2_MAX_HBF_BUFFER];
             uint8_t padding[32];
             rc = read_headers_payload(buff_read, &header, &hpl, headers_block_fragment, padding);
             if(rc == 0 || rc > header.length){
@@ -559,6 +564,7 @@ int h2_receive_frame(hstates_t *st){
               ERROR("Error during headers payload handling");
               return rc;
             }
+            INFO("received headers ok");
             return 0;
         }
         case PRIORITY_TYPE://Priority
@@ -574,6 +580,7 @@ int h2_receive_frame(hstates_t *st){
                 return -1;
             }
             else if(rc){ /*Frame was an ACK*/
+                INFO("received settings ACK");
                 return 0;
             }
             settings_payload_t spl;
@@ -583,6 +590,7 @@ int h2_receive_frame(hstates_t *st){
                 ERROR("Error in settings payload handling");
                 return -1;
             }
+            INFO("received settings");
             return rc;
         }
         case PUSH_PROMISE_TYPE://Push promise
@@ -625,6 +633,7 @@ int h2_receive_frame(hstates_t *st){
               ERROR("Error was found during continuatin payload handling");
               return rc;
             }
+            INFO("received continuation ok");
             return 0;
         }
         default:
@@ -718,6 +727,8 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       frame.payload = (void*)&headers_payload;
       int bytes_size = frame_to_bytes(&frame, encoded_bytes);
       rc = http_write(st,encoded_bytes,bytes_size);
+      INFO("Sending headers");
+
       if(rc != bytes_size){
         ERROR("Error writting headers frame. INTERNAL ERROR");
         return rc;
@@ -742,6 +753,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       int bytes_size = frame_to_bytes(&frame, encoded_bytes);
 
       rc = http_write(st,encoded_bytes,bytes_size);
+      INFO("Sending headers");
       if(rc != bytes_size){
         ERROR("Error writting headers frame. INTERNAL ERROR");
         return rc;
@@ -759,6 +771,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
           frame.payload = (void*)&continuation_payload;
           int bytes_size = frame_to_bytes(&frame, encoded_bytes);
           rc = http_write(st,encoded_bytes,bytes_size);
+          INFO("Sending continuation");
           if(rc != bytes_size){
             ERROR("Error writting continuation frame. INTERNAL ERROR");
             return rc;
@@ -776,6 +789,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       frame.payload = (void*)&continuation_payload;
       bytes_size = frame_to_bytes(&frame, encoded_bytes);
       rc = http_write(st,encoded_bytes,bytes_size);
+      INFO("Sending continuation");
       if(rc != bytes_size){
         ERROR("Error writting headers frame. INTERNAL ERROR");
         return rc;

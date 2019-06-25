@@ -404,7 +404,7 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
 
     //header block fragment
     int header_block_fragment_size = get_header_block_fragment_size(frame_header,headers_payload);//7(int)frame_header->length-pad_length-pointer;
-    if(header_block_fragment_size>=64){
+    if(header_block_fragment_size>=HTTP2_MAX_HBF_BUFFER){
         ERROR("Header block fragment size longer than the space given.");
         return -1;
     }
