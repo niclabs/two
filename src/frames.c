@@ -460,7 +460,7 @@ int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, 
 int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data, int length, uint32_t stream_id){
     uint8_t type = DATA_TYPE;
     uint8_t flags = 0x0;
-    uint8_t length = length; //no padding, no dependency. fix if this is implemented
+    //uint32_t length = length; //no padding, no dependency. fix if this is implemented
 
     frame_header->length = length;
     frame_header->type = type;
@@ -482,4 +482,19 @@ int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_pay
     }
     buffer_copy(byte_array,data_payload->data,length);
     return 0;
+}
+
+
+/*returns the data read*/
+int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data){
+    uint8_t flags = frame_header->flags;
+    int length = frame_header->length;
+    if(is_flag_set(flags, DATA_PADDED_FLAG)){
+        //TODO handle padding
+        ERROR("Padding not implemented yet");
+        return -1;
+    }
+    buffer_copy(data,buff_read,length);
+    data_payload->data = data;
+    return length;
 }

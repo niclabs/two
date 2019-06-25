@@ -37,12 +37,16 @@ typedef struct HTTP2_STATES {
     uint8_t header_block_fragments_pointer; //points to the next byte to write in
     uint8_t waiting_for_end_headers_flag;   //bool
     uint8_t received_end_stream;
+    uint32_t window_size;
+    uint32_t window_used;
+
 } h2states_t;
 
 
 /*---------------------HTTP structures and static values--------------------*/
 
 #define HTTP_MAX_CALLBACK_LIST_ENTRY 32
+#define HTTP_MAX_DATA_SIZE 128
 
 
 
@@ -59,6 +63,8 @@ typedef struct HTTP_STATES {
     key_pointer_map_t path_callback_list[HTTP_MAX_CALLBACK_LIST_ENTRY];
     uint8_t new_headers;    //boolean. Notifies HTTP if new headers were written
     uint8_t keep_receiving; //boolean. Tells HTTP to keep receiving frames
+    uint8_t data[HTTP_MAX_DATA_SIZE];
+    uint8_t data_size;
 } hstates_t;
 
 /*--------------------------------------------------------------------------*/

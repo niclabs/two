@@ -26,6 +26,8 @@ int init_variables(hstates_t * st){
     st->h2s.remote_settings[5] = st->h2s.local_settings[5] = DEFAULT_MHLS;
     st->h2s.wait_setting_ack = 0;
     memset(&st->h2s.current_stream, 0, sizeof(h2_stream_t));
+    st->h2s.window_size = DEFAULT_IWS;
+    st->h2s.window_used = 0;
     return 0;
 }
 
@@ -386,7 +388,34 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   }
   return 0;
 }
-/*----------------------API methods-------------------*/
+
+
+int flow_control_receive_data(hstates_t* st, uint32_t length){
+    uint32_t window_available = st->h2s.window_size - st->h2s.window_used;
+    if(length > window_available){
+        ERROR("FLOW_CONTROL_ERROR found");
+        return -1;
+    }
+    st->h2s.window_used += length;
+    return 0;
+}
+
+int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
+    uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
+    /*check flow control*/
+    //TODO flow control
+    int rc = flow_control_receive_data(st, data_length);
+    if(rc<0){
+        ERROR("flow control error");
+        return -1;
+    }
+    buffer_copy(st->data + st->data_size, data_payload->data, data_length);
+    st->data_size += data_length;
+    if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)) {
+        st->h2s.received_end_stream = 1;
+    }
+    return 0;
+}
 
 /*
 * Function: h2_send_local_settings
@@ -537,9 +566,27 @@ int h2_receive_frame(hstates_t *st){
         return -1;
     }
     switch(header.type){
-        case DATA_TYPE://Data
-            WARN("TODO: Data Frame. Not implemented yet.");
-            return -1;
+        case DATA_TYPE: {//Data
+            /*check stream state*/
+            h2_stream_state_t stream_state = st->h2s.current_stream.state;
+            if(stream_state!=STREAM_OPEN && stream_state!=STREAM_HALF_CLOSED_LOCAL){
+                ERROR("STREAM CLOSED ERROR was found");
+                return -1;
+            }
+            data_payload_t data_payload;
+            uint8_t data[header.length];
+            int rc = read_data_payload(buff_read, &header, &data_payload, data);
+            if(rc < 0){
+                ERROR("ERROR reading data payload");
+                return -1;
+            }
+            rc = handle_data_payload(&header, &data_payload, st);
+            if(rc < 0){
+                ERROR("ERROR in handle receive data");
+                return -1;
+            }
+            return 0;
+        }
         case HEADERS_TYPE:{//Header
             // returns -1 if protocol error was found, -2 if stream closed error, 0 if no errors found
             rc = check_incoming_headers_condition(&header, st);

@@ -28,6 +28,7 @@ void set_init_values(hstates_t *hs)
     hs->server_socket_state = 0;
     hs->keep_receiving = 0;
     hs->new_headers = 0;
+    hs->data_size = 0;
 }
 
 /************************************Server************************************/

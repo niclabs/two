@@ -149,7 +149,7 @@ int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* comp
 /*Data frame methods*/
 int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data, int length, uint32_t stream_id);
 int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t* byte_array);
-
+int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data);
 
 
 
