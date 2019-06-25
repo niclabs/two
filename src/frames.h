@@ -102,8 +102,8 @@ typedef enum{
 /*WINDOW_UPDATE FRAME*/
 
 typedef struct{
-    uint8_t:1 reserved;
-    uint32_t:31 window_size_increment;
+    uint8_t reserved:1;
+    uint32_t window_size_increment:31;
 }window_update_payload_t;
 
 
@@ -162,7 +162,7 @@ int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_pay
 
 
 /*Window_update frame methods*/
-int create_window_update_frame(frame_header_t* frame_header, window_update_payload_t* window_update_payload, int window_size_increment);
+int create_window_update_frame(frame_header_t* frame_header, window_update_payload_t* window_update_payload, int window_size_increment, uint32_t stream_id);
 int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_payload_t* window_update_payload, uint8_t* byte_array);
 int read_window_update_payload(uint8_t* buff_read, frame_header_t* frame_header, window_update_payload_t* window_update_payload);
 

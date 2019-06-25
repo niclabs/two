@@ -516,8 +516,12 @@ int create_window_update_frame(frame_header_t* frame_header, window_update_paylo
 }
 
 int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_payload_t* window_update_payload, uint8_t* byte_array){
+    if(frame_header->length!=4){
+        ERROR("Length != 4, protocol_error");
+        return -1;
+    }
     byte_array[0] = 0;
-    int rc = uint32_31_to_byte_array(window_update_payload,byte_array);
+    int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment,byte_array);
     if(rc<0){
         ERROR("error while passing uint32_31 to byte_array");
         return -1;
