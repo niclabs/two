@@ -508,7 +508,7 @@ int create_window_update_frame(frame_header_t* frame_header, window_update_paylo
 
     window_update_payload->reserved = 0;
     if(window_size_increment==0){
-        ERROR("trying to create window_update with increment 0!");
+        ERROR("trying to create window_update with increment 0!. PROTOCOL_ERROR");
         return -1;
     }
     window_update_payload->window_size_increment=window_size_increment;
