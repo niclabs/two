@@ -935,9 +935,9 @@ void test_handle_continuation_payload_errors(void){
   // Second error, buffer copy invalid
   int bc_returns[2] = {-1, 20};
   SET_RETURN_SEQ(buffer_copy, bc_returns, 2);
-  // Third error, receive_header_block invalid
-  int rcv_returns[2] = {0, 25};
-  SET_RETURN_SEQ(receive_header_block, rcv_returns, 2);
+  // Third and fourth error, receive_header_block invalid
+  int rcv_returns[3] = {-1, 70, 110};
+  SET_RETURN_SEQ(receive_header_block, rcv_returns, 3);
   int flag_returns[1] = {1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
   // Fourth error, header list size too big
@@ -952,6 +952,8 @@ void test_handle_continuation_payload_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (buffer copy error)");
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (receive header block error)");
+  rc = handle_continuation_payload(&head, &cont, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (pointer error)");
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0 (http 431 error)");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
@@ -993,6 +995,6 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_no_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream_flag_set);
-    //UNIT_TEST(test_handle_continuation_payload_errors); //**//
+    UNIT_TEST(test_handle_continuation_payload_errors);
     return UNIT_TESTS_END();
 }
