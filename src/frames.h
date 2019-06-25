@@ -85,6 +85,19 @@ typedef enum{
     CONTINUATION_END_HEADERS_FLAG = 0x4//bit 2
 }continuation_flag_t;
 
+/*DATA FRAME*/
+
+typedef struct{
+    uint8_t pad_length;
+    uint8_t* data;
+    uint8_t* padding;
+}data_payload_t;
+
+typedef enum{
+    DATA_END_STREAM_FLAG = 0x1,//bit 0
+    DATA_PADDED_FLAG = 0x8//bit 3
+}data_flag_t;
+
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t* frame_header, uint8_t* byte_array);
@@ -131,6 +144,12 @@ int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_pay
 /*Headers compression*/
 int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* compressed_headers);
 //int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size, uint8_t bool_table_compression, uint8_t bool_huffman_compression);
+
+
+/*Data frame methods*/
+int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data, int length, uint32_t stream_id);
+int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t* byte_array);
+
 
 
 
