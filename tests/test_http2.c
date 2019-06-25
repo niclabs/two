@@ -78,6 +78,11 @@ FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_pa
 FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);
 FAKE_VALUE_FUNC(uint32_t, get_header_list_size, table_pair_t*, uint8_t);
+FAKE_VALUE_FUNC(int, read_data_payload, uint8_t* , frame_header_t* , data_payload_t* , uint8_t * );//TODO fix this
+FAKE_VALUE_FUNC(int, read_window_update_payload, uint8_t* , frame_header_t* , window_update_payload_t* );//TODO fix this
+
+
+
 
 
 FAKE_VALUE_FUNC( int, compress_headers, table_pair_t* , uint8_t , uint8_t* );
@@ -110,6 +115,8 @@ FAKE_VALUE_FUNC( uint8_t, set_flag, uint8_t , uint8_t );
     FAKE(create_continuation_frame)            \
     FAKE(continuation_payload_to_bytes)            \
     FAKE(set_flag)            \
+    FAKE(read_data_payload)             \
+    FAKE(read_window_update_payload)
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
   return 0;
