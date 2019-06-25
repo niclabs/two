@@ -977,6 +977,34 @@ void test_send_headers_stream_verification_response_not_init(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, stream was not initialized");
 }
 
+void test_send_headers_stream_verification_request_server(void){
+  hstates_t hst_not_stream;
+  hst_not_stream.is_server = 1;
+  hst_not_stream.h2s.current_stream.stream_id = 0;
+  hst_not_stream.h2s.current_stream.state = 0;
+  hstates_t hst_open_stream;
+  hst_open_stream.is_server = 1;
+  hst_open_stream.h2s.current_stream.stream_id = 5;
+  hst_open_stream.h2s.current_stream.state = STREAM_OPEN;
+  hstates_t hst_closed_stream;
+  hst_closed_stream.is_server = 1;
+  hst_closed_stream.h2s.current_stream.stream_id = 12;
+  hst_closed_stream.h2s.current_stream.state = STREAM_CLOSED;
+  int rc;
+  rc = send_headers_stream_verification(&hst_not_stream, 0);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, stream was not initialized");
+  TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.stream_id == 2, "Error: new stream id must be 2");
+  TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.state == STREAM_OPEN, "Error: new stream state must be OPEN");
+  rc = send_headers_stream_verification(&hst_open_stream, 0);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, there was a previous stream open");
+  TEST_ASSERT_MESSAGE(hst_open_stream.h2s.current_stream.stream_id == 5, "current stream id must remain equal");
+  TEST_ASSERT_MESSAGE(hst_open_stream.h2s.current_stream.state == STREAM_OPEN, "stream state must remain equal");
+  rc = send_headers_stream_verification(&hst_closed_stream, 0);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, there was a previous stream closed");
+  TEST_ASSERT_MESSAGE(hst_closed_stream.h2s.current_stream.stream_id == 14, "current stream id must be the next even number 14");
+  TEST_ASSERT_MESSAGE(hst_closed_stream.h2s.current_stream.state == STREAM_OPEN, "stream state of new stream must be open");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1016,5 +1044,6 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_errors);
     UNIT_TEST(test_send_headers_stream_verification_response_not_open);
     UNIT_TEST(test_send_headers_stream_verification_response_not_init);
+    UNIT_TEST(test_send_headers_stream_verification_request_server);
     return UNIT_TESTS_END();
 }
