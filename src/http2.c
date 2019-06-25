@@ -650,6 +650,8 @@ int h2_receive_frame(hstates_t *st){
             WARN("TODO: Go away frame. Not implemented yet.");
             return -1;
         case WINDOW_UPDATE_TYPE://Window update
+
+
             WARN("TODO: Window update frame. Not implemented yet.");
             return -1;
         case CONTINUATION_TYPE:{//Continuation

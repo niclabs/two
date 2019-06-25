@@ -517,7 +517,7 @@ int create_window_update_frame(frame_header_t* frame_header, window_update_paylo
 
 int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_payload_t* window_update_payload, uint8_t* byte_array){
     if(frame_header->length!=4){
-        ERROR("Length != 4, protocol_error");
+        ERROR("Length != 4, FRAME_SIZE_ERROR");
         return -1;
     }
     byte_array[0] = 0;
@@ -531,7 +531,7 @@ int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_p
 
 int read_window_update_payload(uint8_t* buff_read, frame_header_t* frame_header, window_update_payload_t* window_update_payload){
     if(frame_header->length!=4){
-        ERROR("Length != 4, protocol_error");
+        ERROR("Length != 4, FRAME_SIZE_ERROR");
         return -1;
     }
     uint32_t window_size_increment = bytes_to_uint32_31(buff_read);
