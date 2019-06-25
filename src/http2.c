@@ -719,21 +719,16 @@ int h2_receive_frame(hstates_t *st){
 }
 
 /*
-* Function: send_headers
-* Given an hstates struct, builds and sends a message to endpoint. The message
-* is a sequence of a HEADER FRAME followed by 0 or more CONTINUATION FRAMES.
-* Input: -> st: hstates_t struct where headers are written
-        -> end_stream: boolean that indicates if end_stream flag needs to be set
-* Output: 0 if process was made successfully, -1 if not.
+* Function: send_headers_stream_verification
+* Given an hstates struct and a boolean indicating if the current sending message
+* is a request or a response, checks the current stream state and uses it, creates
+* a new one or reports an error. The stream that will be used is stored in
+* st->h2s.current_stream.stream_id .
+* Input: -> st: hstates_t struct where current stream is stored
+*        -> end_stream: boolean equals 1 if response, 0 if request
+* Output: 0 if no errors were found, -1 if not
 */
-int send_headers(hstates_t *st, uint8_t end_stream){
-  uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-  int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
-  if(size < 0){
-    ERROR("Error was found compressing headers. INTERNAL ERROR");
-    return -1;
-  }
-  uint32_t stream_id;
+int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
   if(end_stream){ // The message is a response
     if(st->h2s.current_stream.state != STREAM_OPEN){
       ERROR("Current stream was closed!");
@@ -774,7 +769,29 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       }
     }
   }
-  stream_id = st->h2s.current_stream.stream_id;
+  return 0;
+
+}
+/*
+* Function: send_headers
+* Given an hstates struct, builds and sends a message to endpoint. The message
+* is a sequence of a HEADER FRAME followed by 0 or more CONTINUATION FRAMES.
+* Input: -> st: hstates_t struct where headers are written
+        -> end_stream: boolean that indicates if end_stream flag needs to be set
+* Output: 0 if process was made successfully, -1 if not.
+*/
+int send_headers(hstates_t *st, uint8_t end_stream){
+  uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
+  int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
+  if(size < 0){
+    ERROR("Error was found compressing headers. INTERNAL ERROR");
+    return -1;
+  }
+  if(send_headers_stream_verification(st, end_stream) < 0){
+    ERROR("Stream error during the headers sending. INTERNAL ERROR");
+    return -1;
+  }
+  uint32_t stream_id = st->h2s.current_stream.stream_id;
 
   int rc;
   frame_t frame;
