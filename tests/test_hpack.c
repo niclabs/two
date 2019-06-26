@@ -81,7 +81,37 @@ void test_decode_header_block(void){
 
 }
 
+void test_encode(void){
+    hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
+    uint32_t max_size = 0;
+    uint32_t index = 0;
+    char value_string[]="val";
+    uint8_t value_huffman_bool = 0;
+    char name_string[] = "name";
+    uint8_t name_huffman_bool = 0;
+    uint8_t encoded_buffer[64];
 
+    uint8_t expected_encoded_bytes[] = {
+            0,//LITERAL_HEADER_FIELD_WITHOUT_INDEXING, index=0
+            4,//name_length
+            (uint8_t)'n',
+            (uint8_t)'a',
+            (uint8_t)'m',
+            (uint8_t)'e',
+            3,//value_length
+            (uint8_t)'v',
+            (uint8_t)'a',
+            (uint8_t)'l'
+    };
+
+    int rc = encode(preamble, max_size, index, value_string, value_huffman_bool, name_string, name_huffman_bool, encoded_buffer);
+
+
+    TEST_ASSERT_EQUAL(10,rc);
+    for(int i = 0; i< rc; i++){
+        TEST_ASSERT_EQUAL(expected_encoded_bytes[i],encoded_buffer[i]);
+    }
+}
 
 
 
@@ -90,8 +120,8 @@ int main(void)
     UNIT_TESTS_BEGIN();
 
     UNIT_TEST(test_decode_header_block);
-    /*UNIT_TEST(test_is_flag_set);
-    UNIT_TEST(test_frame_header_to_bytes);
+    UNIT_TEST(test_encode);
+    /*UNIT_TEST(test_frame_header_to_bytes);
     UNIT_TEST(test_frame_header_to_bytes_reserved);
     UNIT_TEST(test_bytes_to_frame_header);
 
