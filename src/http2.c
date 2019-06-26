@@ -725,18 +725,14 @@ int h2_receive_frame(hstates_t *st){
 * a new one or reports an error. The stream that will be used is stored in
 * st->h2s.current_stream.stream_id .
 * Input: -> st: hstates_t struct where current stream is stored
-*        -> end_stream: boolean equals 1 if response, 0 if request
+*        -> is_response: boolean equals 1 if response, 0 if request
 * Output: 0 if no errors were found, -1 if not
 */
-int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
-  if(end_stream){ // The message is a response
-<<<<<<< HEAD
-    if(st->h2s.current_stream.state != STREAM_OPEN){//TODO check this. when i closed remote it is ok too
-      ERROR("Current stream was not open!");
-=======
-    if(st->h2s.current_stream.state != STREAM_OPEN){
+int send_headers_stream_verification(hstates_t *st, uint8_t is_response){
+  if(is_response){ // The message is a response or put
+    if(st->h2s.current_stream.state != STREAM_OPEN &&
+        st->h2s.current_stream.state != STREAM_HALF_CLOSED_REMOTE){
       ERROR("Current stream was not open for response!");
->>>>>>> add more info to send_headers error msgs
       return -1;
     }
     else if(st->h2s.current_stream.stream_id == 0){
