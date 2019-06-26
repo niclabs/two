@@ -785,6 +785,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     WARN("There are no headers to send");
     return 0;
   }
+  uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
   int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
   if(size < 0){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
@@ -797,7 +798,6 @@ int send_headers(hstates_t *st, uint8_t end_stream){
   uint32_t stream_id = st->h2s.current_stream.stream_id;
 
   int rc;
-  uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
   frame_t frame;
   frame_header_t frame_header;
   headers_payload_t headers_payload;
