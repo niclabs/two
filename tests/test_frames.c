@@ -348,7 +348,9 @@ void test_setting_to_bytes(void){
     uint8_t expected_bytes[6] = {1, 44, 0, 0, 1, 44};
     uint8_t byte_array[6];
 
-    setting_to_bytes(&settings_pair, byte_array);
+    int rc = setting_to_bytes(&settings_pair, byte_array);
+
+    TEST_ASSERT_EQUAL(6,rc);
 
     TEST_ASSERT_EQUAL(1, uint16_to_byte_array_fake.call_count);
     TEST_ASSERT_EQUAL(1, uint32_to_byte_array_fake.call_count);
@@ -389,8 +391,8 @@ void test_settings_frame_to_bytes(void){
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
 
     uint8_t byte_array[6*count];
-    settings_frame_to_bytes(&settings_payload, count, byte_array);
-
+    int rc = settings_frame_to_bytes(&settings_payload, count, byte_array);
+    TEST_ASSERT_EQUAL(6*count,rc);
     uint8_t expected_bytes[] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1};
     TEST_ASSERT_EQUAL(count, uint16_to_byte_array_fake.call_count);
     TEST_ASSERT_EQUAL(count, uint32_to_byte_array_fake.call_count);
