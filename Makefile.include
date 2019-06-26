@@ -143,6 +143,8 @@ debug:
 # Main rule, checks the executable and symlinks to the output
 all: $(BINFILE)
 
+
+
 # Link the executable
 $(BINFILE): $(OBJECTS)
 	@echo "Linking: $@"
@@ -174,9 +176,10 @@ clean-all: clean
 # Test targets
 .PHONY: test
 test: $(ALLDIRS) $(TESTSDIR)
-	@$(MAKE) -C $(TESTSDIR) $@
+	@$(MAKE) -C $(TESTSDIR) $@ -lm
 
 .PHONY: test_%
 test_%: 
 test_%: $(ALLDIRS) $(TESTSDIR)
-	@$(MAKE) -C $(TESTSDIR) $@
+	@echo "make test $@"
+	@$(MAKE) -C $(TESTSDIR) $@ -lm
