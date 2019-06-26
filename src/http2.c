@@ -730,12 +730,17 @@ int h2_receive_frame(hstates_t *st){
 */
 int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
   if(end_stream){ // The message is a response
+<<<<<<< HEAD
     if(st->h2s.current_stream.state != STREAM_OPEN){//TODO check this. when i closed remote it is ok too
       ERROR("Current stream was not open!");
+=======
+    if(st->h2s.current_stream.state != STREAM_OPEN){
+      ERROR("Current stream was not open for response!");
+>>>>>>> add more info to send_headers error msgs
       return -1;
     }
     else if(st->h2s.current_stream.stream_id == 0){
-      ERROR("Current stream was not initialized!");
+      ERROR("Current stream was not initialized for response!");
       return -1;
     }
   }
@@ -746,7 +751,7 @@ int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
         st->h2s.current_stream.state = STREAM_OPEN;
       }
       else if(st->h2s.current_stream.state != STREAM_CLOSED){
-          ERROR("Current stream was not closed!");
+          ERROR("Current stream was not closed! Send request error.");
           return -1;
       }
       else{ //stream is closed and id is not zero
@@ -760,7 +765,7 @@ int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
         st->h2s.current_stream.state = STREAM_OPEN;
       }
       else if(st->h2s.current_stream.state != STREAM_CLOSED){
-          ERROR("Current stream was not closed!");
+          ERROR("Current stream was not closed! Send request error.");
           return -1;
       }
       else{ //stream is closed and id is not zero
