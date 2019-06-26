@@ -743,6 +743,28 @@ void test_compress_headers(void){
 }
 
 
+void test_create_data_frame(void){
+
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    uint8_t data[] = {1,2,3,4,5,6,7,8,9,10};
+    int length = 10;
+    uint32_t stream_id = 1;
+    int rc = create_data_frame(&frame_header, &data_payload, data, length, stream_id);
+
+    TEST_ASSERT_EQUAL(0,rc);
+
+    TEST_ASSERT_EQUAL(length,frame_header.length);
+    TEST_ASSERT_EQUAL(DATA_TYPE,frame_header.type);
+    TEST_ASSERT_EQUAL(0x0,frame_header.flags);
+    TEST_ASSERT_EQUAL(stream_id,frame_header.stream_id);
+    for(int i = 0; i< length; i++) {
+        TEST_ASSERT_EQUAL(data[i], data_payload.data[i]);
+    }
+
+}
+
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -776,7 +798,8 @@ int main(void)
     UNIT_TEST(test_continuation_payload_to_bytes);
 
     UNIT_TEST(test_compress_headers)
-    //UNIT_TEST(test_compress_headers)
+    UNIT_TEST(test_create_data_frame)
+    //UNIT_TEST(test_create_data_frame)
 
 
     return UNIT_TESTS_END();
