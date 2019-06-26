@@ -1,20 +1,17 @@
 #include <stdio.h>
 
-#include "contiki-net.h"
-#include "sys/timer.h"
+#include "contiki.h"
+
 #include "sock.h"
 #include "logging.h"
 
+PROCESS(test_server_process, "Test server process");
+AUTOSTART_PROCESSES(&test_server_process);
 
-
-PROCESS(test_sock_process, "Test sock process");
-AUTOSTART_PROCESSES(&test_sock_process);
-
-PROCESS_THREAD(test_sock_process, ev, data){
+PROCESS_THREAD(test_server_process, ev, data){
     PROCESS_BEGIN();
 
     static sock_t server, client; 
-	//static struct timer timer;
     if (sock_create(&server) < 0) {
         FATAL("Could not create socket");
     }
@@ -26,10 +23,11 @@ PROCESS_THREAD(test_sock_process, ev, data){
     INFO("Listening on port 8888");
 
     while (1) {
-        PROCESS_SOCK_WAIT_CLIENT(&server); 
+        INFO("Waiting for client ...");
+        PROCESS_SOCK_WAIT_CONNECTION(&server); 
         if (sock_accept(&server, &client) < 0) {
             ERROR("Error in accept");
-            continue;
+            break;
         }
         INFO("New client connection");
 
@@ -46,13 +44,9 @@ PROCESS_THREAD(test_sock_process, ev, data){
             	INFO("Received data '%.*s'", bytes, buf);
                 sock_write(&client, buf, bytes);
 			}
-
-			//timer_set(&timer, CLOCK_SECOND * 5); // wait 5 seconds
-        	//PROCESS_WAIT_UNTIL(timer_expired(&timer));
         }
-
+        sock_destroy(&client);
     }
-
     sock_destroy(&server);
 
     PROCESS_END();

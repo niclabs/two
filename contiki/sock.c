@@ -282,7 +282,7 @@ int sock_destroy(sock_t *sock)
     return 0;
 }
 
-PT_THREAD(sock_wait_client(sock_t * sock)) 
+PT_THREAD(sock_wait_connection(sock_t * sock)) 
 {
     PT_BEGIN(&sock->pt);
 
@@ -294,7 +294,6 @@ PT_THREAD(sock_wait_client(sock_t * sock))
         PT_EXIT(&sock->pt);
     }
 
-    DEBUG("WAITING");
     PT_WAIT_WHILE(&sock->pt, !(sock->socket->flags & SOCKET_FLAGS_CONNECTED));
        
     PT_END(&sock->pt);

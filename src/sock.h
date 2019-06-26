@@ -143,12 +143,13 @@ int sock_destroy(sock_t * sock);
 
 #ifdef WITH_CONTIKI
 /**
- * Wait for a new client connection to arrive
- * given the provided server sock
+ * Wait for the underlying socket to connect, either 
+ * by a new client arriving (in the case of a server sock)
+ * or by the remote server becoming available
  *
- * @param sock server sock configured and listening
+ * @param sock socket configured and listening
  */ 
-PT_THREAD(sock_wait_client(sock_t * sock));
+PT_THREAD(sock_wait_connection(sock_t * sock));
 
 /**
  * Wait for new data to arrive on the provided client sock
@@ -160,7 +161,7 @@ PT_THREAD(sock_wait_data(sock_t * sock));
 /**
  * Process sock macros
  */
-#define PROCESS_SOCK_WAIT_CLIENT(sock) PROCESS_SOCK_WAIT(sock, sock_wait_client(sock))
+#define PROCESS_SOCK_WAIT_CONNECTION(sock) PROCESS_SOCK_WAIT(sock, sock_wait_connection(sock))
 #define PROCESS_SOCK_WAIT_DATA(sock) PROCESS_SOCK_WAIT(sock, sock_wait_data(sock))
 #endif
 
