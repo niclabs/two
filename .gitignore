@@ -112,3 +112,4 @@ summary
 *.runlog
 *.faillog
 *.orig
+*.co
