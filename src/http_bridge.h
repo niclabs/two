@@ -33,6 +33,7 @@ typedef struct HTTP2_STATES {
     /*uint32_t local_cache[6]; Could be implemented*/
     uint8_t wait_setting_ack;
     h2_stream_t current_stream;
+    uint32_t last_open_stream_id;
     uint8_t header_block_fragments[HTTP2_MAX_HBF_BUFFER];
     uint8_t header_block_fragments_pointer; //points to the next byte to write in
     uint8_t waiting_for_end_headers_flag;   //bool

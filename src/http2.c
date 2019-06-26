@@ -25,7 +25,9 @@ int init_variables(hstates_t * st){
     st->h2s.remote_settings[4] = st->h2s.local_settings[4] = DEFAULT_MFS;
     st->h2s.remote_settings[5] = st->h2s.local_settings[5] = DEFAULT_MHLS;
     st->h2s.wait_setting_ack = 0;
-    memset(&st->h2s.current_stream, 0, sizeof(h2_stream_t));
+    st->h2s.current_stream.stream_id = st->is_server ? 2 : 3;
+    st->h2s.current_stream.state = STREAM_IDLE;
+    st->h2s.last_open_stream_id = 0;
     st->h2s.window_size = DEFAULT_IWS;
     st->h2s.window_used = 0;
     return 0;
@@ -215,25 +217,35 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
     ERROR("CONTINUATION frame was expected");
     return -1;
   }
-  else if(st->h2s.current_stream.stream_id == 0 ||
-      (st->h2s.current_stream.state == STREAM_CLOSED &&
-      st->h2s.current_stream.stream_id < header->stream_id)){
-      //we create a new stream
-      st->h2s.current_stream.stream_id = header->stream_id;
-      st->h2s.current_stream.state = STREAM_OPEN;
-      return 0;
+  if(header->stream_id == 0){
+    ERROR("Invalid stream id: 0. PROTOCOL ERROR");
+    return -1;
   }
-  // Stream id mismatch
+  if(header->stream_id%2 != st->is_server){
+    ERROR("Invalid stream id parity. PROTOCOL ERROR");
+    return -1;
+  }
+  if(st->h2s.current_stream.state == STREAM_IDLE){
+      if(header->stream_id < st->h2s.last_open_stream_id){
+        ERROR("Invalid stream id: not bigger than last open");
+        return -1;
+      }
+      else{
+        st->h2s.current_stream.stream_id = header->stream_id;
+        st->h2s.current_stream.state = STREAM_OPEN;
+        return 0;
+      }
+  }
+  else if(st->h2s.current_stream.state != STREAM_OPEN &&
+          st->h2s.current_stream.state != STREAM_HALF_CLOSED_LOCAL){
+        //stream closed error
+        ERROR("Current stream is not open.");
+        return -2;
+  }
   else if(header->stream_id != st->h2s.current_stream.stream_id){
       //protocol error
       ERROR("Stream ids do not match.");
       return -1;
-  }
-  // Current stream is not open
-  else if(st->h2s.current_stream.state != STREAM_OPEN){
-      //stream closed error
-      ERROR("Current stream is not open.");
-      return -2;
   }
   else{
     return 0;
@@ -719,7 +731,7 @@ int h2_receive_frame(hstates_t *st){
 }
 
 /*
-* Function: send_headers_stream_verification
+* Function: send_headers_or_data_stream_verification
 * Given an hstates struct and a boolean indicating if the current sending message
 * is a request or a response, checks the current stream state and uses it, creates
 * a new one or reports an error. The stream that will be used is stored in
@@ -728,50 +740,26 @@ int h2_receive_frame(hstates_t *st){
 *        -> is_response: boolean equals 1 if response, 0 if request
 * Output: 0 if no errors were found, -1 if not
 */
-int send_headers_stream_verification(hstates_t *st, uint8_t is_response){
-  if(is_response){ // The message is a response or put
-    if(st->h2s.current_stream.state != STREAM_OPEN &&
-        st->h2s.current_stream.state != STREAM_HALF_CLOSED_REMOTE){
-      ERROR("Current stream was not open for response!");
+int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream){
+  if(st->h2s.current_stream.state == STREAM_CLOSED ||
+      st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+      ERROR("Current stream was closed! Send request error. STREAM CLOSED ERROR");
       return -1;
-    }
-    else if(st->h2s.current_stream.stream_id == 0){
-      ERROR("Current stream was not initialized for response!");
-      return -1;
-    }
   }
-  else{ // The message is a request, we open a new stream
+  else if(st->h2s.current_stream.state == STREAM_IDLE){
     if(st->is_server){ // server must use even numbers
-      if(st->h2s.current_stream.stream_id == 0){
-        st->h2s.current_stream.stream_id = 2;
-        st->h2s.current_stream.state = STREAM_OPEN;
-      }
-      else if(st->h2s.current_stream.state != STREAM_CLOSED){
-          ERROR("Current stream was not closed! Send request error.");
-          return -1;
-      }
-      else{ //stream is closed and id is not zero
         st->h2s.current_stream.stream_id += st->h2s.current_stream.stream_id%2 ? 1 : 2;
         st->h2s.current_stream.state = STREAM_OPEN;
-      }
     }
-    else{ // client must use odd numbers
-      if(st->h2s.current_stream.stream_id == 0){
-        st->h2s.current_stream.stream_id = 3;
-        st->h2s.current_stream.state = STREAM_OPEN;
-      }
-      else if(st->h2s.current_stream.state != STREAM_CLOSED){
-          ERROR("Current stream was not closed! Send request error.");
-          return -1;
-      }
-      else{ //stream is closed and id is not zero
+    else{ //stream is closed and id is not zero
         st->h2s.current_stream.stream_id += st->h2s.current_stream.stream_id%2 ? 2 : 1;
         st->h2s.current_stream.state = STREAM_OPEN;
-      }
     }
   }
+  if(end_stream){
+    st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+  }
   return 0;
-
 }
 
 int send_data(hstates_t *st, uint8_t end_stream){
@@ -829,7 +817,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     return -1;
   }
-  if(send_headers_stream_verification(st, end_stream) < 0){
+  if(send_headers_or_data_stream_verification(st, end_stream) < 0){
     ERROR("Stream error during the headers sending. INTERNAL ERROR");
     return -1;
   }
