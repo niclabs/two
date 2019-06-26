@@ -24,7 +24,8 @@ typedef enum
     INFO,
     WARN,
     ERROR,
-    FATAL
+    FATAL,
+    OFF
 } level_t;
 
 #ifdef WITH_CONTIKI
