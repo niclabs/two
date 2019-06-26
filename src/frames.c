@@ -537,5 +537,5 @@ int read_window_update_payload(uint8_t* buff_read, frame_header_t* frame_header,
     }
     uint32_t window_size_increment = bytes_to_uint32_31(buff_read);
     window_update_payload->window_size_increment = window_size_increment;
-    return 0;
+    return frame_header->length;
 }

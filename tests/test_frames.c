@@ -850,6 +850,26 @@ void test_window_update_payload_to_bytes(void){
 
 }
 
+void test_read_window_update_payload(void){
+    uint8_t buff_read[]={0,0,0,30};
+    frame_header_t frame_header;
+    frame_header.length = 4;
+    frame_header.type = WINDOW_UPDATE_TYPE;
+    frame_header.flags = 0x0;
+    frame_header.stream_id = 1;
+
+    window_update_payload_t window_update_payload;
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    bytes_to_uint32_31_fake.return_val = 30;
+    int rc = read_window_update_payload(buff_read, &frame_header, &window_update_payload);
+
+    TEST_ASSERT_EQUAL(4,rc);
+    TEST_ASSERT_EQUAL(30,window_update_payload.window_size_increment);
+
+
+}
+
 
 int main(void)
 {
@@ -889,7 +909,8 @@ int main(void)
     UNIT_TEST(test_read_data_payload)
     UNIT_TEST(test_create_window_update_frame)
     UNIT_TEST(test_window_update_payload_to_bytes)
-    //UNIT_TEST(test_window_update_payload_to_bytes)
+    UNIT_TEST(test_read_window_update_payload)
+    //UNIT_TEST(test_read_window_update_payload)
 
     return UNIT_TESTS_END();
 }
