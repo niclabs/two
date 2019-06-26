@@ -21,11 +21,11 @@ typedef enum{
 }hpack_preamble_t;
 
 
-
+/*
 int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers);
 int compress_static(char* headers, int headers_size, uint8_t* compressed_headers);
 int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers);
-
+*/
 
 int decode_header_block(uint8_t* header_block, uint8_t header_block_size, headers_lists_t* h_list);
 int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* value_string, uint8_t value_huffman_bool, char* name_string, uint8_t name_huffman_bool, uint8_t* encoded_buffer);

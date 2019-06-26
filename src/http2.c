@@ -426,8 +426,8 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
         ERROR("flow control error");
         return -1;
     }
-    buffer_copy(st->data + st->data_size, data_payload->data, data_length);
-    st->data_size += data_length;
+    buffer_copy(st->data_in + st->data_in_size, data_payload->data, data_length);
+    st->data_in_size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)) {
         st->h2s.received_end_stream = 1;
     }
@@ -730,7 +730,7 @@ int h2_receive_frame(hstates_t *st){
 */
 int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
   if(end_stream){ // The message is a response
-    if(st->h2s.current_stream.state != STREAM_OPEN){
+    if(st->h2s.current_stream.state != STREAM_OPEN){//TODO check this. when i closed remote it is ok too
       ERROR("Current stream was not open!");
       return -1;
     }
@@ -772,6 +772,43 @@ int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
   return 0;
 
 }
+
+int send_data(hstates_t *st, uint8_t end_stream){
+    (void)st;
+
+    if(st->data_out_size<=0){
+        ERROR("no data to be send");
+        return -1;
+    }
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    uint8_t data[st->data_out_size];
+
+    h2_stream_state_t state = st->h2s.current_stream.state;
+    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
+        ERROR("Wrong state. ");
+        return -1;
+    }
+
+    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
+
+    int rc = create_data_frame(&frame_header, &data_payload, data, st->data_out, st->data_out_size, stream_id);
+    if(rc<0){
+        ERROR("error creating data frame");
+        return -1;
+    }
+    if(rc !=st->data_out_size){
+        //TODO send_data??
+        ERROR("not all data was sent. Check this");
+        return -1;
+    }
+    if(end_stream) {
+        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
+    }
+    st->data_out_size = 0; //-= rc; //if not all data was sent
+    return 0;
+}
+
 /*
 * Function: send_headers
 * Given an hstates struct, builds and sends a message to endpoint. The message

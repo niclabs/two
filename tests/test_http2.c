@@ -79,11 +79,6 @@ FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_pa
 FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);
 FAKE_VALUE_FUNC(uint32_t, get_header_list_size, table_pair_t*, uint8_t);
-FAKE_VALUE_FUNC(int, read_data_payload, uint8_t* , frame_header_t* , data_payload_t* , uint8_t * );//TODO fix this
-FAKE_VALUE_FUNC(int, read_window_update_payload, uint8_t* , frame_header_t* , window_update_payload_t* );//TODO fix this
-
-
-
 
 
 FAKE_VALUE_FUNC( int, compress_headers, table_pair_t* , uint8_t , uint8_t* );
@@ -93,6 +88,12 @@ FAKE_VALUE_FUNC( int, create_continuation_frame, uint8_t * , int , uint32_t , fr
 FAKE_VALUE_FUNC( int, continuation_payload_to_bytes, frame_header_t* , continuation_payload_t* , uint8_t* );
 FAKE_VALUE_FUNC( uint8_t, set_flag, uint8_t , uint8_t );
 
+FAKE_VALUE_FUNC(int, create_data_frame, frame_header_t* , data_payload_t* , uint8_t * , uint8_t * , int , uint32_t );
+FAKE_VALUE_FUNC(int, data_payload_to_bytes, frame_header_t* , data_payload_t* , uint8_t*);
+FAKE_VALUE_FUNC(int, read_data_payload, uint8_t* , frame_header_t* , data_payload_t* , uint8_t *);
+FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t* , window_update_payload_t* , int , uint32_t );
+FAKE_VALUE_FUNC(int, window_update_payload_to_bytes, frame_header_t* , window_update_payload_t* , uint8_t* );
+FAKE_VALUE_FUNC(int, read_window_update_payload, uint8_t* , frame_header_t* , window_update_payload_t* );
 
 
 #define FFF_FAKES_LIST(FAKE)              \
@@ -117,7 +118,12 @@ FAKE_VALUE_FUNC( uint8_t, set_flag, uint8_t , uint8_t );
     FAKE(continuation_payload_to_bytes)            \
     FAKE(set_flag)            \
     FAKE(read_data_payload)             \
-    FAKE(read_window_update_payload)
+    FAKE(read_window_update_payload)    \
+    FAKE(create_data_frame)           \
+    FAKE(data_payload_to_bytes)           \
+    FAKE(create_window_update_frame)           \
+    FAKE(window_update_payload_to_bytes)           \
+
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
   return 0;

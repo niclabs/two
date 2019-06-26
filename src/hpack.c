@@ -8,6 +8,7 @@
  *
  * returns compressed headers size or -1 if error
  */
+/*
 int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers){
     (void)headers;
     (void)headers_size;
@@ -30,7 +31,7 @@ int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_header
     ERROR("compress_dynamic: not implemented yet!");
     return -1;
 }
-
+*/
 
 
 

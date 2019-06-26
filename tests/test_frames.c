@@ -747,10 +747,11 @@ void test_create_data_frame(void){
 
     frame_header_t frame_header;
     data_payload_t data_payload;
-    uint8_t data[] = {1,2,3,4,5,6,7,8,9,10};
+    uint8_t data[10];
+    uint8_t data_to_send[] = {1,2,3,4,5,6,7,8,9,10};
     int length = 10;
     uint32_t stream_id = 1;
-    int rc = create_data_frame(&frame_header, &data_payload, data, length, stream_id);
+    int rc = create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
 
     TEST_ASSERT_EQUAL(0,rc);
 
@@ -759,7 +760,7 @@ void test_create_data_frame(void){
     TEST_ASSERT_EQUAL(0x0,frame_header.flags);
     TEST_ASSERT_EQUAL(stream_id,frame_header.stream_id);
     for(int i = 0; i< length; i++) {
-        TEST_ASSERT_EQUAL(data[i], data_payload.data[i]);
+        TEST_ASSERT_EQUAL(data_to_send[i], data_payload.data[i]);
     }
 
 }
@@ -769,16 +770,18 @@ void test_data_payload_to_bytes(void){
     data_payload_t data_payload;
     int length = 10;
     uint32_t stream_id = 1;
-    uint8_t data[] = {1,2,3,4,5,6,7,8,9,10};
+    uint8_t data[10];
+    uint8_t data_to_send[] = {1,2,3,4,5,6,7,8,9,10};
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    create_data_frame(&frame_header, &data_payload, data, length, stream_id);
+    create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
 
 
     uint8_t byte_array[30];
     int rc = data_payload_to_bytes(&frame_header, &data_payload, byte_array);
 
+    TEST_ASSERT_EQUAL(length, rc);
     for(int i = 0; i< frame_header.length; i++) {
         TEST_ASSERT_EQUAL(data[i], byte_array[i]);
     }

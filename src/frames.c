@@ -354,8 +354,13 @@ int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* comp
 
 int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, uint8_t bool_table_compression, uint8_t bool_huffman_compression){
     //TODO implement
+    (void)headers;
+    (void)headers_size;
+    (void)compressed_headers;
+    (void)bool_table_compression;
+    (void)bool_huffman_compression;
     return -1;
-    if(bool_table_compression>0){
+    /*if(bool_table_compression>0){
         return compress_static(headers, headers_size, compressed_headers);
     }
     if(bool_huffman_compression>0){
@@ -365,7 +370,7 @@ int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* com
     for(int i =0; i<headers_size; i++){
         compressed_headers[i] = (uint8_t)headers[i];
     }
-    return headers_size;
+    return headers_size;*/
 }
 
 
@@ -457,7 +462,7 @@ int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, 
 }
 
 
-int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data, int length, uint32_t stream_id){
+int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data, uint8_t * data_to_send, int length, uint32_t stream_id){
     uint8_t type = DATA_TYPE;
     uint8_t flags = 0x0;
     //uint32_t length = length; //no padding, no dependency. fix if this is implemented
@@ -467,7 +472,7 @@ int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload
     frame_header ->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
-    //buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    buffer_copy(data, data_to_send, length);
     data_payload->data = data; //not duplicating info
     return 0;
 };
