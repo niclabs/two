@@ -3,6 +3,7 @@
 #include "fff.h"
 #include "logging.h"
 #include "hpack.h"
+#include "table.h"
 
 
 
@@ -40,6 +41,7 @@ FAKE_VALUE_FUNC(int, decode_header_block, uint8_t* , uint8_t , headers_lists_t*)
     FAKE(encode)                    \
     FAKE(decode_header_block)
 */
+
 void setUp(void) {
     /* Register resets */
     //FFF_FAKES_LIST(RESET_FAKE);
@@ -48,13 +50,47 @@ void setUp(void) {
     FFF_RESET_HISTORY();
 }
 
+void test_decode_header_block(void){
+    //Literal Header Field Representation
+        //without indexing
+            //new name
+    uint8_t header_block_size = 10;
+    uint8_t header_block[]={
+            0,//01000000 prefix=00, index=0
+            4,//h=0, name length = 4;
+            'h',//name string
+            'o',//name string
+            'l',//name string
+            'a',//name string
+            3, //h=0, value length = 3;
+            'v',//value string
+            'a',//value string
+            'l'//value string
+    };
+    char expected_name[] ="hola";
+    char expected_value[] ="val";
+
+    headers_lists_t h_list;
+    int rc = decode_header_block(header_block, header_block_size, &h_list);
+    TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
+    INFO("%s\n",h_list.header_list_in[0].name);
+    INFO("%s\n",h_list.header_list_in[0].value);
+    TEST_ASSERT_EQUAL(0,strcmp(expected_name,h_list.header_list_in[0].name));
+    TEST_ASSERT_EQUAL(0,strcmp(expected_value,h_list.header_list_in[0].value));
+
+
+}
+
+
+
+
 
 int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-    /*UNIT_TEST(test_set_flag);
-    UNIT_TEST(test_is_flag_set);
+    UNIT_TEST(test_decode_header_block);
+    /*UNIT_TEST(test_is_flag_set);
     UNIT_TEST(test_frame_header_to_bytes);
     UNIT_TEST(test_frame_header_to_bytes_reserved);
     UNIT_TEST(test_bytes_to_frame_header);

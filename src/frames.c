@@ -359,7 +359,7 @@ int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* com
         return compress_static(headers, headers_size, compressed_headers);
     }
     if(bool_huffman_compression>0){
-        return compress_hauffman(headers, headers_size, compressed_headers);
+        return compress_huffman(headers, headers_size, compressed_headers);
     }
     //without compression
     for(int i =0; i<headers_size; i++){
