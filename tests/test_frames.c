@@ -764,6 +764,27 @@ void test_create_data_frame(void){
 
 }
 
+void test_data_payload_to_bytes(void){
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    int length = 10;
+    uint32_t stream_id = 1;
+    uint8_t data[] = {1,2,3,4,5,6,7,8,9,10};
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
+    create_data_frame(&frame_header, &data_payload, data, length, stream_id);
+
+
+    uint8_t byte_array[30];
+    int rc = data_payload_to_bytes(&frame_header, &data_payload, byte_array);
+
+    for(int i = 0; i< frame_header.length; i++) {
+        TEST_ASSERT_EQUAL(data[i], byte_array[i]);
+    }
+
+}
+
 
 int main(void)
 {
@@ -799,7 +820,8 @@ int main(void)
 
     UNIT_TEST(test_compress_headers)
     UNIT_TEST(test_create_data_frame)
-    //UNIT_TEST(test_create_data_frame)
+    UNIT_TEST(test_data_payload_to_bytes)
+    //UNIT_TEST(test_data_payload_to_bytes)
 
 
     return UNIT_TESTS_END();
