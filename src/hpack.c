@@ -8,11 +8,11 @@
  *
  * returns compressed headers size or -1 if error
  */
-int compress_hauffman(char* headers, int headers_size, uint8_t* compressed_headers){
+int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers){
     (void)headers;
     (void)headers_size;
     (void)compressed_headers;
-    ERROR("compress_hauffman: not implemented yet!");
+    ERROR("compress_huffman: not implemented yet!");
     return -1;
 }
 

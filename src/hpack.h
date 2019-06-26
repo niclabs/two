@@ -22,7 +22,7 @@ typedef enum{
 
 
 
-int compress_hauffman(char* headers, int headers_size, uint8_t* compressed_headers);
+int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers);
 int compress_static(char* headers, int headers_size, uint8_t* compressed_headers);
 int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers);
 
