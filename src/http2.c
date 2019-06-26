@@ -27,7 +27,7 @@ int init_variables(hstates_t * st){
     st->h2s.wait_setting_ack = 0;
     st->h2s.current_stream.stream_id = st->is_server ? 2 : 3;
     st->h2s.current_stream.state = STREAM_IDLE;
-    st->h2s.last_open_stream_id = 0;
+    st->h2s.last_open_stream_id = 1;
     st->h2s.window_size = DEFAULT_IWS;
     st->h2s.window_used = 0;
     return 0;
@@ -221,18 +221,20 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
     ERROR("Invalid stream id: 0. PROTOCOL ERROR");
     return -1;
   }
-  if(header->stream_id%2 != st->is_server){
-    ERROR("Invalid stream id parity. PROTOCOL ERROR");
-    return -1;
-  }
   if(st->h2s.current_stream.state == STREAM_IDLE){
       if(header->stream_id < st->h2s.last_open_stream_id){
         ERROR("Invalid stream id: not bigger than last open");
         return -1;
       }
+      if(header->stream_id%2 != st->is_server){
+        INFO("Incoming stream id: %u", header->stream_id);
+        ERROR("Invalid stream id parity. PROTOCOL ERROR");
+        return -1;
+      }
       else{
         st->h2s.current_stream.stream_id = header->stream_id;
         st->h2s.current_stream.state = STREAM_OPEN;
+        st->h2s.last_open_stream_id = st->h2s.current_stream.stream_id;
         return 0;
       }
   }
@@ -748,13 +750,13 @@ int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream){
   }
   else if(st->h2s.current_stream.state == STREAM_IDLE){
     if(st->is_server){ // server must use even numbers
-        st->h2s.current_stream.stream_id += st->h2s.current_stream.stream_id%2 ? 1 : 2;
-        st->h2s.current_stream.state = STREAM_OPEN;
+        st->h2s.last_open_stream_id += st->h2s.last_open_stream_id%2 ? 1 : 2;
     }
     else{ //stream is closed and id is not zero
-        st->h2s.current_stream.stream_id += st->h2s.current_stream.stream_id%2 ? 2 : 1;
-        st->h2s.current_stream.state = STREAM_OPEN;
+        st->h2s.last_open_stream_id += st->h2s.last_open_stream_id%2 ? 2 : 1;
     }
+    st->h2s.current_stream.state = STREAM_OPEN;
+    st->h2s.current_stream.stream_id = st->h2s.last_open_stream_id;
   }
   if(end_stream){
     st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
