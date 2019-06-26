@@ -785,6 +785,48 @@ void test_data_payload_to_bytes(void){
 
 }
 
+void test_read_data_payload(void){
+    uint8_t buff_read[]={1,2,3,4,5,6,7,8,9,10};
+    frame_header_t frame_header;
+    frame_header.length = 10;
+    frame_header.type = DATA_TYPE;
+    frame_header.flags = 0x0;
+    frame_header.stream_id = 1;
+
+    data_payload_t data_payload;
+    uint8_t data[10];
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    int rc = read_data_payload(buff_read, &frame_header, &data_payload, data);
+    TEST_ASSERT_EQUAL(frame_header.length, rc);
+    for(int i = 0; i<frame_header.length; i++) {
+        TEST_ASSERT_EQUAL(buff_read[i], data_payload.data[i]);
+    }
+
+}
+
+
+void test_create_window_update_frame(void){
+    frame_header_t frame_header;
+    window_update_payload_t window_update_payload;
+    int window_size_increment = 30;
+    uint32_t stream_id = 1;
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+
+    int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, stream_id);
+
+    TEST_ASSERT_EQUAL(0,rc);
+    TEST_ASSERT_EQUAL(4,frame_header.length);
+    TEST_ASSERT_EQUAL(WINDOW_UPDATE_TYPE,frame_header.type);
+    TEST_ASSERT_EQUAL(0x0,frame_header.flags);
+    TEST_ASSERT_EQUAL(stream_id,frame_header.stream_id);
+
+    TEST_ASSERT_EQUAL(window_size_increment, window_update_payload.window_size_increment);
+
+
+
+}
+
 
 int main(void)
 {
@@ -821,8 +863,9 @@ int main(void)
     UNIT_TEST(test_compress_headers)
     UNIT_TEST(test_create_data_frame)
     UNIT_TEST(test_data_payload_to_bytes)
-    //UNIT_TEST(test_data_payload_to_bytes)
-
+    UNIT_TEST(test_read_data_payload)
+    UNIT_TEST(test_create_window_update_frame)
+    //UNIT_TEST(test_create_window_update_frame)
 
     return UNIT_TESTS_END();
 }

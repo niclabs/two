@@ -505,6 +505,7 @@ int create_window_update_frame(frame_header_t* frame_header, window_update_paylo
     frame_header->stream_id = stream_id;
     frame_header->type = WINDOW_UPDATE_TYPE;
     frame_header->length = 4;
+    frame_header->flags = 0;
 
     window_update_payload->reserved = 0;
     if(window_size_increment==0){
