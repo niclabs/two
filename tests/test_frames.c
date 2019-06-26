@@ -751,6 +751,9 @@ void test_create_data_frame(void){
     uint8_t data_to_send[] = {1,2,3,4,5,6,7,8,9,10};
     int length = 10;
     uint32_t stream_id = 1;
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
     int rc = create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
 
     TEST_ASSERT_EQUAL(0,rc);

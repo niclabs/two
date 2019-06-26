@@ -485,8 +485,12 @@ int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_pay
         ERROR("Padding not implemented yet");
         return -1;
     }
-    buffer_copy(byte_array,data_payload->data,length);
-    return 0;
+    int rc = buffer_copy(byte_array,data_payload->data,length);
+    if(rc<0){
+        ERROR("error copying buffer");
+        return -1;
+    }
+    return rc;
 }
 
 
