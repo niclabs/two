@@ -163,6 +163,7 @@ void test_is_flag_set(void){
 
 
 
+
 int uint32_24_to_byte_array_custom_fake_6(uint32_t num, uint8_t* byte_array){
         byte_array[0] = 0;
         byte_array[1] = 0;
@@ -670,6 +671,76 @@ void test_frame_to_bytes_continuation(void){
     }
 }
 
+int encode_fake_custom(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* value_string, uint8_t value_huffman_bool, char* name_string, uint8_t name_huffman_bool, uint8_t* encoded_buffer){
+    (void)preamble;
+    (void)max_size;
+    (void)index;
+    (void)value_string;
+    (void)value_huffman_bool;
+    (void)name_string;
+    (void)name_huffman_bool;
+
+    if(index!=0){
+        ERROR("index !=0");
+        return -1;
+    }
+    if(strcmp("hola",name_string)!=0){
+        ERROR("wrong name");
+        return -1;
+    }
+    if(strcmp("val",value_string)!=0){
+        ERROR("wrong value");
+        return -1;
+    }
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
+
+    uint8_t expected_compressed_headers[]={
+            0,//01000000 prefix=00, index=0
+            4,//h=0, name length = 4;
+            'h',//name string
+            'o',//name string
+            'l',//name string
+            'a',//name string
+            3, //h=0, value length = 3;
+            'v',//value string
+            'a',//value string
+            'l'//value string
+    };
+    buffer_copy(encoded_buffer,expected_compressed_headers,10);
+    return 10;
+}
+
+void test_compress_headers(void){
+    table_pair_t headers[1];
+    strcpy(headers[0].name, "hola");
+    strcpy(headers[0].value, "val");
+    uint8_t headers_count = 1;
+    uint8_t compressed_headers[256];
+
+    encode_fake.custom_fake = encode_fake_custom;
+
+    int rc = compress_headers(headers, headers_count, compressed_headers);
+
+    TEST_ASSERT_EQUAL(10, rc);
+    uint8_t expected_compressed_headers[]={
+            0,//01000000 prefix=00, index=0
+            4,//h=0, name length = 4;
+            'h',//name string
+            'o',//name string
+            'l',//name string
+            'a',//name string
+            3, //h=0, value length = 3;
+            'v',//value string
+            'a',//value string
+            'l'//value string
+    };
+
+    for(int i=0; i<rc; i++){
+        TEST_ASSERT_EQUAL(expected_compressed_headers[i], compressed_headers[i]);
+    }
+}
 
 
 int main(void)
@@ -701,9 +772,11 @@ int main(void)
 
     UNIT_TEST(test_frame_to_bytes_continuation)
 
-    //UNIT_TEST(test_frame_to_bytes_continuation)
+
     UNIT_TEST(test_continuation_payload_to_bytes);
 
+    UNIT_TEST(test_compress_headers)
+    //UNIT_TEST(test_compress_headers)
 
 
     return UNIT_TESTS_END();
