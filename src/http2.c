@@ -959,10 +959,24 @@ int h2_send_response(hstates_t *st){
     ERROR("There were no headers to write");
     return -1;
   }
-  int rc = send_headers(st, 1);
-  if(rc < 0){
-    ERROR("Error was found sending headers on response");
-    return rc;
+  if(st->data_out_size > 0){
+    int rc = send_headers(st, 0);
+    if(rc < 0){
+      ERROR("Error was found sending headers on response");
+      return rc;
+    }
+    rc = send_data(st, 1);
+    if(rc < 0){
+      ERROR("Error was found sending data on response");
+      return rc;
+    }
+  }
+  else{
+    int rc = send_headers(st, 1);
+    if(rc < 0){
+      ERROR("Error was found sending headers on response");
+      return rc;
+    }
   }
   return 0;
 }
