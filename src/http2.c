@@ -838,7 +838,6 @@ int send_headers(hstates_t *st, uint8_t end_stream){
 
   if(size <= max_frame_size){ //if headers can be send in only one frame
       //only send 1 header
-
       rc = create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
       if(rc < 0){
         ERROR("Error creating headers frame. INTERNAL ERROR");
@@ -879,14 +878,13 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       frame.frame_header = &frame_header;
       frame.payload = (void*)&headers_payload;
       int bytes_size = frame_to_bytes(&frame, encoded_bytes);
-
       rc = http_write(st,encoded_bytes,bytes_size);
       INFO("Sending headers");
       if(rc != bytes_size){
         ERROR("Error writting headers frame. INTERNAL ERROR");
         return rc;
       }
-      remaining -= size;
+      remaining -= max_frame_size;
       //Send continuation Frames
       continuation_payload_t continuation_payload;
       while(remaining > max_frame_size){
@@ -904,9 +902,10 @@ int send_headers(hstates_t *st, uint8_t end_stream){
             ERROR("Error writting continuation frame. INTERNAL ERROR");
             return rc;
           }
+          remaining -= max_frame_size;
       }
       //send last continuation frame
-      rc = create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+      rc = create_continuation_frame(encoded_bytes, remaining, stream_id, &frame_header, &continuation_payload, header_block_fragment);
       if(rc < 0){
         ERROR("Error creating continuation frame. INTERNAL ERROR");
         return rc;
