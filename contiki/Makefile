@@ -12,6 +12,13 @@ CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 #linker optimizations
 SMALL=1
 
+# Server configuration
+SERVER_ADDR ?= 2001:dead:beef::1
+SERVER_PORT ?= 8888
+
+DEFINES += SERVER_ADDR=\"$(SERVER_ADDR)\"
+DEFINES += SERVER_PORT=$(SERVER_PORT)
+
 # From https://github.com/contiki-os/contiki/wiki/Reducing-Contiki-OS-firmware-size
 ifeq (TARGET,zoul)
 CFLAGS += -ffunction-sections

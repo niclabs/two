@@ -5,6 +5,16 @@
 #include "sock.h"
 #include "logging.h"
 
+
+#ifndef SERVER_ADDR
+#define SERVER_ADDR "fd00::1"
+#endif
+
+#ifndef SERVER_PORT
+#define SERVER_PORT (8888)
+#endif
+
+
 PROCESS(test_client_process, "Test client process");
 AUTOSTART_PROCESSES(&test_client_process);
 
@@ -17,11 +27,11 @@ PROCESS_THREAD(test_client_process, ev, data){
             FATAL("Could not create socket");
         }
 
-        if (sock_connect(&client, "2001:dead:beef::1", 8888) < 0) {
+        if (sock_connect(&client, SERVER_ADDR, SERVER_PORT) < 0) {
             FATAL("Error connecting to server");
         }
 
-        INFO("Waiting for connection ...");
+        INFO("Connecting to [%s]:%d", SERVER_ADDR, SERVER_PORT);
         PROCESS_SOCK_WAIT_CONNECTION(&client);
         INFO("Connected to server");
 

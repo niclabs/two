@@ -5,6 +5,10 @@
 #include "sock.h"
 #include "logging.h"
 
+#ifndef SERVER_PORT
+#define SERVER_PORT (8888)
+#endif
+
 PROCESS(test_server_process, "Test server process");
 AUTOSTART_PROCESSES(&test_server_process);
 
@@ -16,11 +20,11 @@ PROCESS_THREAD(test_server_process, ev, data){
         FATAL("Could not create socket");
     }
 
-    if (sock_listen(&server, 8888) < 0) {
+    if (sock_listen(&server, SERVER_PORT) < 0) {
         FATAL("Could not perform listen");
     }
 
-    INFO("Listening on port 8888");
+    INFO("Listening on port %d", SERVER_PORT);
 
     while (1) {
         INFO("Waiting for client ...");
