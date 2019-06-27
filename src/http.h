@@ -63,7 +63,7 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
 /*Client*/
 
 /*
- * Start a connection from client to server
+ * Initialize a connection from client to server
  *
  * @param    hs         Struct with client information
  * @param    port       Port number
@@ -73,6 +73,17 @@ int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *pat
  * @return   -1         The connection fail
  */
 int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
+
+
+/*
+ * Wait for data from server
+ *
+ * @param    hs         Struct with client information
+ *
+ * @return   0          Successfully started connection
+ * @return   -1         The connection fail
+ */
+int http_start_client(hstates_t* hs);
 
 
 /*
@@ -126,6 +137,5 @@ int http_set_header(headers_lists_t *h_lists, char *name, char *value);
 char *http_get_header(headers_lists_t *h_lists, char *header);
 
 
-int http_start_client(hstates_t* hs);
 
 #endif /* HTTP_H */
