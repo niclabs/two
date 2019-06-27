@@ -38,6 +38,8 @@ void test_verify_setting(void){
   TEST_ASSERT_MESSAGE(rc == 0, "rc must be 0, valid value was given for MFS");
   rc = verify_setting(MAX_HEADER_LIST_SIZE, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "rc must be 0, valid value was given for MHLS");
+  rc = verify_setting(0x20, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1, invalid parameter");
 }
 
 void test_verify_setting_errors(void){
