@@ -314,8 +314,8 @@ int main(void)
 
     UNIT_TEST(test_encode_non_huffman_string);
 
-    /*UNIT_TEST(test_setting_to_bytes);
-    UNIT_TEST(test_create_settings_ack_frame);
+    UNIT_TEST(test_find_prefix_size);
+    /*UNIT_TEST(test_create_settings_ack_frame);
     UNIT_TEST(test_frame_to_bytes_settings);
     UNIT_TEST(test_read_headers_payload);
     UNIT_TEST(test_read_continuation_payload);
