@@ -11,11 +11,15 @@
 #ifdef WITH_CONTIKI
 #include "sys/process.h"
 
-#ifndef SOCK_BUFFER_SIZE
+#ifdef SOCK_CONF_BUFFER_SIZE
+#define SOCK_BUFFER_SIZE (SOCK_CONF_BUFFER_SIZE)
+#else 
 #define SOCK_BUFFER_SIZE 128
 #endif
 
-#ifndef SOCK_MAX_SOCKETS
+#ifdef SOCK_CONF_MAX_SOCKETS
+#define SOCK_MAX_SOCKETS (SOCK_CONF_MAX_SOCKETS)
+#else
 #define SOCK_MAX_SOCKETS UIP_CONNS
 #endif
 
