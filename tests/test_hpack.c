@@ -293,11 +293,8 @@ int main(void)
     UNIT_TEST(test_encode_integer);
 
     UNIT_TEST(test_encode_non_huffman_string);
-    /*UNIT_TEST(test_create_settings_frame);
-    UNIT_TEST(test_setting_to_bytes);
-    UNIT_TEST(test_settings_frame_to_bytes);
-    UNIT_TEST(test_bytes_to_settings_payload);
 
+    /*UNIT_TEST(test_setting_to_bytes);
     UNIT_TEST(test_create_settings_ack_frame);
     UNIT_TEST(test_frame_to_bytes_settings);
     UNIT_TEST(test_read_headers_payload);
