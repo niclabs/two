@@ -4,6 +4,7 @@
 #include "logging.h"
 #include "hpack.h"
 #include "table.h"
+#include "math.h"
 
 extern int log128(uint32_t x);
 
@@ -73,13 +74,12 @@ void test_decode_header_block(void){
     headers_lists_t h_list;
     int rc = decode_header_block(header_block, header_block_size, &h_list);
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    INFO("%s\n",h_list.header_list_in[0].name);
-    INFO("%s\n",h_list.header_list_in[0].value);
     TEST_ASSERT_EQUAL(0,strcmp(expected_name,h_list.header_list_in[0].name));
     TEST_ASSERT_EQUAL(0,strcmp(expected_value,h_list.header_list_in[0].value));
 
 
 }
+
 
 void test_encode(void){
     hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
@@ -113,6 +113,154 @@ void test_encode(void){
     }
 }
 
+void test_encoded_integer_size(void){
+    uint32_t integer = 10;
+    uint8_t prefix = 5;
+    int rc = encoded_integer_size(integer, prefix);
+    TEST_ASSERT_EQUAL(1,rc);
+
+    integer = 30;
+    prefix = 5;
+    rc = encoded_integer_size(integer, prefix);
+    TEST_ASSERT_EQUAL(1,rc);
+
+    integer = 31;
+    prefix = 5;
+    rc = encoded_integer_size(integer, prefix);
+    TEST_ASSERT_EQUAL(2,rc);
+
+    integer = 31;
+    prefix = 6;
+    rc = encoded_integer_size(integer, prefix);
+    TEST_ASSERT_EQUAL(1,rc);
+
+    integer = 1337;
+    prefix = 5;
+    rc = encoded_integer_size(integer, prefix);
+    TEST_ASSERT_EQUAL(3,rc);
+}
+
+void test_encode_integer(void) {
+
+    uint32_t integer = 10;
+    uint8_t prefix = 5;
+    int rc = encoded_integer_size(integer, prefix);
+    uint8_t encoded_integer[4];
+    rc = encode_integer(integer, prefix, encoded_integer);
+    TEST_ASSERT_EQUAL(1,rc);
+    uint8_t expected_bytes1[]={
+            10//0,0,0, 0,1,0,1,0
+    };
+    for(int i = 0; i < rc; i++){
+        TEST_ASSERT_EQUAL(expected_bytes1[i], encoded_integer[i]);
+    }
+
+    integer = 30;
+    prefix = 5;
+    rc = encoded_integer_size(integer, prefix);
+
+    rc = encode_integer(integer, prefix, encoded_integer);
+    TEST_ASSERT_EQUAL(1,rc);
+    uint8_t expected_bytes2[]={
+            30//0,0,0, 1,1,1,1,0
+    };
+    for(int i = 0; i < rc; i++){
+        TEST_ASSERT_EQUAL(expected_bytes2[i], encoded_integer[i]);
+    }
+
+    integer = 128+31;
+    prefix = 5;
+    rc = encoded_integer_size(integer, prefix);
+
+    for(int i = 0; i < 5; i++){
+        encoded_integer[i]=0;
+    }
+
+    rc = encode_integer(integer, prefix, encoded_integer);
+    TEST_ASSERT_EQUAL(3,rc);
+    uint8_t expected_bytes6[]={
+            31,//0,0,0, 1,1,1,1,1
+            128,
+            1
+    };
+    for(int i = 0; i < rc; i++){
+        INFO("encoded: %u",encoded_integer[i]);
+        TEST_ASSERT_EQUAL(expected_bytes6[i], encoded_integer[i]);
+    }
+
+
+    integer = 31;
+    prefix = 5;
+    rc = encoded_integer_size(integer, prefix);
+
+    rc = encode_integer(integer, prefix, encoded_integer);
+    TEST_ASSERT_EQUAL(2,rc);
+    uint8_t expected_bytes3[]={
+            31,//0,0,0, 1,1,1,1,1
+            0//0 000 0000
+    };
+    for(int i = 0; i < rc; i++){
+        TEST_ASSERT_EQUAL(expected_bytes3[i], encoded_integer[i]);
+    }
+
+
+    integer = 31;
+    prefix = 6;
+    rc = encoded_integer_size(integer, prefix);
+
+    rc = encode_integer(integer, prefix, encoded_integer);
+    TEST_ASSERT_EQUAL(1,rc);
+    uint8_t expected_bytes4[]={
+            31//0,0, 0,1,1,1,1,1
+    };
+    for(int i = 0; i < rc; i++){
+        TEST_ASSERT_EQUAL(expected_bytes4[i], encoded_integer[i]);
+    }
+
+
+    integer = 1337;
+    prefix = 5;
+    rc = encoded_integer_size(integer, prefix);
+
+    rc = encode_integer(integer, prefix, encoded_integer);
+    TEST_ASSERT_EQUAL(3,rc);
+    uint8_t expected_bytes5[]={
+            31,//0,0,0, 1,1,1,1,1
+            154,
+            10
+    };
+    for(int i = 0; i < rc; i++){
+        TEST_ASSERT_EQUAL(expected_bytes5[i], encoded_integer[i]);
+    }
+}
+
+void test_encode_non_huffman_string(void){
+    char str[]="char_to_encode";//14
+    uint8_t encoded_string[30];
+    uint8_t expected_encoded_string[]={
+            14,
+            'c',
+            'h',
+            'a',
+            'r',
+            '_',
+            't',
+            'o',
+            '_',
+            'e',
+            'n',
+            'c',
+            'o',
+            'd',
+            'e'
+    };
+    int rc = encode_non_huffman_string(str, encoded_string);
+    TEST_ASSERT_EQUAL(15,rc);
+    for(int i = 0; i < rc; i++){
+        TEST_ASSERT_EQUAL(expected_encoded_string[i], encoded_string[i]);
+    }
+}
+
 
 void test_log128(void) {
     TEST_ASSERT_EQUAL(0,log128(1));
@@ -139,13 +287,13 @@ int main(void)
 
     UNIT_TEST(test_decode_header_block);
     UNIT_TEST(test_encode);
-    UNIT_TEST(test_log128);
-    /*UNIT_TEST(test_frame_header_to_bytes);
-    UNIT_TEST(test_frame_header_to_bytes_reserved);
-    UNIT_TEST(test_bytes_to_frame_header);
 
-    UNIT_TEST(test_create_list_of_settings_pair);
-    UNIT_TEST(test_create_settings_frame);
+    UNIT_TEST(test_log128);
+    UNIT_TEST(test_encoded_integer_size);
+    UNIT_TEST(test_encode_integer);
+
+    UNIT_TEST(test_encode_non_huffman_string);
+    /*UNIT_TEST(test_create_settings_frame);
     UNIT_TEST(test_setting_to_bytes);
     UNIT_TEST(test_settings_frame_to_bytes);
     UNIT_TEST(test_bytes_to_settings_payload);

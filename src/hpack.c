@@ -1,6 +1,6 @@
 #include "hpack.h"
 #include "logging.h"
-#include <math.h>
+
 #include "hpack_utils.h"
 #include "table.h"
 #include <stdio.h>
@@ -34,8 +34,8 @@ int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_header
 */
 
 int log128(uint32_t x) {
-    int n = 0;
-    int m = 1;
+    uint32_t n = 0;
+    uint32_t m = 1;
     while (m < x) {
         m = 1<<(7*(++n));
     }
@@ -47,8 +47,7 @@ int log128(uint32_t x) {
 
 
 /*returns the amount of octets used to encode a int num with a prefix p*/
-uint32_t get_octets_length(uint32_t num, uint8_t prefix){
-    //Serial.println("getOctetsLength");
+uint32_t encoded_integer_size(uint32_t num, uint8_t prefix){
     uint8_t p = 255;
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
@@ -59,25 +58,6 @@ uint32_t get_octets_length(uint32_t num, uint8_t prefix){
         return 1;
     }
 };
-
-/*returns the size of the encoded integer with prefix*/
-int encoded_integer_size(uint32_t integer, uint8_t prefix){
-    int octets_size;
-    uint32_t max_first_octet = (1<<prefix)-1;
-    if(integer < max_first_octet) {
-        octets_size = 1;
-    }else {//GEQ than 2^n-1
-        uint8_t b0 = 255;
-        b0 = b0 << (8 - prefix);
-        b0 = b0 >> (8 - prefix);
-        integer = integer - b0;
-        int k = log(integer) / log(128);
-        octets_size = k + 2;
-    }
-    return octets_size;
-}
-
-
 
 
 /*
@@ -98,7 +78,7 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t* encoded_integer){
         b0 = b0 << (8 - prefix);
         b0 = b0 >> (8 - prefix);
         integer = integer - b0;
-        int k = log(integer)/log(128);
+        uint32_t k = log(integer)/log(128);
         octets_size = k+2;
 
         encoded_integer[0] = b0;

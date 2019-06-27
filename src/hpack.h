@@ -5,7 +5,7 @@
 #ifndef TWO_HPACK_H
 #define TWO_HPACK_H
 
-
+#include <math.h>
 #include "http_bridge.h"
 #include <stdint.h>
 #include "logging.h"
