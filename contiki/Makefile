@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = test_server test_client
+CONTIKI_PROJECT = server client
 all: $(CONTIKI_PROJECT)
 
 SRCDIR ?= ../src
