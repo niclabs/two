@@ -33,6 +33,17 @@ int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_header
 }
 */
 
+int log128(uint32_t x) {
+    int n = 0;
+    int m = 1;
+    while (m < x) {
+        m = 1<<(7*(++n));
+    }
+
+    if (m == x) return n;
+    return n - 1;
+}
+
 
 
 /*returns the amount of octets used to encode a int num with a prefix p*/

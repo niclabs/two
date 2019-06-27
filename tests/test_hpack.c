@@ -5,7 +5,7 @@
 #include "hpack.h"
 #include "table.h"
 
-
+extern int log128(uint32_t x);
 
 
 DEFINE_FFF_GLOBALS;
@@ -114,6 +114,24 @@ void test_encode(void){
 }
 
 
+void test_log128(void) {
+    TEST_ASSERT_EQUAL(0,log128(1));
+    TEST_ASSERT_EQUAL(0,log128(2));
+    TEST_ASSERT_EQUAL(0,log128(3));
+    TEST_ASSERT_EQUAL(0,log128(4));
+    TEST_ASSERT_EQUAL(0,log128(5));
+    TEST_ASSERT_EQUAL(0,log128(25));
+    TEST_ASSERT_EQUAL(0,log128(127));
+    TEST_ASSERT_EQUAL(1,log128(128));
+    TEST_ASSERT_EQUAL(1,log128(387));
+    TEST_ASSERT_EQUAL(1,log128(4095));
+    TEST_ASSERT_EQUAL(1,log128(16383));
+    TEST_ASSERT_EQUAL(2,log128(16384));
+    TEST_ASSERT_EQUAL(2,log128(1187752));
+    TEST_ASSERT_EQUAL(3,log128(2097152));
+
+}
+
 
 int main(void)
 {
@@ -121,6 +139,7 @@ int main(void)
 
     UNIT_TEST(test_decode_header_block);
     UNIT_TEST(test_encode);
+    UNIT_TEST(test_log128);
     /*UNIT_TEST(test_frame_header_to_bytes);
     UNIT_TEST(test_frame_header_to_bytes_reserved);
     UNIT_TEST(test_bytes_to_frame_header);
