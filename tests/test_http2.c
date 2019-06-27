@@ -194,8 +194,11 @@ void test_init_variables(void){
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[4] == init_vals[4], "MFS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[5] == init_vals[5], "MHLS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 0, "WAIT must be 0");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.stream_id == 2, "Current stream id must be 0");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.state == 0, "Current stream state must be 0");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.stream_id == 2, "Current stream id must be 2");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.state == STREAM_IDLE, "Current stream state must be IDLE");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.last_open_stream_id == 1, "Last open stream id must be 1");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.window_size == DEFAULT_IWS, "window size must be DEFAULT_IWS");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.window_used == 0, "window used must be 0");
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
 }
 
@@ -633,12 +636,40 @@ void test_check_incoming_headers_condition(void){
 }
 
 void test_check_incoming_headers_condition_error(void){
+  hstates_t st_end_flag;
   frame_header_t head;
-  hstates_t st;
-  st.is_server = 0;
-  st.h2s.waiting_for_end_headers_flag = 1;
-  int rc = check_incoming_headers_condition(&head, &st);
-  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1");
+  st_end_flag.h2s.waiting_for_end_headers_flag = 1;
+  hstates_t st_valid;
+  frame_header_t head_invalid;
+  head_invalid.stream_id = 0;
+  st_valid.h2s.waiting_for_end_headers_flag = 0;
+  hstates_t st_last;
+  frame_header_t head_ngt;
+  st_last.h2s.waiting_for_end_headers_flag = 0;
+  st_last.h2s.last_open_stream_id = 124;
+  head_ngt.stream_id = 123;
+  hstates_t st_parity;
+  frame_header_t head_parity;
+  st_parity.is_server = 1;
+  st_parity.h2s.waiting_for_end_headers_flag = 0;
+  st_parity.h2s.last_open_stream_id = 2;
+  head_parity.stream_id = 120;
+  hstates_t st_parity_c;
+  frame_header_t head_parity_c;
+  st_parity.is_server = 0;
+  st_parity.h2s.waiting_for_end_headers_flag = 0;
+  st_parity.h2s.last_open_stream_id = 3;
+  head_parity.stream_id = 17;
+  int rc = check_incoming_headers_condition(&head, &st_end_flag);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (waiting for end headers flag set)");
+  rc = check_incoming_headers_condition(&head_invalid, &st_valid);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id equals to 0)");
+  rc = check_incoming_headers_condition(&head_ngt, &st_last);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id not bigger than last open)");
+  rc = check_incoming_headers_condition(&head_parity, &st_parity);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id parity is wrong)");
+  rc = check_incoming_headers_condition(&head_parity_c, &st_parity_c);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id parity is wrong)");
 }
 
 void test_check_incoming_headers_condition_creation_of_stream(void){
