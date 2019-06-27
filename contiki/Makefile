@@ -8,7 +8,6 @@ PROJECTDIRS += $(SRCDIR)
 PROJECT_SOURCEFILES=sock.c cbuf.c
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
-DEFINES += WITH_CONTIKI
 
 #linker optimizations
 SMALL=1
