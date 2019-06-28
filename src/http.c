@@ -62,12 +62,12 @@ int http_init_server(hstates_t *hs, uint16_t port)
 
 int http_start_server(hstates_t *hs)
 {
-    printf("Server waiting for a client\n");
+    INFO("Server waiting for a client\n");
 
 
     while (sock_accept(&hs->server_socket, &hs->socket) >= 0) {
 
-        printf("Client found and connected\n");
+        INFO("Client found and connected\n");
 
         hs->socket_state = 1;
         hs->connection_state = 1;
