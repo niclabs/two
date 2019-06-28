@@ -117,10 +117,6 @@ void test_http_init_server_success(void)
 
     TEST_ASSERT_EQUAL(0, is);
 
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
 }
@@ -142,10 +138,6 @@ void test_http_init_server_fail_sock_listen(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Partial error in server creation");
 
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
 }
@@ -163,10 +155,6 @@ void test_http_init_server_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Error in server creation");
 
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
 }
@@ -178,6 +166,7 @@ void test_http_start_server_success(void)
 
     set_init_values(&hs);
     hs.server_socket_state = 1;
+    hs.is_server = 1;
 
     sock_accept_fake.return_val = 0;
     sock_destroy_fake.return_val = 0;
@@ -196,12 +185,12 @@ void test_http_start_server_success(void)
     TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[4]);
     TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[5]);
 
-    TEST_ASSERT_EQUAL(-1, is);
+    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(1, hs.keep_receiving);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(1, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.new_headers);
 }
 
 
@@ -222,8 +211,6 @@ void test_http_start_server_fail_h2_server_init_connection(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(1, hs.socket_state);
 }
@@ -245,8 +232,6 @@ void test_http_start_server_fail_sock_accept(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Not client found");
 
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
 }
@@ -464,7 +449,7 @@ void test_http_client_connect_fail_sock_create(void)
 void test_http_get_success()
 {
     hstates_t hs;
-    int index;
+    response_received_type_t rr;
 
     set_init_values(&hs);
     hs.connection_state = 1;
@@ -474,7 +459,7 @@ void test_http_get_success()
     h2_send_request_fake.return_val = 0;
     h2_receive_frame_fake.return_val = 0;
 
-    int hg = http_get(&hs, "index", "example.org", "text", &index);
+    int hg = http_get(&hs, "index", "example.org", "text", &rr);
 
     TEST_ASSERT_EQUAL(0, hg);
 
@@ -490,7 +475,7 @@ void test_http_get_success()
 void test_http_get_fail()
 {
     hstates_t hs;
-    int index;
+    response_received_type_t rr;
 
     set_init_values(&hs);
     hs.connection_state = 1;
@@ -500,7 +485,7 @@ void test_http_get_fail()
     h2_send_request_fake.return_val = 0;
     h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
 
-    int hg = http_get(&hs, "index", "example.org", "text", &index);
+    int hg = http_get(&hs, "index", "example.org", "text", &rr);
 
     TEST_ASSERT_EQUAL(-1, hg);
 
@@ -516,13 +501,13 @@ void test_http_get_fail()
 void test_http_get_fail_h2_send_request()
 {
     hstates_t hs;
-    int index;
+    response_received_type_t rr;
 
     set_init_values(&hs);
 
     h2_send_request_fake.return_val = -1;
 
-    int hg = http_get(&hs, "index", "example.org", "text", &index);
+    int hg = http_get(&hs, "index", "example.org", "text", &rr);
 
     TEST_ASSERT_EQUAL(-1, hg);
 
@@ -538,7 +523,7 @@ void test_http_get_fail_h2_send_request()
 void test_http_get_fail_headers_list_full()
 {
     hstates_t hs;
-    int index;
+    response_received_type_t rr;
 
     set_init_values(&hs);
     hs.hd_lists.header_list_count_in = (uint8_t)256;
@@ -546,7 +531,7 @@ void test_http_get_fail_headers_list_full()
 
     h2_send_request_fake.return_val = -1;
 
-    int hg = http_get(&hs, "index", "example.org", "text", &index);
+    int hg = http_get(&hs, "index", "example.org", "text", &rr);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, hg, "Cannot send query");
 }
