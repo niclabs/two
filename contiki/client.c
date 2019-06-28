@@ -23,8 +23,13 @@ PROCESS_THREAD(test_client_process, ev, data){
 
     static sock_t client;
     static struct etimer et;
-    static int count = 1;
+    static int count = 0;
     while (1) {
+        // Wait until reconnecting
+        etimer_set(&et, count * 10 * CLOCK_SECOND);
+        INFO("Waiting %ds until connection", (count++) * 10);
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+
         if (sock_create(&client) < 0) {
             FATAL("Could not create socket");
         }
@@ -43,6 +48,7 @@ PROCESS_THREAD(test_client_process, ev, data){
             ERROR("Could not write data to socket");
             continue;
         }
+
         while (1) {
             PROCESS_SOCK_WAIT_DATA(&client);  // wait reply
             if ((bytes = sock_read(&client, buf, sizeof(buf), 0)) <= 0) {
@@ -56,11 +62,6 @@ PROCESS_THREAD(test_client_process, ev, data){
             }
         }
         sock_destroy(&client);
-
-        // Wait until reconnecting
-        etimer_set(&et, count * 10 * CLOCK_SECOND);
-        INFO("Waiting %ds until reconnection", (count++) * 10);
-        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
     }
 
     PROCESS_END();
