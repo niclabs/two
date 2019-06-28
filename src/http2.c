@@ -881,17 +881,9 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     return -1;
   }
   uint32_t stream_id = st->h2s.current_stream.stream_id;
-
-  int rc;
-  frame_t frame;
-  frame_header_t frame_header;
-  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
-
-
   uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
-
-    //not being considered dependencies nor padding.
-
+  int rc;
+  //not being considered dependencies nor padding.
   if(size <= max_frame_size){ //if headers can be send in only one frame
       //only send 1 header
       rc = send_headers_frame(st, encoded_bytes, size, stream_id, 1, end_stream);
@@ -911,39 +903,18 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       }
       remaining -= max_frame_size;
       //Send continuation Frames
-      continuation_payload_t continuation_payload;
       while(remaining > max_frame_size){
-          rc = create_continuation_frame(encoded_bytes + (size - remaining), max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+          rc = send_continuation_frame(st,encoded_bytes + (size - remaining), max_frame_size, stream_id, 0);
           if(rc < 0){
-            ERROR("Error creating continuation frame. INTERNAL ERROR");
-            return rc;
-          }
-          frame.frame_header = &frame_header;
-          frame.payload = (void*)&continuation_payload;
-          int bytes_size = frame_to_bytes(&frame, encoded_bytes);
-          rc = http_write(st,encoded_bytes,bytes_size);
-          INFO("Sending continuation");
-          if(rc != bytes_size){
-            ERROR("Error writting continuation frame. INTERNAL ERROR");
+            ERROR("Error found sending continuation frame");
             return rc;
           }
           remaining -= max_frame_size;
       }
       //send last continuation frame
-      rc = create_continuation_frame(encoded_bytes + (size - remaining), remaining, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+      rc = send_continuation_frame(st,encoded_bytes + (size - remaining), remaining, stream_id, 1);
       if(rc < 0){
-        ERROR("Error creating continuation frame. INTERNAL ERROR");
-        return rc;
-      }
-      //set flags
-      frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
-      frame.frame_header = &frame_header;
-      frame.payload = (void*)&continuation_payload;
-      int bytes_size = frame_to_bytes(&frame, encoded_bytes);
-      rc = http_write(st,encoded_bytes,bytes_size);
-      INFO("Sending continuation");
-      if(rc != bytes_size){
-        ERROR("Error writting headers frame. INTERNAL ERROR");
+        ERROR("Error found sending headers frame");
         return rc;
       }
       return 0;
