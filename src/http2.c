@@ -800,6 +800,37 @@ int send_data(hstates_t *st, uint8_t end_stream){
     return 0;
 }
 
+int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream){
+  int rc;
+  frame_t frame;
+  frame_header_t frame_header;
+  headers_payload_t headers_payload;
+  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
+  // We create the headers frame
+  rc = create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+  if(rc < 0){
+    ERROR("Error creating headers frame. INTERNAL ERROR");
+    return rc;
+  }
+  if(end_headers){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+  }
+  if(end_stream){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
+  }
+  frame.frame_header = &frame_header;
+  frame.payload = (void*)&headers_payload;
+  int bytes_size = frame_to_bytes(&frame, buff_read);
+  rc = http_write(st,buff_read,bytes_size);
+  INFO("Sending headers");
+
+  if(rc != bytes_size){
+    ERROR("Error writting headers frame. INTERNAL ERROR");
+    return rc;
+  }
+  return 0;
+}
+
 /*
 * Function: send_headers
 * Given an hstates struct, builds and sends a message to endpoint. The message
@@ -888,7 +919,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       //Send continuation Frames
       continuation_payload_t continuation_payload;
       while(remaining > max_frame_size){
-          rc = create_continuation_frame(encoded_bytes, max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+          rc = create_continuation_frame(encoded_bytes + (size - remaining), max_frame_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
           if(rc < 0){
             ERROR("Error creating continuation frame. INTERNAL ERROR");
             return rc;
@@ -905,7 +936,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
           remaining -= max_frame_size;
       }
       //send last continuation frame
-      rc = create_continuation_frame(encoded_bytes, remaining, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+      rc = create_continuation_frame(encoded_bytes + (size - remaining), remaining, stream_id, &frame_header, &continuation_payload, header_block_fragment);
       if(rc < 0){
         ERROR("Error creating continuation frame. INTERNAL ERROR");
         return rc;
