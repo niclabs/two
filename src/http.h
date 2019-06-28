@@ -155,5 +155,16 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header);
 uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size);
 
 
+/*
+ * Add data to be sent to data lists
+ *
+ * @param    hd_lists   Struct with data information
+ * @param    data       Data
+ *
+ * @return   0          Successfully added pair
+ * @return   -1         There was an error in the process
+ */
+int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data);
+
 
 #endif /* HTTP_H */

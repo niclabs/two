@@ -314,6 +314,18 @@ uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size)
 }
 
 
+int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data)
+{
+    int size = sizeof(data);
+
+    if (size <= 0 || size > 128) {
+        return -1;
+    }
+    hd_lists->data_out_size = size;
+    memcpy(hd_lists->data_out, data, size);
+    return 0;
+}
+
 
 int get_receive(hstates_t *hs)
 {
