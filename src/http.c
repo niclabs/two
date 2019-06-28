@@ -190,6 +190,7 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 
 int http_start_client(hstates_t *hs)
 {
+    http_clear_header_list(hs, -1, 0);
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
             break;
