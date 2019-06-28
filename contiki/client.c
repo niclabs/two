@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "contiki-net.h"
-#include "sys/timer.h"
+#include "sys/etimer.h"
 #include "sock.h"
 #include "logging.h"
 
@@ -22,6 +22,8 @@ PROCESS_THREAD(test_client_process, ev, data){
     PROCESS_BEGIN();
 
     static sock_t client;
+    static struct etimer et;
+    static int count = 1;
     while (1) {
         if (sock_create(&client) < 0) {
             FATAL("Could not create socket");
@@ -37,7 +39,10 @@ PROCESS_THREAD(test_client_process, ev, data){
 
         static char buf[64];
         static int bytes;
-        sock_write(&client, "This is contiki\n", 16);
+        if (sock_write(&client, "This is contiki\n", 16) < 0) {
+            ERROR("Could not write data to socket");
+            continue;
+        }
         while (1) {
             PROCESS_SOCK_WAIT_DATA(&client);  // wait reply
             if ((bytes = sock_read(&client, buf, sizeof(buf), 0)) <= 0) {
@@ -51,6 +56,11 @@ PROCESS_THREAD(test_client_process, ev, data){
             }
         }
         sock_destroy(&client);
+
+        // Wait until reconnecting
+        etimer_set(&et, count * 10 * CLOCK_SECOND);
+        INFO("Waiting %ds until reconnection", (count++) * 10);
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
     }
 
     PROCESS_END();

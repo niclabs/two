@@ -18,7 +18,8 @@ enum {
     SOCKET_FLAGS_CONNECTED = 0x02,
     SOCKET_FLAGS_SENDING = 0x04,
     SOCKET_FLAGS_CLOSING = 0x08,
-    SOCKET_FLAGS_TERMINATING = 0x10
+    SOCKET_FLAGS_TERMINATING = 0x10,
+    SOCKET_FLAGS_ABORTED = 0x20
 };
 
 struct sock_socket {
@@ -294,7 +295,17 @@ PT_THREAD(sock_wait_connection(sock_t * sock))
         PT_EXIT(&sock->pt);
     }
 
-    PT_WAIT_WHILE(&sock->pt, !(sock->socket->flags & SOCKET_FLAGS_CONNECTED));
+    PT_WAIT_WHILE(&sock->pt, !(sock->socket->flags & SOCKET_FLAGS_CONNECTED) && !(sock->socket->flags & SOCKET_FLAGS_ABORTED));
+    if ((sock->socket->flags & SOCKET_FLAGS_ABORTED) && sock->port == 0) {
+        // Remove socket from the list
+        list_remove(socket_list, sock->socket);
+
+        // Free the memory
+        memb_free(&sockets, sock->socket); 
+
+        sock->state = SOCK_CLOSED;
+        sock->socket = NULL;
+    }
        
     PT_END(&sock->pt);
 }
@@ -404,6 +415,10 @@ void handle_tcp_event(void *state)
         return;
     }
 
+    if (uip_aborted()) {
+        s->flags |= SOCKET_FLAGS_ABORTED;
+    }
+
     if (uip_timedout() || uip_aborted() || uip_closed()) { // Connection timed out
         s->flags &= ~SOCKET_FLAGS_CONNECTED;
         s->flags |= SOCKET_FLAGS_LISTENING;
@@ -450,6 +465,7 @@ void handle_tcp_event(void *state)
         memb_free(&sockets, s); 
     } 
     else if(cbuf_len(&s->cout) == 0 && s->flags & SOCKET_FLAGS_CLOSING) {
+        DEBUG("HERE");
         // unset the closing flag
         s->flags &= ~SOCKET_FLAGS_CONNECTED;
         s->flags &= ~SOCKET_FLAGS_CLOSING;
