@@ -74,7 +74,7 @@ FAKE_VALUE_FUNC(int, bytes_to_frame_header, uint8_t*, int , frame_header_t*);
 FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*, frame_header_t*, settings_payload_t*, settings_pair_t*);
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 FAKE_VALUE_FUNC(int, get_header_block_fragment_size,frame_header_t*, headers_payload_t*);
-FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_lists_t*);
+FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_data_lists_t*);
 FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);
@@ -812,7 +812,7 @@ void test_handle_headers_payload_full_message_header_no_end_stream(void){
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting end headers must be 0. Full message received");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0");
-  TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 20, "count in must be 20");
+  TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 20, "count in must be 20");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
 }
 
@@ -839,7 +839,7 @@ void test_handle_headers_payload_full_message_header_end_stream(void){
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting end headers must be 0. Full message received");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0");
-  TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 20, "count in must be 20");
+  TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 20, "count in must be 20");
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE, "Stream must be HALF CLOSED REMOTE");
   TEST_ASSERT_MESSAGE(st.h2s.received_end_stream == 0, "received end stream was reverted inside function, must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
@@ -924,7 +924,7 @@ void test_handle_continuation_payload_end_headers_flag_set(void){
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0, fragments were received");
-  TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 70, "header list count in must be 70");
+  TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 70, "header list count in must be 70");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
@@ -956,7 +956,7 @@ void test_handle_continuation_payload_end_headers_end_stream_flag_set(void){
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0, fragments were received");
-  TEST_ASSERT_MESSAGE(st.h_lists.header_list_count_in == 70, "header list count in must be 70");
+  TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 70, "header list count in must be 70");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waitinf for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");

@@ -24,7 +24,7 @@ FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int)
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 
 FAKE_VALUE_FUNC(int, encode, hpack_preamble_t , uint32_t , uint32_t ,char*, uint8_t , char*, uint8_t , uint8_t*);
-FAKE_VALUE_FUNC(int, decode_header_block, uint8_t* , uint8_t , headers_lists_t*);
+FAKE_VALUE_FUNC(int, decode_header_block, uint8_t* , uint8_t , headers_data_lists_t*);
 */
 
 /* List of fakes used by this unit tester */
@@ -71,7 +71,7 @@ void test_decode_header_block(void){
     char expected_name[] ="hola";
     char expected_value[] ="val";
 
-    headers_lists_t h_list;
+    headers_data_lists_t h_list;
     int rc = decode_header_block(header_block, header_block_size, &h_list);
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(0,strcmp(expected_name,h_list.header_list_in[0].name));

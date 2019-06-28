@@ -66,7 +66,7 @@ int h2_receive_frame_custom_fake(hstates_t *hs)
     return 1;
 }
 
-int foo(headers_lists_t *headers)
+int foo(headers_data_lists_t *headers)
 {
     http_set_header(headers, "ret", "ok");
     return 1;
@@ -78,8 +78,10 @@ void test_set_init_values_success(void)
     hstates_t hs;
 
     hs.socket_state = 1;
-    hs.h_lists.header_list_count_in = 1;
-    hs.h_lists.header_list_count_out = 1;
+    hs.hd_lists.header_list_count_in = 1;
+    hs.hd_lists.header_list_count_out = 1;
+    hs.hd_lists.data_in_size = 1;
+    hs.hd_lists.data_out_size = 1;
     hs.path_callback_list_count = 1;
     hs.connection_state = 1;
     hs.server_socket_state = 1;
@@ -89,8 +91,10 @@ void test_set_init_values_success(void)
     set_init_values(&hs);
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_out_size);
     TEST_ASSERT_EQUAL(0, hs.path_callback_list_count);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -113,8 +117,8 @@ void test_http_init_server_success(void)
 
     TEST_ASSERT_EQUAL(0, is);
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
@@ -138,8 +142,8 @@ void test_http_init_server_fail_sock_listen(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Partial error in server creation");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -159,8 +163,8 @@ void test_http_init_server_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Error in server creation");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -194,8 +198,8 @@ void test_http_start_server_success(void)
 
     TEST_ASSERT_EQUAL(-1, is);
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(1, hs.socket_state);
 }
@@ -218,8 +222,8 @@ void test_http_start_server_fail_h2_server_init_connection(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(1, hs.socket_state);
 }
@@ -241,8 +245,8 @@ void test_http_start_server_fail_sock_accept(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Not client found");
 
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
 }
@@ -380,8 +384,8 @@ void test_http_client_connect_success(void)
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -405,8 +409,8 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -430,8 +434,8 @@ void test_http_client_connect_fail_sock_connect(void)
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -451,8 +455,8 @@ void test_http_client_connect_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(0, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
 }
 
@@ -460,6 +464,7 @@ void test_http_client_connect_fail_sock_create(void)
 void test_http_get_success()
 {
     hstates_t hs;
+    int index;
 
     set_init_values(&hs);
     hs.connection_state = 1;
@@ -469,22 +474,23 @@ void test_http_get_success()
     h2_send_request_fake.return_val = 0;
     h2_receive_frame_fake.return_val = 0;
 
-    int hg = http_get(&hs, "index", "example.org", "text");
+    int hg = http_get(&hs, "index", "example.org", "text", &index);
 
     TEST_ASSERT_EQUAL(0, hg);
 
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].name, ":path", strlen(":path")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].value, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].name, "host", strlen("host")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].value, "example.org", strlen("example.org")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].name, "accept", strlen("accept")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].value, "text", strlen("text")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].name, ":path", strlen(":path")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].value, "index", strlen("index")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].name, "host", strlen("host")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].value, "example.org", strlen("example.org")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].name, "accept", strlen("accept")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].value, "text", strlen("text")));
 }
 
 
 void test_http_get_fail()
 {
     hstates_t hs;
+    int index;
 
     set_init_values(&hs);
     hs.connection_state = 1;
@@ -494,51 +500,53 @@ void test_http_get_fail()
     h2_send_request_fake.return_val = 0;
     h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
 
-    int hg = http_get(&hs, "index", "example.org", "text");
+    int hg = http_get(&hs, "index", "example.org", "text", &index);
 
     TEST_ASSERT_EQUAL(-1, hg);
 
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].name, ":path", strlen(":path")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].value, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].name, "host", strlen("host")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].value, "example.org", strlen("example.org")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].name, "accept", strlen("accept")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].value, "text", strlen("text")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].name, ":path", strlen(":path")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].value, "index", strlen("index")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].name, "host", strlen("host")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].value, "example.org", strlen("example.org")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].name, "accept", strlen("accept")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].value, "text", strlen("text")));
 }
 
 
 void test_http_get_fail_h2_send_request()
 {
     hstates_t hs;
+    int index;
 
     set_init_values(&hs);
 
     h2_send_request_fake.return_val = -1;
 
-    int hg = http_get(&hs, "index", "example.org", "text");
+    int hg = http_get(&hs, "index", "example.org", "text", &index);
 
     TEST_ASSERT_EQUAL(-1, hg);
 
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].name, ":path", strlen(":path")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[2].value, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].name, "host", strlen("host")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[3].value, "example.org", strlen("example.org")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].name, "accept", strlen("accept")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[4].value, "text", strlen("text")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].name, ":path", strlen(":path")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].value, "index", strlen("index")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].name, "host", strlen("host")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].value, "example.org", strlen("example.org")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].name, "accept", strlen("accept")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].value, "text", strlen("text")));
 }
 
 
 void test_http_get_fail_headers_list_full()
 {
     hstates_t hs;
+    int index;
 
     set_init_values(&hs);
-    hs.h_lists.header_list_count_in = (uint8_t)256;
-    hs.h_lists.header_list_count_out = (uint8_t)256;
+    hs.hd_lists.header_list_count_in = (uint8_t)256;
+    hs.hd_lists.header_list_count_out = (uint8_t)256;
 
     h2_send_request_fake.return_val = -1;
 
-    int hg = http_get(&hs, "index", "example.org", "text");
+    int hg = http_get(&hs, "index", "example.org", "text", &index);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, hg, "Cannot send query");
 }
@@ -603,11 +611,11 @@ void test_http_set_header_success(void)
 {
     hstates_t hs;
 
-    hs.h_lists.header_list_count_out = 0;
-    int set = http_set_header(&hs.h_lists, "settings", "server:on");
+    hs.hd_lists.header_list_count_out = 0;
+    int set = http_set_header(&hs.hd_lists, "settings", "server:on");
 
     TEST_ASSERT_EQUAL(0, set);
-    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
 }
 
 
@@ -615,11 +623,11 @@ void test_http_set_header_fail_list_full(void)
 {
     hstates_t hs;
 
-    hs.h_lists.header_list_count_out = HTTP2_MAX_HEADER_COUNT;
-    int set = http_set_header(&hs.h_lists, "settings", "server:on");
+    hs.hd_lists.header_list_count_out = HTTP2_MAX_HEADER_COUNT;
+    int set = http_set_header(&hs.hd_lists, "settings", "server:on");
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, set, "Headers list is full");
-    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.h_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.hd_lists.header_list_count_out);
 }
 
 
@@ -627,14 +635,14 @@ void test_http_get_header_success(void)
 {
     hstates_t hs;
 
-    strcpy(hs.h_lists.header_list_in[0].name, "something1");
-    strcpy(hs.h_lists.header_list_in[0].value, "one");
-    strcpy(hs.h_lists.header_list_in[1].name, "settings");
-    strcpy(hs.h_lists.header_list_in[1].value, "server:on");
+    strcpy(hs.hd_lists.header_list_in[0].name, "something1");
+    strcpy(hs.hd_lists.header_list_in[0].value, "one");
+    strcpy(hs.hd_lists.header_list_in[1].name, "settings");
+    strcpy(hs.hd_lists.header_list_in[1].value, "server:on");
 
-    hs.h_lists.header_list_count_in = 2;
+    hs.hd_lists.header_list_count_in = 2;
 
-    char *buf = http_get_header(&hs.h_lists, "settings");
+    char *buf = http_get_header(&hs.hd_lists, "settings");
 
     TEST_ASSERT_EQUAL(0, strncmp(buf, "server:on", strlen("server:on")));
 }
@@ -644,8 +652,8 @@ void test_http_get_header_fail_empty_table(void)
 {
     hstates_t hs;
 
-    hs.h_lists.header_list_count_in = 0;
-    char *buf = http_get_header(&hs.h_lists, "settings");
+    hs.hd_lists.header_list_count_in = 0;
+    char *buf = http_get_header(&hs.hd_lists, "settings");
 
     TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");
 }
@@ -655,13 +663,13 @@ void test_http_get_header_fail_header_not_found(void)
 {
     hstates_t hs;
 
-    strcpy(hs.h_lists.header_list_in[0].name, "something1");
-    strcpy(hs.h_lists.header_list_in[0].value, "one");
-    strcpy(hs.h_lists.header_list_in[1].name, "something2");
-    strcpy(hs.h_lists.header_list_in[1].value, "two");
-    hs.h_lists.header_list_count_in = 2;
+    strcpy(hs.hd_lists.header_list_in[0].name, "something1");
+    strcpy(hs.hd_lists.header_list_in[0].value, "one");
+    strcpy(hs.hd_lists.header_list_in[1].name, "something2");
+    strcpy(hs.hd_lists.header_list_in[1].value, "two");
+    hs.hd_lists.header_list_count_in = 2;
 
-    char *buf = http_get_header(&hs.h_lists, "settings");
+    char *buf = http_get_header(&hs.hd_lists, "settings");
 
     TEST_ASSERT_MESSAGE(buf == NULL, "Header not found in headers list");
 }
@@ -677,9 +685,9 @@ void test_get_receive_success(void)
     foo_callback.cb = foo;
     http_set_function_to_path(&hs, foo_callback, "index/");
 
-    strcpy(hs.h_lists.header_list_in[0].name, ":path");
-    strcpy(hs.h_lists.header_list_in[0].value, "index/");
-    hs.h_lists.header_list_count_in = 1;
+    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
+    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    hs.hd_lists.header_list_count_in = 1;
 
     h2_send_response_fake.return_val = 0;
 
@@ -689,11 +697,11 @@ void test_get_receive_success(void)
 
     TEST_ASSERT_EQUAL(0, get);
 
-    TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "200", strlen("200")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].name, "ret", strlen("ret")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].value, "ok", strlen("ok")));
+    TEST_ASSERT_EQUAL(2, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "200", strlen("200")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].name, "ret", strlen("ret")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].value, "ok", strlen("ok")));
 }
 
 
@@ -707,9 +715,9 @@ void test_get_receive_fail_h2_send_response(void)
     foo_callback.cb = foo;
     http_set_function_to_path(&hs, foo_callback, "index/");
 
-    strcpy(hs.h_lists.header_list_in[0].name, ":path");
-    strcpy(hs.h_lists.header_list_in[0].value, "index/");
-    hs.h_lists.header_list_count_in = 1;
+    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
+    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    hs.hd_lists.header_list_count_in = 1;
 
     h2_send_response_fake.return_val = -1;
 
@@ -719,11 +727,11 @@ void test_get_receive_fail_h2_send_response(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Problems sending data");
 
-    TEST_ASSERT_EQUAL(2, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "200", strlen("200")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].name, "ret", strlen("ret")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[1].value, "ok", strlen("ok")));
+    TEST_ASSERT_EQUAL(2, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "200", strlen("200")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].name, "ret", strlen("ret")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].value, "ok", strlen("ok")));
 }
 
 
@@ -736,17 +744,17 @@ void test_get_receive_path_not_found(void)
     callback_type_t foo_callback;
     http_set_function_to_path(&hs, foo_callback, "index/out");
 
-    strcpy(hs.h_lists.header_list_in[0].name, ":path");
-    strcpy(hs.h_lists.header_list_in[0].value, "index/");
-    hs.h_lists.header_list_count_in = 1;
+    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
+    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    hs.hd_lists.header_list_count_in = 1;
 
     int get = get_receive(&hs);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "No function associated with this path");
 
-    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "400", strlen("400")));
+    TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "400", strlen("400")));
 }
 
 
@@ -756,17 +764,17 @@ void test_get_receive_path_callback_list_empty(void)
 
     set_init_values(&hs);
 
-    strcpy(hs.h_lists.header_list_in[0].name, ":path");
-    strcpy(hs.h_lists.header_list_in[0].value, "index/");
-    hs.h_lists.header_list_count_in = 1;
+    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
+    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    hs.hd_lists.header_list_count_in = 1;
 
     int get = get_receive(&hs);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "Path-callback list is empty");
 
-    TEST_ASSERT_EQUAL(1, hs.h_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.h_lists.header_list_out[0].value, "400", strlen("400")));
+    TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "400", strlen("400")));
 }
 
 
