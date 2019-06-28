@@ -315,13 +315,13 @@ uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size)
 
 int get_receive(hstates_t *hs)
 {
-    char *path = http_get_header(&hs->h_lists, ":path");
+    char *path = http_get_header(&hs->hd_lists, ":path");
     callback_type_t callback;
 
     if (hs->path_callback_list_count == 0) {
         WARN("Path-callback list is empty");
         //return value 0 => an error can be send, 1 => problems
-        return http_set_header(&hs->h_lists, ":status", "400");
+        return http_set_header(&hs->hd_lists, ":status", "400");
     }
 
     int i;
@@ -334,12 +334,12 @@ int get_receive(hstates_t *hs)
         if (i == hs->path_callback_list_count) {
             WARN("No function associated with this path");
             //return value 0 => an error can be send, 1 => problems
-            return http_set_header(&hs->h_lists, ":status", "400");
+            return http_set_header(&hs->hd_lists, ":status", "400");
         }
     }
 
-    http_set_header(&hs->h_lists, ":status", "200");
-    callback.cb(&hs->h_lists);
+    http_set_header(&hs->hd_lists, ":status", "200");
+    callback.cb(&hs->hd_lists);
 
     if (h2_send_response(hs) < 0) {
         ERROR("Problems sending data");
