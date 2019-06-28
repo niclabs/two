@@ -213,7 +213,7 @@ int http_start_client(hstates_t *hs)
 
 
 
-int http_get(hstates_t *hs, char *path, char *host, char *accept_type)
+int http_get(hstates_t *hs, char *path, char *host, char *accept_type, int *size_data_received)
 {
     int method = http_set_header(&hs->hd_lists, ":method", "GET");
     int scheme = http_set_header(&hs->hd_lists, ":scheme", "https");
@@ -235,7 +235,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type)
         return -1;
     }
     if (hs->hd_lists.data_in_size > 0) {
-      http_get_data(&hs->hd_lists);
+      http_get_data(&hs->hd_lists, size_data_received);
     }
     return 0;
 }
@@ -302,8 +302,14 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header)
 }
 
 
-uint8_t *http_get_data(headers_data_lists_t *hd_lists){
-  return hd_lists->data_out;
+uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size)
+{
+    if (hd_lists->header_list_count_in == 0) {
+        WARN("Data list is empty");
+        return -1;
+    }
+    &data_size = hd_lists->header_list_count_in;
+    return hd_lists->data_out;
 }
 
 

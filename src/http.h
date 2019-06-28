@@ -97,7 +97,7 @@ int http_start_client(hstates_t* hs);
  * @return   0          The action was successful
  * @return   -1         The action failed
  */
-int http_get(hstates_t *hs, char *path, char *host, char *accept_type);
+int http_get(hstates_t *hs, char *path, char *host, char *accept_type, int *size_data_received);
 
 
 /*
@@ -135,6 +135,17 @@ int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
  * @return              Value finded
  */
 char *http_get_header(headers_data_lists_t *hd_lists, char *header);
+
+
+/*
+ * Returns received data
+ *
+ * @param    hd_lists         Struct with server/client and data information
+ * @param    data_size        Header name
+ *
+ * @return              Value finded
+ */
+uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size);
 
 
 
