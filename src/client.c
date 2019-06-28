@@ -9,8 +9,8 @@ void pseudoclient(hstates_t *hs, uint16_t port, char *ip)
         ERROR("in client connect");
     }
     else {
-
-        rc = http_get(hs, "index", "example.org", "text");
+        int *index;
+        rc = http_get(hs, "index", "example.org", "text", index);
         if (rc < 0) {
             ERROR("in http_get");
         }
