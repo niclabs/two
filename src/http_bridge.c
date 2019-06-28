@@ -66,27 +66,27 @@ int http_read(hstates_t *hs, uint8_t *buf, int len)
 int http_clear_header_list(hstates_t *hs, int index, int flag)
 {
     if (flag == 0) {
-        if (index >= hs->h_lists.header_list_count_in && index <= HTTP2_MAX_HEADER_COUNT) {
+        if (index >= hs->hd_lists.header_list_count_in && index <= HTTP2_MAX_HEADER_COUNT) {
             return 0;
         }
         if (index <= HTTP2_MAX_HEADER_COUNT && index >= 0) {
-            hs->h_lists.header_list_count_in = index;
+            hs->hd_lists.header_list_count_in = index;
             return 0;
         }
 
-        hs->h_lists.header_list_count_in = 0;
+        hs->hd_lists.header_list_count_in = 0;
 
         return 0;
     }
-    if (index >= hs->h_lists.header_list_count_out && index <= HTTP2_MAX_HEADER_COUNT) {
+    if (index >= hs->hd_lists.header_list_count_out && index <= HTTP2_MAX_HEADER_COUNT) {
         return 0;
     }
     if (index <= HTTP2_MAX_HEADER_COUNT && index >= 0) {
-        hs->h_lists.header_list_count_out = index;
+        hs->hd_lists.header_list_count_out = index;
         return 0;
     }
 
-    hs->h_lists.header_list_count_out = 0;
+    hs->hd_lists.header_list_count_out = 0;
 
     return 0;
 

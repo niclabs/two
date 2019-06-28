@@ -512,7 +512,7 @@ int decode_header(uint8_t* bytes, hpack_preamble_t preamble, char* name, char* v
     }
 }
 
-int decode_header_block(uint8_t* header_block, uint8_t header_block_size, headers_lists_t* h_list){
+int decode_header_block(uint8_t* header_block, uint8_t header_block_size, headers_data_lists_t* h_list){
     int pointer = 0;
 
     int header_counter = 0;
@@ -536,12 +536,3 @@ int decode_header_block(uint8_t* header_block, uint8_t header_block_size, header
     }
     return pointer;
 }
-
-
-
-
-
-
-
-
-

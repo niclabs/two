@@ -450,7 +450,7 @@ int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload
     return frame_header->length - pad_length - priority_length;
 }
 
-int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_lists_t* h_list){//return size of header_list (header_count)
+int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_data_lists_t* h_list){//return size of header_list (header_count)
     int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, h_list);
     return rc;
 }

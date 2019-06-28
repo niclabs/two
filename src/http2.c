@@ -292,7 +292,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
   if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->h_lists));
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->hd_lists));
       if(rc < 0){
         ERROR("Error was found receiving header_block");
         return -1;
@@ -304,13 +304,13 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       else{//all fragments already received.
           st->h2s.header_block_fragments_pointer = 0;
       }
-      st->h_lists.header_list_count_in = rc;
+      st->hd_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
       if(st->h2s.received_end_stream == 1){
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(st->h_lists.header_list_in, st->h_lists.header_list_count_in);
+      uint32_t header_list_size = get_header_list_size(st->hd_lists.header_list_in, st->hd_lists.header_list_count_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         ERROR("Header list size greater than max alloweed. Send HTTP 431");
@@ -376,7 +376,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   st->h2s.header_block_fragments_pointer += rc;
   if(is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->h_lists)); //TODO check this: rc is the byte read from the header
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->hd_lists)); //TODO check this: rc is the byte read from the header
 
       if(rc < 0){
         ERROR("Error was found receiving header_block");
@@ -389,13 +389,13 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
       else{//all fragments already received.
           st->h2s.header_block_fragments_pointer = 0;
       }
-      st->h_lists.header_list_count_in = rc;
+      st->hd_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;
       if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(st->h_lists.header_list_in, st->h_lists.header_list_count_in);
+      uint32_t header_list_size = get_header_list_size(st->hd_lists.header_list_in, st->hd_lists.header_list_count_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         WARN("Header list size greater than max alloweed. Send HTTP 431");
@@ -440,8 +440,8 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
         ERROR("flow control error");
         return -1;
     }
-    buffer_copy(st->data_in + st->data_in_size, data_payload->data, data_length);
-    st->data_in_size += data_length;
+    buffer_copy(st->hd_lists.data_in + st->hd_lists.data_in_size, data_payload->data, data_length);
+    st->hd_lists.data_in_size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)) {
         st->h2s.received_end_stream = 1;
     }
@@ -767,13 +767,13 @@ int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream){
 int send_data(hstates_t *st, uint8_t end_stream){
     (void)st;
 
-    if(st->data_out_size<=0){
+    if(st->hd_lists.data_out_size<=0){
         ERROR("no data to be send");
         return -1;
     }
     frame_header_t frame_header;
     data_payload_t data_payload;
-    uint8_t data[st->data_out_size];
+    uint8_t data[st->hd_lists.data_out_size];
 
     h2_stream_state_t state = st->h2s.current_stream.state;
     if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
@@ -783,12 +783,12 @@ int send_data(hstates_t *st, uint8_t end_stream){
 
     uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
 
-    int rc = create_data_frame(&frame_header, &data_payload, data, st->data_out, st->data_out_size, stream_id);
+    int rc = create_data_frame(&frame_header, &data_payload, data, st->hd_lists.data_out, st->hd_lists.data_out_size, stream_id);
     if(rc<0){
         ERROR("error creating data frame");
         return -1;
     }
-    if(rc !=st->data_out_size){
+    if(rc !=st->hd_lists.data_out_size){
         //TODO send_data??
         ERROR("not all data was sent. Check this");
         return -1;
@@ -796,7 +796,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
     if(end_stream) {
         frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
     }
-    st->data_out_size = 0; //-= rc; //if not all data was sent
+    st->hd_lists.data_out_size = 0; //-= rc; //if not all data was sent
     return 0;
 }
 
@@ -866,12 +866,12 @@ int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_
 * Output: 0 if process was made successfully, -1 if not.
 */
 int send_headers(hstates_t *st, uint8_t end_stream){
-  if(st->h_lists.header_list_count_out == 0){
+  if(st->hd_lists.header_list_count_out == 0){
     WARN("There are no headers to send");
     return 0;
   }
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-  int size = compress_headers(st->h_lists.header_list_out, st->h_lists.header_list_count_out , encoded_bytes);
+  int size = compress_headers(st->hd_lists.header_list_out, st->hd_lists.header_list_count_out , encoded_bytes);
   if(size < 0){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     return -1;
@@ -929,7 +929,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_request(hstates_t *st){
-  if(st->h_lists.header_list_count_out == 0){
+  if(st->hd_lists.header_list_count_out == 0){
     ERROR("There were no headers to write");
     return -1;
   }
@@ -950,11 +950,11 @@ int h2_send_request(hstates_t *st){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_response(hstates_t *st){
-  if(st->h_lists.header_list_count_out == 0){
+  if(st->hd_lists.header_list_count_out == 0){
     ERROR("There were no headers to write");
     return -1;
   }
-  if(st->data_out_size > 0){
+  if(st->hd_lists.data_out_size > 0){
     int rc = send_headers(st, 0);
     if(rc < 0){
       ERROR("Error was found sending headers on response");
