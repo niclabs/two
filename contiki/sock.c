@@ -223,13 +223,13 @@ int sock_connect(sock_t * client, char * addr, uint16_t port) {
 
 int sock_read(sock_t *sock, char *buf, int len, int timeout) 
 {
-	if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
+	if (sock == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	if (sock->socket == NULL) {
-		errno = ENOTSOCK;
+	if ((sock->state != SOCK_CONNECTED) || (sock->socket == NULL)) {
+		errno = EBADF;
 		return -1;
 	}
 
@@ -243,12 +243,12 @@ int sock_read(sock_t *sock, char *buf, int len, int timeout)
 }
 
 int sock_write(sock_t * sock, char * buf, int len) {
-    if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
+    if (sock == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	if (sock->socket == NULL) {
+	if ((sock->state != SOCK_CONNECTED) || (sock->socket == NULL)) {
 		errno = ENOTSOCK;
 		return -1;
 	}
