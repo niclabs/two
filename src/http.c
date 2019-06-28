@@ -306,9 +306,9 @@ uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size)
 {
     if (hd_lists->header_list_count_in == 0) {
         WARN("Data list is empty");
-        return -1;
+        return NULL;
     }
-    &data_size = hd_lists->header_list_count_in;
+    *data_size = hd_lists->header_list_count_in;
     return hd_lists->data_out;
 }
 
