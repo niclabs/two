@@ -21,15 +21,15 @@ int get_receive(hstates_t *hs);
 void set_init_values(hstates_t *hs)
 {
     hs->socket_state = 0;
-    hs->h_lists.header_list_count_in = 0;
-    hs->h_lists.header_list_count_out = 0;
+    hs->hd_lists.header_list_count_in = 0;
+    hs->hd_lists.header_list_count_out = 0;
+    hs->hd_lists.data_in_size = 0;
+    hs->hd_lists.data_out_size = 0;
     hs->path_callback_list_count = 0;
     hs->connection_state = 0;
     hs->server_socket_state = 0;
     hs->keep_receiving = 0;
     hs->new_headers = 0;
-    hs->data_in_size = 0;
-    hs->data_out_size = 0;
 }
 
 /************************************Server************************************/
