@@ -869,29 +869,12 @@ int send_headers(hstates_t *st, uint8_t end_stream){
 
   if(size <= max_frame_size){ //if headers can be send in only one frame
       //only send 1 header
-      rc = create_headers_frame(encoded_bytes, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+      rc = send_headers_frame(st, encoded_bytes, size, stream_id, 1, end_stream);
       if(rc < 0){
-        ERROR("Error creating headers frame. INTERNAL ERROR");
+        ERROR("Error found sending headers frame");
         return rc;
       }
-      //set flags
-      frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
-
-      if(end_stream){
-        frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
-      }
-
-      frame.frame_header = &frame_header;
-      frame.payload = (void*)&headers_payload;
-      int bytes_size = frame_to_bytes(&frame, encoded_bytes);
-      rc = http_write(st,encoded_bytes,bytes_size);
-      INFO("Sending headers");
-
-      if(rc != bytes_size){
-        ERROR("Error writting headers frame. INTERNAL ERROR");
-        return rc;
-      }
-      return 0;
+      return rc;
   }
   else{//if headers must be send with one or more continuation frames
       int remaining = size;
