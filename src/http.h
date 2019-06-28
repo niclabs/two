@@ -123,12 +123,12 @@ int http_client_disconnect(hstates_t *hs);
 /*
  * Add a header and its value to the headers list
  *
- * @param    hs         Struct with server/client and headers information
- * @param    name       New headers name
- * @param    value      New headers value
+ * @param    hd_lists         Struct with headers information
+ * @param    name             New headers name
+ * @param    value            New headers value
  *
- * @return   0          Successfully added pair
- * @return   -1         There was an error in the process
+ * @return   0                Successfully added pair
+ * @return   -1               There was an error in the process
  */
 int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
 
@@ -136,23 +136,12 @@ int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
 /*
  * Search by a value of a header in the header list
  *
- * @param    hs         Struct with server/client and headers information
- * @param    header     Header name
+ * @param    hd_lists         Struct with headers information
+ * @param    header           Header name
  *
- * @return              Value finded
+ * @return                    Value finded
  */
 char *http_get_header(headers_data_lists_t *hd_lists, char *header);
-
-
-/*
- * Returns received data
- *
- * @param    hd_lists         Struct with server/client and data information
- * @param    data_size        Header name
- *
- * @return              Value finded
- */
-uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size);
 
 
 /*
@@ -161,10 +150,21 @@ uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size);
  * @param    hd_lists   Struct with data information
  * @param    data       Data
  *
- * @return   0          Successfully added pair
+ * @return   0          Successfully added data
  * @return   -1         There was an error in the process
  */
 int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data);
+
+
+/*
+ * Returns received data
+ *
+ * @param    hd_lists         Struct with data information
+ * @param    data_size        Header name
+ *
+ * @return                    Value finded
+ */
+uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size);
 
 
 #endif /* HTTP_H */
