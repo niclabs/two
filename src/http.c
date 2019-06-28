@@ -198,28 +198,28 @@ int http_start_client(hstates_t *hs)
             continue;
         }
         if (hs->new_headers == 1) {
-            get_receive(hs);
-            http_clear_header_list(hs, -1, 0);
-            http_clear_header_list(hs, -1, 1);
+            return 0;
         }
     }
+
     hs->connection_state = 0;
     hs->socket_state = 0;
     if (sock_destroy(&hs->socket) == -1) {
         WARN("Could not destroy client socket");
         return -1;
     }
-    return 0;
+    return -1;
 }
+
 
 
 int http_get(hstates_t *hs, char *path, char *host, char *accept_type)
 {
-    int method = http_set_header(&hs->h_lists, ":method", "GET");
-    int scheme = http_set_header(&hs->h_lists, ":scheme", "https");
-    int set_path = http_set_header(&hs->h_lists, ":path", path);
-    int set_host = http_set_header(&hs->h_lists, "host", host);
-    int set_accept = http_set_header(&hs->h_lists, "accept", accept_type);
+    int method = http_set_header(&hs->hd_lists, ":method", "GET");
+    int scheme = http_set_header(&hs->hd_lists, ":scheme", "https");
+    int set_path = http_set_header(&hs->hd_lists, ":path", path);
+    int set_host = http_set_header(&hs->hd_lists, "host", host);
+    int set_accept = http_set_header(&hs->hd_lists, "accept", accept_type);
 
     if (method < 0 || scheme < 0 || set_path < 0 || set_host < 0 || set_accept < 0) {
         ERROR("Cannot add headers to query");
@@ -229,25 +229,17 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type)
         ERROR("Cannot send query");
         return -1;
     }
-
     http_clear_header_list(hs, -1, 1);
 
-
-    while (hs->connection_state == 1) {
-        if (h2_receive_frame(hs) < 0) {
-            break;
-        }
-        if (hs->keep_receiving == 1) {
-            continue;
-        }
-        if (hs->new_headers == 1) {
-
-            return 0;
-        }
+    if (http_start_client(hs) < 0) {
+        return -1;
     }
-
-    return -1;
+    if (hs->hd_lists.data_in_size > 0) {
+      http_get_data(&hs->hd_lists);
+    }
+    return 0;
 }
+
 
 
 int http_client_disconnect(hstates_t *hs)
