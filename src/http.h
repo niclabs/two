@@ -10,6 +10,13 @@ typedef struct CALLBACK_TYPE_S {
     int (*cb)(headers_data_lists_t *);
 } callback_type_t;
 
+typedef struct RESPONSE_RECEIVED_TYPE_S {
+    int size_data;
+    char *status_flag;
+    uint8_t *data;
+}response_received_type_t;
+
+
 /*Server*/
 /*
  * Given a port number and a struct for server information, this function
@@ -97,7 +104,7 @@ int http_start_client(hstates_t* hs);
  * @return   0          The action was successful
  * @return   -1         The action failed
  */
-int http_get(hstates_t *hs, char *path, char *host, char *accept_type, int *size_data_received);
+int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_received_type_t *rr);
 
 
 /*
