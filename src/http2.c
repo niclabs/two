@@ -831,6 +831,32 @@ int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t str
   return 0;
 }
 
+int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream){
+  int rc;
+  frame_t frame;
+  frame_header_t frame_header;
+  continuation_payload_t continuation_payload;
+  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
+  rc = create_continuation_frame(buff_read, size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+  if(rc < 0){
+    ERROR("Error creating continuation frame. INTERNAL ERROR");
+    return rc;
+  }
+  if(end_stream){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+  }
+  frame.frame_header = &frame_header;
+  frame.payload = (void*)&continuation_payload;
+  int bytes_size = frame_to_bytes(&frame, buff_read);
+  rc = http_write(st, buff_read, bytes_size);
+  INFO("Sending continuation");
+  if(rc != bytes_size){
+    ERROR("Error writting continuation frame. INTERNAL ERROR");
+    return rc;
+  }
+  return 0;
+}
+
 /*
 * Function: send_headers
 * Given an hstates struct, builds and sends a message to endpoint. The message
