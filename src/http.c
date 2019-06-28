@@ -230,6 +230,9 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type)
         return -1;
     }
 
+    http_clear_header_list(hs, -1, 1);
+
+
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
             break;
@@ -238,6 +241,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type)
             continue;
         }
         if (hs->new_headers == 1) {
+
             return 0;
         }
     }
@@ -266,27 +270,27 @@ int http_client_disconnect(hstates_t *hs)
 
 /************************************Headers************************************/
 
-int http_set_header(headers_lists_t *h_lists, char *name, char *value)
+int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value)
 {
-    int i = h_lists->header_list_count_out;
+    int i = hd_lists->header_list_count_out;
 
     if (i == HTTP2_MAX_HEADER_COUNT) {
         WARN("Headers list is full");
         return -1;
     }
 
-    strcpy(h_lists->header_list_out[i].name, name);
-    strcpy(h_lists->header_list_out[i].value, value);
+    strcpy(hd_lists->header_list_out[i].name, name);
+    strcpy(hd_lists->header_list_out[i].value, value);
 
-    h_lists->header_list_count_out = i + 1;
+    hd_lists->header_list_count_out = i + 1;
 
     return 0;
 }
 
 
-char *http_get_header(headers_lists_t *h_lists, char *header)
+char *http_get_header(headers_data_lists_t *hd_lists, char *header)
 {
-    int i = h_lists->header_list_count_in;
+    int i = hd_lists->header_list_count_in;
 
     if (i == 0) {
         WARN("Headers list is empty");
@@ -295,14 +299,19 @@ char *http_get_header(headers_lists_t *h_lists, char *header)
 
     int k;
     for (k = 0; k < i; k++) {
-        if ((strncmp(h_lists->header_list_in[k].name, header, strlen(header)) == 0) && strlen(header) == strlen(h_lists->header_list_in[k].name)) {
-            INFO("RETURNING value of '%s' header; '%s'", h_lists->header_list_in[k].name, h_lists->header_list_in[k].value);
-            return h_lists->header_list_in[k].value;
+        if ((strncmp(hd_lists->header_list_in[k].name, header, strlen(header)) == 0) && strlen(header) == strlen(hd_lists->header_list_in[k].name)) {
+            INFO("RETURNING value of '%s' header; '%s'", hd_lists->header_list_in[k].name, hd_lists->header_list_in[k].value);
+            return hd_lists->header_list_in[k].value;
         }
     }
 
     WARN("Header '%s' not found in headers list", header);
     return NULL;
+}
+
+
+uint8_t *http_get_data(headers_data_lists_t *hd_lists){
+  return hd_lists->data_out;
 }
 
 

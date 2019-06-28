@@ -1,7 +1,7 @@
 #include "server.h"
 #include "logging.h"
 
-int send_text(headers_lists_t *headers)
+int send_text(headers_data_lists_t *headers)
 {
     http_set_header(headers, "etag", "Hello world!");
     http_set_header(headers, "expires", "Thu, 23 Jul");
