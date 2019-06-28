@@ -86,9 +86,9 @@ int http_start_server(hstates_t *hs)
                 continue;
             }
             if (hs->new_headers == 1) {
+                http_clear_header_list(hs, -1, 1);
                 get_receive(hs);
                 http_clear_header_list(hs, -1, 0);
-                http_clear_header_list(hs, -1, 1);
                 hs->new_headers = 0;
             }
         }
