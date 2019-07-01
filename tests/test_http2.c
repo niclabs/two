@@ -18,6 +18,7 @@ extern int handle_continuation_payload(frame_header_t *header, continuation_payl
 extern int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream);
 extern int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream);
 extern int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream);
+extern int send_headers(hstates_t *st, uint8_t end_stream);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -1172,6 +1173,50 @@ void test_send_continuation_frame_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (write error)");
 }
 
+void test_send_headers_one_header(void){
+  hstates_t st;
+  st.is_server = 0;
+  int rc = init_variables(&st);
+  st.hd_lists.header_list_count_out = 10;
+  int create_headers_return[1] = {0};
+  SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
+  int create_continuation_return[1] = {0};
+  SET_RETURN_SEQ(create_continuation_frame, create_continuation_return, 1);
+  int frame_to_bytes_return[1] = {20};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+
+  int compress_return[1] = {20};
+  SET_RETURN_SEQ(compress_headers, compress_return, 1);
+  uint32_t get_setting_return[1] = {20};
+  SET_RETURN_SEQ(get_setting_value, get_setting_return, 1);
+  rc = send_headers(&st, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "Call count must be 1, one headers frame was created");
+}
+
+void test_send_headers_with_continuation(void){
+  hstates_t st;
+  st.is_server = 0;
+  int rc = init_variables(&st);
+  st.hd_lists.header_list_count_out = 10;
+  int create_headers_return[1] = {0};
+  SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
+  int create_continuation_return[1] = {0};
+  SET_RETURN_SEQ(create_continuation_frame, create_continuation_return, 1);
+  int frame_to_bytes_return[1] = {20};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+
+  uint32_t get_setting_return[1] = {20};
+  SET_RETURN_SEQ(get_setting_value, get_setting_return, 1);
+  // Here fits 10 max sized frames (1 header, 9 cont) and one 1 byte frame (cont)
+  int compress_return[1] = {201};
+  SET_RETURN_SEQ(compress_headers, compress_return, 1);
+  rc = send_headers(&st, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "Call count must be 1, one headers frame was created");
+  TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 10, "Call count must be 10, ten continuation frames were created");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1216,5 +1261,7 @@ int main(void)
     UNIT_TEST(test_send_headers_frame_errors);
     UNIT_TEST(test_send_continuation_frame);
     UNIT_TEST(test_send_continuation_frame_errors);
+    UNIT_TEST(test_send_headers_one_header);
+    UNIT_TEST(test_send_headers_with_continuation);
     return UNIT_TESTS_END();
 }
