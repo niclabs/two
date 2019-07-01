@@ -157,14 +157,14 @@ int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data);
 
 
 /*
- * Returns received data
+ * Get received data
  *
  * @param    hd_lists         Struct with data information
- * @param    data_size        Header name
+ * @param    data_buffer      Buffer for data received
  *
- * @return                    Value finded
+ * @return                    Data length
  */
-uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size);
+int http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
 
 #endif /* HTTP_H */

@@ -238,7 +238,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
         return -1;
     }
     if (hs->hd_lists.data_in_size > 0) {
-      rr->data=http_get_data(&hs->hd_lists, &rr->size_data);
+      rr->size_data=http_get_data(&hs->hd_lists, rr->data);
       rr->status_flag=http_get_header(&hs->hd_lists, ":status");
     }
     return 0;
@@ -306,14 +306,14 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header)
 }
 
 
-uint8_t *http_get_data(headers_data_lists_t *hd_lists, int *data_size)
+int http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
 {
-    *data_size = hd_lists->data_in_size;
     if (hd_lists->data_in_size == 0) {
         WARN("Data list is empty");
-        return NULL;
+        return 0;
     }
-    return hd_lists->data_in;
+    memcpy(data_buffer, hd_lists->data_in, hd_lists->data_in_size);
+    return hd_lists->data_in_size;
 }
 
 
