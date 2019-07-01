@@ -16,6 +16,7 @@ extern int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl
 extern int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st);
 extern int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, hstates_t *st);
 extern int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream);
+extern int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -1097,6 +1098,51 @@ void test_send_headers_or_data_stream_verification_client(void){
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "Error: new stream state must be HALF CLOSED LOCAL");
 }
 
+void test_send_headers_frame_all_branches(void){
+  hstates_t st;
+  uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+  int create_headers_return[1] = {0};
+  SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
+  int frame_to_bytes_return[1] = {20};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+  int rc = send_headers_frame(&st, buff, 20, 0x16, 0, 0);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0")
+  rc = send_headers_frame(&st, buff, 20, 0x16, 1, 0);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  rc = send_headers_frame(&st, buff, 20, 0x16, 1, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  rc = send_headers_frame(&st, buff, 20, 0x16, 0, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+}
+
+void test_send_headers_frame(void){
+  hstates_t st;
+  uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+  int create_headers_return[1] = {0};
+  SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
+  int frame_to_bytes_return[1] = {20};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+  int rc = send_headers_frame(&st, buff, 20, 0x16, 1, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "Create headers frame call count must be 1");
+  TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 2, "Set flag call count must be 2");
+  TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes call count must be 1");
+}
+
+void test_send_headers_frame_errors(void){
+  hstates_t st;
+  uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+  int create_headers_return[2] = {-1,0};
+  SET_RETURN_SEQ(create_headers_frame, create_headers_return, 2);
+  int frame_to_bytes_return[1] = {20};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+  int rc = send_headers_frame(&st, buff, 20, 0x16, 1, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (create headers error)");
+  size = HTTP2_MAX_BUFFER_SIZE;
+  rc = send_headers_frame(&st, buff, 20, 0x16, 1, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (write error)");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1136,5 +1182,8 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_errors);
     UNIT_TEST(test_send_headers_or_data_stream_verification_server);
     UNIT_TEST(test_send_headers_or_data_stream_verification_client);
+    UNIT_TEST(test_send_headers_frame);
+    UNIT_TEST(test_send_headers_frame_all_branches);
+    UNIT_TEST(test_send_headers_frame_errors);
     return UNIT_TESTS_END();
 }
