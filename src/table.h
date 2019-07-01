@@ -32,6 +32,8 @@ typedef struct HEADERS_DATA_LISTS_S {
     uint8_t data_in[HTTP_MAX_DATA_SIZE];
     uint8_t data_out_size;
     uint8_t data_out[HTTP_MAX_DATA_SIZE];
+    uint8_t data_out_sent;
+    uint8_t data_in_received;
 } headers_data_lists_t;
 
 

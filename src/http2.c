@@ -781,9 +781,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
         ERROR("no data to be send");
         return -1;
     }
-    frame_header_t frame_header;
-    data_payload_t data_payload;
-    uint8_t data[st->hd_lists.data_out_size];
+
 
     h2_stream_state_t state = st->h2s.current_stream.state;
     if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
@@ -793,15 +791,22 @@ int send_data(hstates_t *st, uint8_t end_stream){
 
     uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
 
-    int rc = create_data_frame(&frame_header, &data_payload, data, st->hd_lists.data_out, st->hd_lists.data_out_size, stream_id);
+    uint8_t count_data_to_send = get_size_data_to_send(st);
+
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    uint8_t data[count_data_to_send];
+    int rc = create_data_frame(&frame_header, &data_payload, data, st->hd_lists.data_out + st->hd_lists.data_out_sent, count_data_to_send, stream_id);
     if(rc<0){
         ERROR("error creating data frame");
         return -1;
     }
-    if(rc !=st->hd_lists.data_out_size){
-        //TODO send_data??
-        ERROR("not all data was sent. Check this");
-        return -1;
+
+    st->hd_lists.data_out_sent += count_data_to_send;
+
+    if(st->hd_lists.data_out_size == st->hd_lists.data_out_sent) {
+        st->hd_lists.data_out_size = 0;
+        st->hd_lists.data_out_sent = 0;
     }
     if(end_stream) {
         frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
