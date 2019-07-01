@@ -775,24 +775,18 @@ uint8_t get_size_data_to_send(hstates_t *st){
 }
 
 int send_data(hstates_t *st, uint8_t end_stream){
-    (void)st;
-
     if(st->hd_lists.data_out_size<=0){
         ERROR("no data to be send");
         return -1;
     }
-
-
     h2_stream_state_t state = st->h2s.current_stream.state;
     if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
         ERROR("Wrong state. ");
         return -1;
     }
-
     uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
-
     uint8_t count_data_to_send = get_size_data_to_send(st);
-
+    frame_t frame;
     frame_header_t frame_header;
     data_payload_t data_payload;
     uint8_t data[count_data_to_send];
@@ -801,17 +795,26 @@ int send_data(hstates_t *st, uint8_t end_stream){
         ERROR("error creating data frame");
         return -1;
     }
+    if(end_stream) {
+        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
+    }
 
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&data_payload;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    rc = http_write(st,buff_bytes,bytes_size);
+    INFO("Sending DATA");
+
+    if(rc != bytes_size){
+        ERROR("Error writting data frame. INTERNAL ERROR");
+        return rc;
+    }
     st->hd_lists.data_out_sent += count_data_to_send;
-
     if(st->hd_lists.data_out_size == st->hd_lists.data_out_sent) {
         st->hd_lists.data_out_size = 0;
         st->hd_lists.data_out_sent = 0;
     }
-    if(end_stream) {
-        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
-    }
-    st->hd_lists.data_out_size = 0; //-= rc; //if not all data was sent
     return 0;
 }
 
