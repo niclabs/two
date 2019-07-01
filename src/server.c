@@ -5,7 +5,7 @@ int send_text(headers_data_lists_t *headers_and_data)
 {
     http_set_header(headers_and_data, "etag", "Hello world!");
     http_set_header(headers_and_data, "expires", "Thu, 23 Jul");
-    http_set_data(headers_and_data, (uint8_t *)"Hello world!");
+    http_set_data(headers_and_data, (uint8_t *)"Hello world!",12 );
     return 1;
 }
 
