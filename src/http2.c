@@ -818,6 +818,19 @@ int send_data(hstates_t *st, uint8_t end_stream){
     return 0;
 }
 
+/*
+* Function: send_headers_frame
+* Send a single headers frame to endpoint. It read the data from the buff_read
+* buffer given as parameter.
+* Input: ->st: hstates_t struct where connection variables are stored
+*        ->buff_read: buffer where headers frame payload is stored
+*        ->size: number of bytes to read from buff_read and to store in payload
+*        ->stream_id: stream id to write on headers frame header
+*        ->end_headers: boolean that indicates if END_HEADERS_FLAG must be set
+*        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
+* Output: 0 if no errors were found during frame creation/sending, -1 if not
+*/
+
 int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream){
   int rc;
   frame_t frame;
@@ -848,6 +861,18 @@ int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t str
   }
   return 0;
 }
+
+/*
+* Function: send_continuation_frame
+* Sends a single continuation frame to endpoint. It reads the data from the
+* buff_read buffer given as parameter.
+* Input: ->st: hstates_t struct where connection variables are stored.
+         ->buff_read: buffer where continuation frame payload is stored
+         ->size: number of bytes to read from buff_read and to store in payload
+         ->stream_id: stream id to write in continuation payload's header
+         ->end_stream: boolean that indicates if END_HEADERS_FLAG must be set
+* Output: 0 if no errors were found during the creation or sending, -1 if not
+*/
 
 int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream){
   int rc;
