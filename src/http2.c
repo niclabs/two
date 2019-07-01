@@ -914,7 +914,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       //send last continuation frame
       rc = send_continuation_frame(st,encoded_bytes + (size - remaining), remaining, stream_id, 1);
       if(rc < 0){
-        ERROR("Error found sending headers frame");
+        ERROR("Error found sending continuation frame");
         return rc;
       }
       return 0;
