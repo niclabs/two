@@ -881,7 +881,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     return -1;
   }
   uint32_t stream_id = st->h2s.current_stream.stream_id;
-  uint32_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
+  uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
   int rc;
   //not being considered dependencies nor padding.
   if(size <= max_frame_size){ //if headers can be send in only one frame
