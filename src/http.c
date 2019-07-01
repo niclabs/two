@@ -25,6 +25,8 @@ void set_init_values(hstates_t *hs)
     hs->hd_lists.header_list_count_out = 0;
     hs->hd_lists.data_in_size = 0;
     hs->hd_lists.data_out_size = 0;
+    hs->hd_lists.data_in_received = 0;
+    hs->hd_lists.data_out_sent = 0;
     hs->path_callback_list_count = 0;
     hs->connection_state = 0;
     hs->server_socket_state = 0;

@@ -123,10 +123,15 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
     uint8_t type = frame_header->type;
 
     switch(type){
-        case 0x0://Data
-            printf("TODO: Data Frame. Not implemented yet.");
-
-            return -1;
+        case 0x0: {//Data
+            uint8_t frame_header_bytes[9];
+            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
+            data_payload_t *data_payload = ((data_payload_t *) (frame->payload));
+            uint8_t data_bytes[length];
+            int size = data_payload_to_bytes(frame_header, data_payload, data_bytes);
+            int new_size = append_byte_arrays(bytes, frame_header_bytes, data_bytes, frame_header_bytes_size, size);
+            return new_size;
+        }
         case 0x1: {//Header
             uint8_t frame_header_bytes[9];
             int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
