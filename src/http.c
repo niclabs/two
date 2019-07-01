@@ -131,7 +131,7 @@ int http_server_destroy(hstates_t *hs)
 
     hs->server_socket_state = 0;
 
-    printf("Server destroyed\n");
+    INFO("Server destroyed\n");
 
     return 0;
 }
@@ -178,7 +178,7 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
         return -1;
     }
 
-    printf("Client connected to server\n");
+    INFO("Client connected to server\n");
 
     hs->connection_state = 1;
 
@@ -254,7 +254,7 @@ int http_client_disconnect(hstates_t *hs)
             return -1;
         }
 
-        printf("Client disconnected\n");
+        INFO("Client disconnected\n");
     }
 
     hs->socket_state = 0;
