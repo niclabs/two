@@ -764,6 +764,16 @@ int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream){
   return 0;
 }
 
+uint8_t get_size_data_to_send(hstates_t *st){
+    uint8_t available_window = st->h2s.window_size - st->h2s.window_used; //TODO check uint8_t
+    if( available_window <= st->hd_lists.data_out_size - st->hd_lists.data_out_sent){
+        return available_window;
+    }
+    else{
+        return st->hd_lists.data_out_size - st->hd_lists.data_out_sent;
+    }
+}
+
 int send_data(hstates_t *st, uint8_t end_stream){
     (void)st;
 
