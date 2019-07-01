@@ -17,6 +17,7 @@ extern int check_incoming_continuation_condition(frame_header_t *header, hstates
 extern int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, hstates_t *st);
 extern int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream);
 extern int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream);
+extern int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -1143,6 +1144,34 @@ void test_send_headers_frame_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (write error)");
 }
 
+void test_send_continuation_frame(void){
+  hstates_t st;
+  uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+  int create_continuation_return[1] = {0};
+  SET_RETURN_SEQ(create_continuation_frame, create_continuation_return, 1);
+  int frame_to_bytes_return[1] = {20};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+  int rc = send_continuation_frame(&st, buff, 20, 0x16, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 1, "Create continuation frame call count must be 1");
+  TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 1, "Set flag call count must be 1");
+  TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes call count must be 1");
+}
+
+void test_send_continuation_frame_errors(void){
+  hstates_t st;
+  uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+  int create_continuation_return[2] = {-1,0};
+  SET_RETURN_SEQ(create_continuation_frame, create_continuation_return, 2);
+  int frame_to_bytes_return[1] = {20};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+  int rc = send_continuation_frame(&st, buff, 20, 0x16, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (create continuation error)");
+  size = HTTP2_MAX_BUFFER_SIZE;
+  rc = send_headers_frame(&st, buff, 20, 0x16, 1, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (write error)");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1185,5 +1214,7 @@ int main(void)
     UNIT_TEST(test_send_headers_frame);
     UNIT_TEST(test_send_headers_frame_all_branches);
     UNIT_TEST(test_send_headers_frame_errors);
+    UNIT_TEST(test_send_continuation_frame);
+    UNIT_TEST(test_send_continuation_frame_errors);
     return UNIT_TESTS_END();
 }
