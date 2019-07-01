@@ -169,7 +169,7 @@ void test_http_start_server_success(void)
     hs.is_server = 1;
 
     sock_accept_fake.return_val = 0;
-    sock_destroy_fake.return_val = 0;
+    sock_destroy_fake.return_val = -1;
 
     h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
 
@@ -221,10 +221,8 @@ void test_http_start_server_fail_sock_accept(void)
     hstates_t hs;
 
     set_init_values(&hs);
-    hs.server_socket_state = 1;
 
     sock_accept_fake.return_val = -1;
-    sock_destroy_fake.return_val = 0;
 
     int is = http_start_server(&hs);
 
@@ -242,7 +240,6 @@ void test_http_server_destroy_success(void)
     hstates_t hs;
 
     hs.socket_state = 1;
-    hs.connection_state = 1;
     hs.server_socket_state = 1;
 
     sock_destroy_fake.return_val = 0;
@@ -264,15 +261,16 @@ void test_http_server_destroy_success_without_client(void)
 {
     hstates_t hs;
 
-    hs.socket_state = 0;
-    hs.connection_state = 1;
     hs.server_socket_state = 1;
+    hs.socket_state = 1;
 
-    sock_destroy_fake.return_val = 0;
+    int returnVals[2] = { -1, 0 };
+    SET_RETURN_SEQ(sock_destroy, returnVals, 2);
 
     int d = http_server_destroy(&hs);
 
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[1]);
 
     TEST_ASSERT_EQUAL(0, d);
 
@@ -299,7 +297,6 @@ void test_http_server_destroy_fail_sock_destroy(void)
     hstates_t hs;
 
     hs.socket_state = 1;
-    hs.connection_state = 1;
     hs.server_socket_state = 1;
 
     int returnVals[2] = { 0, -1 };
@@ -333,7 +330,6 @@ void test_http_set_function_to_path_success(void)
     TEST_ASSERT_EQUAL(1, hs.path_callback_list_count);
     TEST_ASSERT_EQUAL(0, strncmp(hs.path_callback_list[0].name, "index", strlen("index")));
     TEST_ASSERT_EQUAL(foo_callback.cb, hs.path_callback_list[0].ptr);
-
 }
 
 
@@ -443,6 +439,7 @@ void test_http_client_connect_fail_sock_create(void)
     TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.is_server);
 }
 
 
