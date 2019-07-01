@@ -51,8 +51,11 @@ uint32_t encoded_integer_size(uint32_t num, uint8_t prefix){
     uint8_t p = 255;
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
+    if(num==p){
+        return 2;
+    }
     if(num >= p){
-        uint32_t k = log(num - p) / log(128);
+        uint32_t k = log128(num - p);//log(num - p) / log(128);
         return k + 2;
     }else{
         return 1;
@@ -78,8 +81,12 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t* encoded_integer){
         b0 = b0 << (8 - prefix);
         b0 = b0 >> (8 - prefix);
         integer = integer - b0;
-        uint32_t k = log(integer)/log(128);
-        octets_size = k+2;
+        if(integer==0){
+            octets_size = 2;
+        }else {
+            uint32_t k = log128(integer);//log(integer)/log(128);
+            octets_size = k + 2;
+        }
 
         encoded_integer[0] = b0;
 

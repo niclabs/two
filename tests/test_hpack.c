@@ -116,26 +116,31 @@ void test_encode(void){
 void test_encoded_integer_size(void){
     uint32_t integer = 10;
     uint8_t prefix = 5;
+    INFO("encoded: %u with prefix %u",integer, prefix);
     int rc = encoded_integer_size(integer, prefix);
     TEST_ASSERT_EQUAL(1,rc);
 
     integer = 30;
     prefix = 5;
+    INFO("encoded: %u with prefix %u",integer, prefix);
     rc = encoded_integer_size(integer, prefix);
     TEST_ASSERT_EQUAL(1,rc);
 
     integer = 31;
     prefix = 5;
+    INFO("encoded: %u with prefix %u",integer, prefix);
     rc = encoded_integer_size(integer, prefix);
     TEST_ASSERT_EQUAL(2,rc);
 
     integer = 31;
     prefix = 6;
+    INFO("encoded: %u with prefix %u",integer, prefix);
     rc = encoded_integer_size(integer, prefix);
     TEST_ASSERT_EQUAL(1,rc);
 
     integer = 1337;
     prefix = 5;
+    INFO("encoded: %u with prefix %u",integer, prefix);
     rc = encoded_integer_size(integer, prefix);
     TEST_ASSERT_EQUAL(3,rc);
 }
@@ -184,7 +189,6 @@ void test_encode_integer(void) {
             1
     };
     for(int i = 0; i < rc; i++){
-        INFO("encoded: %u",encoded_integer[i]);
         TEST_ASSERT_EQUAL(expected_bytes6[i], encoded_integer[i]);
     }
 
