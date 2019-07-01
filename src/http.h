@@ -11,7 +11,7 @@ typedef struct CALLBACK_TYPE_S {
 } callback_type_t;
 
 typedef struct RESPONSE_RECEIVED_TYPE_S {
-    int size_data;
+    uint32_t size_data;
     char *status_flag;
     uint8_t *data;
 }response_received_type_t;
@@ -153,7 +153,7 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header);
  * @return   0          Successfully added data
  * @return   -1         There was an error in the process
  */
-int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data);
+int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 
 
 /*
@@ -164,7 +164,7 @@ int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data);
  *
  * @return                    Data length
  */
-int http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
+uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
 
 #endif /* HTTP_H */

@@ -88,9 +88,9 @@ int http_start_server(hstates_t *hs)
                 continue;
             }
             if (hs->new_headers == 1) {
-                http_clear_header_list(hs, -1, 1);
+                //http_clear_header_list(hs, -1, 1);
                 get_receive(hs);
-                http_clear_header_list(hs, -1, 0);
+                //http_clear_header_list(hs, -1, 0);
                 hs->new_headers = 0;
             }
         }
@@ -192,7 +192,7 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 
 int http_start_client(hstates_t *hs)
 {
-    http_clear_header_list(hs, -1, 0);
+    //http_clear_header_list(hs, -1, 0);
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
             break;
@@ -200,11 +200,17 @@ int http_start_client(hstates_t *hs)
         if (hs->keep_receiving == 1) {
             continue;
         }
-        if (hs->new_headers == 1) {
+        /*if (hs->new_headers == 1) {
             return 0;
+        }*/
+        if(hs->hd_lists.data_in_size>0){
+            for (uint32_t i = 1; i <= hs->hd_lists.data_in_size; i++) {
+                printf("%c", (char) hs->hd_lists.data_in[i-1]);
+            }
+            printf("\n");
         }
     }
-
+    INFO("Client off the while");
     hs->connection_state = 0;
     hs->socket_state = 0;
     if (sock_destroy(&hs->socket) == -1) {
@@ -232,14 +238,20 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
         ERROR("Cannot send query");
         return -1;
     }
-    http_clear_header_list(hs, -1, 1);
+    //http_clear_header_list(hs, -1, 1);
 
     if (http_start_client(hs) < 0) {
+
         return -1;
     }
     if (hs->hd_lists.data_in_size > 0) {
-      rr->size_data=http_get_data(&hs->hd_lists, rr->data);
+        INFO("data_in_size%u", hs->hd_lists.data_in_size);
+        rr->size_data = http_get_data(&(hs->hd_lists), rr->data);
+
+
       rr->status_flag=http_get_header(&hs->hd_lists, ":status");
+    }else{
+        rr->size_data = 0;
     }
     return 0;
 }
@@ -306,7 +318,7 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header)
 }
 
 
-int http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
+uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
 {
     if (hd_lists->data_in_size == 0) {
         WARN("Data list is empty");
@@ -317,21 +329,22 @@ int http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
 }
 
 
-int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data)
+int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
 {
-    int size = sizeof(data);
+    //int size = sizeof(data);
 
-    if (size <= 0 || size > 128) {
+    if (data_size <= 0 || data_size > 128) {
         return -1;
     }
-    hd_lists->data_out_size = size;
-    memcpy(hd_lists->data_out, data, size);
+    hd_lists->data_out_size = data_size;
+    memcpy(hd_lists->data_out, data, data_size);
     return 0;
 }
 
 
 int get_receive(hstates_t *hs)
 {
+    INFO("get_receive");
     char *path = http_get_header(&hs->hd_lists, ":path");
     callback_type_t callback;
 

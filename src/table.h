@@ -28,12 +28,12 @@ typedef struct HEADERS_DATA_LISTS_S {
     table_pair_t header_list_in[HTTP2_MAX_HEADER_COUNT];
     uint8_t header_list_count_out;
     table_pair_t header_list_out[HTTP2_MAX_HEADER_COUNT];
-    uint8_t data_in_size;
+    uint32_t data_in_size;
     uint8_t data_in[HTTP_MAX_DATA_SIZE];
-    uint8_t data_out_size;
+    uint32_t data_out_size;
     uint8_t data_out[HTTP_MAX_DATA_SIZE];
-    uint8_t data_out_sent;
-    uint8_t data_in_received;
+    uint32_t data_out_sent;
+    uint32_t data_in_received;
 } headers_data_lists_t;
 
 

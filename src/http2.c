@@ -596,6 +596,7 @@ int h2_receive_frame(hstates_t *st){
         ERROR("Error reading frame");
         return -1;
     }
+    INFO("receiving %u", (uint8_t)header.type);
     switch(header.type){
         case DATA_TYPE: {//Data
             /*check stream state*/
