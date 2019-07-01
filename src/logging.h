@@ -34,12 +34,12 @@
 #define LOG_PRINT(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-#ifdef ENABLE_DEBUG
+#if defined(ENABLE_DEBUG) && ENABLE_DEBUG == 1
 #define LOG_LEVEL (LOG_LEVEL_DEBUG)
 #endif
 
 #ifndef LOG_LEVEL
-#define LOG_LEVEL (LOG_LEVEL_INFO)
+#define LOG_LEVEL (LOG_LEVEL_ERROR)
 #endif
 
 #if LOG_LEVEL_DEBUG >= LOG_LEVEL
