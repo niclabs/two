@@ -1248,6 +1248,28 @@ void test_flow_control_receive_window_update(void){
     TEST_ASSERT_EQUAL(15, st.h2s.outgoing_window.window_used);
 }
 
+void test_get_size_data_to_send(void){
+    hstates_t st;
+    st.h2s.outgoing_window.window_size = 10;
+    st.h2s.outgoing_window.window_used = 0;
+    st.hd_lists.data_out_size = 10;
+    st.hd_lists.data_out_sent = 0;
+    uint32_t rc = get_size_data_to_send(&st);
+    TEST_ASSERT_EQUAL(10,rc);
+
+    st.hd_lists.data_out_size = 5;
+    st.hd_lists.data_out_sent = 0;
+    rc = get_size_data_to_send(&st);
+    TEST_ASSERT_EQUAL(5,rc);
+
+    st.hd_lists.data_out_size = 15;
+    st.hd_lists.data_out_sent = 0;
+    rc = get_size_data_to_send(&st);
+    TEST_ASSERT_EQUAL(10,rc);
+
+
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1297,5 +1319,16 @@ int main(void)
 
     UNIT_TEST(test_flow_control_receive_data);
     UNIT_TEST(test_flow_control_receive_window_update);
+
+    UNIT_TEST(test_get_size_data_to_send);
+
+    //TODO:
+    // handle_data_payload
+    // h2_receive_frame
+    // send_data
+    // h2_send_request
+    // h2_send_response
+
+
     return UNIT_TESTS_END();
 }
