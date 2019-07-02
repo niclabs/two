@@ -303,6 +303,52 @@ void test_log128(void) {
 
 }
 
+void test_decode_integer(void){
+    uint8_t bytes1[] = {
+            30//000 11110
+    };
+    uint8_t prefix = 5;
+    uint32_t rc = decode_integer(bytes1, prefix);
+    TEST_ASSERT_EQUAL(30,rc);
+
+    uint8_t bytes2[] = {
+            31,//000 11111
+            0//
+    };
+    rc = decode_integer(bytes2, prefix);
+    TEST_ASSERT_EQUAL(31,rc);
+
+    uint8_t bytes3[] = {
+            31,//000 11111
+            1,//
+    };
+    rc = decode_integer(bytes3, prefix);
+    TEST_ASSERT_EQUAL(32,rc);
+
+    uint8_t bytes4[] = {
+            31,//000 11111
+            2,//
+    };
+    rc = decode_integer(bytes4, prefix);
+    TEST_ASSERT_EQUAL(33,rc);
+
+    uint8_t bytes5[] = {
+            31,//000 11111
+            128,//
+            1
+    };
+    rc = decode_integer(bytes5, prefix);
+    TEST_ASSERT_EQUAL(128+31,rc);
+
+    uint8_t bytes6[] = {
+            31,//000 11111
+            154,//
+            10
+    };
+    rc = decode_integer(bytes6, prefix);
+    TEST_ASSERT_EQUAL(1337,rc);
+}
+
 
 int main(void)
 {
@@ -318,8 +364,8 @@ int main(void)
     UNIT_TEST(test_encode_non_huffman_string);
 
     UNIT_TEST(test_find_prefix_size);
-    /*UNIT_TEST(test_create_settings_ack_frame);
-    UNIT_TEST(test_frame_to_bytes_settings);
+    UNIT_TEST(test_decode_integer);
+    /*UNIT_TEST(test_frame_to_bytes_settings);
     UNIT_TEST(test_read_headers_payload);
     UNIT_TEST(test_read_continuation_payload);
     UNIT_TEST(test_create_headers_frame);
