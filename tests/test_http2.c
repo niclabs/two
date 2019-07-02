@@ -200,8 +200,10 @@ void test_init_variables(void){
   TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.stream_id == 2, "Current stream id must be 2");
   TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.state == STREAM_IDLE, "Current stream state must be IDLE");
   TEST_ASSERT_MESSAGE(hdummy.h2s.last_open_stream_id == 1, "Last open stream id must be 1");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.window_size == DEFAULT_IWS, "window size must be DEFAULT_IWS");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.window_used == 0, "window used must be 0");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.incoming_window.window_size == DEFAULT_IWS, "window size must be DEFAULT_IWS");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.incoming_window.window_used == 0, "window used must be 0");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.outgoing_window.window_size == DEFAULT_IWS, "window size must be DEFAULT_IWS");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.outgoing_window.window_used == 0, "window used must be 0");
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
 }
 
@@ -1220,30 +1222,30 @@ void test_send_headers_with_continuation(void){
 void test_flow_control_receive_data(void){
     uint32_t data_received = 10;
     hstates_t st;
-    st.h2s.window_size = 100;
-    st.h2s.window_used = 0;
+    st.h2s.incoming_window.window_size = 100;
+    st.h2s.incoming_window.window_used = 0;
     int rc = flow_control_receive_data(&st, data_received);
     TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(10, st.h2s.window_used);
+    TEST_ASSERT_EQUAL(10, st.h2s.incoming_window.window_used);
     data_received = 5;
     rc = flow_control_receive_data(&st, data_received);
     TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(15, st.h2s.window_used);
+    TEST_ASSERT_EQUAL(15, st.h2s.incoming_window.window_used);
 
 }
 
 void test_flow_control_receive_window_update(void){
     uint32_t window_size_increment = 10;
     hstates_t st;
-    st.h2s.window_size = 100;
-    st.h2s.window_used = 30;
+    st.h2s.outgoing_window.window_size = 100;
+    st.h2s.outgoing_window.window_used = 30;
     int rc = flow_control_receive_window_update(&st, window_size_increment);
     TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(20, st.h2s.window_used);
+    TEST_ASSERT_EQUAL(20, st.h2s.outgoing_window.window_used);
     window_size_increment = 5;
     rc = flow_control_receive_window_update(&st, window_size_increment);
     TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(15, st.h2s.window_used);
+    TEST_ASSERT_EQUAL(15, st.h2s.outgoing_window.window_used);
 }
 
 int main(void)

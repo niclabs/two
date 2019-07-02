@@ -26,6 +26,13 @@ typedef struct HTTP2_STREAM {
     h2_stream_state_t state;
 } h2_stream_t;
 
+typedef struct HTTP2_WINDOW_MANAGER {
+    uint32_t window_size;
+    uint32_t window_used;
+} h2_window_manager_t;
+
+
+
 /*Struct for storing HTTP2 states*/
 typedef struct HTTP2_STATES {
     uint32_t remote_settings[6];
@@ -38,9 +45,8 @@ typedef struct HTTP2_STATES {
     uint8_t header_block_fragments_pointer; //points to the next byte to write in
     uint8_t waiting_for_end_headers_flag;   //bool
     uint8_t received_end_stream;
-    uint32_t window_size;
-    uint32_t window_used;
-
+    h2_window_manager_t incoming_window;
+    h2_window_manager_t outgoing_window;
 } h2states_t;
 
 

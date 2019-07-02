@@ -28,8 +28,13 @@ int init_variables(hstates_t * st){
     st->h2s.current_stream.stream_id = st->is_server ? 2 : 3;
     st->h2s.current_stream.state = STREAM_IDLE;
     st->h2s.last_open_stream_id = 1;
-    st->h2s.window_size = DEFAULT_IWS;
-    st->h2s.window_used = 0;
+
+
+    st->h2s.incoming_window.window_size = DEFAULT_IWS;
+    st->h2s.incoming_window.window_used = 0;
+
+    st->h2s.outgoing_window.window_size = DEFAULT_IWS;
+    st->h2s.outgoing_window.window_used = 0;
     return 0;
 }
 
@@ -410,24 +415,37 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   return 0;
 }
 
+uint32_t get_window_available_size(h2_window_manager_t window_manager){
+    return window_manager.window_size - window_manager.window_used;
+}
+
+int increase_window_used(h2_window_manager_t* window_manager, uint32_t data_size){
+    window_manager->window_used += data_size;
+    return 0;
+}
+
+int decrease_window_used(h2_window_manager_t* window_manager, uint32_t window_size_increment){
+    window_manager->window_used -= window_size_increment;
+    return 0;
+}
 
 int flow_control_receive_data(hstates_t* st, uint32_t length){
-    uint32_t window_available = st->h2s.window_size - st->h2s.window_used;
+    uint32_t window_available = get_window_available_size(st->h2s.incoming_window);
     if(length > window_available){
         ERROR("FLOW_CONTROL_ERROR found");
         return -1;
     }
-    st->h2s.window_used += length;
+    int rc = increase_window_used(&st->h2s.incoming_window, length);
     return 0;
 }
 
 
 int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment){
-    if(window_size_increment>st->h2s.window_used){
+    if(window_size_increment>st->h2s.outgoing_window.window_used){
         ERROR("Increment to big. protocol_error");
         return -1;
     }
-    st->h2s.window_used -= window_size_increment;
+    decrease_window_used(&st->h2s.outgoing_window,window_size_increment);
     return 0;
 }
 
@@ -766,7 +784,7 @@ int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream){
 }
 
 uint8_t get_size_data_to_send(hstates_t *st){
-    uint8_t available_window = st->h2s.window_size - st->h2s.window_used; //TODO check uint8_t
+    uint32_t available_window = get_window_available_size(st->h2s.outgoing_window);
     if( available_window <= st->hd_lists.data_out_size - st->hd_lists.data_out_sent){
         return available_window;
     }
