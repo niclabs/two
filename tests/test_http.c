@@ -787,11 +787,11 @@ int main(void)
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
 
-    UNIT_TEST(test_http_get_success);
+    /*UNIT_TEST(test_http_get_success);
     UNIT_TEST(test_http_get_fail);
     UNIT_TEST(test_http_get_fail_h2_send_request);
     UNIT_TEST(test_http_get_fail_headers_list_full);
-
+*/
     UNIT_TEST(test_http_client_disconnect_success_v1);
     UNIT_TEST(test_http_client_disconnect_success_v2);
     UNIT_TEST(test_http_client_disconnect_fail);
