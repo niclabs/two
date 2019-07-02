@@ -367,6 +367,15 @@ int uint32_to_byte_array_custom_fake_num(uint32_t num, uint8_t* byte_array){
     byte_array[3] = (uint8_t)num;
     return 0;
 }
+
+int uint32_24_to_byte_array_custom_fake_num(uint32_t num, uint8_t* byte_array){
+    byte_array[0] = 0;
+    byte_array[1] = 0;
+    byte_array[2] = (uint8_t)num;
+    return 0;
+}
+
+
 int uint16_to_byte_array_custom_fake_num(uint16_t num, uint8_t* byte_array){
     byte_array[0] = 0;
     byte_array[1] = (uint8_t)num;
@@ -877,7 +886,43 @@ void test_read_window_update_payload(void){
 
 
 }
+void test_frame_to_bytes_data(void){
+    //TODO
 
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    int length = 10;
+    uint32_t stream_id = 1;
+    uint8_t data[10];
+    uint8_t data_to_send[] = {1,2,3,4,5,6,7,8,9,10};
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
+    uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_num;
+
+    create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
+    frame_t frame;
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&data_payload;
+    uint8_t bytes[30];
+    int rc = frame_to_bytes(&frame, bytes);
+
+    uint8_t expected_bytes[] = {
+            0,0,10,
+            0x0,
+            0x0,
+            0,0,0,1,
+            1,2,3,4,5,6,7,8,9,10
+    };
+
+    TEST_ASSERT_EQUAL(19, rc);
+    for(int i = 0; i< rc; i++) {
+
+        TEST_ASSERT_EQUAL(expected_bytes[i], bytes[i]);
+    }
+
+}
 
 int main(void)
 {
@@ -911,13 +956,14 @@ int main(void)
 
     UNIT_TEST(test_continuation_payload_to_bytes);
 
-    UNIT_TEST(test_compress_headers)
-    UNIT_TEST(test_create_data_frame)
-    UNIT_TEST(test_data_payload_to_bytes)
-    UNIT_TEST(test_read_data_payload)
-    UNIT_TEST(test_create_window_update_frame)
-    UNIT_TEST(test_window_update_payload_to_bytes)
-    UNIT_TEST(test_read_window_update_payload)
+    UNIT_TEST(test_compress_headers);
+    UNIT_TEST(test_create_data_frame);
+    UNIT_TEST(test_data_payload_to_bytes);
+    UNIT_TEST(test_read_data_payload);
+    UNIT_TEST(test_create_window_update_frame);
+    UNIT_TEST(test_window_update_payload_to_bytes);
+    UNIT_TEST(test_read_window_update_payload);
+    UNIT_TEST(test_frame_to_bytes_data);
     //UNIT_TEST(test_read_window_update_payload)
 
     return UNIT_TESTS_END();
