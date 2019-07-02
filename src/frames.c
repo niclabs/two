@@ -475,6 +475,14 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
     return pointer;
 }
 
+
+/*
+* Function: get_header_block_fragment_size
+* Calculates the headers block framgent size of a headers_payload
+* Input: frame_header, headers_payload
+ * padding and dependencies not implemented
+* Output: block_fragment_size or -1 if error
+*/
 int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload){
     int priority_length = 0;
     //not implemented yet!
@@ -490,6 +498,13 @@ int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload
     return frame_header->length - pad_length - priority_length;
 }
 
+
+/*
+* Function: receive_header_block
+* receives the header block and save the headers in the headers_data_list
+* Input: header_block, header_block_size, header_data_list
+* Output: block_size or -1 if error
+*/
 int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_data_lists_t* h_list){//return size of header_list (header_count)
     int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, h_list);
     return rc;
@@ -509,6 +524,14 @@ int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, 
 }
 
 
+
+
+/*
+* Function: create_data_frame
+* Creates a data frame
+* Input: frame_header, data_payload, data array for data payload, data_to_send(data to save in the data_frame), size of the data to send, stream_id
+* Output: 0 if no error
+*/
 int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data, uint8_t * data_to_send, int length, uint32_t stream_id){
     uint8_t type = DATA_TYPE;
     uint8_t flags = 0x0;
@@ -524,6 +547,12 @@ int create_data_frame(frame_header_t* frame_header, data_payload_t* data_payload
     return 0;
 };
 
+/*
+* Function: data_payload_to_bytes
+* Passes a data payload to a byte array
+* Input: frame_header, data_payload pointer, array to save the bytes
+* Output: size of the array of bytes, -1 if error
+*/
 int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_payload, uint8_t* byte_array){
     int length = frame_header->length;
     uint8_t flags = frame_header->flags;
@@ -541,7 +570,12 @@ int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_pay
 }
 
 
-/*returns the data read*/
+/*
+* Function: read_data_payload
+* given a byte array, get the data payload encoded in it
+* Input: byte_array, frame_header, data_payload, data array
+* Output: bytes read or -1 if error
+*/
 int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data){
     uint8_t flags = frame_header->flags;
     int length = frame_header->length;
@@ -556,7 +590,12 @@ int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_pay
 }
 
 
-
+/*
+* Function: create_window_update_frame
+* Creates a window_update frame
+* Input: frame_header, window_update_payload, window_size_increment, stream_id
+* Output: 0 if no error
+*/
 int create_window_update_frame(frame_header_t* frame_header, window_update_payload_t* window_update_payload, int window_size_increment, uint32_t stream_id){
     frame_header->stream_id = stream_id;
     frame_header->type = WINDOW_UPDATE_TYPE;
@@ -572,6 +611,12 @@ int create_window_update_frame(frame_header_t* frame_header, window_update_paylo
     return 0;
 }
 
+/*
+* Function: window_update_payload_to_bytes
+* Passes a window_update payload to a byte array
+* Input: frame_header, window_update_payload pointer, array to save the bytes
+* Output: size of the array of bytes, -1 if error
+*/
 int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_payload_t* window_update_payload, uint8_t* byte_array){
     if(frame_header->length!=4){
         ERROR("Length != 4, FRAME_SIZE_ERROR");
@@ -586,6 +631,13 @@ int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_p
     return 4;//bytes
 }
 
+
+/*
+* Function: read_window_update_payload
+* given a byte array, get the window_update payload encoded in it
+* Input: byte_array, frame_header, window_update_payload, data array
+* Output: bytes read or -1 if error
+*/
 int read_window_update_payload(uint8_t* buff_read, frame_header_t* frame_header, window_update_payload_t* window_update_payload){
     if(frame_header->length!=4){
         ERROR("Length != 4, FRAME_SIZE_ERROR");
