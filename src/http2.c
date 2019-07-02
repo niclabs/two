@@ -435,7 +435,7 @@ int flow_control_receive_data(hstates_t* st, uint32_t length){
         ERROR("FLOW_CONTROL_ERROR found");
         return -1;
     }
-    int rc = increase_window_used(&st->h2s.incoming_window, length);
+    increase_window_used(&st->h2s.incoming_window, length);
     return 0;
 }
 
