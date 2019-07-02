@@ -275,6 +275,12 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set){
     return new_flag;
 }
 
+/*
+* Function: create_headers_frame
+* Creates a headers frame, with no flags set, and with the given header block fragment atached
+* Input: header_block_fragment, its, size, streamid, pointer to the frame_header, pointer to the header_payload, pointer to the header_block_fragment that will be inside the frame
+* Output: 0 if no error ocurred
+*/
 int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* header_block_fragment){
     frame_type_t type = HEADERS_TYPE;
     uint8_t flags = 0x0;
@@ -290,6 +296,13 @@ int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32
     return 0;
 }
 
+
+/*
+* Function: headers_payload_to_bytes
+* Passes a headers payload to a byte array
+* Input: frame_header, header_payload pointer, array to save the bytes
+* Output: size of the array of bytes, -1 if error
+*/
 int headers_payload_to_bytes(frame_header_t* frame_header, headers_payload_t* headers_payload, uint8_t* byte_array){
     int pointer = 0;
 
@@ -319,6 +332,13 @@ int headers_payload_to_bytes(frame_header_t* frame_header, headers_payload_t* he
 }
 
 
+
+/*
+* Function: create_continuation_frame
+* Creates a continuation frame, with no flags set, and with the given header block fragment atached
+* Input: header_block_fragment, its, size, streamid, pointer to the frame_header, pointer to the continuation_payload, pointer to the header_block_fragment that will be inside the frame
+* Output: 0 if no error ocurred
+*/
 int create_continuation_frame(uint8_t * headers_block, int headers_block_size, uint32_t stream_id, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t *header_block_fragment){
     uint8_t type = CONTINUATION_TYPE;
     uint8_t flags = 0x0;
@@ -336,6 +356,13 @@ int create_continuation_frame(uint8_t * headers_block, int headers_block_size, u
     return 0;
 }
 
+
+/*
+* Function: continuation_payload_to_bytes
+* Passes a continuation payload to a byte array
+* Input: frame_header, continuation_payload pointer, array to save the bytes
+* Output: size of the array of bytes, -1 if error
+*/
 int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t* byte_array){
     int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
     return rc;
@@ -343,9 +370,11 @@ int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_pay
 
 
 /*
- * returns compressed headers size or -1 if error
- *
- */
+* Function: compress_headers
+* given a set of headers, it comprisses them and save them in a bytes array
+* Input: table of headers, size of the table, array to save the bytes
+* Output: compressed headers size or -1 if error
+*/
 int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* compressed_headers){
     //TODO implement default compression
     //now it is without compression
@@ -379,7 +408,13 @@ int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* com
 }
 
 
-
+/*
+* Function: read_headers_payload
+* given a byte array, get the headers payload encoded in it
+* Input: byte_array, frame_header, headers_payload, block_fragment array, padding array
+ * padding and dependencies not implemented
+* Output: bytes read or -1 if error
+*/
 int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t * padding){
     uint8_t pad_length = 0; // only if padded flag is set
     uint8_t exclusive_dependency = 0; // only if priority flag is set
@@ -460,6 +495,13 @@ int receive_header_block(uint8_t* header_block_fragments, int header_block_fragm
     return rc;
 }
 
+
+/*
+* Function: read_continuation_payload
+* given a byte array, get the continuation payload encoded in it
+* Input: byte_array, frame_header, continuation_payload, block_fragment array
+* Output: bytes read or -1 if error
+*/
 int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment){
     int rc = buffer_copy(continuation_block_fragment, buff_read, frame_header->length);
     continuation_payload->header_block_fragment = continuation_block_fragment;
