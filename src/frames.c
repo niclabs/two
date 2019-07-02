@@ -386,6 +386,7 @@ int compress_headers(table_pair_t* headers, uint8_t headers_count, uint8_t* comp
     return pointer;
 }
 
+/*
 int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, uint8_t bool_table_compression, uint8_t bool_huffman_compression){
     //TODO implement
     (void)headers;
@@ -394,7 +395,7 @@ int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* com
     (void)bool_table_compression;
     (void)bool_huffman_compression;
     return -1;
-    /*if(bool_table_compression>0){
+    if(bool_table_compression>0){
         return compress_static(headers, headers_size, compressed_headers);
     }
     if(bool_huffman_compression>0){
@@ -404,9 +405,9 @@ int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* com
     for(int i =0; i<headers_size; i++){
         compressed_headers[i] = (uint8_t)headers[i];
     }
-    return headers_size;*/
+    return headers_size;
 }
-
+*/
 
 /*
 * Function: read_headers_payload
