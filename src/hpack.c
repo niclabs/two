@@ -114,16 +114,16 @@ int encode_non_huffman_string(char* str, uint8_t* encoded_string){
     }
     return str_length+encoded_string_length_size;
 }
-
+/*
 int encode_huffman_word(char* str, uint8_t* encoded_word){
     (void) str;
     (void) encoded_word;
     ERROR("Not implemented yet");
     return -1;
 }
+*/
 
-
-
+/*
 int encode_huffman_string(char* str, uint8_t* encoded_string){
 
     uint8_t encoded_word[HTTP2_MAX_HBF_BUFFER];
@@ -144,7 +144,9 @@ int encode_huffman_string(char* str, uint8_t* encoded_string){
     }
     return new_size;
 };
+ */
 
+/*
 int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
     if(huffman){
         return encode_huffman_string(str, encoded_string);
@@ -152,6 +154,7 @@ int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
         return encode_non_huffman_string(str,encoded_string);
     }
 };
+*/
 
 uint8_t find_prefix_size(hpack_preamble_t octet){
     if((INDEXED_HEADER_FIELD&octet)==INDEXED_HEADER_FIELD){
@@ -166,6 +169,7 @@ uint8_t find_prefix_size(hpack_preamble_t octet){
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 };
 
+/*
 int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
     uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
     int pointer = 0;
@@ -175,7 +179,7 @@ int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
         return -1;
     }
     int encoded_size_size = encode_integer(encoded_size,7,encoded_buffer+pointer);
-    encoded_buffer[pointer] |=(uint8_t)128; /*set hauffman bit*/
+    encoded_buffer[pointer] |=(uint8_t)128; //set hauffman bit
     pointer += encoded_size_size;
     for(int i = 0; i< encoded_size;i++){
         encoded_buffer[pointer+i]=encoded_string[i];
@@ -183,6 +187,7 @@ int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
     pointer += encoded_size;
     return pointer;
 }
+ */
 
 int pack_non_huffman_string_and_size(char* string, uint8_t* encoded_buffer){
     int pointer = 0;
@@ -298,22 +303,26 @@ int encode_literal_header_field_never_indexed_new_name(char* name_string, uint8_
     return pointer;
 }
 */
+
+
 int encode_literal_header_field_new_name( char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
 
     if(name_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(name_string,encoded_buffer+pointer);
+        //TODO
+        //pointer += pack_huffman_string_and_size(name_string,encoded_buffer+pointer);
     }else{
         pointer += pack_non_huffman_string_and_size(name_string,encoded_buffer+pointer);
     }
     if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(value_string,encoded_buffer+pointer);
+        //TODO
+        //pointer += pack_huffman_string_and_size(value_string,encoded_buffer+pointer);
     }else{
         pointer += pack_non_huffman_string_and_size(value_string,encoded_buffer+pointer);
     }
     return pointer;
 }
-
+/*
 int encode_literal_header_field_indexed_name( char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
 
@@ -323,7 +332,7 @@ int encode_literal_header_field_indexed_name( char* value_string, uint8_t value_
         pointer += pack_non_huffman_string_and_size(value_string,encoded_buffer+pointer);
     }
     return pointer;
-}
+}*/
 
 int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* value_string, uint8_t value_huffman_bool, char* name_string, uint8_t name_huffman_bool, uint8_t* encoded_buffer){
     if(preamble == DYNAMIC_TABLE_SIZE_UPDATE){ // dynamicTableSizeUpdate
@@ -343,7 +352,8 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* va
             if(index==(uint8_t)0){
                 pointer += encode_literal_header_field_new_name( name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
             }else{
-                pointer += encode_literal_header_field_indexed_name( value_string, value_huffman_bool, encoded_buffer + pointer);
+                //TOD0
+                //pointer += encode_literal_header_field_indexed_name( value_string, value_huffman_bool, encoded_buffer + pointer);
             }
             return pointer;
         }
@@ -420,7 +430,7 @@ uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
     }
     return -1;
 }
-
+/*
 int decode_literal_header_field_incremental_index(uint8_t* header_block, char* name, char* value){
     //int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));//decode index
@@ -441,7 +451,8 @@ int decode_literal_header_field_incremental_index(uint8_t* header_block, char* n
     //TODO add to dynamic table
     ERROR("Not implemented yet.");
     return -1;
-}
+}*/
+
 int decode_literal_header_field_without_indexing(uint8_t* header_block, char* name, char* value){
     int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
@@ -474,7 +485,7 @@ int decode_literal_header_field_without_indexing(uint8_t* header_block, char* na
     return pointer;
 }
 
-
+/*
 int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name, char* value){
     //int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
@@ -495,7 +506,9 @@ int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name,
     //TODO add to dynamic table
     ERROR("Not implemented yet.");
     return -1;
-}
+}*/
+
+/*
 int decode_dynamic_table_size(uint8_t* header_block){
     //int pointer = 0;
     uint32_t new_table_size = decode_integer(header_block, find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
@@ -504,7 +517,7 @@ int decode_dynamic_table_size(uint8_t* header_block){
     ERROR("Not implemented yet.");
     return -1;
 }
-
+*/
 
 int decode_header(uint8_t* bytes, hpack_preamble_t preamble, char* name, char* value){
     if(preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING){
