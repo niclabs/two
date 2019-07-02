@@ -1217,6 +1217,35 @@ void test_send_headers_with_continuation(void){
   TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 10, "Call count must be 10, ten continuation frames were created");
 }
 
+void test_flow_control_receive_data(void){
+    uint32_t data_received = 10;
+    hstates_t st;
+    st.h2s.window_size = 100;
+    st.h2s.window_used = 0;
+    int rc = flow_control_receive_data(&st, data_received);
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(10, st.h2s.window_used);
+    data_received = 5;
+    rc = flow_control_receive_data(&st, data_received);
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(15, st.h2s.window_used);
+
+}
+
+void test_flow_control_receive_window_update(void){
+    uint32_t window_size_increment = 10;
+    hstates_t st;
+    st.h2s.window_size = 100;
+    st.h2s.window_used = 30;
+    int rc = flow_control_receive_window_update(&st, window_size_increment);
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(20, st.h2s.window_used);
+    window_size_increment = 5;
+    rc = flow_control_receive_window_update(&st, window_size_increment);
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(15, st.h2s.window_used);
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1263,5 +1292,8 @@ int main(void)
     UNIT_TEST(test_send_continuation_frame_errors);
     UNIT_TEST(test_send_headers_one_header);
     UNIT_TEST(test_send_headers_with_continuation);
+
+    UNIT_TEST(test_flow_control_receive_data);
+    UNIT_TEST(test_flow_control_receive_window_update);
     return UNIT_TESTS_END();
 }
