@@ -4,7 +4,6 @@
 #include "logging.h"
 #include "hpack.h"
 #include "table.h"
-#include "math.h"
 
 extern int log128(uint32_t x);
 
