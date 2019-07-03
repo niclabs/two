@@ -656,14 +656,9 @@ int h2_receive_frame(hstates_t *st){
         }
         case HEADERS_TYPE:{//Header
             INFO("h2_receive_frame: HEADERS");
-            // returns -1 if protocol error was found, -2 if stream closed error, 0 if no errors found
             rc = check_incoming_headers_condition(&header, st);
             if(rc == -1){
-              ERROR("PROTOCOL ERROR was found.");
-              return -1;
-            }
-            else if(rc == -2){
-              ERROR("STREAM CLOSED ERROR was found");
+              ERROR("Error was found during headers receiving");
               return -1;
             }
             headers_payload_t hpl;

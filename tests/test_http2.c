@@ -721,7 +721,7 @@ void test_check_incoming_headers_condition_mismatch(void){
   st.h2s.current_stream.stream_id = 2440;
   st.h2s.current_stream.state = STREAM_CLOSED;
   rc = check_incoming_headers_condition(&head, &st);
-  TEST_ASSERT_MESSAGE(rc == -2, "Return code must be -2");
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1");
 }
 
 void test_check_incoming_continuation_condition(void){
