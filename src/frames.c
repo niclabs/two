@@ -484,7 +484,7 @@ int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, hea
  * padding and dependencies not implemented
 * Output: block_fragment_size or -1 if error
 */
-int get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload){
+uint32_t get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload){
     int priority_length = 0;
     //not implemented yet!
     //if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){
@@ -575,7 +575,7 @@ int data_payload_to_bytes(frame_header_t* frame_header, data_payload_t* data_pay
 * Function: read_data_payload
 * given a byte array, get the data payload encoded in it
 * Input: byte_array, frame_header, data_payload, data array
-* Output: bytes read or -1 if error
+* Output: byteget_header_block_fragment_sizes read or -1 if error
 */
 int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_payload_t* data_payload, uint8_t * data){
     uint8_t flags = frame_header->flags;

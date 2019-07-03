@@ -79,7 +79,7 @@ FAKE_VALUE_FUNC(int, bytes_to_settings_payload, uint8_t*, int, settings_payload_
 FAKE_VALUE_FUNC(int, bytes_to_frame_header, uint8_t*, int , frame_header_t*);
 FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*, frame_header_t*, settings_payload_t*, settings_pair_t*);
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
-FAKE_VALUE_FUNC(int, get_header_block_fragment_size,frame_header_t*, headers_payload_t*);
+FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size,frame_header_t*, headers_payload_t*);
 FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_data_lists_t*);
 FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
