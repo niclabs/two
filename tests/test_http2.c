@@ -1595,7 +1595,15 @@ void test_send_data_full_sending(void){
   TEST_ASSERT_MESSAGE(st.hd_lists.data_out_size == 0, "Data out size must be 0, full data was sent");
 }
 
-
+void test_send_window_update(void){
+    hstates_t st;
+    int rc = init_variables(&st);
+    st.h2s.incoming_window.window_used = 30;
+    st.h2s.current_stream.state = STREAM_OPEN;
+    uint8_t window_size_increment = 10;
+    rc = send_window_update(&st, window_size_increment);
+    TEST_ASSERT_EQUAL(20, st.h2s.incoming_window.window_used);
+}
 
 int main(void)
 {
@@ -1661,6 +1669,8 @@ int main(void)
 
     UNIT_TEST(test_send_data);
     UNIT_TEST(test_send_data_full_sending);
+
+    UNIT_TEST(test_send_window_update);
 
     //TODO:
     // h2_receive_frame

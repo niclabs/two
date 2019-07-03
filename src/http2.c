@@ -823,7 +823,6 @@ int send_window_update(hstates_t *st, uint8_t window_size_increment){
     frame_t frame;
     frame_header_t frame_header;
     window_update_payload_t window_update_payload;
-    window_update_payload.window_size_increment=window_size_increment;
     int rc = create_window_update_frame(&frame_header, &window_update_payload,window_size_increment,stream_id);
     if(rc<0){
         ERROR("error creating window_update frame");
