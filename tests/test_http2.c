@@ -1234,9 +1234,11 @@ void test_send_headers_errors(void){
   hstates_t st2; // Second error, compress headers failure
   init_variables(&st2);
   int compress_return[2] = {-1, 20};
+  st2.hd_lists.header_list_count_out = 10;
   SET_RETURN_SEQ(compress_headers, compress_return, 2);
   hstates_t st3; // Third error, stream verification error
   init_variables(&st3);
+  st3.hd_lists.header_list_count_out = 10;
   st3.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
   int rc = send_headers(&st1, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no headers to send)");
