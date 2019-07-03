@@ -3,7 +3,7 @@
 #include "fff.h"
 #include "http2.h"
 #include "http2utils.h"
-#define LOG_LEVEL LOG_LEVEL_INFO
+//#define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"
 
 
