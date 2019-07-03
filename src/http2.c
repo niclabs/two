@@ -1,4 +1,5 @@
 #include "http2.h"
+//#define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"
 #include "utils.h"
 
@@ -18,6 +19,10 @@
 * Output: 0 if initialize were made. -1 if not.
 */
 int init_variables(hstates_t * st){
+
+    st->h2s.header_block_fragments_pointer = 0;
+
+
     st->h2s.remote_settings[0] = st->h2s.local_settings[0] = DEFAULT_HTS;
     st->h2s.remote_settings[1] = st->h2s.local_settings[1] = DEFAULT_EP;
     st->h2s.remote_settings[2] = st->h2s.local_settings[2] = DEFAULT_MCS;
@@ -29,6 +34,10 @@ int init_variables(hstates_t * st){
     st->h2s.current_stream.state = STREAM_IDLE;
     st->h2s.last_open_stream_id = 1;
 
+    st->hd_lists.header_list_count_in = 0;
+    st->hd_lists.header_list_count_out = 0;
+    st->hd_lists.data_in_size = 0;
+    st->hd_lists.data_out_size = 0;
 
     st->h2s.incoming_window.window_size = DEFAULT_IWS;
     st->h2s.incoming_window.window_used = 0;
@@ -286,7 +295,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
   rc = buffer_copy(st->h2s.header_block_fragments + st->h2s.header_block_fragments_pointer, hpl->header_block_fragment, hbf_size);
   if(rc < 1){
-    ERROR("Headers' header block fragment were not written or paylaod was empty");
+    ERROR("Headers' header block fragment were not written or paylaod was empty. rc = %d",rc);
     return -1;
   }
   st->h2s.header_block_fragments_pointer += rc;
@@ -296,7 +305,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   }
   //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
   if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
-      //return number of headers written on header_list, so http2 can update header_list_count
+      //return bytes read.
       rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->hd_lists));
       if(rc < 0){
         ERROR("Error was found receiving header_block");
@@ -309,7 +318,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       else{//all fragments already received.
           st->h2s.header_block_fragments_pointer = 0;
       }
-      st->hd_lists.header_list_count_in = rc;
+      //st->hd_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
       if(st->h2s.received_end_stream == 1){
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
@@ -460,7 +469,7 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     }
     buffer_copy(st->hd_lists.data_in + st->hd_lists.data_in_size, data_payload->data, data_length);
     st->hd_lists.data_in_size += data_length;
-    if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)) {
+    if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
         st->h2s.received_end_stream = 1;
     }
     return 0;
@@ -618,6 +627,7 @@ int h2_receive_frame(hstates_t *st){
     switch(header.type){
         case DATA_TYPE: {//Data
             /*check stream state*/
+            INFO("h2_receive_frame: DATA");
             h2_stream_state_t stream_state = st->h2s.current_stream.state;
             if(stream_state!=STREAM_OPEN && stream_state!=STREAM_HALF_CLOSED_LOCAL){
                 ERROR("STREAM CLOSED ERROR was found");
@@ -638,6 +648,7 @@ int h2_receive_frame(hstates_t *st){
             return 0;
         }
         case HEADERS_TYPE:{//Header
+            INFO("h2_receive_frame: HEADERS");
             // returns -1 if protocol error was found, -2 if stream closed error, 0 if no errors found
             rc = check_incoming_headers_condition(&header, st);
             if(rc == -1){
