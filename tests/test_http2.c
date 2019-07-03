@@ -22,6 +22,11 @@ extern int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_s
 extern int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream);
 extern int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream);
 extern int send_headers(hstates_t *st, uint8_t end_stream);
+extern int flow_control_receive_data(hstates_t* st, uint32_t length);
+extern int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment);
+extern uint32_t get_size_data_to_send(hstates_t *st);
+extern int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st);
+extern int send_data(hstates_t *st, uint8_t end_stream);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -1411,6 +1416,7 @@ void test_h2_receive_frame_data_ok(void){
 
 }
 
+
 int read_continuation_payload_fake_custom(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment){
     int rc = buffer_copy(continuation_block_fragment, buff_read, frame_header->length);
     continuation_payload->header_block_fragment = continuation_block_fragment;
@@ -1454,6 +1460,17 @@ void test_h2_receive_frame_continuation(void){
     TEST_ASSERT_EQUAL(1,st.hd_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(strncmp("name",st.hd_lists.header_list_in[0].name,4),0);
     TEST_ASSERT_EQUAL(strncmp("value",st.hd_lists.header_list_in[0].value,5),0);
+}
+
+
+void test_send_data(void){
+  hstates_t st;
+  int rc = init_variables(&st);
+  st.hd_lists.data_out_size = 36;
+  st.h2s.outgoing_window.window_size = 30;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  rc = send_data(&st, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
 }
 
 
@@ -1515,6 +1532,9 @@ int main(void)
     UNIT_TEST(test_h2_receive_frame_data_stream_closed);
     UNIT_TEST(test_h2_receive_frame_data_ok);
     UNIT_TEST(test_h2_receive_frame_continuation);
+
+    UNIT_TEST(test_send_data);
+
     //TODO:
     // h2_receive_frame
     // send_data
