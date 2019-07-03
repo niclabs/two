@@ -991,8 +991,8 @@ int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_
 */
 int send_headers(hstates_t *st, uint8_t end_stream){
   if(st->hd_lists.header_list_count_out == 0){
-    WARN("There are no headers to send");
-    return 0;
+    ERROR("There are no headers to send");
+    return -1;
   }
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
   int size = compress_headers(st->hd_lists.header_list_out, st->hd_lists.header_list_count_out , encoded_bytes);
