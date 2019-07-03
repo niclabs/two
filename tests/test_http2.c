@@ -1269,6 +1269,38 @@ void test_get_size_data_to_send(void){
 
 
 }
+void test_handle_data_payload(void){
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    int data_size = 10;
+    uint8_t data[data_size];
+    uint8_t data_in_payload[]={1,2,3,4,5,6,7,8,9,0};
+    uint32_t stream_id = 3;
+
+    frame_header.type = DATA_TYPE;
+    frame_header.flags = 0x0;
+    frame_header.length = data_size;
+    frame_header.stream_id = stream_id;
+    frame_header.reserved = 0;
+    buffer_copy(data, data_in_payload, data_size);
+    data_payload.data = data;
+
+    hstates_t st;
+    int rc = init_variables(&st);
+    rc = handle_data_payload(&frame_header, &data_payload, &st);
+    TEST_ASSERT_EQUAL(0,rc);
+    TEST_ASSERT_EQUAL(data_size,st.hd_lists.data_in_size);
+    for(int i =0; i< data_size; i++){
+        TEST_ASSERT_EQUAL(data_in_payload[i], st.hd_lists.data_in[i]);
+    }
+}
+
+
+
+
 
 int main(void)
 {
@@ -1322,8 +1354,10 @@ int main(void)
 
     UNIT_TEST(test_get_size_data_to_send);
 
+    UNIT_TEST(test_handle_data_payload);
+
     //TODO:
-    // handle_data_payload
+    //
     // h2_receive_frame
     // send_data
     // h2_send_request
