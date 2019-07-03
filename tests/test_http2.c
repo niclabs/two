@@ -1572,10 +1572,27 @@ void test_send_data(void){
   hstates_t st;
   int rc = init_variables(&st);
   st.hd_lists.data_out_size = 36;
+  st.hd_lists.data_out_sent = 0;
   st.h2s.outgoing_window.window_size = 30;
   st.h2s.current_stream.state = STREAM_OPEN;
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 30, "Data out sent must be 30, full data was sent");
+  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_size == 36, "Data out size must be 0, full data was sent");
+}
+
+void test_send_data_full_sending(void){
+  hstates_t st;
+  int rc = init_variables(&st);
+  st.hd_lists.data_out_size = 27;
+  st.hd_lists.data_out_sent = 0;
+  st.h2s.outgoing_window.window_size = 50;
+  st.h2s.outgoing_window.window_used = 0;
+  st.h2s.current_stream.state = STREAM_OPEN;
+  rc = send_data(&st, 1);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 0, "Data out sent must be 0, full data was sent");
+  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_size == 0, "Data out size must be 0, full data was sent");
 }
 
 
@@ -1643,6 +1660,7 @@ int main(void)
     UNIT_TEST(test_h2_receive_frame_settings_ack);
 
     UNIT_TEST(test_send_data);
+    UNIT_TEST(test_send_data_full_sending);
 
     //TODO:
     // h2_receive_frame
