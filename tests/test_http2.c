@@ -163,7 +163,7 @@ int buffer_copy_fake_custom(uint8_t* dest, uint8_t* orig, int size){
   return size;
 }
 //getheaderblockfragmentsize
-int ghbfs(frame_header_t *h, headers_payload_t *st){
+uint32_t ghbfs(frame_header_t *h, headers_payload_t *st){
   return 20;
 }
 int bc(uint8_t* a, uint8_t*b, int c){
@@ -859,7 +859,7 @@ void test_handle_headers_payload_errors(void){
   headers_payload_t hpl;
   hstates_t st;
   // First error, header block fragment too big
-  int ghbfs_returns[2] = {10000, 20};
+  uint32_t ghbfs_returns[2] = {10000, 20};
   SET_RETURN_SEQ(get_header_block_fragment_size, ghbfs_returns, 2);
   // Second error, buffer_copy invalid
   int bc_returns[2] = {-1, 20};
