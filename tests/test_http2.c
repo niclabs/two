@@ -1344,6 +1344,24 @@ int receive_header_block_fake_custom(uint8_t*header_block, int size, headers_dat
     return size;
 }
 
+void test_h2_receive_frame_headers_wait_end_headers(void){
+    hstates_t st;
+    int rc = init_variables(&st);
+    st.is_server = 1;
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    get_header_block_fragment_size_fake.custom_fake = get_header_block_fragment_size_fake_custom;
+    uint8_t bytes[]={0,0,10, 0x1, 0x0, 0,0,0,3,  0,2,3,4,5,6,7,8,9,0};
+    http_write(&st,bytes,19);
+    is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
+    bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
+    read_headers_payload_fake.custom_fake = read_headers_payload_fake_custom;
+    receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
+
+    rc = h2_receive_frame(&st);
+    TEST_ASSERT_EQUAL(0,rc);
+    TEST_ASSERT_EQUAL(1, st.h2s.waiting_for_end_headers_flag);
+}
+
 
 void test_h2_receive_frame_headers(void){
     hstates_t st;
@@ -1360,6 +1378,7 @@ void test_h2_receive_frame_headers(void){
 
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
+    TEST_ASSERT_EQUAL(0, st.h2s.waiting_for_end_headers_flag);
     TEST_ASSERT_EQUAL(1,st.hd_lists.header_list_count_in);
     TEST_ASSERT_EQUAL(strncmp("name",st.hd_lists.header_list_in[0].name,4),0);
     TEST_ASSERT_EQUAL(strncmp("value",st.hd_lists.header_list_in[0].value,5),0);
@@ -1615,6 +1634,7 @@ int main(void)
 
     UNIT_TEST(test_handle_data_payload);
     UNIT_TEST(test_h2_receive_frame_headers);
+    UNIT_TEST(test_h2_receive_frame_headers_wait_end_headers);
     UNIT_TEST(test_h2_receive_frame_data_stream_closed);
     UNIT_TEST(test_h2_receive_frame_data_ok);
     UNIT_TEST(test_h2_receive_frame_continuation);
