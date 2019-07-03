@@ -403,7 +403,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
       else{//all fragments already received.
           st->h2s.header_block_fragments_pointer = 0;
       }
-      st->hd_lists.header_list_count_in = rc;
+      //st->hd_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;
       if(st->h2s.received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
