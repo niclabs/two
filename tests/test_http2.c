@@ -1595,6 +1595,46 @@ void test_send_data_full_sending(void){
   TEST_ASSERT_MESSAGE(st.hd_lists.data_out_size == 0, "Data out size must be 0, full data was sent");
 }
 
+void test_send_data_errors(void){
+  int data_create_return[2] = {-1,0};
+  SET_RETURN_SEQ(create_data_frame, data_create_return, 2);
+  int frame_bytes_ret[2] = {10,10};
+  SET_RETURN_SEQ(frame_to_bytes, frame_bytes_ret, 2);
+  hstates_t st1; //First error, no data to sned
+  int rc = init_variables(&st1);
+  st1.hd_lists.data_out_size = 0;
+  rc = send_data(&st1, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no data out)");
+  hstates_t st2; //Second error, wrong state stream
+  rc = init_variables(&st2);
+  st2.hd_lists.data_out_size = 27;
+  st2.hd_lists.data_out_sent = 0;
+  st2.h2s.outgoing_window.window_size = 50;
+  st2.h2s.outgoing_window.window_used = 0;
+  st2.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+  rc = send_data(&st2, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream half closed local)");
+  hstates_t st3; //Third error, create_data_frame error
+  rc = init_variables(&st3);
+  st3.hd_lists.data_out_size = 27;
+  st3.hd_lists.data_out_sent = 0;
+  st3.h2s.outgoing_window.window_size = 50;
+  st3.h2s.outgoing_window.window_used = 0;
+  st3.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+  rc = send_data(&st3, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (create_data_frame error)");
+  hstates_t st4; // Fourth error, writting error
+  rc = init_variables(&st4);
+  st4.hd_lists.data_out_size = 27;
+  st4.hd_lists.data_out_sent = 0;
+  st4.h2s.outgoing_window.window_size = 50;
+  st4.h2s.outgoing_window.window_used = 0;
+  st4.h2s.current_stream.state = STREAM_OPEN;
+  size = HTTP2_MAX_BUFFER_SIZE;
+  rc = send_data(&st4, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (writting error)");
+}
+
 
 
 int main(void)
@@ -1661,6 +1701,7 @@ int main(void)
 
     UNIT_TEST(test_send_data);
     UNIT_TEST(test_send_data_full_sending);
+    UNIT_TEST(test_send_data_errors);
 
     //TODO:
     // h2_receive_frame
