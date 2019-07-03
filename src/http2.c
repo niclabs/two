@@ -21,7 +21,7 @@
 int init_variables(hstates_t * st){
 
     st->h2s.header_block_fragments_pointer = 0;
-
+    st->h2s.waiting_for_end_headers_flag = 0;
 
     st->h2s.remote_settings[0] = st->h2s.local_settings[0] = DEFAULT_HTS;
     st->h2s.remote_settings[1] = st->h2s.local_settings[1] = DEFAULT_EP;
