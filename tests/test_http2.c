@@ -27,6 +27,7 @@ extern int flow_control_receive_window_update(hstates_t* st, uint32_t window_siz
 extern uint32_t get_size_data_to_send(hstates_t *st);
 extern int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st);
 extern int send_data(hstates_t *st, uint8_t end_stream);
+extern int send_window_update(hstates_t *st, uint8_t window_size_increment);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -1227,6 +1228,24 @@ void test_send_headers_with_continuation(void){
   TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 10, "Call count must be 10, ten continuation frames were created");
 }
 
+void test_send_headers_errors(void){
+  hstates_t st1; // First error, no headers to send
+  init_variables(&st1);
+  hstates_t st2; // Second error, compress headers failure
+  init_variables(&st2);
+  int compress_return[2] = {-1, 20};
+  SET_RETURN_SEQ(compress_headers, compress_return, 2);
+  hstates_t st3; // Third error, stream verification error
+  init_variables(&st3);
+  st3.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+  int rc = send_headers(&st1, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no headers to send)");
+  rc = send_headers(&st2, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (Compress headers error)");
+  rc = send_headers(&st3, 1);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream verification error)");
+}
+
 void test_flow_control_receive_data(void){
     uint32_t data_received = 10;
     hstates_t st;
@@ -1603,6 +1622,7 @@ void test_send_window_update(void){
     st.h2s.current_stream.state = STREAM_OPEN;
     uint8_t window_size_increment = 10;
     rc = send_window_update(&st, window_size_increment);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0 (there were no problems to send window update)");
     TEST_ASSERT_EQUAL(20, st.h2s.incoming_window.window_used);
 }
 
@@ -1694,6 +1714,7 @@ int main(void)
     UNIT_TEST(test_send_continuation_frame_errors);
     UNIT_TEST(test_send_headers_one_header);
     UNIT_TEST(test_send_headers_with_continuation);
+    UNIT_TEST(test_send_headers_errors);
 
     UNIT_TEST(test_flow_control_receive_data);
     UNIT_TEST(test_flow_control_receive_window_update);
