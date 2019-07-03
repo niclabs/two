@@ -448,6 +448,14 @@ int flow_control_receive_data(hstates_t* st, uint32_t length){
     return 0;
 }
 
+int flow_control_send_window_update(hstates_t* st, uint32_t window_size_increment){
+    if(window_size_increment>st->h2s.incoming_window.window_used){
+        ERROR("Increment to big. protocol_error");
+        return -1;
+    }
+    decrease_window_used(&st->h2s.incoming_window,window_size_increment);
+    return 0;
+}
 
 int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment){
     if(window_size_increment>st->h2s.outgoing_window.window_used){
@@ -804,6 +812,48 @@ uint32_t get_size_data_to_send(hstates_t *st){
     }
 }
 
+int send_window_update(hstates_t *st, uint8_t window_size_increment){
+    h2_stream_state_t state = st->h2s.current_stream.state;
+    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
+        ERROR("Wrong state. ");
+        return -1;
+    }
+    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
+
+    frame_t frame;
+    frame_header_t frame_header;
+    window_update_payload_t window_update_payload;
+    window_update_payload.window_size_increment=window_size_increment;
+    int rc = create_window_update_frame(&frame_header, &window_update_payload,window_size_increment,stream_id);
+    if(rc<0){
+        ERROR("error creating window_update frame");
+        return -1;
+    }
+    if(window_size_increment > st->h2s.incoming_window.window_used){
+        ERROR("Trying to send window increment greater than used");
+        return -1;
+    }
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&window_update_payload;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    rc = http_write(st,buff_bytes,bytes_size);
+    INFO("Sending WINDOW UPDATE");
+
+    if(rc != bytes_size){
+        ERROR("Error writting window_update frame. INTERNAL ERROR");
+        return rc;
+    }
+    rc = flow_control_send_window_update(st, window_size_increment);
+    if(rc!=0){
+        ERROR("ERROR in flow control when sending WU");
+        return -1;
+    }
+    return 0;
+
+
+}
+
 int send_data(hstates_t *st, uint8_t end_stream){
     if(st->hd_lists.data_out_size<=0){
         ERROR("no data to be send");
@@ -845,6 +895,8 @@ int send_data(hstates_t *st, uint8_t end_stream){
         st->hd_lists.data_out_size = 0;
         st->hd_lists.data_out_sent = 0;
     }
+
+    //TODO update window size
     return 0;
 }
 
