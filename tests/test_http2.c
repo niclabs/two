@@ -1493,6 +1493,62 @@ void test_h2_receive_frame_window_update(void){
 }
 
 
+
+int bytes_to_settings_payload_fake_custom(uint8_t*bytes, int size, settings_payload_t*settings_payload, settings_pair_t*pairs){
+    if(size%6!=0){
+        return -1;
+    }
+    pairs[0].identifier = bytes[1];
+    pairs[0].value = bytes[5];
+    settings_payload->pairs = pairs;
+    settings_payload->count = 1;
+    return 6*1;
+}
+
+void test_h2_receive_frame_settings(void){
+    hstates_t st;
+    int rc = init_variables(&st);
+    st.is_server = 1;
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    get_header_block_fragment_size_fake.custom_fake = get_header_block_fragment_size_fake_custom;
+    uint8_t bytes[]={0,0,6, 0x4, 0x0, 0,0,0,0,  0,1, 0,0,0,10};//settings frame no ACK setting 1 = 10
+    http_write(&st,bytes,15);
+
+    receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
+    bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
+    //read_settings_payload_fake.custom_fake = read_settings_payload_fake_custom;
+    is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
+    verify_setting_fake.custom_fake = verify_return_zero;
+    bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
+    rc = h2_receive_frame(&st);
+    TEST_ASSERT_EQUAL(0,rc);
+    TEST_ASSERT_EQUAL(10,h2_read_setting_from(REMOTE,1,&st));
+
+}
+
+
+void test_h2_receive_frame_settings_ack(void){
+    hstates_t st;
+    st.h2s.wait_setting_ack = 1;
+    int rc = init_variables(&st);
+    st.is_server = 1;
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    get_header_block_fragment_size_fake.custom_fake = get_header_block_fragment_size_fake_custom;
+    uint8_t bytes[]={0,0,0, 0x4, 0x1, 0,0,0,0};//settings frame no ACK setting 1 = 10
+    http_write(&st,bytes,9);
+
+    receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
+    bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
+    //read_settings_payload_fake.custom_fake = read_settings_payload_fake_custom;
+    is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
+    verify_setting_fake.custom_fake = verify_return_zero;
+    bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
+    rc = h2_receive_frame(&st);
+    TEST_ASSERT_EQUAL(0,rc);
+    TEST_ASSERT_EQUAL(0,st.h2s.wait_setting_ack);
+}
+
+
 void test_send_data(void){
   hstates_t st;
   int rc = init_variables(&st);
@@ -1563,6 +1619,8 @@ int main(void)
     UNIT_TEST(test_h2_receive_frame_data_ok);
     UNIT_TEST(test_h2_receive_frame_continuation);
     UNIT_TEST(test_h2_receive_frame_window_update);
+    UNIT_TEST(test_h2_receive_frame_settings);
+    UNIT_TEST(test_h2_receive_frame_settings_ack);
 
     UNIT_TEST(test_send_data);
 
