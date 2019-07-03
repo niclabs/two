@@ -1463,6 +1463,36 @@ void test_h2_receive_frame_continuation(void){
 }
 
 
+int read_window_update_payload_fake_custom(uint8_t* buff_read, frame_header_t* frame_header, window_update_payload_t* window_update_payload){
+    if(frame_header->length!=4){
+        return -1;
+    }
+    uint32_t window_size_increment = (uint32_t)buff_read[3];
+    window_update_payload->window_size_increment = window_size_increment;
+    return frame_header->length;
+}
+
+
+void test_h2_receive_frame_window_update(void){
+    hstates_t st;
+    int rc = init_variables(&st);
+    st.is_server = 1;
+    st.h2s.outgoing_window.window_used = 30;
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    get_header_block_fragment_size_fake.custom_fake = get_header_block_fragment_size_fake_custom;
+    uint8_t bytes[]={0,0,4, 0x8, 0x0, 0,0,0,3,  0,0,0,10};//window_update frame->window_size_increment = 10
+    http_write(&st,bytes,13);
+
+    receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
+    bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
+    read_window_update_payload_fake.custom_fake = read_window_update_payload_fake_custom;
+    //is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
+    rc = h2_receive_frame(&st);
+    TEST_ASSERT_EQUAL(0,rc);
+    TEST_ASSERT_EQUAL(20,st.h2s.outgoing_window.window_used);
+}
+
+
 void test_send_data(void){
   hstates_t st;
   int rc = init_variables(&st);
@@ -1532,6 +1562,7 @@ int main(void)
     UNIT_TEST(test_h2_receive_frame_data_stream_closed);
     UNIT_TEST(test_h2_receive_frame_data_ok);
     UNIT_TEST(test_h2_receive_frame_continuation);
+    UNIT_TEST(test_h2_receive_frame_window_update);
 
     UNIT_TEST(test_send_data);
 
