@@ -1180,7 +1180,7 @@ void test_send_continuation_frame_errors(void){
   int rc = send_continuation_frame(&st, buff, 20, 0x16, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (create continuation error)");
   size = HTTP2_MAX_BUFFER_SIZE;
-  rc = send_headers_frame(&st, buff, 20, 0x16, 1, 1);
+  rc = send_continuation_frame(&st, buff, 20, 0x16,1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (write error)");
 }
 
