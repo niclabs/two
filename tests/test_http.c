@@ -658,6 +658,44 @@ void test_http_get_header_fail_header_not_found(void)
 }
 
 
+void test_http_set_data_success(void)
+{
+    headers_data_lists_t hd;
+
+    int sd = http_set_data(&hd, (uint8_t *)"test", 4);
+
+    TEST_ASSERT_EQUAL( 0, sd);
+
+    TEST_ASSERT_EQUAL( 4, hd.data_out_size);
+    TEST_ASSERT_EQUAL( 0, memcmp(&hd.data_out, (uint8_t *)"test", 4));
+}
+
+
+void test_http_set_data_fail_big_data(void)
+{
+    headers_data_lists_t hd;
+
+    hd.data_out_size = 0;
+
+    int sd = http_set_data(&hd, (uint8_t *)"", 0);
+
+    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data too large for buffer size");
+
+    TEST_ASSERT_EQUAL( 0, hd.data_out_size);
+}
+
+
+void test_http_set_data_fail_data_full(void)
+{
+    headers_data_lists_t hd;
+
+    hd.data_out_size = HTTP_MAX_DATA_SIZE;
+
+    int sd = http_set_data(&hd, (uint8_t *)"test", 4);
+
+    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data buffer full");
+}
+
 
 
 void test_http_get_data_success(void){
@@ -834,6 +872,7 @@ int main(void)
 
     UNIT_TEST(test_http_set_data_success);
     UNIT_TEST(test_http_set_data_fail_big_data);
+    UNIT_TEST(test_http_set_data_fail_data_full);
 
     UNIT_TEST(test_http_get_data_success);
     UNIT_TEST(test_http_get_data_fail_no_data);
