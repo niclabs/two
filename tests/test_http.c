@@ -853,13 +853,8 @@ int main(void)
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
-<<<<<<< HEAD
-
-    /*UNIT_TEST(test_http_get_success);
-=======
 /*
     UNIT_TEST(test_http_get_success);
->>>>>>> Disabled tests for http_get
     UNIT_TEST(test_http_get_fail);
     UNIT_TEST(test_http_get_fail_h2_send_request);
     UNIT_TEST(test_http_get_fail_headers_list_full);
