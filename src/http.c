@@ -249,7 +249,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
         rr->size_data = http_get_data(&(hs->hd_lists), rr->data);
 
 
-      rr->status_flag=http_get_header(&hs->hd_lists, ":status");
+      rr->status_flag=http_get_header(&hs->hd_lists, ":status", 8);
     }else{
         rr->size_data = 0;
     }
@@ -296,7 +296,7 @@ int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value)
 }
 
 
-char *http_get_header(headers_data_lists_t *hd_lists, char *header)
+char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size)
 {
     int i = hd_lists->header_list_count_in;
 
@@ -306,8 +306,9 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header)
     }
 
     int k;
+    size_t header_size_t = header_size;
     for (k = 0; k < i; k++) {
-        if ((strncmp(hd_lists->header_list_in[k].name, header, strlen(header)) == 0) && strlen(header) == strlen(hd_lists->header_list_in[k].name)) {
+        if ((strncmp(hd_lists->header_list_in[k].name, header, header_size) == 0) && header_size_t == strlen(hd_lists->header_list_in[k].name)) {
             INFO("RETURNING value of '%s' header; '%s'", hd_lists->header_list_in[k].name, hd_lists->header_list_in[k].value);
             return hd_lists->header_list_in[k].value;
         }
@@ -345,7 +346,7 @@ int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
 int get_receive(hstates_t *hs)
 {
     INFO("get_receive");
-    char *path = http_get_header(&hs->hd_lists, ":path");
+    char *path = http_get_header(&hs->hd_lists, ":path", 6);
     callback_type_t callback;
 
     if (hs->path_callback_list_count == 0) {

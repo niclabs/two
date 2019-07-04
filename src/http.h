@@ -96,13 +96,14 @@ int http_start_client(hstates_t* hs);
 /*
  * Send a GET request to server and wait for an answer
  *
- * @param    hs             Struct with client information
- * @param    path           Path where looking for answer
- * @param    host           host for query
- * @param    accept_type    Type accepted for answer
+ * @param    hs                         Struct with client information
+ * @param    path                       Path where looking for answer
+ * @param    host                       Host for query
+ * @param    accept_type                Type accepted for answer
+ * @param    response_received_type_t   Struct for response data
  *
- * @return   0          The action was successful
- * @return   -1         The action failed
+ * @return   0                          The action was successful
+ * @return   -1                         The action failed
  */
 int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_received_type_t *rr);
 
@@ -138,10 +139,11 @@ int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
  *
  * @param    hd_lists         Struct with headers information
  * @param    header           Header name
+ * @param    header_size      Size of header name
  *
  * @return                    Value finded
  */
-char *http_get_header(headers_data_lists_t *hd_lists, char *header);
+char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
 
 
 /*
@@ -149,6 +151,7 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header);
  *
  * @param    hd_lists   Struct with data information
  * @param    data       Data
+ * @param    data_size  Size of data
  *
  * @return   0          Successfully added data
  * @return   -1         There was an error in the process
