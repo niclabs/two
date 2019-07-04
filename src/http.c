@@ -332,9 +332,12 @@ uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
 
 int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
 {
-    //int size = sizeof(data);
-
+    if (HTTP_MAX_DATA_SIZE == hd_lists->data_out_size) {
+        ERROR("Data buffer full");
+        return -1;
+    }
     if (data_size <= 0 || data_size > 128) {
+        ERROR("Data too large for buffer size");
         return -1;
     }
     hd_lists->data_out_size = data_size;
