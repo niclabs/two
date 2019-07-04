@@ -658,6 +658,34 @@ void test_http_get_header_fail_header_not_found(void)
 }
 
 
+
+
+void test_http_get_data_success(void){
+    headers_data_lists_t hd;
+
+    hd.data_in_size = 4;
+    memcpy(hd.data_in, (uint8_t *)"test", 4);
+
+    uint8_t buf;
+    int gd = http_get_data(&hd, &buf);
+
+    TEST_ASSERT_EQUAL( 4, gd);
+
+    TEST_ASSERT_EQUAL( 0, memcmp(&buf, hd.data_in, 1));
+}
+
+
+void test_http_get_data_fail_no_data(void){
+    headers_data_lists_t hd;
+    hd.data_in_size = 0;
+
+    uint8_t buf;
+    int gd = http_get_data( &hd, &buf);
+
+    TEST_ASSERT_EQUAL_MESSAGE( 0, gd, "Data list is empty");
+}
+
+
 void test_get_receive_success(void)
 {
     hstates_t hs;
@@ -803,6 +831,12 @@ int main(void)
     UNIT_TEST(test_http_get_header_success);
     UNIT_TEST(test_http_get_header_fail_empty_table);
     UNIT_TEST(test_http_get_header_fail_header_not_found);
+
+    UNIT_TEST(test_http_set_data_success);
+    UNIT_TEST(test_http_set_data_fail_big_data);
+
+    UNIT_TEST(test_http_get_data_success);
+    UNIT_TEST(test_http_get_data_fail_no_data);
 
     UNIT_TEST(test_get_receive_success);
     UNIT_TEST(test_get_receive_fail_h2_send_response);
