@@ -624,7 +624,7 @@ void test_http_get_header_success(void)
 
     hs.hd_lists.header_list_count_in = 2;
 
-    char *buf = http_get_header(&hs.hd_lists, "settings");
+    char *buf = http_get_header(&hs.hd_lists, "settings", 8);
 
     TEST_ASSERT_EQUAL(0, strncmp(buf, "server:on", strlen("server:on")));
 }
@@ -635,7 +635,7 @@ void test_http_get_header_fail_empty_table(void)
     hstates_t hs;
 
     hs.hd_lists.header_list_count_in = 0;
-    char *buf = http_get_header(&hs.hd_lists, "settings");
+    char *buf = http_get_header(&hs.hd_lists, "settings", 8);
 
     TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");
 }
@@ -649,9 +649,10 @@ void test_http_get_header_fail_header_not_found(void)
     strcpy(hs.hd_lists.header_list_in[0].value, "one");
     strcpy(hs.hd_lists.header_list_in[1].name, "something2");
     strcpy(hs.hd_lists.header_list_in[1].value, "two");
+
     hs.hd_lists.header_list_count_in = 2;
 
-    char *buf = http_get_header(&hs.hd_lists, "settings");
+    char *buf = http_get_header(&hs.hd_lists, "settings", 8);
 
     TEST_ASSERT_MESSAGE(buf == NULL, "Header not found in headers list");
 }
