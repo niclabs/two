@@ -249,7 +249,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
         rr->size_data = http_get_data(&(hs->hd_lists), rr->data);
 
 
-      rr->status_flag=http_get_header(&hs->hd_lists, ":status", 8);
+      rr->status_flag=http_get_header(&hs->hd_lists, ":status", 7);
     }else{
         rr->size_data = 0;
     }
@@ -346,7 +346,7 @@ int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
 int get_receive(hstates_t *hs)
 {
     INFO("get_receive");
-    char *path = http_get_header(&hs->hd_lists, ":path", 6);
+    char *path = http_get_header(&hs->hd_lists, ":path", 5);
     callback_type_t callback;
 
     if (hs->path_callback_list_count == 0) {
