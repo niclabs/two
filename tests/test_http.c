@@ -442,7 +442,7 @@ void test_http_client_connect_fail_sock_create(void)
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
 
-
+/*
 void test_http_get_success()
 {
     hstates_t hs;
@@ -532,7 +532,7 @@ void test_http_get_fail_headers_list_full()
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, hg, "Cannot send query");
 }
-
+*/
 
 void test_http_client_disconnect_success_v1(void)
 {
@@ -853,8 +853,13 @@ int main(void)
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
+<<<<<<< HEAD
 
     /*UNIT_TEST(test_http_get_success);
+=======
+/*
+    UNIT_TEST(test_http_get_success);
+>>>>>>> Disabled tests for http_get
     UNIT_TEST(test_http_get_fail);
     UNIT_TEST(test_http_get_fail_h2_send_request);
     UNIT_TEST(test_http_get_fail_headers_list_full);
