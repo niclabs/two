@@ -88,9 +88,9 @@ int http_start_server(hstates_t *hs)
                 continue;
             }
             if (hs->new_headers == 1) {
-                //http_clear_header_list(hs, -1, 1);
+                http_clear_header_list(hs, -1, 1);
                 get_receive(hs);
-                //http_clear_header_list(hs, -1, 0);
+                http_clear_header_list(hs, -1, 0);
                 hs->new_headers = 0;
             }
         }
@@ -192,7 +192,7 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 
 int http_start_client(hstates_t *hs)
 {
-    //http_clear_header_list(hs, -1, 0);
+    http_clear_header_list(hs, -1, 0);
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
             break;
@@ -238,7 +238,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
         ERROR("Cannot send query");
         return -1;
     }
-    //http_clear_header_list(hs, -1, 1);
+    http_clear_header_list(hs, -1, 1);
 
     if (http_start_client(hs) < 0) {
 
