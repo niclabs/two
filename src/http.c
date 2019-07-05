@@ -200,9 +200,8 @@ int http_start_client(hstates_t *hs)
         if (hs->keep_receiving == 1) {
             continue;
         }
-        //Flag of GOAWAY
-        if (hs->keep_receiving == 2) {
-            return 0;
+        if (hs->hd_lists.data_in_size > 0) {
+          return 0;
         }
     }
     INFO("Client off the while");
