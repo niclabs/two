@@ -236,13 +236,14 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
     http_clear_header_list(hs, -1, 1);
 
     if (http_start_client(hs) < 0) {
-        rr->status_flag="400";
+        rr->status_flag=400;
         rr->size_data = 0;
         return -1;
     }
 
     if (hs->hd_lists.data_in_size > 0) {
-        rr->status_flag=http_get_header(&hs->hd_lists, ":status", 7);
+        rr->size_data = http_get_data(&hs->hd_lists, rr->data);
+        rr->status_flag = atoi(http_get_header(&hs->hd_lists, ":status", 7));
     }else{
         rr->size_data = 0;
     }
