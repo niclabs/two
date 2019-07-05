@@ -704,12 +704,12 @@ void test_http_get_data_success(void){
     hd.data_in_size = 4;
     memcpy(hd.data_in, (uint8_t *)"test", 4);
 
-    uint8_t buf;
-    int gd = http_get_data(&hd, &buf);
+    uint8_t buf[10];
+    int gd = http_get_data(&hd, buf);
 
     TEST_ASSERT_EQUAL( 4, gd);
 
-    TEST_ASSERT_EQUAL( 0, memcmp(&buf, hd.data_in, 1));
+    TEST_ASSERT_EQUAL( 0, memcmp(&buf, hd.data_in, 4));
 }
 
 
@@ -717,8 +717,8 @@ void test_http_get_data_fail_no_data(void){
     headers_data_lists_t hd;
     hd.data_in_size = 0;
 
-    uint8_t buf;
-    int gd = http_get_data( &hd, &buf);
+    uint8_t buf[5];
+    int gd = http_get_data( &hd, buf);
 
     TEST_ASSERT_EQUAL_MESSAGE( 0, gd, "Data list is empty");
 }
