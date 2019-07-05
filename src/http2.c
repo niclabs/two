@@ -423,15 +423,36 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   return 0;
 }
 
+/*
+* Function get_window_available_size
+* Returns the available window size of the given window manager. It indicates
+* the octets available in the corresponding endpoint to process data.
+* Input: ->window_manager: h2_window_manager_t struct where window info is stored
+* Output: The available window size
+*/
 uint32_t get_window_available_size(h2_window_manager_t window_manager){
     return window_manager.window_size - window_manager.window_used;
 }
 
+/*
+* Function: increase_window_used
+* Increases the window_used value on a given window manager.
+* Input: ->window_manager: h2h2_window_manager_t struct where window info is stored
+*        ->data_size: the corresponding increment on the window used
+* Output: 0
+*/
 int increase_window_used(h2_window_manager_t* window_manager, uint32_t data_size){
     window_manager->window_used += data_size;
     return 0;
 }
 
+/*
+* Function: decrease_window_used
+* Decreases the window_used value on a given window manager.
+* Input: ->window_manager: h2h2_window_manager_t struct where window info is stored
+*        ->data_size: the corresponding decrement on the window used
+* Output: 0
+*/
 int decrease_window_used(h2_window_manager_t* window_manager, uint32_t window_size_increment){
     window_manager->window_used -= window_size_increment;
     return 0;
@@ -847,6 +868,17 @@ int send_window_update(hstates_t *st, uint8_t window_size_increment){
 
 }
 
+/*
+* Function: send_data
+* Sends a data frame with the current data written in the given hstates_t struct.
+* The data is expected to be written in the hd_lists.data_out buffer, and its
+* corresponding size indicated in the hd_lists.data_out_size variable.
+* Input: ->st: hstates_t struct where connection variables are stored
+         ->end_stream: indicates if the data frame to be sent must have the
+                      END_STREAM_FLAG set.
+* Output: 0 if no error were found in the process, -1 if not
+*
+*/
 int send_data(hstates_t *st, uint8_t end_stream){
     if(st->hd_lists.data_out_size<=0){
         ERROR("no data to be send");
