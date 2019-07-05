@@ -12,8 +12,8 @@ typedef struct CALLBACK_TYPE_S {
 
 typedef struct RESPONSE_RECEIVED_TYPE_S {
     uint32_t size_data;
-    char *status_flag;
-    uint8_t *data;
+    int status_flag;
+    uint8_t *data; //this memory MUST be initialized by the app
 }response_received_type_t;
 
 
