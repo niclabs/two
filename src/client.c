@@ -14,7 +14,7 @@ void pseudoclient(hstates_t *hs, uint16_t port, char *ip)
         if (rc < 0) {
             ERROR("in http_get");
         }
-        /*else {
+        else {
             INFO("data received: %u ", rr.size_data);
             for (uint32_t i = 1; i <= rr.size_data; i++) {
                 printf("%c", (char) rr.data[i]);
@@ -22,7 +22,6 @@ void pseudoclient(hstates_t *hs, uint16_t port, char *ip)
             }
             printf("\n");
         }
-        */
         http_client_disconnect(hs);
     }
 }
