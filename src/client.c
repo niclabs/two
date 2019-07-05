@@ -17,8 +17,8 @@ void pseudoclient(hstates_t *hs, uint16_t port, char *ip)
             ERROR("in http_get");
         }
         else {
-            INFO("data received: %u ", rr.size_data);
-            for (uint32_t i = 1; i <= rr.size_data; i++) {
+            INFO("data received: %u \n", rr.size_data);
+            for (uint32_t i = 0; i < rr.size_data; i++) {
                 printf("%c", (char) rr.data[i]);
 
             }
