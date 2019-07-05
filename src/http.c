@@ -242,7 +242,6 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
     }
 
     if (hs->hd_lists.data_in_size > 0) {
-        rr->size_data = http_get_data(&(hs->hd_lists), rr->data);
         rr->status_flag=http_get_header(&hs->hd_lists, ":status", 7);
     }else{
         rr->size_data = 0;
