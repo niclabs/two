@@ -786,7 +786,7 @@ int h2_receive_frame(hstates_t *st){
 }
 
 /*
-* Function: send_headers_or_data_stream_verification
+* Function: send_headers_stream_verification
 * Given an hstates struct and a boolean indicating if the current sending message
 * is a request or a response, checks the current stream state and uses it, creates
 * a new one or reports an error. The stream that will be used is stored in
@@ -795,7 +795,7 @@ int h2_receive_frame(hstates_t *st){
 *        -> is_response: boolean equals 1 if response, 0 if request
 * Output: 0 if no errors were found, -1 if not
 */
-int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream){
+int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
   if(st->h2s.current_stream.state == STREAM_CLOSED ||
       st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
       ERROR("Current stream was closed! Send request error. STREAM CLOSED ERROR");
@@ -1026,7 +1026,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     return -1;
   }
-  if(send_headers_or_data_stream_verification(st, end_stream) < 0){
+  if(send_headers_stream_verification(st, end_stream) < 0){
     ERROR("Stream error during the headers sending. INTERNAL ERROR");
     return -1;
   }

@@ -18,7 +18,7 @@ extern int check_incoming_headers_condition(frame_header_t *header, hstates_t *s
 extern int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstates_t *st);
 extern int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st);
 extern int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, hstates_t *st);
-extern int send_headers_or_data_stream_verification(hstates_t *st, uint8_t end_stream);
+extern int send_headers_stream_verification(hstates_t *st, uint8_t end_stream);
 extern int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream);
 extern int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream);
 extern int send_headers(hstates_t *st, uint8_t end_stream);
@@ -1015,24 +1015,24 @@ void test_handle_continuation_payload_errors(void){
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
 }
 
-void test_send_headers_or_data_stream_verification_response_not_open(void){
+void test_send_headers_stream_verification_response_not_open(void){
   hstates_t hst;
   init_variables(&hst);
   int rc;
-  rc = send_headers_or_data_stream_verification(&hst, 0);
+  rc = send_headers_stream_verification(&hst, 0);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, stream was not open");
 }
 
-void test_send_headers_or_data_stream_verification_response_not_init(void){
+void test_send_headers_stream_verification_response_not_init(void){
   hstates_t hst;
   init_variables(&hst);
   hst.h2s.current_stream.state = STREAM_OPEN;
   int rc;
-  rc = send_headers_or_data_stream_verification(&hst, 0);
+  rc = send_headers_stream_verification(&hst, 0);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, stream was not initialized");
 }
 
-void test_send_headers_or_data_stream_verification_server(void){
+void test_send_headers_stream_verification_server(void){
   hstates_t hst_not_stream;
   hst_not_stream.is_server = 1;
   hst_not_stream.h2s.current_stream.stream_id = 2;
@@ -1051,26 +1051,26 @@ void test_send_headers_or_data_stream_verification_server(void){
   hst_closed_stream.h2s.current_stream.stream_id = 12;
   hst_closed_stream.h2s.current_stream.state = STREAM_CLOSED;
   int rc;
-  rc = send_headers_or_data_stream_verification(&hst_not_stream, 0);
+  rc = send_headers_stream_verification(&hst_not_stream, 0);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, stream was not initialized");
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.stream_id == 2, "Error: new stream id must be 2");
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.state == STREAM_OPEN, "Error: new stream state must be OPEN");
-  rc = send_headers_or_data_stream_verification(&hst_parity_stream, 0);
+  rc = send_headers_stream_verification(&hst_parity_stream, 0);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, stream was not initialized");
   TEST_ASSERT_MESSAGE(hst_parity_stream.h2s.current_stream.state == STREAM_OPEN, "Error: new stream state must be OPEN");
   TEST_ASSERT_MESSAGE(hst_parity_stream.h2s.current_stream.stream_id == 432, "Error: new stream id must be 432");
-  rc = send_headers_or_data_stream_verification(&hst_open_stream, 0);
+  rc = send_headers_stream_verification(&hst_open_stream, 0);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, there was a previous stream open");
   TEST_ASSERT_MESSAGE(hst_open_stream.h2s.current_stream.stream_id == 5, "current stream id must remain equal");
   TEST_ASSERT_MESSAGE(hst_open_stream.h2s.current_stream.state == STREAM_OPEN, "stream state must remain equal");
-  rc = send_headers_or_data_stream_verification(&hst_closed_stream, 0);
+  rc = send_headers_stream_verification(&hst_closed_stream, 0);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, there was a previous stream closed");
   TEST_ASSERT_MESSAGE(hst_closed_stream.h2s.current_stream.state == STREAM_CLOSED, "Stream state must be closed");
   TEST_ASSERT_MESSAGE(hst_closed_stream.h2s.current_stream.stream_id == 12, "Stream id must be 12");
 
 }
 
-void test_send_headers_or_data_stream_verification_client(void){
+void test_send_headers_stream_verification_client(void){
   hstates_t hst_not_stream;
   hst_not_stream.is_server = 0;
   hst_not_stream.h2s.current_stream.stream_id = 3;
@@ -1089,23 +1089,23 @@ void test_send_headers_or_data_stream_verification_client(void){
   hst_closed_stream.h2s.current_stream.stream_id = 12;
   hst_closed_stream.h2s.current_stream.state = STREAM_CLOSED;
   int rc;
-  rc = send_headers_or_data_stream_verification(&hst_not_stream, 0);
+  rc = send_headers_stream_verification(&hst_not_stream, 0);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, stream was not initialized");
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.stream_id == 3, "Error: new stream id must be 3");
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.state == STREAM_OPEN, "Error: new stream state must be OPEN");
-  rc = send_headers_or_data_stream_verification(&hst_parity_stream, 0);
+  rc = send_headers_stream_verification(&hst_parity_stream, 0);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, stream was not initialized");
   TEST_ASSERT_MESSAGE(hst_parity_stream.h2s.current_stream.state == STREAM_OPEN, "Error: new stream state must be OPEN");
   TEST_ASSERT_MESSAGE(hst_parity_stream.h2s.current_stream.stream_id == 545, "Error: new stream id must be 545");
-  rc = send_headers_or_data_stream_verification(&hst_open_stream, 0);
+  rc = send_headers_stream_verification(&hst_open_stream, 0);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, there was a previous stream open");
   TEST_ASSERT_MESSAGE(hst_open_stream.h2s.current_stream.stream_id == 5, "current stream id must remain equal");
   TEST_ASSERT_MESSAGE(hst_open_stream.h2s.current_stream.state == STREAM_OPEN, "stream state must remain equal");
-  rc = send_headers_or_data_stream_verification(&hst_closed_stream, 0);
+  rc = send_headers_stream_verification(&hst_closed_stream, 0);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, there was a previous stream closed");
   TEST_ASSERT_MESSAGE(hst_closed_stream.h2s.current_stream.stream_id == 12, "current stream id must be 12");
   TEST_ASSERT_MESSAGE(hst_closed_stream.h2s.current_stream.state == STREAM_CLOSED, "stream state must be closed");
-  rc = send_headers_or_data_stream_verification(&hst_not_stream, 1);
+  rc = send_headers_stream_verification(&hst_not_stream, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, stream was not initialized");
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.stream_id == 3, "Error: stream id must be 3");
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "Error: new stream state must be HALF CLOSED LOCAL");
@@ -1707,8 +1707,8 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream_flag_set);
     UNIT_TEST(test_handle_continuation_payload_errors);
-    UNIT_TEST(test_send_headers_or_data_stream_verification_server);
-    UNIT_TEST(test_send_headers_or_data_stream_verification_client);
+    UNIT_TEST(test_send_headers_stream_verification_server);
+    UNIT_TEST(test_send_headers_stream_verification_client);
     UNIT_TEST(test_send_headers_frame);
     UNIT_TEST(test_send_headers_frame_all_branches);
     UNIT_TEST(test_send_headers_frame_errors);
