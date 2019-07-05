@@ -68,7 +68,7 @@ typedef struct HTTP_STATES {
     uint8_t path_callback_list_count;
     key_pointer_map_t path_callback_list[HTTP_MAX_CALLBACK_LIST_ENTRY];
     uint8_t new_headers;    //boolean. Notifies HTTP if new headers were written
-    uint8_t keep_receiving; //boolean. Tells HTTP to keep receiving frames
+    uint8_t keep_receiving; //boolean. 0 = END STREAM, 1 = keep_receiving, 2 = GO AWAY
 } hstates_t;
 
 /*--------------------------------------------------------------------------*/
