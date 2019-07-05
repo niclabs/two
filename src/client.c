@@ -23,5 +23,6 @@ void pseudoclient(hstates_t *hs, uint16_t port, char *ip)
             printf("\n");
         }
         */
+        http_client_disconnect(hs);
     }
 }
