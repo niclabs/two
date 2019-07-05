@@ -236,7 +236,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
     http_clear_header_list(hs, -1, 1);
 
     if (http_start_client(hs) < 0) {
-        rr->status_flag=400;
+        rr->status_flag="400";
         rr->size_data = 0;
         return -1;
     }
