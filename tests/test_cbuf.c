@@ -4,6 +4,10 @@
 #include "cbuf.h"
 
 
+void setUp(void)
+{
+}
+
 
 void test_write_after_end_buffer(void)
 {
