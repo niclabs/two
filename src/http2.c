@@ -941,6 +941,15 @@ int send_data(hstates_t *st, uint8_t end_stream){
         ERROR("Error writting data frame. INTERNAL ERROR");
         return rc;
     }
+    if(end_stream){
+      if(st->h2s.current_stream.state == STREAM_OPEN){
+        st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+      }
+      else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
+        st->h2s.current_stream.state = STREAM_CLOSED;
+        rc = prepare_new_stream(st);
+      }
+    }
     st->hd_lists.data_out_sent += count_data_to_send;
     if(st->hd_lists.data_out_size == st->hd_lists.data_out_sent) {
         st->hd_lists.data_out_size = 0;
