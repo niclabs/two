@@ -1108,7 +1108,6 @@ void test_send_headers_stream_verification_client(void){
   rc = send_headers_stream_verification(&hst_not_stream);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0, stream was not initialized");
   TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.stream_id == 3, "Error: stream id must be 3");
-  TEST_ASSERT_MESSAGE(hst_not_stream.h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "Error: new stream state must be HALF CLOSED LOCAL");
 }
 
 void test_send_headers_frame_all_branches(void){
