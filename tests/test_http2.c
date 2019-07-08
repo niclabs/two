@@ -1385,6 +1385,14 @@ void test_h2_receive_frame_headers_wait_end_headers(void){
 
 void test_h2_receive_frame_headers(void){
     hstates_t st;
+
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
+
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
