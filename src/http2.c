@@ -34,13 +34,6 @@ int init_variables(hstates_t * st){
     st->h2s.current_stream.state = STREAM_IDLE;
     st->h2s.last_open_stream_id = 1;
 
-    st->hd_lists.header_list_count_in = 0;
-    st->hd_lists.header_list_count_out = 0;
-    st->hd_lists.data_in_size = 0;
-    st->hd_lists.data_out_size = 0;
-    st->hd_lists.data_out_sent = 0;
-    st->hd_lists.data_in_received = 0;
-
     st->h2s.incoming_window.window_size = DEFAULT_IWS;
     st->h2s.incoming_window.window_used = 0;
 
