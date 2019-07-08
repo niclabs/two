@@ -5,6 +5,8 @@
 #include "hpack.h"
 #include "table.h"
 
+void tearDown(void);
+
 extern int log128(uint32_t x);
 
 
