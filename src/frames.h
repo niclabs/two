@@ -100,12 +100,25 @@ typedef enum{
 
 
 /*WINDOW_UPDATE FRAME*/
-
 typedef struct{
     uint8_t reserved:1;
     uint32_t window_size_increment:31;
 }window_update_payload_t;
 
+
+/*RST_STREAM FRAME*/
+typedef struct{
+    uint32_t error_code;
+}rst_stream_payload_t;
+
+
+/*GOAWAY FRAME*/
+typedef struct{
+    uint8_t reserved:1;
+    uint32_t last_stream_id:31;
+    uint32_t error_code;
+    uint8_t* additional_debug_data;
+}goaway_payload_t;
 
 
 /*frame header methods*/
@@ -165,6 +178,13 @@ int read_data_payload(uint8_t* buff_read, frame_header_t* frame_header, data_pay
 int create_window_update_frame(frame_header_t* frame_header, window_update_payload_t* window_update_payload, int window_size_increment, uint32_t stream_id);
 int window_update_payload_to_bytes(frame_header_t* frame_header, window_update_payload_t* window_update_payload, uint8_t* byte_array);
 int read_window_update_payload(uint8_t* buff_read, frame_header_t* frame_header, window_update_payload_t* window_update_payload);
+
+
+/*goaway payload methods*/
+int create_goaway_frame(frame_header_t* frame_header, goaway_payload_t* goaway_payload, uint8_t* additional_debug_data_buffer, uint32_t last_stream_id, uint32_t error_code,  uint8_t *additional_debug_data, uint8_t additional_debug_data_size);
+int goaway_payload_to_bytes(frame_header_t* frame_header, goaway_payload_t* goaway_payload, uint8_t* byte_array);
+int read_goaway_payload(uint8_t* buff_read, frame_header_t* frame_header, goaway_payload_t* goaway_payload, uint8_t* additional_debug_data);
+
 
 /*
 void* byteToPayloadDispatcher[10];
