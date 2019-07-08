@@ -322,7 +322,12 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       //st->hd_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
       if(st->h2s.received_end_stream == 1){
-          st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+          if(st->h2s.current_stream.state == STREAM_OPEN){
+            st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+          }
+          else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+            st->h2s.current_stream.state = STREAM_CLOSED;
+          }
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
       uint32_t header_list_size = get_header_list_size(st->hd_lists.header_list_in, st->hd_lists.header_list_count_in);
@@ -488,6 +493,8 @@ int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_incre
     return 0;
 }
 
+
+
 int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
     uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
     /*check flow control*/
@@ -501,6 +508,16 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     st->hd_lists.data_in_size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
         st->h2s.received_end_stream = 1;
+    }
+    // Stream state handling for end stream flag
+    if(st->h2s.received_end_stream == 1){
+        if(st->h2s.current_stream.state == STREAM_OPEN){
+          st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+        }
+        else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+          st->h2s.current_stream.state = STREAM_CLOSED;
+        }
+        st->h2s.received_end_stream = 0;
     }
     return 0;
 }
