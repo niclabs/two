@@ -15,6 +15,24 @@
 #define LOCAL 0
 #define REMOTE 1
 
+/*Error codes*/
+typedef enum{
+  HTTP2_NO_ERROR = (uint32_t) 0x0,
+  HTTP2_PROTOCOL_ERROR = (uint32_t) 0x1,
+  HTTP2_INTERNAL_ERROR = (uint32_t) 0x2,
+  HTTP2_FLOW_CONTROL_ERROR = (uint32_t) 0x3,
+  HTTP2_SETTINGS_TIMEOUT = (uint32_t) 0x4,
+  HTTP2_STREAM_CLOSED = (uint32_t) 0x5,
+  HTTP2_FRAME_SIZE_ERROR = (uint32_t) 0x6,
+  HTTP2_REFUSED_STREAM = (uint32_t) 0x7,
+  HTTP2_CANCEL = (uint32_t) 0x8,
+  HTTP2_COMPRESSION_ERROR = (uint32_t) 0x9,
+  HTTP2_CONNECT_ERROR = (uint32_t) 0xa,
+  HTTP2_ENHANCE_YOUR_CALM = (uint32_t) 0xb,
+  HTTP2_INADEQUATE_SECURITY = (uint32_t) 0xc,
+  HTTP2_HTTP_1_1_REQUIRED = (uint32_t) 0xd
+}h2_error_code_t;
+
 /*
 * Function: h2_send_local_settings
 * Sends local settings to endpoint.
