@@ -1415,6 +1415,12 @@ void test_h2_receive_frame_headers(void){
 
 void test_h2_receive_frame_data_stream_closed(void){
     hstates_t st;
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1434,6 +1440,12 @@ int read_data_payload_fake_custom(uint8_t* buff_read,frame_header_t* frame_heade
 
 void test_h2_receive_frame_data_ok(void){
     hstates_t st;
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1473,6 +1485,12 @@ int read_continuation_payload_fake_custom(uint8_t* buff_read, frame_header_t* fr
 
 void test_h2_receive_frame_continuation(void){
     hstates_t st;
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1522,6 +1540,7 @@ int read_window_update_payload_fake_custom(uint8_t* buff_read, frame_header_t* f
 
 void test_h2_receive_frame_window_update(void){
     hstates_t st;
+
     int rc = init_variables(&st);
     st.is_server = 1;
     st.h2s.outgoing_window.window_used = 30;
@@ -1598,7 +1617,13 @@ void test_h2_receive_frame_settings_ack(void){
 
 void test_send_data(void){
   hstates_t st;
-  int rc = init_variables(&st);
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
+int rc = init_variables(&st);
   st.hd_lists.data_out_size = 36;
   st.h2s.outgoing_window.window_size = 30;
   st.h2s.current_stream.state = STREAM_OPEN;
@@ -1610,6 +1635,12 @@ void test_send_data(void){
 
 void test_send_data_full_sending(void){
   hstates_t st;
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
   int rc = init_variables(&st);
   st.hd_lists.data_out_size = 27;
   st.h2s.outgoing_window.window_size = 50;
@@ -1638,11 +1669,23 @@ void test_send_data_errors(void){
   int frame_bytes_ret[2] = {10,10};
   SET_RETURN_SEQ(frame_to_bytes, frame_bytes_ret, 2);
   hstates_t st1; //First error, no data to sned
+    st1.hd_lists.header_list_count_in = 0;
+    st1.hd_lists.header_list_count_out = 0;
+    st1.hd_lists.data_in_size = 0;
+    st1.hd_lists.data_out_size = 0;
+    st1.hd_lists.data_in_received = 0;
+    st1.hd_lists.data_out_sent = 0;
   int rc = init_variables(&st1);
   st1.hd_lists.data_out_size = 0;
   rc = send_data(&st1, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no data out)");
   hstates_t st2; //Second error, wrong state stream
+    st2.hd_lists.header_list_count_in = 0;
+    st2.hd_lists.header_list_count_out = 0;
+    st2.hd_lists.data_in_size = 0;
+    st2.hd_lists.data_out_size = 0;
+    st2.hd_lists.data_in_received = 0;
+    st2.hd_lists.data_out_sent = 0;
   rc = init_variables(&st2);
   st2.hd_lists.data_out_size = 27;
   st2.hd_lists.data_out_sent = 0;
@@ -1652,6 +1695,12 @@ void test_send_data_errors(void){
   rc = send_data(&st2, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream half closed local)");
   hstates_t st3; //Third error, create_data_frame error
+    st3.hd_lists.header_list_count_in = 0;
+    st3.hd_lists.header_list_count_out = 0;
+    st3.hd_lists.data_in_size = 0;
+    st3.hd_lists.data_out_size = 0;
+    st3.hd_lists.data_in_received = 0;
+    st3.hd_lists.data_out_sent = 0;
   rc = init_variables(&st3);
   st3.hd_lists.data_out_size = 27;
   st3.hd_lists.data_out_sent = 0;
@@ -1730,6 +1779,11 @@ int main(void)
     UNIT_TEST(test_handle_data_payload);
     UNIT_TEST(test_h2_receive_frame_headers);
     UNIT_TEST(test_h2_receive_frame_headers_wait_end_headers);
+
+    UNIT_TEST(test_send_data);
+    UNIT_TEST(test_send_data_full_sending);
+    UNIT_TEST(test_send_data_errors);
+
     UNIT_TEST(test_h2_receive_frame_data_stream_closed);
     UNIT_TEST(test_h2_receive_frame_data_ok);
     UNIT_TEST(test_h2_receive_frame_continuation);
@@ -1737,9 +1791,7 @@ int main(void)
     UNIT_TEST(test_h2_receive_frame_settings);
     UNIT_TEST(test_h2_receive_frame_settings_ack);
 
-    UNIT_TEST(test_send_data);
-    UNIT_TEST(test_send_data_full_sending);
-    UNIT_TEST(test_send_data_errors);
+
 
     UNIT_TEST(test_send_window_update);
 
