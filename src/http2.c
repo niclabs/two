@@ -1085,7 +1085,7 @@ int h2_send_request(hstates_t *st){
     ERROR("There were no headers to write");
     return -1;
   }
-  int rc = send_headers(st, 0);
+  int rc = send_headers(st, 1);
   if(rc < 0){
     ERROR("Error was found sending headers on request");
     return rc;
