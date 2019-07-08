@@ -269,6 +269,24 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
   }
 }
 
+/*
+* Function: prepare_new_stream
+* Prepares a new stream, setting its state as STREAM_IDLE.
+* Input: -> st: pointer to hstates_t struct where connection variables are stored
+* Output: 0.
+*/
+int prepare_new_stream(hstates_t* st){
+  uint32_t last = st->h2s.last_open_stream_id;
+  if(st->is_server == 1){
+    st->h2s.current_stream.stream_id = last % 2 == 0 ? last + 2 : last + 1;
+    st->h2s.current_stream.state = STREAM_IDLE;
+  }
+  else{
+    st->h2s.current_stream.stream_id = last % 2 == 0 ? last + 1 : last + 2;
+    st->h2s.current_stream.state = STREAM_IDLE;
+  }
+  return 0;
+}
 
 /*
 * Function: handle_headers_payload
@@ -327,6 +345,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
           }
           else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
             st->h2s.current_stream.state = STREAM_CLOSED;
+            rc = prepare_new_stream(st);
           }
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
@@ -493,18 +512,6 @@ int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_incre
     return 0;
 }
 
-int prepare_new_stream(hstates_t* st){
-  uint32_t last = st->h2s.last_open_stream_id;
-  if(st->is_server == 1){
-    st->h2s.current_stream.stream_id = last % 2 == 0 ? last + 2 : last + 1;
-    st->h2s.current_stream.state = STREAM_IDLE;
-  }
-  else{
-    st->h2s.current_stream.stream_id = last % 2 == 0 ? last + 1 : last + 2;
-    st->h2s.current_stream.state = STREAM_IDLE;
-  }
-  return 0;
-}
 
 int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
     uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
