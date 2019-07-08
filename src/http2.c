@@ -825,15 +825,13 @@ int h2_receive_frame(hstates_t *st){
 
 /*
 * Function: send_headers_stream_verification
-* Given an hstates struct and a boolean indicating if the current sending message
-* is a request or a response, checks the current stream state and uses it, creates
+* Given an hstates struct, checks the current stream state and uses it, creates
 * a new one or reports an error. The stream that will be used is stored in
 * st->h2s.current_stream.stream_id .
-* Input: -> st: hstates_t struct where current stream is stored
-*        -> is_response: boolean equals 1 if response, 0 if request
+* Input: ->st: hstates_t struct where current stream is stored
 * Output: 0 if no errors were found, -1 if not
 */
-int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
+int send_headers_stream_verification(hstates_t *st){
   if(st->h2s.current_stream.state == STREAM_CLOSED ||
       st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
       ERROR("Current stream was closed! Send request error. STREAM CLOSED ERROR");
@@ -848,9 +846,6 @@ int send_headers_stream_verification(hstates_t *st, uint8_t end_stream){
     }
     st->h2s.current_stream.state = STREAM_OPEN;
     st->h2s.current_stream.stream_id = st->h2s.last_open_stream_id;
-  }
-  if(end_stream){
-    st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
   }
   return 0;
 }
@@ -1064,7 +1059,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     return -1;
   }
-  if(send_headers_stream_verification(st, end_stream) < 0){
+  if(send_headers_stream_verification(st) < 0){
     ERROR("Stream error during the headers sending. INTERNAL ERROR");
     return -1;
   }
@@ -1078,6 +1073,15 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       if(rc < 0){
         ERROR("Error found sending headers frame");
         return rc;
+      }
+      if(end_stream){
+        if(st->h2s.current_stream.state == STREAM_OPEN){
+          st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+        }
+        else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
+          st->h2s.current_stream.state = STREAM_CLOSED;
+          rc = prepare_new_stream(st);
+        }
       }
       return rc;
   }
@@ -1105,7 +1109,16 @@ int send_headers(hstates_t *st, uint8_t end_stream){
         ERROR("Error found sending continuation frame");
         return rc;
       }
-      return 0;
+      if(end_stream){
+        if(st->h2s.current_stream.state == STREAM_OPEN){
+          st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+        }
+        else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
+          st->h2s.current_stream.state = STREAM_CLOSED;
+          rc = prepare_new_stream(st);
+        }
+      }
+      return rc;
   }
 }
 
