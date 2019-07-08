@@ -114,6 +114,16 @@ typedef struct{
 }rst_stream_payload_t;
 
 
+/*GO_AWAY FRAME*/
+
+typedef struct{
+    uint8_t reserved:1;
+    uint32_t last_stream_id:31;
+    uint32_t error_code;
+    uint8_t* additional_debug_data:
+}goaway_payload_t;
+
+
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t* frame_header, uint8_t* byte_array);
