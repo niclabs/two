@@ -681,13 +681,13 @@ int goaway_payload_to_bytes(frame_header_t* frame_header, goaway_payload_t* goaw
         return -1;
     }
     int pointer = 0;
-    int rc = uint32_31_to_byte_array(goaway_payload->last_stream_id,byte_array);
+    int rc = uint32_31_to_byte_array(goaway_payload->last_stream_id,byte_array+pointer);
     if(rc<0){
         ERROR("error while passing uint32_31 to byte_array");
         return -1;
     }
     pointer +=4;
-    rc = uint32_to_byte_array(goaway_payload->error_code,byte_array);
+    rc = uint32_to_byte_array(goaway_payload->error_code,byte_array+pointer);
     if(rc<0){
         ERROR("error while passing uint32 to byte_array");
         return -1;

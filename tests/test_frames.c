@@ -953,6 +953,39 @@ void test_create_goaway_frame(void){
     }
 }
 
+void test_goaway_payload_to_bytes(void){
+    frame_header_t frame_header;
+    frame_header.length = 16;
+    frame_header.type = GOAWAY_TYPE;
+    frame_header.flags = 0x0;
+    frame_header.stream_id = 0;
+
+    goaway_payload_t goaway_payload;
+    goaway_payload.last_stream_id = 30;
+    goaway_payload.error_code = 1;
+    uint8_t additional_debug_data[]={1, 2, 3, 4, 5, 6, 7, 8};
+    goaway_payload.additional_debug_data = additional_debug_data;
+
+
+    uint8_t expected_bytes[] = {0,0,0,30,
+                                0,0,0,1,
+                                1,2,3,4,5,6,7,8};
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+
+    uint8_t byte_array[16];
+
+    int rc = goaway_payload_to_bytes(&frame_header, &goaway_payload, byte_array);
+    TEST_ASSERT_EQUAL(16,rc);
+    TEST_ASSERT_EQUAL(16,frame_header.length);
+
+    for(int i = 0; i<frame_header.length; i++) {
+        TEST_ASSERT_EQUAL(expected_bytes[i], byte_array[i]);
+    }
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -996,7 +1029,7 @@ int main(void)
 
     UNIT_TEST(test_create_goaway_frame);
     UNIT_TEST(test_goaway_payload_to_bytes);
-    UNIT_TEST(test_read_goaway_payload);
+    //UNIT_TEST(test_read_goaway_payload);
 
     //UNIT_TEST(test_read_window_update_payload)
 
