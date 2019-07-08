@@ -113,3 +113,6 @@ summary
 *.faillog
 *.orig
 *.co
+
+# Binaries
+two
