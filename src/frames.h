@@ -107,6 +107,13 @@ typedef struct{
 }window_update_payload_t;
 
 
+/*RST_STREAM FRAME*/
+
+typedef struct{
+    uint32_t error_code;
+}rst_stream_payload_t;
+
+
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t* frame_header, uint8_t* byte_array);
