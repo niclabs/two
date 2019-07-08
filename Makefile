@@ -1,7 +1,6 @@
-APPLICATION = two
+QUIET=0
 
-# Change this to 0 show compiler invocation lines by default:
-QUIET ?= 1
+SUBDIRS = src/ tests/
 
-# If no board is defined build code locally
+### General build rules
 include $(CURDIR)/Makefile.include
