@@ -1593,7 +1593,6 @@ void test_send_data(void){
   hstates_t st;
   int rc = init_variables(&st);
   st.hd_lists.data_out_size = 36;
-  st.hd_lists.data_out_sent = 0;
   st.h2s.outgoing_window.window_size = 30;
   st.h2s.current_stream.state = STREAM_OPEN;
   rc = send_data(&st, 1);
@@ -1606,9 +1605,7 @@ void test_send_data_full_sending(void){
   hstates_t st;
   int rc = init_variables(&st);
   st.hd_lists.data_out_size = 27;
-  st.hd_lists.data_out_sent = 0;
   st.h2s.outgoing_window.window_size = 50;
-  st.h2s.outgoing_window.window_used = 0;
   st.h2s.current_stream.state = STREAM_OPEN;
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
