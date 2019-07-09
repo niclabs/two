@@ -31,8 +31,6 @@
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
 
-#define WITH_CONTIKI
-
 /* Comment this out to use Radio Duty Cycle (RDC) and save energy */
 #undef NETSTACK_CONF_RDC
 #define NETSTACK_CONF_RDC          nullrdc_driver
