@@ -150,7 +150,6 @@ define INCLUDE_SUBMAKEFILE
         $${TGT}_CFLAGS  += $${CFLAGS}
         $${TGT}_LDFLAGS += $${LDFLAGS}
         $${TGT}_LDLIBS  += $${LDLIBS}
-        $${TGT}_IS_PHONY:= $${IS_PHONY}
         SOURCEDIRS      := $$(call QUALIFY_PATH,$${DIR},$${SOURCEDIRS})
         SOURCEDIRS      := $$(call CANONICAL_PATH,$${SOURCEDIRS})
         $${TGT}_DIRS    += $${SOURCEDIRS}
