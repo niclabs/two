@@ -1,5 +1,3 @@
-QUIET ?= 0
-
 TARGET = two
 SOURCES = two.c \
 		  client.c \
@@ -14,5 +12,3 @@ SOURCES = two.c \
 		  sock.c \
 		  utils.c
 LDLIBS = -lm
-
--include ../Makefile.include
