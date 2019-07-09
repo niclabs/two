@@ -172,6 +172,7 @@ define INCLUDE_SUBMAKEFILE
          $${TGT}_SOURCES += $${SOURCES}
          $${TGT}_OBJS    += $${OBJS}
          $${TGT}_DEPS    += $${OBJS:%.o=%.d}
+         $${TGT}_DIRS    += $${DIR}
 
          BUILD_FILES     += $${$${TGT}_OBJS} $${$${TGT}_DEPS}
     endif
