@@ -1,8 +1,5 @@
-TARGET = two
-SOURCES = two.c \
-		  client.c \
-		  server.c \
-		  http.c \
+TARGET = two.a
+SOURCES = http.c \
 		  http_bridge.c \
 		  http2.c \
 		  http2utils.c \
@@ -11,4 +8,3 @@ SOURCES = two.c \
 		  hpack_utils.c \
 		  sock.c \
 		  utils.c
-LDLIBS = -lm
