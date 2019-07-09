@@ -87,6 +87,11 @@ define INCLUDE_SUBDIR
     endif
 endef
 
+# Source https://stackoverflow.com/a/7324640
+define EQ
+$(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+endef
+
 # Include subdirectory makefile if it exists
 define INCLUDE_SUBMAKEFILE
     # Reset makefile variables
@@ -97,7 +102,6 @@ define INCLUDE_SUBMAKEFILE
     CFLAGS       :=
     LDFLAGS      :=
     LDLIBS       :=
-    IS_PHONY        :=
 
     # A directory stack is maintained so that the correct paths are used as we
     # recursively include all submakefiles. Get the makefile's directory and
@@ -121,23 +125,20 @@ define INCLUDE_SUBMAKEFILE
     ifeq "$$(strip $${TARGET_DIR})" ""
         TARGET_DIR := $${BASEDIR}
     endif
-    ifneq "$$(strip $${IS_PHONY})" "1"
-        IS_PHONY :=
-    endif
 
     # Determine which target this makefile's variables apply to. A stack is
     # used to keep track of which target is the "current" target as we
     # recursively include other submakefiles.
     ifneq "$$(strip $${TARGET})" ""
         # makefile apply to this new target. Initialize the target's variables.
-        TGT := $$(strip $${TARGET})
+        TGT := $$(basename $$(strip $${TARGET}))
 
         TARGETS         += $${TGT}
         $${TGT}_CFLAGS  := $${CFLAGS}
         $${TGT}_LDFLAGS := $${LDFLAGS}
         $${TGT}_LDLIBS  := $${LDLIBS}
         $${TGT}_OBJDIR  := $${BUILD_DIR}/$$(call CANONICAL_PATH,$${TGT})
-        $${TGT}_IS_PHONY:= $${IS_PHONY}
+        $${TGT}_IS_PHONY:= $$(if $$(call EQ,$$(suffix $${TARGET}),.PHONY),1)
         SOURCEDIRS      := $$(call QUALIFY_PATH,$${DIR},$${SOURCEDIRS})
         SOURCEDIRS      := $$(call CANONICAL_PATH,$${SOURCEDIRS})
         $${TGT}_DIRS    := $${SOURCEDIRS}
