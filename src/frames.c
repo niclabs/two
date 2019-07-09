@@ -184,8 +184,8 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
             return -1;
         }
         case 0x8: {//Window update
-            if (length < 8 ) {
-                printf("Error: length < 8, %d", length);
+            if (length != 4 ) {
+                printf("Error: length != 4, %d", length);
                 return -1;
             }
             uint8_t frame_header_bytes[9];

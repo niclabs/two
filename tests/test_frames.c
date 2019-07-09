@@ -887,8 +887,6 @@ void test_read_window_update_payload(void){
 
 }
 void test_frame_to_bytes_data(void){
-    //TODO
-
     frame_header_t frame_header;
     data_payload_t data_payload;
     int length = 10;
@@ -986,6 +984,45 @@ void test_goaway_payload_to_bytes(void){
     }
 }
 
+void test_frame_to_bytes_window_update(void){
+    frame_header_t frame_header;
+    window_update_payload_t window_update_payload;
+    int length = 12;
+    uint32_t stream_id = 1;//1
+    uint32_t window_size_increment = 30;
+    //uint8_t additional_debug_data_buffer[4];
+    //uint8_t additional_debug_data[] = {1,2,3,4};
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
+    uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_num;
+
+    int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, stream_id);
+    TEST_ASSERT_EQUAL(0, rc);
+    frame_t frame;
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&window_update_payload;
+    uint8_t bytes[30];
+    rc = frame_to_bytes(&frame, bytes);
+
+    uint8_t expected_bytes[] = {
+            0,0,4,
+            0x8,
+            0x0,
+            0,0,0,1,
+            0,0,0,30
+    };
+
+    TEST_ASSERT_EQUAL(13, rc);
+    for(int i = 0; i< rc; i++) {
+        TEST_ASSERT_EQUAL(expected_bytes[i], bytes[i]);
+    }
+
+}
+
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1022,10 +1059,14 @@ int main(void)
     UNIT_TEST(test_create_data_frame);
     UNIT_TEST(test_data_payload_to_bytes);
     UNIT_TEST(test_read_data_payload);
+    UNIT_TEST(test_frame_to_bytes_data);
+
     UNIT_TEST(test_create_window_update_frame);
     UNIT_TEST(test_window_update_payload_to_bytes);
     UNIT_TEST(test_read_window_update_payload);
-    UNIT_TEST(test_frame_to_bytes_data);
+    UNIT_TEST(test_frame_to_bytes_window_update);
+
+
 
     UNIT_TEST(test_create_goaway_frame);
     UNIT_TEST(test_goaway_payload_to_bytes);
