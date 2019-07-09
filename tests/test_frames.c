@@ -984,15 +984,11 @@ void test_goaway_payload_to_bytes(void){
     }
 }
 
-void test_frame_to_bytes_window_update(void){
+void test_frame_to_bytes_window_update(void) {
     frame_header_t frame_header;
     window_update_payload_t window_update_payload;
-    int length = 12;
     uint32_t stream_id = 1;//1
     uint32_t window_size_increment = 30;
-    //uint8_t additional_debug_data_buffer[4];
-    //uint8_t additional_debug_data[] = {1,2,3,4};
-
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
@@ -1003,23 +999,67 @@ void test_frame_to_bytes_window_update(void){
     TEST_ASSERT_EQUAL(0, rc);
     frame_t frame;
     frame.frame_header = &frame_header;
-    frame.payload = (void*)&window_update_payload;
+    frame.payload = (void *) &window_update_payload;
     uint8_t bytes[30];
     rc = frame_to_bytes(&frame, bytes);
 
     uint8_t expected_bytes[] = {
-            0,0,4,
+            0, 0, 4,
             0x8,
             0x0,
-            0,0,0,1,
-            0,0,0,30
-    };
+            0, 0, 0, 1,
 
+            0, 0, 0, 30
+    };
     TEST_ASSERT_EQUAL(13, rc);
     for(int i = 0; i< rc; i++) {
         TEST_ASSERT_EQUAL(expected_bytes[i], bytes[i]);
     }
+}
 
+void test_frame_to_bytes_goaway(void){
+    frame_header_t frame_header;
+    goaway_payload_t goaway_payload;
+    int length = 12;
+
+    uint32_t stream_id = 0;//1
+    uint32_t last_stream_id = 30;
+    uint32_t error_code = 1;
+    uint8_t additional_debug_data_buffer[4];
+    uint8_t additional_debug_data[] = {1,2,3,4};
+    uint8_t additional_debug_data_size = 4;
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
+    uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
+    uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_num;
+
+
+
+    int rc = create_goaway_frame(&frame_header, &goaway_payload, additional_debug_data_buffer, last_stream_id, error_code, additional_debug_data, additional_debug_data_size);
+    TEST_ASSERT_EQUAL(0, rc);
+    frame_t frame;
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&goaway_payload;
+    uint8_t bytes[30];
+    rc = frame_to_bytes(&frame, bytes);
+
+    uint8_t expected_bytes[] = {
+            0,0,12,
+            0x7,
+            0x0,
+            0,0,0,0,
+
+            0,0,0,30,
+            0,0,0,1,
+            1,2,3,4
+    };
+
+    TEST_ASSERT_EQUAL(12+9, rc);
+    for(int i = 0; i< rc; i++) {
+        TEST_ASSERT_EQUAL(expected_bytes[i], bytes[i]);
+    }
 }
 
 
@@ -1071,8 +1111,9 @@ int main(void)
     UNIT_TEST(test_create_goaway_frame);
     UNIT_TEST(test_goaway_payload_to_bytes);
     //UNIT_TEST(test_read_goaway_payload);
+    UNIT_TEST(test_frame_to_bytes_goaway);
 
-    //UNIT_TEST(test_read_window_update_payload)
+
 
     return UNIT_TESTS_END();
 }
