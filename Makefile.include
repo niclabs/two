@@ -262,8 +262,7 @@ BUILD_TARGETS += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}
 
 # Add non-phony targets
 .PHONY: all
-all: $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}/${TGT}))
-
+all: $(BUILD_TARGETS)
 .PHONY: debug
 debug: CF_ALL += -g
 debug: all
@@ -284,7 +283,7 @@ clean:
 	$(Q)$(strip rm -f $(wildcard $(BUILD_FILES)))
 
 distclean:
-	@echo "Removing build targets"
+	@echo "Removing all targets"
 	$(Q)$(strip rm -f $(wildcard $(BUILD_TARGETS)))
 	$(Q)rm -rf $(BUILD_DIR)
 
