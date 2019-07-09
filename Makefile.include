@@ -269,7 +269,7 @@ ${TARGET_DIR}/%.a:
 
 .PHONY:	clean
 clean:
-	$(Q)$(strip rm -f $(BUILD_FILES))
+	$(Q)$(strip rm -f $(wildcard $(BUILD_FILES)))
 
 # Prevent make from removing any build targets, including intermediate ones
 .SECONDARY:	$(BUILD_FILES)
