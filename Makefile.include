@@ -37,12 +37,6 @@ ARCHIVE  = $(AR) $(ARFLAGS) $@ $^
 
 # Quiet option, to output compile and link commands
 QUIET ?= 1
-ifeq ($(QUIET),1)
-  Q=@
-  MAKEFLAGS += --no-print-directory
-else
-  Q=
-endif
 
 # CANONICAL_PATH - Given one or more paths, converts the paths to the canonical
 #   form. The canonical form is the path, relative to the project's top-level
@@ -124,6 +118,22 @@ define INCLUDE_SUBMAKEFILE
     endif
     ifeq "$$(strip $${TARGET_DIR})" ""
         TARGET_DIR := $${BASEDIR}
+    endif
+
+    # Quiet flag
+    ifeq ($$(QUIET),1)
+        TRACE_CC = @echo "  CC       " $$<
+        TRACE_LD = @echo "  LD       " $$@
+        TRACE_AR = @echo "  AR       " $$@
+        TRACE_RM = @echo "  RM       " $$(sort $$(addprefix *,$$(suffix $$(BUILD_FILES))))
+        Q=@
+        MAKEFLAGS += --no-print-directory
+    else
+        TRACE_CC =
+        TRACE_LD =
+        TRACE_AR =
+        TRACE_RM =
+        Q=
     endif
 
     # Determine which target this makefile's variables apply to. A stack is
@@ -210,6 +220,7 @@ define ADD_TARGET_RULES
     $${${1}_OBJDIR}/%.o: %.c
     $${${1}_OBJDIR}/%.o: %.c $${${1}_OBJDIR}/%.d 
 		@mkdir -p $$(dir $$@)
+		$$(TRACE_CC)
 		$$(Q)$$(strip $${COMPILE})
 		@$${FINALIZE_DEPENDENCY}
 
@@ -228,6 +239,7 @@ define ADD_TARGET_RULES
             $${TARGET_DIR}/${1}: LDLIBS += $${${1}_LDLIBS}
             $${TARGET_DIR}/${1}: $${${1}_OBJS}
 				@mkdir -p $$(dir $$@)
+				$$(TRACE_LD)
 				$$(Q)$$(strip $$(LINK))
         endif
     else
@@ -255,7 +267,7 @@ BUILD_FILES += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}/$
 
 # Add non-phony targets
 .PHONY: all
-all: $(foreach TGT,${TARGETS},$(if ${${TGT}_OBJS},${TARGET_DIR}/${TGT}))
+all: $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}/${TGT}))
 
 .PHONY: debug
 debug: CF_ALL += -g
@@ -273,11 +285,12 @@ ${BUILD_DIR}/%.o: %.c
 
 ${TARGET_DIR}/%.a: 
 	@mkdir -p $(dir $@)
+	$(TRACE_AR)
 	$(Q)$(strip $(ARCHIVE))
-
 
 .PHONY:	clean
 clean:
+	$(TRACE_RM)
 	$(Q)$(strip rm -f $(wildcard $(BUILD_FILES)))
 
 # Prevent make from removing any build targets, including intermediate ones
