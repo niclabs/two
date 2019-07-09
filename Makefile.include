@@ -204,7 +204,7 @@ endef
 
 define ADD_TARGET_RULES
     # Add build object rules
-    $${${1}_OBJS}: CFLAGS := $${${1}_CFLAGS} $$(addprefix -I,$${${1}_DIRS})
+    $${${1}_OBJS}: CFLAGS += $${${1}_CFLAGS} $$(addprefix -I,$${${1}_DIRS})
 
     # Add rule to compile individual objects
     $${${1}_OBJDIR}/%.o: %.c
@@ -224,8 +224,8 @@ define ADD_TARGET_RULES
             $${TARGET_DIR}/${1}: $${${1}_OBJS}
         else
             # Target is an executable
-            $${TARGET_DIR}/${1}: LDFLAGS := $${${1}_LDFLAGS}
-            $${TARGET_DIR}/${1}: LDLIBS := $${${1}_LDLIBS}
+            $${TARGET_DIR}/${1}: LDFLAGS += $${${1}_LDFLAGS}
+            $${TARGET_DIR}/${1}: LDLIBS += $${${1}_LDLIBS}
             $${TARGET_DIR}/${1}: $${${1}_OBJS}
 				@mkdir -p $$(dir $$@)
 				$$(Q)$$(strip $$(LINK))
