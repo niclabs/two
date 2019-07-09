@@ -141,6 +141,7 @@ define INCLUDE_SUBMAKEFILE
         SOURCEDIRS      := $$(call CANONICAL_PATH,$${SOURCEDIRS})
         $${TGT}_DIRS    := $${SOURCEDIRS}
         $${TGT}_OBJS    :=
+        $${TGT}_DEPS    :=
         $${TGT}_SOURCES :=
     else
         # The values defined by this makefile apply to the the "current" target
