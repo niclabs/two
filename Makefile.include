@@ -166,7 +166,7 @@ define INCLUDE_SUBMAKEFILE
         $${TGT}_LDLIBS  += $${LDLIBS}
         INCDIRS         := $$(call QUALIFY_PATH,$${DIR},$${INCDIRS})
         INCDIRS         := $$(call CANONICAL_PATH,$${INCDIRS})
-        $${TGT}_INCDIRS := $${INCDIRS}
+        $${TGT}_INCDIRS += $${INCDIRS}
         $${TGT}_PREREQS += $$(addprefix $${TARGET_DIR}/,$${PREREQS})
     endif
 
