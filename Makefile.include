@@ -81,11 +81,6 @@ define INCLUDE_SUBDIR
     endif
 endef
 
-# Source https://stackoverflow.com/a/7324640
-define EQ
-$(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
-endef
-
 # Include subdirectory makefile if it exists
 define INCLUDE_SUBMAKEFILE
     # Reset makefile variables
@@ -141,14 +136,19 @@ define INCLUDE_SUBMAKEFILE
     # recursively include other submakefiles.
     ifneq "$$(strip $${TARGET})" ""
         # makefile apply to this new target. Initialize the target's variables.
-        TGT := $$(basename $$(strip $${TARGET}))
+        TGT := $$(strip $${TARGET})
+
+        # Check for phony target
+        ifeq "$$(suffix $${TGT})" ".PHONY"
+            TGT := $$(basename $${TGT})
+            $${TGT}_IS_PHONY := 1
+        endif
 
         TARGETS         += $${TGT}
         $${TGT}_CFLAGS  := $${CFLAGS}
         $${TGT}_LDFLAGS := $${LDFLAGS}
         $${TGT}_LDLIBS  := $${LDLIBS}
         $${TGT}_OBJDIR  := $${BUILD_DIR}/$$(call CANONICAL_PATH,$${TGT})
-        $${TGT}_IS_PHONY:= $$(if $$(call EQ,$$(suffix $${TARGET}),.PHONY),1)
         SOURCEDIRS      := $$(call QUALIFY_PATH,$${DIR},$${SOURCEDIRS})
         SOURCEDIRS      := $$(call CANONICAL_PATH,$${SOURCEDIRS})
         $${TGT}_DIRS    := $${SOURCEDIRS}
@@ -218,7 +218,7 @@ define ADD_TARGET_RULES
 
     # Add rule to compile individual objects
     $${${1}_OBJDIR}/%.o: %.c
-    $${${1}_OBJDIR}/%.o: %.c $${${1}_OBJDIR}/%.d 
+    $${${1}_OBJDIR}/%.o: %.c $${${1}_OBJDIR}/%.d
 		@mkdir -p $$(dir $$@)
 		$$(TRACE_CC)
 		$$(Q)$$(strip $${COMPILE})
@@ -283,7 +283,7 @@ ${BUILD_DIR}/%.o: %.c
 	$(Q)$(strip ${COMPILE})
 	@${FINALIZE_DEPENDENCY}
 
-${TARGET_DIR}/%.a: 
+${TARGET_DIR}/%.a:
 	@mkdir -p $(dir $@)
 	$(TRACE_AR)
 	$(Q)$(strip $(ARCHIVE))
