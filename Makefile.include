@@ -136,6 +136,7 @@ define INCLUDE_SUBMAKEFILE
         $${TGT}_CFLAGS  := $${CFLAGS}
         $${TGT}_LDFLAGS := $${LDFLAGS}
         $${TGT}_LDLIBS  := $${LDLIBS}
+        $${TGT}_OBJDIR  := $${BUILD_DIR}/$$(call CANONICAL_PATH,$${TGT})
         $${TGT}_IS_PHONY:= $${IS_PHONY}
         SOURCEDIRS      := $$(call QUALIFY_PATH,$${DIR},$${SOURCEDIRS})
         SOURCEDIRS      := $$(call CANONICAL_PATH,$${SOURCEDIRS})
@@ -165,7 +166,7 @@ define INCLUDE_SUBMAKEFILE
 
          # Convert the source file names to their corresponding object file
          # names.
-         OBJS := $$(addprefix $${BUILD_DIR}/,\
+         OBJS := $$(addprefix $${$${TGT}_OBJDIR}/,\
                     $$(addsuffix .o,$$(basename $${SOURCES})))
 
          $${TGT}_SOURCES += $${SOURCES}
@@ -203,6 +204,13 @@ endef
 define ADD_TARGET_RULES
     # Add build object rules
     $${${1}_OBJS}: CFLAGS := $${${1}_CFLAGS} $$(addprefix -I,$${${1}_DIRS})
+
+    # Add rule to compile individual objects
+    $${${1}_OBJDIR}/%.o: %.c
+    $${${1}_OBJDIR}/%.o: %.c $${${1}_OBJDIR}/%.d 
+		@mkdir -p $$(dir $$@)
+		$$(Q)$$(strip $${COMPILE})
+		@$${FINALIZE_DEPENDENCY}
 
     # Add header dependency targets
     $${${1}_DEPS}:
