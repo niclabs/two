@@ -90,6 +90,8 @@ define INCLUDE_SUBMAKEFILE
     CFLAGS       :=
     LDFLAGS      :=
     LDLIBS       :=
+    INCDIRS      :=
+    PREREQS      :=
 
     # A directory stack is maintained so that the correct paths are used as we
     # recursively include all submakefiles. Get the makefile's directory and
@@ -149,9 +151,12 @@ define INCLUDE_SUBMAKEFILE
         $${TGT}_LDLIBS  := $${LDLIBS}
         $${TGT}_OBJDIR  := $${BUILD_DIR}/$$(call CANONICAL_PATH,$${TGT})
         $${TGT}_OBJS    :=
-        $${TGT}_INCDIRS :=
+        INCDIRS         := $$(call QUALIFY_PATH,$${DIR},$${INCDIRS})
+        INCDIRS         := $$(call CANONICAL_PATH,$${INCDIRS})
+        $${TGT}_INCDIRS := $${INCDIRS}
         $${TGT}_DEPS    :=
         $${TGT}_SOURCES :=
+        $${TGT}_PREREQS := $$(addprefix $${TARGET_DIR}/,$${PREREQS})
     else
         # The values defined by this makefile apply to the the "current" target
         # as determined by which target is at the top of the stack.
@@ -159,6 +164,10 @@ define INCLUDE_SUBMAKEFILE
         $${TGT}_CFLAGS  += $${CFLAGS}
         $${TGT}_LDFLAGS += $${LDFLAGS}
         $${TGT}_LDLIBS  += $${LDLIBS}
+        INCDIRS         := $$(call QUALIFY_PATH,$${DIR},$${INCDIRS})
+        INCDIRS         := $$(call CANONICAL_PATH,$${INCDIRS})
+        $${TGT}_INCDIRS := $${INCDIRS}
+        $${TGT}_PREREQS += $$(addprefix $${TARGET_DIR}/,$${PREREQS})
     endif
 
     # Push the current target onto the target stack.
@@ -231,7 +240,7 @@ define ADD_TARGET_RULES
             # Target is an executable
             $${TARGET_DIR}/${1}: LDFLAGS += $${${1}_LDFLAGS}
             $${TARGET_DIR}/${1}: LDLIBS += $${${1}_LDLIBS}
-            $${TARGET_DIR}/${1}: $${${1}_OBJS}
+            $${TARGET_DIR}/${1}: $${${1}_OBJS} $${${1}_PREREQS}
 				@mkdir -p $$(dir $$@)
 				$$(TRACE_LD)
 				$$(Q)$$(strip $$(LINK))
