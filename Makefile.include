@@ -252,10 +252,11 @@ endef
 .SUFFIXES: .c .o
 
 # Define general variables
-DIR_STACK   :=
-TGT_STACK   :=
-TARGETS     :=
-BUILD_FILES :=
+DIR_STACK     :=
+TGT_STACK     :=
+TARGETS       :=
+BUILD_FILES   :=
+BUILD_TARGETS :=
 
 .DEFAULT_GOAL := all
 
@@ -263,7 +264,7 @@ BUILD_FILES :=
 $(eval $(call INCLUDE_SUBMAKEFILE,Makefile))
 
 # Add non-phony targets to build file
-BUILD_FILES += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}/${TGT}))
+BUILD_TARGETS += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}/${TGT}))
 
 # Add non-phony targets
 .PHONY: all
@@ -292,6 +293,11 @@ ${TARGET_DIR}/%.a:
 clean:
 	$(TRACE_RM)
 	$(Q)$(strip rm -f $(wildcard $(BUILD_FILES)))
+
+distclean:
+	@echo "Removing build targets"
+	$(Q)$(strip rm -f $(wildcard $(BUILD_TARGETS)))
+	$(Q)rm -rf $(BUILD_DIR)
 
 # Prevent make from removing any build targets, including intermediate ones
 .SECONDARY:	$(BUILD_FILES)
