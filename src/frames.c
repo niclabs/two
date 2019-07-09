@@ -312,7 +312,7 @@ int create_headers_frame(uint8_t * headers_block, int headers_block_size, uint32
 
     frame_header->length = length;
     frame_header->type = type;
-    frame_header ->flags = flags;
+    frame_header->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
     buffer_copy(header_block_fragment, headers_block, headers_block_size);
@@ -625,6 +625,7 @@ int create_window_update_frame(frame_header_t* frame_header, window_update_paylo
     frame_header->stream_id = stream_id;
     frame_header->type = WINDOW_UPDATE_TYPE;
     frame_header->length = 4;
+    frame_header->reserved = 0;
     frame_header->flags = 0;
 
     window_update_payload->reserved = 0;

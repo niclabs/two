@@ -1008,11 +1008,11 @@ void test_frame_to_bytes_window_update(void) {
             0x8,
             0x0,
             0, 0, 0, 1,
-
             0, 0, 0, 30
     };
     TEST_ASSERT_EQUAL(13, rc);
     for(int i = 0; i< rc; i++) {
+        printf("i:%d",i);
         TEST_ASSERT_EQUAL(expected_bytes[i], bytes[i]);
     }
 }
@@ -1020,9 +1020,7 @@ void test_frame_to_bytes_window_update(void) {
 void test_frame_to_bytes_goaway(void){
     frame_header_t frame_header;
     goaway_payload_t goaway_payload;
-    int length = 12;
 
-    uint32_t stream_id = 0;//1
     uint32_t last_stream_id = 30;
     uint32_t error_code = 1;
     uint8_t additional_debug_data_buffer[4];
