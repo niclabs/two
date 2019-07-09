@@ -1,8 +1,8 @@
 CONTIKI_PROJECT = server client
 all: $(CONTIKI_PROJECT)
 
-SRCDIR ?= ../src
-CONTIKI ?= ../../contiki
+SRCDIR ?= ../../src
+CONTIKI ?= ../../../contiki
 
 PROJECTDIRS += $(SRCDIR)
 PROJECT_SOURCEFILES=sock.c cbuf.c
@@ -16,6 +16,7 @@ SMALL=1
 SERVER_ADDR ?= 2001:dead:beef::1
 SERVER_PORT ?= 8888
 
+DEFINES += WITH_CONTIKI
 DEFINES += SERVER_ADDR=\"$(SERVER_ADDR)\"
 DEFINES += SERVER_PORT=$(SERVER_PORT)
 
