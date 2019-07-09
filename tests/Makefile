@@ -11,7 +11,6 @@ BUILD_DIR	?= $(BASEDIR)/build
 # Target configuration
 TARGET=test.PHONY
 
-SOURCEDIRS := ../src
 SUBDIRS := unity
 
 # Add sources

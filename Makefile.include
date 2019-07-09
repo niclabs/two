@@ -86,7 +86,6 @@ define INCLUDE_SUBMAKEFILE
     # Reset makefile variables
     TARGET       :=
     SOURCES      :=
-    SOURCEDIRS   :=
     SUBDIRS      :=
     CFLAGS       :=
     LDFLAGS      :=
@@ -149,10 +148,8 @@ define INCLUDE_SUBMAKEFILE
         $${TGT}_LDFLAGS := $${LDFLAGS}
         $${TGT}_LDLIBS  := $${LDLIBS}
         $${TGT}_OBJDIR  := $${BUILD_DIR}/$$(call CANONICAL_PATH,$${TGT})
-        SOURCEDIRS      := $$(call QUALIFY_PATH,$${DIR},$${SOURCEDIRS})
-        SOURCEDIRS      := $$(call CANONICAL_PATH,$${SOURCEDIRS})
-        $${TGT}_DIRS    := $${SOURCEDIRS}
         $${TGT}_OBJS    :=
+        $${TGT}_INCDIRS :=
         $${TGT}_DEPS    :=
         $${TGT}_SOURCES :=
     else
@@ -162,9 +159,6 @@ define INCLUDE_SUBMAKEFILE
         $${TGT}_CFLAGS  += $${CFLAGS}
         $${TGT}_LDFLAGS += $${LDFLAGS}
         $${TGT}_LDLIBS  += $${LDLIBS}
-        SOURCEDIRS      := $$(call QUALIFY_PATH,$${DIR},$${SOURCEDIRS})
-        SOURCEDIRS      := $$(call CANONICAL_PATH,$${SOURCEDIRS})
-        $${TGT}_DIRS    += $${SOURCEDIRS}
     endif
 
     # Push the current target onto the target stack.
@@ -183,7 +177,7 @@ define INCLUDE_SUBMAKEFILE
          $${TGT}_SOURCES += $${SOURCES}
          $${TGT}_OBJS    += $${OBJS}
          $${TGT}_DEPS    += $${OBJS:%.o=%.d}
-         $${TGT}_DIRS    += $${DIR}
+         $${TGT}_INCDIRS += $$(sort $$(dir $${SOURCES}))
 
          BUILD_FILES     += $${$${TGT}_OBJS} $${$${TGT}_DEPS}
     endif
@@ -214,7 +208,7 @@ endef
 
 define ADD_TARGET_RULES
     # Add build object rules
-    $${${1}_OBJS}: CFLAGS += $${${1}_CFLAGS} $$(addprefix -I,$${${1}_DIRS})
+    $${${1}_OBJS}: CFLAGS += $${${1}_CFLAGS} $$(addprefix -I,$${${1}_INCDIRS})
 
     # Add rule to compile individual objects
     $${${1}_OBJDIR}/%.o: %.c
