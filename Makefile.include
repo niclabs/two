@@ -273,11 +273,6 @@ $(foreach TGT,${TARGETS},\
 	$(eval $(call ADD_TARGET_RULES,${TGT})))
 
 # General directory independent rules
-${BUILD_DIR}/%.o: %.c
-	@mkdir -p $(dir $@)
-	$(Q)$(strip ${COMPILE})
-	@${FINALIZE_DEPENDENCY}
-
 ${TARGET_DIR}/%.a:
 	@mkdir -p $(dir $@)
 	$(TRACE_AR)
