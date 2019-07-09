@@ -1,4 +1,4 @@
-QUIET=1
+QUIET ?= 1
 
 SUBDIRS = src/ tests/
 
