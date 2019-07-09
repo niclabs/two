@@ -141,12 +141,14 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
             int new_size = append_byte_arrays(bytes, frame_header_bytes, headers_bytes, frame_header_bytes_size, size);
             return new_size;
         }
-        case 0x2://Priority
+        case 0x2: {//Priority
             printf("TODO: Priority Frame. Not implemented yet.");
             return -1;
-        case 0x3://RST_STREAM
+        }
+        case 0x3: {//RST_STREAM
             printf("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
+        }
         case 0x4: {//Settings
             if (length % 6 != 0) {
                 printf("Error: length not divisible by 6, %d", length);
@@ -167,18 +169,33 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
             int new_size = append_byte_arrays(bytes, frame_header_bytes, settings_bytes, frame_header_bytes_size, size);
             return new_size;
         }
-        case 0x5://Push promise
+        case 0x5: {//Push promise
             printf("TODO: Push promise frame. Not implemented yet.");
             return -1;
-        case 0x6://Ping
+        }
+        case 0x6: {//Ping
             printf("TODO: Ping frame. Not implemented yet.");
             return -1;
-        case 0x7://Go Avaw
+        }
+        case 0x7: {//Go Avaw
+
+
             printf("TODO: Go away frame. Not implemented yet.");
             return -1;
-        case 0x8://Window update
-            printf("TODO: Window update frame. Not implemented yet.");
-            return -1;
+        }
+        case 0x8: {//Window update
+            if (length < 8 ) {
+                printf("Error: length < 8, %d", length);
+                return -1;
+            }
+            uint8_t frame_header_bytes[9];
+            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
+            window_update_payload_t *window_update_payload = ((window_update_payload_t *) (frame->payload));
+            uint8_t window_update_bytes[length];
+            int size = window_update_payload_to_bytes(frame_header,window_update_payload,window_update_bytes);
+            int new_size = append_byte_arrays(bytes, frame_header_bytes, window_update_bytes, frame_header_bytes_size, size);
+            return new_size;
+        }
         case 0x9: {//Continuation
             uint8_t frame_header_bytes[9];
             int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
