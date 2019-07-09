@@ -65,6 +65,7 @@ $(OBJDIR)/test_%.$(EXT): LDFLAGS += --coverage
 $(OBJDIR)/test_%.$(EXT): LDLIBS  += -lm
 $(OBJDIR)/test_%.$(EXT): $(OBJDIR)/tests/test_%.o $(OBJDIR)/src/%.o $(OBJDIR)/tests/unity/unity.o
 	@mkdir -p $(dir $@)
+	$(TRACE_LD)
 	$(Q)$(strip $(LINK))
 
 # Object specific CFLAGS
