@@ -178,10 +178,17 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes){
             return -1;
         }
         case 0x7: {//Go Avaw
-
-
-            printf("TODO: Go away frame. Not implemented yet.");
-            return -1;
+            if (length <8 ) {
+                printf("Error: length < 8, %d", length);
+                return -1;
+            }
+            uint8_t frame_header_bytes[9];
+            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
+            goaway_payload_t *goaway_payload = ((goaway_payload_t *) (frame->payload));
+            uint8_t goaway_bytes[length];
+            int size = goaway_payload_to_bytes(frame_header,goaway_payload,goaway_bytes);
+            int new_size = append_byte_arrays(bytes, frame_header_bytes, goaway_bytes, frame_header_bytes_size, size);
+            return new_size;
         }
         case 0x8: {//Window update
             if (length != 4 ) {
