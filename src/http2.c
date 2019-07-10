@@ -534,6 +534,12 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     return 0;
 }
 
+int handle_goaway_payload(frame_header_t *header, goaway_payload_t *goaway_pl, hstates_t *st){
+  (void) header;
+  (void) goaway_pl;
+  (void) st;
+  return -1;
+}
 /*
 * Function: h2_send_local_settings
 * Sends local settings to endpoint.
@@ -761,9 +767,28 @@ int h2_receive_frame(hstates_t *st){
         case PING_TYPE://Ping
             WARN("TODO: Ping frame. Not implemented yet.");
             return -1;
-        case GOAWAY_TYPE://Go Avaw
-            WARN("TODO: Go away frame. Not implemented yet.");
-            return -1;
+        case GOAWAY_TYPE:{//Go Avaw
+            INFO("h2_receive_frame: GOAWAY");
+            if(header.stream_id != 0x0){
+              ERROR("GOAWAY doesnt have STREAM ID 0. PROTOCOL ERROR");
+              return -1;
+            }
+            uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
+            uint8_t debug_data[max_frame_size];
+            goaway_payload_t goaway_pl;
+            rc = read_goaway_payload(buff_read, &header, &goaway_pl, debug_data);
+            if(rc < 0){
+              ERROR("Error in reading goaway payload");
+              return -1;
+            }
+            rc = handle_goaway_payload(&header, &goaway_pl, st);
+            if(rc < 0){
+              ERROR("Error during goaway handling");
+              return -1;
+            }
+            INFO("Received goaway frame");
+            return rc;
+        }
         case WINDOW_UPDATE_TYPE: {//Window update
             window_update_payload_t window_update_payload;
             int rc = read_window_update_payload(buff_read, &header, &window_update_payload);
