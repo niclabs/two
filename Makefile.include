@@ -115,23 +115,7 @@ define INCLUDE_SUBMAKEFILE
     ifeq "$$(strip $${TARGET_DIR})" ""
         TARGET_DIR := $${BASEDIR}
     endif
-
-    # Quiet flag
-    ifeq ($$(QUIET),1)
-        TRACE_CC = @echo "  CC       " $$<
-        TRACE_LD = @echo "  LD       " $$@
-        TRACE_AR = @echo "  AR       " $$@
-        TRACE_RM = @echo "  RM       " $$(sort $$(addprefix *,$$(suffix $$(BUILD_FILES))))
-        Q=@
-        MAKEFLAGS += --no-print-directory
-    else
-        TRACE_CC =
-        TRACE_LD =
-        TRACE_AR =
-        TRACE_RM =
-        Q=
-    endif
-
+    
     # Determine which target this makefile's variables apply to. A stack is
     # used to keep track of which target is the "current" target as we
     # recursively include other submakefiles.
@@ -266,6 +250,22 @@ BUILD_TARGETS :=
 # Include top-level Makefile
 $(eval $(call INCLUDE_SUBMAKEFILE,Makefile))
 
+# Quiet flag
+ifeq ($(QUIET),1)
+    TRACE_CC = @echo "  CC       " $<
+    TRACE_LD = @echo "  LD       " $@
+    TRACE_AR = @echo "  AR       " $@
+    TRACE_RM = @echo "  RM       " ${1}
+    Q=@
+    MAKEFLAGS += --no-print-directory
+else
+    TRACE_CC =
+    TRACE_LD =
+    TRACE_AR =
+    TRACE_RM =
+    Q=
+endif
+
 # Add non-phony targets to build file
 BUILD_TARGETS += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}/${TGT}))
 
@@ -288,13 +288,17 @@ ${TARGET_DIR}/%.a:
 
 .PHONY:	clean
 clean:
-	$(TRACE_RM)
+	$(call TRACE_RM,$(sort $(addprefix *,$(suffix $(BUILD_FILES)))))
 	$(Q)$(strip rm -f $(wildcard $(BUILD_FILES)))
 
-distclean:
-	@echo "Removing all targets"
+distclean: clean
+	$(call TRACE_RM,$(BUILD_TARGETS) $(BUILD_DIR))
 	$(Q)$(strip rm -f $(wildcard $(BUILD_TARGETS)))
 	$(Q)rm -rf $(BUILD_DIR)
+ifneq "$(TARGET_DIR)" "."
+	$(call TRACE_RM,$(TARGET_DIR))
+	$(Q)rm -rf $(TARGET_DIR)
+endif
 
 # Prevent make from removing any build targets, including intermediate ones
 .SECONDARY:	$(BUILD_FILES)
