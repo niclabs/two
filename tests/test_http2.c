@@ -107,6 +107,11 @@ FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t* , window_update
 FAKE_VALUE_FUNC(int, window_update_payload_to_bytes, frame_header_t* , window_update_payload_t* , uint8_t* );
 FAKE_VALUE_FUNC(int, read_window_update_payload, uint8_t* , frame_header_t* , window_update_payload_t* );
 
+FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t*, goaway_payload_t*, uint8_t*, uint32_t, uint32_t,  uint8_t *, uint8_t);
+FAKE_VALUE_FUNC(int, goaway_payload_to_bytes, frame_header_t*, goaway_payload_t*, uint8_t*);
+FAKE_VALUE_FUNC(int, read_goaway_payload, uint8_t*, frame_header_t*, goaway_payload_t* , uint8_t*);
+
+
 
 #define FFF_FAKES_LIST(FAKE)              \
     FAKE(verify_setting)                  \
