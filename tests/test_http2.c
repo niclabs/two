@@ -226,10 +226,12 @@ void test_update_settings_table(void){
   settings_pair_t pairs[6] = {pair1,pair2,pair3,pair4,pair5,pair6};
   settings_payload_t payload = {pairs, 6};
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
   verify_setting_fake.custom_fake = verify_return_zero;
   int rc = update_settings_table(&payload, LOCAL, &hdummy);
   TEST_ASSERT_MESSAGE(verify_setting_fake.call_count == 6, "Call count of verify_setting must be 6");
@@ -274,10 +276,12 @@ void test_update_settings_table_errors(void){
   settings_pair_t pairs[6] = {pair1,pair2,pair3,pair4,pair5,pair6};
   settings_payload_t payload = {pairs, 6};
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
   int verify_return[12];
   memset(verify_return, 0, sizeof(verify_return));
   // First error, one verification fails
@@ -315,10 +319,13 @@ void test_send_settings_ack_errors(void){
 
 void test_check_for_settings_ack(void){
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      1};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
+  hdummy.h2s.wait_setting_ack = 1;
   frame_header_t header_ack = {0, 0x4, 0x0|0x1, 0x0, 0};
   frame_header_t header_not_ack = {24, 0x4, 0x0, 0x0, 0};
   int flag_returns[3] = {0, 1, 1};
@@ -337,10 +344,13 @@ void test_check_for_settings_ack(void){
 
 void test_check_for_settings_ack_errors(void){
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      1};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
+  hdummy.h2s.wait_setting_ack = 1;
   // first error, wrong type
   frame_header_t header_ack_wrong_type = {0, 0x5, 0x0|0x1, 0x0, 0};
   // second error, wrong stream_id
@@ -367,10 +377,12 @@ void test_handle_settings_payload(void){
   settings_payload_t payload = {pairs, 4};
   frame_header_t header_sett = {24, 0x4, 0x0|0x1, 0x0, 0};
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
   bytes_to_settings_payload_fake.custom_fake = bytes_settings_payload_return_24;
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
   verify_setting_fake.custom_fake = verify_return_zero;
@@ -394,10 +406,12 @@ void test_handle_settings_payload_errors(void){
   settings_payload_t payload = {pairs, 4};
   frame_header_t header_sett = {24, 0x4, 0x0|0x1, 0x0, 0};
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
   // First error, bytes to settings payload fail
   int bytes_return[2] = {-1, 24};
   SET_RETURN_SEQ(bytes_to_settings_payload, bytes_return, 2);
@@ -458,10 +472,12 @@ void test_read_frame_errors(void){
 void test_h2_send_local_settings(void){
   /*Depends on create_settings_frame, frame_to_bytes and http_write*/
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
   int rc = h2_send_local_settings(&hdummy);
@@ -475,10 +491,12 @@ void test_h2_send_local_settings(void){
 void test_h2_send_local_settings_errors(void){
   /*Depends on create_settings_frame, frame_to_bytes and http_write*/
   hstates_t hdummy;
-  h2states_t dummy = {{1,1,1,1,1,1},
-                      {1,1,1,1,1,1},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+      hdummy.h2s.local_settings[i] = 1;
+      hdummy.h2s.remote_settings[i] = 1;
+  }
   // First error, create settings frame error
   int create_return[2] = {-1, 0};
   SET_RETURN_SEQ(create_settings_frame, create_return, 2);
@@ -493,31 +511,35 @@ void test_h2_send_local_settings_errors(void){
 
 void test_h2_read_setting_from(void){
   hstates_t hdummy;
-  h2states_t dummy = {{1,2,3,4,5,6},
-                      {7,8,9,10,11,12},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+    hdummy.h2s.remote_settings[i] = i+1;
+    hdummy.h2s.local_settings[i] = i+7;
+  }
   uint32_t answ = h2_read_setting_from(LOCAL, 0x1, &hdummy);
   TEST_ASSERT_MESSAGE(answ == 7, "Answer must be 7");
   answ = h2_read_setting_from(REMOTE, 0x6, &hdummy);
   TEST_ASSERT_MESSAGE(answ == 6, "Answer must be 6");
   answ = h2_read_setting_from(LOCAL, 0x0, &hdummy);
-  TEST_ASSERT_MESSAGE(answ == -1, "Answer must be -1. Error in id! (overvalue)");
+  TEST_ASSERT_MESSAGE((int)answ == -1, "Answer must be -1. Error in id! (overvalue)");
   answ = h2_read_setting_from(REMOTE, 0x7, &hdummy);
-  TEST_ASSERT_MESSAGE(answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
+  TEST_ASSERT_MESSAGE((int)answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
 }
 
 void test_h2_read_setting_from_errors(void){
   hstates_t hdummy;
-  h2states_t dummy = {{1,2,3,4,5,6},
-                      {7,8,9,10,11,12},
-                      0};
-  hdummy.h2s = dummy;
+  init_variables(&hdummy);
+  int i;
+  for(i = 0; i < 6; i++){
+    hdummy.h2s.remote_settings[i] = i+1;
+    hdummy.h2s.local_settings[i] = i+7;
+  }
   // First error, invalid parameter
   uint32_t rc = h2_read_setting_from(LOCAL, 0x0, &hdummy);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (invalid parameter");
+  TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid parameter");
   rc = h2_read_setting_from(5, 0x1, &hdummy);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (invalid table");
+  TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid table");
 }
 
 
