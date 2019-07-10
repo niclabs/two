@@ -115,7 +115,7 @@ define INCLUDE_SUBMAKEFILE
     ifeq "$$(strip $${TARGET_DIR})" ""
         TARGET_DIR := $${BASEDIR}
     endif
-    
+
     # Determine which target this makefile's variables apply to. A stack is
     # used to keep track of which target is the "current" target as we
     # recursively include other submakefiles.
