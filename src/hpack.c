@@ -9,58 +9,65 @@
  * returns compressed headers size or -1 if error
  */
 /*
-int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers){
+   int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers){
     (void)headers;
     (void)headers_size;
     (void)compressed_headers;
     ERROR("compress_huffman: not implemented yet!");
     return -1;
-}
+   }
 
-int compress_static(char* headers, int headers_size, uint8_t* compressed_headers){
+   int compress_static(char* headers, int headers_size, uint8_t* compressed_headers){
     (void)headers;
     (void)headers_size;
     (void)compressed_headers;
     ERROR("compress_static: not implemented yet!");
     return -1;
-}
-int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers){
+   }
+   int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers){
     (void)headers;
     (void)headers_size;
     (void)compressed_headers;
     ERROR("compress_dynamic: not implemented yet!");
     return -1;
-}
-*/
+   }
+ */
 
-int log128(uint32_t x) {
+int log128(uint32_t x)
+{
     uint32_t n = 0;
     uint32_t m = 1;
+
     while (m < x) {
-        m = 1<<(7*(++n));
+        m = 1 << (7 * (++n));
     }
 
-    if (m == x) return n;
+    if (m == x) {
+        return n;
+    }
     return n - 1;
 }
 
 
 
 /*returns the amount of octets used to encode a int num with a prefix p*/
-uint32_t encoded_integer_size(uint32_t num, uint8_t prefix){
+uint32_t encoded_integer_size(uint32_t num, uint8_t prefix)
+{
     uint8_t p = 255;
+
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
-    if(num==p){
+    if (num == p) {
         return 2;
     }
-    if(num >= p){
+    if (num >= p) {
         uint32_t k = log128(num - p);//log(num - p) / log(128);
         return k + 2;
-    }else{
+    }
+    else {
         return 1;
     }
-};
+}
 
 
 /*
@@ -69,21 +76,25 @@ uint32_t encoded_integer_size(uint32_t num, uint8_t prefix){
  * encoded_integer must be an array of the size calculated by encoded_integer_size
  * returns the encoded_integer_size
  */
-int encode_integer(uint32_t integer, uint8_t prefix, uint8_t* encoded_integer){
+int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
+{
     int octets_size = 0;
-    uint32_t max_first_octet = (1<<prefix)-1;
-    if(integer < max_first_octet){
+    uint32_t max_first_octet = (1 << prefix) - 1;
+
+    if (integer < max_first_octet) {
         encoded_integer[0] = (uint8_t)(integer << (8 - prefix));
         encoded_integer[0] = (uint8_t)encoded_integer[0] >> (8 - prefix);
         octets_size = 1;
-    }else{
+    }
+    else {
         uint8_t b0 = 255;
         b0 = b0 << (8 - prefix);
         b0 = b0 >> (8 - prefix);
         integer = integer - b0;
-        if(integer==0){
+        if (integer == 0) {
             octets_size = 2;
-        }else {
+        }
+        else {
             uint32_t k = log128(integer);//log(integer)/log(128);
             octets_size = k + 2;
         }
@@ -91,40 +102,42 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t* encoded_integer){
         encoded_integer[0] = b0;
 
         int i = 1;
-        while(integer >= 128){
+        while (integer >= 128) {
             uint32_t encoded = integer % 128;
             encoded += 128;
-            encoded_integer[i] = (uint8_t) encoded;
+            encoded_integer[i] = (uint8_t)encoded;
             i++;
-            integer = integer/128;
+            integer = integer / 128;
         }
-        uint8_t bi = (uint8_t) integer & 0xff;
+        uint8_t bi = (uint8_t)integer & 0xff;
         encoded_integer[i] = bi;
     }
     return octets_size;
-};
+}
 
 
 
-int encode_non_huffman_string(char* str, uint8_t* encoded_string){
+int encode_non_huffman_string(char *str, uint8_t *encoded_string)
+{
     int str_length = strlen(str);
-    int encoded_string_length_size = encode_integer(str_length,7,encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
-    for(int i = 0; i< str_length; i++){//TODO check if strlen is ok to use here
-        encoded_string[i+encoded_string_length_size]=str[i];
+    int encoded_string_length_size = encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
+
+    for (int i = 0; i < str_length; i++) {                                          //TODO check if strlen is ok to use here
+        encoded_string[i + encoded_string_length_size] = str[i];
     }
-    return str_length+encoded_string_length_size;
+    return str_length + encoded_string_length_size;
 }
 /*
-int encode_huffman_word(char* str, uint8_t* encoded_word){
+   int encode_huffman_word(char* str, uint8_t* encoded_word){
     (void) str;
     (void) encoded_word;
     ERROR("Not implemented yet");
     return -1;
-}
-*/
+   }
+ */
 
 /*
-int encode_huffman_string(char* str, uint8_t* encoded_string){
+   int encode_huffman_string(char* str, uint8_t* encoded_string){
 
     uint8_t encoded_word[HTTP2_MAX_HBF_BUFFER];
     int encoded_word_length = encode_huffman_word(str, encoded_word); //save de encoded word in "encoded_word" and returns the length of the encoded word
@@ -143,34 +156,35 @@ int encode_huffman_string(char* str, uint8_t* encoded_string){
         encoded_string[i+encoded_word_length_size] = encoded_word[i];
     }
     return new_size;
-};
+   };
  */
 
 /*
-int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
+   int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
     if(huffman){
         return encode_huffman_string(str, encoded_string);
     }else{
         return encode_non_huffman_string(str,encoded_string);
     }
-};
-*/
+   };
+ */
 
-uint8_t find_prefix_size(hpack_preamble_t octet){
-    if((INDEXED_HEADER_FIELD&octet)==INDEXED_HEADER_FIELD){
+uint8_t find_prefix_size(hpack_preamble_t octet)
+{
+    if ((INDEXED_HEADER_FIELD & octet) == INDEXED_HEADER_FIELD) {
         return (uint8_t)7;
     }
-    if((LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING&octet)==LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING){
+    if ((LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING & octet) == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
         return (uint8_t)6;
     }
-    if((DYNAMIC_TABLE_SIZE_UPDATE&octet)==DYNAMIC_TABLE_SIZE_UPDATE){
+    if ((DYNAMIC_TABLE_SIZE_UPDATE & octet) == DYNAMIC_TABLE_SIZE_UPDATE) {
         return (uint8_t)5;
     }
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
-};
+}
 
 /*
-int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
+   int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
     uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
     int pointer = 0;
     int encoded_size = encode_huffman_string(string, encoded_string);
@@ -186,22 +200,24 @@ int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
     }
     pointer += encoded_size;
     return pointer;
-}
+   }
  */
 
-int pack_non_huffman_string_and_size(char* string, uint8_t* encoded_buffer){
+int pack_non_huffman_string_and_size(char *string, uint8_t *encoded_buffer)
+{
     int pointer = 0;
     int string_size = strlen(string);
-    int encoded_size = encode_integer(string_size,7,encoded_buffer+pointer);
+    int encoded_size = encode_integer(string_size, 7, encoded_buffer + pointer);
+
     pointer += encoded_size;
-    for(int i = 0; i< string_size;i++){
-        encoded_buffer[pointer+i] = string[i];
+    for (int i = 0; i < string_size; i++) {
+        encoded_buffer[pointer + i] = string[i];
     }
     pointer += string_size;
     return pointer;
 }
 /*
-int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+   int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
     int encoding_size = encode_integer(index,find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING),encoded_buffer);//returns size of encoding
     if(encoding_size == -1){
@@ -216,9 +232,9 @@ int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_
         pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
     }
     return pointer;
-}
+   }
 
-int encode_literal_ḧeader_field_with_incremental_indexing_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+   int encode_literal_ḧeader_field_with_incremental_indexing_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
     encode_buffer[0] =  LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
     pointer += 1; //increase pointer to end of index
@@ -234,8 +250,8 @@ int encode_literal_ḧeader_field_with_incremental_indexing_new_name(char* name_
         pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
     }
     return pointer;
-}
-int encode_literal_ḧeader_field_without_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+   }
+   int encode_literal_ḧeader_field_without_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
     int encoding_size = encode_integer(index,find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING),encoded_buffer); //returns size of encoding
     if(encoding_size == -1){
@@ -251,8 +267,8 @@ int encode_literal_ḧeader_field_without_indexing_indexed_name(uint32_t index, 
     }
     return pointer;
 
-}
-int encode_literal_ḧeader_field_without_indexing_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+   }
+   int encode_literal_ḧeader_field_without_indexing_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
     encode_buffer[0] =  LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
     pointer += 1; //increase pointer to end of index
@@ -268,8 +284,8 @@ int encode_literal_ḧeader_field_without_indexing_new_name(char* name_string, u
         pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
     }
     return pointer;
-}
-int encode_literal_ḧeader_field_never_indexed_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+   }
+   int encode_literal_ḧeader_field_never_indexed_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
     int encoding_size = encode_integer(index,find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED),encoded_buffer); //returns size of encoding
     if(encoding_size == -1){
@@ -284,8 +300,8 @@ int encode_literal_ḧeader_field_never_indexed_indexed_name(uint32_t index, cha
         pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
     }
     return pointer;
-}
-int encode_literal_header_field_never_indexed_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+   }
+   int encode_literal_header_field_never_indexed_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
     encode_buffer[0] =  LITERAL_HEADER_FIELD_NEVER_INDEXED;
     pointer += 1; //increase pointer to end of index
@@ -301,29 +317,32 @@ int encode_literal_header_field_never_indexed_new_name(char* name_string, uint8_
         pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
     }
     return pointer;
-}
-*/
+   }
+ */
 
 
-int encode_literal_header_field_new_name( char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer)
+{
     int pointer = 0;
 
-    if(name_huffman_bool!=0){
+    if (name_huffman_bool != 0) {
         //TODO
         //pointer += pack_huffman_string_and_size(name_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(name_string,encoded_buffer+pointer);
     }
-    if(value_huffman_bool!=0){
+    else {
+        pointer += pack_non_huffman_string_and_size(name_string, encoded_buffer + pointer);
+    }
+    if (value_huffman_bool != 0) {
         //TODO
         //pointer += pack_huffman_string_and_size(value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(value_string,encoded_buffer+pointer);
+    }
+    else {
+        pointer += pack_non_huffman_string_and_size(value_string, encoded_buffer + pointer);
     }
     return pointer;
 }
 /*
-int encode_literal_header_field_indexed_name( char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+   int encode_literal_header_field_indexed_name( char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
 
     if(value_huffman_bool!=0){
@@ -332,54 +351,59 @@ int encode_literal_header_field_indexed_name( char* value_string, uint8_t value_
         pointer += pack_non_huffman_string_and_size(value_string,encoded_buffer+pointer);
     }
     return pointer;
-}*/
+   }*/
 
-int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* value_string, uint8_t value_huffman_bool, char* name_string, uint8_t name_huffman_bool, uint8_t* encoded_buffer){
-    if(preamble == DYNAMIC_TABLE_SIZE_UPDATE){ // dynamicTableSizeUpdate
-        int encoded_max_size_length = encode_integer(max_size, 5,encoded_buffer);
+int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *value_string, uint8_t value_huffman_bool, char *name_string, uint8_t name_huffman_bool, uint8_t *encoded_buffer)
+{
+    if (preamble == DYNAMIC_TABLE_SIZE_UPDATE) { // dynamicTableSizeUpdate
+        int encoded_max_size_length = encode_integer(max_size, 5, encoded_buffer);
         encoded_buffer[0] |= preamble;
         return encoded_max_size_length;
-    }else{
+    }
+    else {
         uint8_t prefix = find_prefix_size(preamble);
         int pointer = 0;
         pointer += encode_integer(index, prefix, encoded_buffer + pointer);
-        encoded_buffer[0] |= preamble;//set first bit
-        if(preamble == (uint8_t)INDEXED_HEADER_FIELD){/*indexed header field representation in static or dynamic table*/
+        encoded_buffer[0] |= preamble;                      //set first bit
+        if (preamble == (uint8_t)INDEXED_HEADER_FIELD) {    /*indexed header field representation in static or dynamic table*/
             //TODO not implemented yet
             ERROR("Not implemented yet!");
             return pointer;
-        }else{
-            if(index==(uint8_t)0){
+        }
+        else {
+            if (index == (uint8_t)0) {
                 pointer += encode_literal_header_field_new_name( name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
-            }else{
+            }
+            else {
                 //TOD0
                 //pointer += encode_literal_header_field_indexed_name( value_string, value_huffman_bool, encoded_buffer + pointer);
             }
             return pointer;
         }
     }
-};
+}
 
 
 /*int decode(uint8_t *encoded_buffer){
 
-}*/
+   }*/
 
 
-hpack_preamble_t get_preamble(uint8_t preamble){
-    if(preamble&INDEXED_HEADER_FIELD){
+hpack_preamble_t get_preamble(uint8_t preamble)
+{
+    if (preamble & INDEXED_HEADER_FIELD) {
         return INDEXED_HEADER_FIELD;
     }
-    if(preamble&LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING){
+    if (preamble & LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
         return LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
     }
-    if(preamble&DYNAMIC_TABLE_SIZE_UPDATE){
+    if (preamble & DYNAMIC_TABLE_SIZE_UPDATE) {
         return DYNAMIC_TABLE_SIZE_UPDATE;
     }
-    if(preamble&LITERAL_HEADER_FIELD_NEVER_INDEXED){
+    if (preamble & LITERAL_HEADER_FIELD_NEVER_INDEXED) {
         return LITERAL_HEADER_FIELD_NEVER_INDEXED;
     }
-    if(preamble<16) {
+    if (preamble < 16) {
         return LITERAL_HEADER_FIELD_WITHOUT_INDEXING; // preamble = 0000
     }
     ERROR("wrong preamble");
@@ -400,38 +424,42 @@ hpack_preamble_t get_preamble(uint8_t preamble){
     else{
         return (uint32_t)first_byte;
     }
-}
+   }
  */
-uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
+uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
+{
     int pointer = 0;
     uint8_t b0 = bytes[0];
-    b0 = b0<<(8-prefix);
-    b0 = b0>>(8-prefix);
+
+    b0 = b0 << (8 - prefix);
+    b0 = b0 >> (8 - prefix);
     uint8_t p = 255;
-    p = p<<(8-prefix);
-    p = p>>(8-prefix);
-    if(b0!=p){
-        return (uint32_t) b0;
-    }else{
+    p = p << (8 - prefix);
+    p = p >> (8 - prefix);
+    if (b0 != p) {
+        return (uint32_t)b0;
+    }
+    else {
         uint32_t integer = (uint32_t)p;
         uint32_t depth = 0;
-        for(uint32_t i = 1; ; i++){
-            uint8_t bi = bytes[pointer+i];
-            if(!(bi&(uint8_t)128)){
-                integer += (uint32_t)bi*((uint32_t)1<<depth);
+        for (uint32_t i = 1;; i++) {
+            uint8_t bi = bytes[pointer + i];
+            if (!(bi & (uint8_t)128)) {
+                integer += (uint32_t)bi * ((uint32_t)1 << depth);
                 return integer;
-            }else{
-                bi = bi<<1;
-                bi = bi>>1;
-                integer += (uint32_t)bi*((uint32_t)1<<depth);
             }
-            depth = depth+7;
+            else {
+                bi = bi << 1;
+                bi = bi >> 1;
+                integer += (uint32_t)bi * ((uint32_t)1 << depth);
+            }
+            depth = depth + 7;
         }
     }
     return -1;
 }
 /*
-int decode_literal_header_field_incremental_index(uint8_t* header_block, char* name, char* value){
+   int decode_literal_header_field_incremental_index(uint8_t* header_block, char* name, char* value){
     //int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));//decode index
     if(index == 0){
@@ -451,42 +479,44 @@ int decode_literal_header_field_incremental_index(uint8_t* header_block, char* n
     //TODO add to dynamic table
     ERROR("Not implemented yet.");
     return -1;
-}*/
+   }*/
 
-int decode_literal_header_field_without_indexing(uint8_t* header_block, char* name, char* value){
+int decode_literal_header_field_without_indexing(uint8_t *header_block, char *name, char *value)
+{
     int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
-    if(index == 0){
+
+    if (index == 0) {
         pointer += 1;
         //decode huffman name
         //decode name length
-        int name_length = decode_integer(header_block+pointer, 7);
-        pointer += encoded_integer_size(name_length,7);
+        int name_length = decode_integer(header_block + pointer, 7);
+        pointer += encoded_integer_size(name_length, 7);
         //decode name
-        char* rc = strncpy(name,(char*)header_block+pointer, name_length);
-        if(rc<=(char*)0){
+        char *rc = strncpy(name, (char *)header_block + pointer, name_length);
+        if (rc <= (char *)0) {
             ERROR("Error en strncpy");
             return -1;
         }
         pointer += name_length;
     }
-    else{
+    else {
         //TODO find name in table
         ERROR("NOt implemented yet");
         return -1;
     }
     //decode value length
-    int value_length = decode_integer(header_block+pointer, 7);
-    pointer += encoded_integer_size(value_length,7);
+    int value_length = decode_integer(header_block + pointer, 7);
+    pointer += encoded_integer_size(value_length, 7);
     //decode value
-    strncpy(value,(char*)header_block+pointer, value_length);
+    strncpy(value, (char *)header_block + pointer, value_length);
     pointer += value_length;
 
     return pointer;
 }
 
 /*
-int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name, char* value){
+   int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name, char* value){
     //int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
     if(index == 0){
@@ -506,42 +536,46 @@ int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name,
     //TODO add to dynamic table
     ERROR("Not implemented yet.");
     return -1;
-}*/
+   }*/
 
 /*
-int decode_dynamic_table_size(uint8_t* header_block){
+   int decode_dynamic_table_size(uint8_t* header_block){
     //int pointer = 0;
     uint32_t new_table_size = decode_integer(header_block, find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
     //TODO modify dynamic table size and dynamic table if necessary.
     (void)new_table_size;
     ERROR("Not implemented yet.");
     return -1;
-}
-*/
+   }
+ */
 
-int decode_header(uint8_t* bytes, hpack_preamble_t preamble, char* name, char* value){
-    if(preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING){
-        int rc = decode_literal_header_field_without_indexing(bytes,name,value);
-        if(rc<0){
+int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *value)
+{
+    if (preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING) {
+        int rc = decode_literal_header_field_without_indexing(bytes, name, value);
+        if (rc < 0) {
             ERROR("Error in decode_literal_header_field_without_indexing");
         }
         return rc;
-    }else{
+    }
+    else {
         ERROR("Not implemented yet.");
         return -1;
     }
 }
 
-int decode_header_block(uint8_t* header_block, uint8_t header_block_size, headers_data_lists_t* h_list){
+int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_data_lists_t *h_list)
+{
     int pointer = 0;
 
     int header_counter = 0;
-    while(pointer < header_block_size) {
+
+    while (pointer < header_block_size) {
         hpack_preamble_t preamble = get_preamble(header_block[pointer]);
         int rc = decode_header(header_block + pointer, preamble, h_list->header_list_in[h_list->header_list_count_in + header_counter].name,
                                h_list->header_list_in[h_list->header_list_count_in + header_counter].value);
 
-        if(rc<0){
+        if (rc < 0) {
             ERROR("Error in decode_header");
             return -1;
         }
