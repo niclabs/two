@@ -1206,7 +1206,15 @@ void test_send_headers_one_header(void){
 
 void test_send_headers_with_continuation(void){
   hstates_t st;
+
+
   st.is_server = 0;
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
   int rc = init_variables(&st);
   st.hd_lists.header_list_count_out = 10;
   int create_headers_return[1] = {0};
@@ -1278,6 +1286,13 @@ void test_flow_control_receive_window_update(void){
 
 void test_get_size_data_to_send(void){
     hstates_t st;
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
+    init_variables(&st);
     st.h2s.outgoing_window.window_size = 10;
     st.h2s.outgoing_window.window_used = 0;
     st.hd_lists.data_out_size = 10;
@@ -1317,6 +1332,12 @@ void test_handle_data_payload(void){
     data_payload.data = data;
 
     hstates_t st;
+    st.hd_lists.header_list_count_in = 0;
+    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
     int rc = init_variables(&st);
     rc = handle_data_payload(&frame_header, &data_payload, &st);
     TEST_ASSERT_EQUAL(0,rc);
