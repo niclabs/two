@@ -540,11 +540,26 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     return 0;
 }
 
-int handle_goaway_payload(frame_header_t *header, goaway_payload_t *goaway_pl, hstates_t *st){
-  (void) header;
-  (void) goaway_pl;
-  (void) st;
-  return -1;
+int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
+  if(goaway_pl->error_code != HTTP2_NO_ERROR){
+      INFO("Received GOAWAY with ERROR");
+      // i guess that is closed on the other side, are you?
+      return -1;
+  }
+  // never has been seen a goaway before in this connection life
+  if(st->h2s.received_go_away == 1){
+    INFO("Another GOAWAY has been received before");
+  }
+  else {
+    st->h2s.received_go_away = 1; // receiver must not open additional streams
+  }
+  if(st->h2s.current_stream.stream_id > goaway_pl->last_stream_id){
+    if(st->h2s.current_stream.state != STREAM_IDLE){
+      st->h2s.current_stream.state = STREAM_CLOSED;
+      INFO("Current stream closed");
+    }
+  }
+  return 0;
 }
 /*
 * Function: h2_send_local_settings
@@ -787,7 +802,7 @@ int h2_receive_frame(hstates_t *st){
               ERROR("Error in reading goaway payload");
               return -1;
             }
-            rc = handle_goaway_payload(&header, &goaway_pl, st);
+            rc = handle_goaway_payload(&goaway_pl, st);
             if(rc < 0){
               ERROR("Error during goaway handling");
               return -1;
