@@ -360,13 +360,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       //st->hd_lists.header_list_count_in = rc;
       st->h2s.waiting_for_end_headers_flag = 0;//RESET TO 0
       if(st->h2s.received_end_stream == 1){
-          if(st->h2s.current_stream.state == STREAM_OPEN){
-            st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
-          }
-          else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
-            st->h2s.current_stream.state = STREAM_CLOSED;
-            rc = prepare_new_stream(st);
-          }
+          change_stream_state_end_stream_flag(st, 0); //0 is for receiving
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
       uint32_t header_list_size = get_header_list_size(st->hd_lists.header_list_in, st->hd_lists.header_list_count_in);
@@ -550,13 +544,7 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     }
     // Stream state handling for end stream flag
     if(st->h2s.received_end_stream == 1){
-        if(st->h2s.current_stream.state == STREAM_OPEN){
-          st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
-        }
-        else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
-          st->h2s.current_stream.state = STREAM_CLOSED;
-          rc = prepare_new_stream(st);
-        }
+        change_stream_state_end_stream_flag(st, 0); // 0 is for receiving
         st->h2s.received_end_stream = 0;
     }
     return 0;
@@ -1010,13 +998,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
         return rc;
     }
     if(end_stream){
-      if(st->h2s.current_stream.state == STREAM_OPEN){
-        st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
-      }
-      else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
-        st->h2s.current_stream.state = STREAM_CLOSED;
-        rc = prepare_new_stream(st);
-      }
+      change_stream_state_end_stream_flag(st, 1); // 1 is for sending
     }
     st->hd_lists.data_out_sent += count_data_to_send;
     if(st->hd_lists.data_out_size == st->hd_lists.data_out_sent) {
