@@ -958,7 +958,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
     }
     h2_stream_state_t state = st->h2s.current_stream.state;
     if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
-        ERROR("Wrong state. ");
+        ERROR("Wrong state for sending DATA");
         return -1;
     }
     uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
@@ -1097,6 +1097,10 @@ int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_
 * Output: 0 if process was made successfully, -1 if not.
 */
 int send_headers(hstates_t *st, uint8_t end_stream){
+  if(st->h2s.received_go_away){
+    ERROR("GOAWAY was received. Current process must not open a new stream");
+    return -1;
+  }
   if(st->hd_lists.header_list_count_out == 0){
     ERROR("There are no headers to send");
     return -1;
