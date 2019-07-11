@@ -239,10 +239,11 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
         ERROR("Invalid stream id parity. PROTOCOL ERROR");
         return -1;
       }
-      else{
+      else{ // Open a new stream, update last_open and last_peer stream
         st->h2s.current_stream.stream_id = header->stream_id;
         st->h2s.current_stream.state = STREAM_OPEN;
         st->h2s.last_open_stream_id = st->h2s.current_stream.stream_id;
+        st->h2s.last_peer_stream = st->h2s.current_stream.stream_id;
         return 0;
       }
   }
