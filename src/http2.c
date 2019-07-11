@@ -557,6 +557,12 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
       return -1;
   }
   // never has been seen a goaway before in this connection life
+  if(st->h2s.sent_go_away == 1){ // answer to goaway
+    st->connection_state = 0;
+    INFO("Connection CLOSED");
+    return 0;
+  }
+
   if(st->h2s.received_go_away == 1){
     INFO("Another GOAWAY has been received before");
   }
