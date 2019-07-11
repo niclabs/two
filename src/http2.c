@@ -287,7 +287,7 @@ int prepare_new_stream(hstates_t* st){
   return 0;
 }
 
-void change_stream_status_end_stream_flag(hstates_t *st, uint8_t sending){
+void change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
   if(sending){ // Change stream status if end stream flag is sending
     if(st->h2s.current_stream.state == STREAM_OPEN){
       st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
@@ -1149,7 +1149,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
         return rc;
       }
       if(end_stream){
-        change_stream_status_end_stream_flag(st, 1); // 1 is for sending
+        change_stream_state_end_stream_flag(st, 1); // 1 is for sending
       }
       return rc;
   }
@@ -1178,7 +1178,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
         return rc;
       }
       if(end_stream){
-        change_stream_status_end_stream_flag(st, 1); // 1 is for sending
+        change_stream_state_end_stream_flag(st, 1); // 1 is for sending
       }
       return rc;
   }
