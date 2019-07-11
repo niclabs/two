@@ -287,6 +287,27 @@ int prepare_new_stream(hstates_t* st){
   return 0;
 }
 
+void change_stream_status_end_stream_flag(hstates_t *st, uint8_t sending){
+  if(sending){ // Change stream status if end stream flag is sending
+    if(st->h2s.current_stream.state == STREAM_OPEN){
+      st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+    }
+    else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
+      st->h2s.current_stream.state = STREAM_CLOSED;
+      prepare_new_stream(st);
+    }
+  }
+  else{ // Change stream status if send stream flag is received
+    if(st->h2s.current_stream.state == STREAM_OPEN){
+      st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    }
+    else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+      st->h2s.current_stream.state = STREAM_CLOSED;
+      prepare_new_stream(st);
+    }
+  }
+}
+
 /*
 * Function: handle_headers_payload
 * Does all the operations related to an incoming HEADERS FRAME.
@@ -510,6 +531,7 @@ int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_incre
     decrease_window_used(&st->h2s.outgoing_window,window_size_increment);
     return 0;
 }
+
 
 
 int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
@@ -1127,13 +1149,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
         return rc;
       }
       if(end_stream){
-        if(st->h2s.current_stream.state == STREAM_OPEN){
-          st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
-        }
-        else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
-          st->h2s.current_stream.state = STREAM_CLOSED;
-          rc = prepare_new_stream(st);
-        }
+        change_stream_status_end_stream_flag(st, 1); // 1 is for sending
       }
       return rc;
   }
@@ -1162,13 +1178,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
         return rc;
       }
       if(end_stream){
-        if(st->h2s.current_stream.state == STREAM_OPEN){
-          st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
-        }
-        else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
-          st->h2s.current_stream.state = STREAM_CLOSED;
-          rc = prepare_new_stream(st);
-        }
+        change_stream_status_end_stream_flag(st, 1); // 1 is for sending
       }
       return rc;
   }
