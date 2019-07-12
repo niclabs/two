@@ -140,6 +140,9 @@ FAKE_VALUE_FUNC(int, read_goaway_payload, uint8_t*, frame_header_t*, goaway_payl
     FAKE(data_payload_to_bytes)           \
     FAKE(create_window_update_frame)           \
     FAKE(window_update_payload_to_bytes)           \
+    FAKE(create_goaway_frame)   \
+    FAKE(goaway_payload_to_bytes)   \
+    FAKE(read_goaway_payload)   \
 
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
