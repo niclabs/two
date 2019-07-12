@@ -4,7 +4,7 @@ services: docker
 notifications:
   email: false
 branches:
-  only: 
+  only:
     - master
     - develop
 
@@ -12,7 +12,7 @@ before_install:
   # Get docker image from docker hub
   - docker pull $DOCKER_IMG
   # Set permissions for Docker mount
-  - sudo chgrp -hR 1000 $TWO_HOST_PATH
+  - sudo chgrp -hR 100 $TWO_HOST_PATH
   # request codecov to detect CI environment to pass through to docker
   - ci_env=`bash <(curl -s https://codecov.io/env)`
 
@@ -20,11 +20,11 @@ jobs:
   include:
     - stage: test
       name: Unit Tests
-      script: 
-        - > 
-          docker run --privileged -v $TWO_HOST_PATH:/home/user/two 
-          --workdir /home/user/two $ci_env 
-          -ti $DOCKER_IMG 
+      script:
+        - >
+          docker run --privileged -v $TWO_HOST_PATH:/home/user/work
+          $ci_en
+          -ti $DOCKER_IMG
           bash -c "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
 
 # Environment variables
