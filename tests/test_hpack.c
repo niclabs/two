@@ -8,6 +8,11 @@
 void tearDown(void);
 
 extern int log128(uint32_t x);
+extern int encoded_integer_size(uint32_t num, uint8_t prefix);
+extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
+extern uint8_t find_prefix_size(hpack_preamble_t octet);
+extern uint32_t decode_integer(uint8_t *bytes, uint8_t prefix);
+extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
 
 
 DEFINE_FFF_GLOBALS;
