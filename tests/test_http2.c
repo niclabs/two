@@ -29,6 +29,8 @@ extern int handle_data_payload(frame_header_t* frame_header, data_payload_t* dat
 extern int send_data(hstates_t *st, uint8_t end_stream);
 extern int send_window_update(hstates_t *st, uint8_t window_size_increment);
 extern int prepare_new_stream(hstates_t *st);
+extern int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending);
+
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -1792,6 +1794,29 @@ void test_prepare_new_stream(void){
     TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
 }
 
+void test_change_stream_state_end_stream_flag(void){
+    hstates_t st;
+    st.h2s.current_stream.state = STREAM_OPEN;
+    int rc = change_stream_state_end_stream_flag(&st, 0); // receving flag
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE, "Stream state must be STREAM_HALF_CLOSED_REMOTE");
+    st.h2s.current_stream.state = STREAM_OPEN;
+    rc = change_stream_state_end_stream_flag(&st, 1); // sending
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "Stream state must be STREAM_HALF_CLOSED_LOCAL");
+
+    st.h2s.received_go_away = 0;
+    st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    rc = change_stream_state_end_stream_flag(&st, 1); // sending
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE, "Stream state must be STREAM_IDLE");
+    st.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+    rc = change_stream_state_end_stream_flag(&st, 0); // receving
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE, "Stream state must be STREAM_IDLE");
+
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1865,6 +1890,7 @@ int main(void)
     UNIT_TEST(test_send_window_update);
 
     UNIT_TEST(test_prepare_new_stream);
+    UNIT_TEST(test_change_stream_state_end_stream_flag);
 
     //TODO:
     // h2_receive_frame
