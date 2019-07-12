@@ -292,6 +292,9 @@ int prepare_new_stream(hstates_t* st){
 * If additional debug data (opaque data) is included it must be written on the
 * given hstates_t.h2s.debug_data_buffer buffer with its corresponding size on the
 * hstates_t.h2s.debug_size variable.
+* IMPORTANT: RFC 7540 section 6.8 indicates that a gracefully shutdown should have
+* an 2^31-1 value on the last_stream_id field and wait at least one RTT before sending
+* a goaway frame with the last stream id. This implementation doesn't.
 * Input: ->st: pointer to hstates_t struct where connection variables are stored
 *        ->error_code: error code for GOAWAY FRAME (RFC 7540 section 7)
 * Output: 0 if no errors were found, -1 if not
@@ -621,6 +624,9 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
 * Handles go away payload.
 * Input: ->goaway_pl: goaway_payload_t pointer to goaway frame payload
 *        ->st: pointer hstates_t struct where connection variables are stored
+* IMPORTANT: this implementation doesn't check the correctness of the last stream
+* id sent by the endpoint. That is, if a previous GOAWAY was received with an n
+* last_stream_id, it assumes that the next value received is going to be the same.
 * Output: 0 if no error were found during the handling, 1 if not
 */
 int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
