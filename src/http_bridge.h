@@ -47,7 +47,6 @@ typedef struct HTTP2_STATES {
     uint8_t received_end_stream;
     h2_window_manager_t incoming_window;
     h2_window_manager_t outgoing_window;
-    uint32_t last_peer_stream; // last stream opened by endpoint
     uint8_t sent_go_away;
     uint8_t received_go_away; // bool
     uint8_t debug_data_buffer[0]; // TODO not implemented yet
