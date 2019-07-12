@@ -294,7 +294,12 @@ void change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
     }
     else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
       st->h2s.current_stream.state = STREAM_CLOSED;
+      if(st->h2s.received_go_away){
+        send_goaway(st);
+      }
+      else{
       prepare_new_stream(st);
+      }
     }
   }
   else{ // Change stream status if send stream flag is received
@@ -303,7 +308,12 @@ void change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
     }
     else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
       st->h2s.current_stream.state = STREAM_CLOSED;
+      if(st->h2s.received_go_away){
+        send_goaway(st);
+      }
+      else{
       prepare_new_stream(st);
+      }
     }
   }
 }
@@ -556,17 +566,15 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
       // i guess that is closed on the other side, are you?
       return -1;
   }
-  // never has been seen a goaway before in this connection life
-  if(st->h2s.sent_go_away == 1){ // answer to goaway
+  if(st->h2s.sent_go_away == 1){ // received answer to goaway
     st->connection_state = 0;
     INFO("Connection CLOSED");
     return 0;
   }
-
   if(st->h2s.received_go_away == 1){
     INFO("Another GOAWAY has been received before");
   }
-  else {
+  else { // never has been seen a goaway before in this connection life
     st->h2s.received_go_away = 1; // receiver must not open additional streams
   }
   if(st->h2s.current_stream.stream_id > goaway_pl->last_stream_id){
