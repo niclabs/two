@@ -598,7 +598,7 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
 //Table related functions and definitions
 
 
-const int FIRST_INDEX_DYNAMIC = 62;
+const uint32_t FIRST_INDEX_DYNAMIC = 62; // Changed type to remove warnings
 
 //HeaderPairs in static table
 
@@ -782,8 +782,8 @@ headed_pair* dynamic_find_entry(uint32_t index){
 }
 //general method to find an entry in the table
 int find_entry(uint32_t index, char *name, char *value){
-  char *table_name;
-  char *table_value;
+  const char *table_name; //add const before char to resolve compilation warnings
+  const char *table_value;
   if(index>= FIRST_INDEX_DYNAMIC){
     headed_pair* entry = dynamic_find_entry(index);
     table_name = entry->name;
