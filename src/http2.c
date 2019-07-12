@@ -288,7 +288,43 @@ int prepare_new_stream(hstates_t* st){
   return 0;
 }
 
-void change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
+/*
+* Function: send_goaway
+* Given an hstates_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
+* If additional debug data (opaque data) is included it must be written on the
+* given hstates_t.h2s.debug_data_buffer buffer with its corresponding size on the
+* hstates_t.h2s.debug_size variable.
+* Input: ->st: pointer to hstates_t struct where connection variables are stored
+*        ->error_code: error code for GOAWAY FRAME (RFC 7540 section 7)
+* Output: 0 if no errors were found, -1 if not
+*/
+int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff, uint8_t debug_size){
+  int rc;
+  frame_t frame;
+  frame_header_t header;
+  goaway_payload_t goaway_pl;
+  uint8_t additional_debug_data[st->h2s.debug_size];
+  rc = create_goaway_frame(&header, &goaway_pl, additional_debug_data, st->h2s.last_open_stream_id, error_code, st->h2s.debug_data_buffer, st->h2s.debug_size);
+  if(rc < 0){
+    ERROR("Error creating GOAWAY frame");
+    return -1;
+  }
+  frame.frame_header = &header;
+  frame.payload = (void*)&goaway_pl;
+
+  uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+  int bytes_size = frame_to_bytes(&frame, buff_bytes);
+  rc = http_write(st,buff_bytes,bytes_size);
+  INFO("Sending GOAWAY");
+
+  if(rc != bytes_size){
+    ERROR("Error writting goaway frame. INTERNAL ERROR");
+    return rc;
+  }
+
+  return 0;
+
+}
   if(sending){ // Change stream status if end stream flag is sending
     if(st->h2s.current_stream.state == STREAM_OPEN){
       st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
