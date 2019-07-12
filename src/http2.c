@@ -40,7 +40,6 @@ int init_variables(hstates_t * st){
     st->h2s.outgoing_window.window_size = DEFAULT_IWS;
     st->h2s.outgoing_window.window_used = 0;
 
-    st->h2s.last_peer_stream = 0;
     st->h2s.sent_go_away = 0;
     st->h2s.received_go_away = 0;
     st->h2s.debug_size = 0;
@@ -249,7 +248,6 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
         st->h2s.current_stream.stream_id = header->stream_id;
         st->h2s.current_stream.state = STREAM_OPEN;
         st->h2s.last_open_stream_id = st->h2s.current_stream.stream_id;
-        st->h2s.last_peer_stream = st->h2s.current_stream.stream_id;
         return 0;
       }
   }
