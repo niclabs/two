@@ -30,6 +30,8 @@ extern int send_data(hstates_t *st, uint8_t end_stream);
 extern int send_window_update(hstates_t *st, uint8_t window_size_increment);
 extern int prepare_new_stream(hstates_t *st);
 extern int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending);
+extern int send_goaway(hstates_t *st, uint32_t error_code);
+
 
  /*---------------- Mock functions ---------------------------*/
 
@@ -1794,6 +1796,19 @@ void test_prepare_new_stream(void){
     TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
 }
 
+void test_send_goaway(void){
+    hstates_t st;
+    int rc = init_variables(&st);
+    rc = send_goaway(&st, HTTP2_NO_ERROR);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    int frame_to_bytes_return[1] = {200};
+    SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+    rc = send_goaway(&st, HTTP2_NO_ERROR);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+}
+
+// TODO test_send_goaway_errors
+
 void test_change_stream_state_end_stream_flag(void){
     hstates_t st;
     st.h2s.current_stream.state = STREAM_OPEN;
@@ -1815,7 +1830,10 @@ void test_change_stream_state_end_stream_flag(void){
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
     TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE, "Stream state must be STREAM_IDLE");
 
+    // TODO branches with received_go_away = 1
+
 }
+
 
 int main(void)
 {
@@ -1890,6 +1908,7 @@ int main(void)
     UNIT_TEST(test_send_window_update);
 
     UNIT_TEST(test_prepare_new_stream);
+    UNIT_TEST(test_send_goaway);
     UNIT_TEST(test_change_stream_state_end_stream_flag);
 
     //TODO:
