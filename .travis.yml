@@ -23,7 +23,7 @@ jobs:
       script:
         - >
           docker run --privileged -v $TWO_HOST_PATH:/home/user/work
-          $ci_en
+          $ci_env
           -ti $DOCKER_IMG
           bash -c "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
 
