@@ -28,6 +28,7 @@ extern uint32_t get_size_data_to_send(hstates_t *st);
 extern int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st);
 extern int send_data(hstates_t *st, uint8_t end_stream);
 extern int send_window_update(hstates_t *st, uint8_t window_size_increment);
+extern int prepare_new_stream(hstates_t *st);
  /*---------------- Mock functions ---------------------------*/
 
  uint8_t buffer[HTTP2_MAX_BUFFER_SIZE];
@@ -1776,7 +1777,20 @@ void test_send_data_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (writting error)");
 }
 
-
+void test_prepare_new_stream(void){
+    hstates_t st;
+    st.h2s.last_open_stream_id = 333;
+    st.is_server = 1;
+    int rc = prepare_new_stream(&st);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 334, "Stream id must be 334");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
+    st.is_server = 0;
+    rc = prepare_new_stream(&st);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 335, "Stream id must be 335");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
+}
 
 int main(void)
 {
@@ -1849,6 +1863,8 @@ int main(void)
 
 
     UNIT_TEST(test_send_window_update);
+
+    UNIT_TEST(test_prepare_new_stream);
 
     //TODO:
     // h2_receive_frame
