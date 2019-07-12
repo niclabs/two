@@ -325,6 +325,17 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
   return 0;
 
 }
+
+/*
+* Function: change_stream_state_end_stream_flag
+* Given an hstates_t struct and a boolean, change the state of the current stream
+* when a END_STREAM_FLAG is sent or received.
+* Input: ->st: pointer to hstates_t struct where connection variables are stored
+*        ->sending: boolean like uint8_t that indicates if current flag is sent or received
+* Output: 0 if no errors were found, -1 if not
+*/
+int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
+  int rc = 0;
   if(sending){ // Change stream status if end stream flag is sending
     if(st->h2s.current_stream.state == STREAM_OPEN){
       st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
@@ -332,12 +343,17 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
     else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
       st->h2s.current_stream.state = STREAM_CLOSED;
       if(st->h2s.received_go_away){
-        send_goaway(st);
+        rc = send_goaway(st, HTTP2_NO_ERROR);
+        if(rc < 0){
+          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          return rc;
+        }
       }
       else{
-      prepare_new_stream(st);
+        rc = prepare_new_stream(st);
       }
     }
+    return rc;
   }
   else{ // Change stream status if send stream flag is received
     if(st->h2s.current_stream.state == STREAM_OPEN){
@@ -346,12 +362,17 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
     else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
       st->h2s.current_stream.state = STREAM_CLOSED;
       if(st->h2s.received_go_away){
-        send_goaway(st);
+        rc = send_goaway(st, HTTP2_NO_ERROR);
+        if(rc < 0){
+          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          return rc;
+        }
       }
       else{
-      prepare_new_stream(st);
+        rc = prepare_new_stream(st);
       }
     }
+    return rc;
   }
 }
 
@@ -597,6 +618,13 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     return 0;
 }
 
+/*
+* Function: handle_goaway_payload
+* Handles go away payload.
+* Input: ->goaway_pl: goaway_payload_t pointer to goaway frame payload
+*        ->st: pointer hstates_t struct where connection variables are stored
+* Output: 0 if no error were found during the handling, 1 if not
+*/
 int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
   if(goaway_pl->error_code != HTTP2_NO_ERROR){
       INFO("Received GOAWAY with ERROR");
@@ -622,6 +650,7 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
   }
   return 0;
 }
+
 /*
 * Function: h2_send_local_settings
 * Sends local settings to endpoint.
