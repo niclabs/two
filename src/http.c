@@ -16,15 +16,48 @@
 #include "sock.h"
 #include "http2.h"
 
-int get_receive(hstates_t *hs);
-
 void http_states_init(hstates_t *hs)
 {
     memset(hs, 0, sizeof(*hs));
 }
 
 /************************************Server************************************/
+int get_receive(hstates_t *hs)
+{
+    INFO("get_receive");
+    char *path = http_get_header(&hs->hd_lists, ":path", 5);
+    callback_type_t callback;
 
+    if (hs->path_callback_list_count == 0) {
+        WARN("Path-callback list is empty");
+        //return value 0 => an error can be send, 1 => problems
+        return http_set_header(&hs->hd_lists, ":status", "400");
+    }
+
+    int i;
+    for (i = 0; i <= hs->path_callback_list_count; i++) {
+        char *path_in_list = hs->path_callback_list[i].name;
+        if ((strncmp(path_in_list, path, strlen(path)) == 0) && strlen(path) == strlen(path_in_list)) {
+            callback.cb = hs->path_callback_list[i].ptr;
+            break;
+        }
+        if (i == hs->path_callback_list_count) {
+            WARN("No function associated with this path");
+            //return value 0 => an error can be send, 1 => problems
+            return http_set_header(&hs->hd_lists, ":status", "400");
+        }
+    }
+
+    http_set_header(&hs->hd_lists, ":status", "200");
+    callback.cb(&hs->hd_lists);
+
+    if (h2_send_response(hs) < 0) {
+        ERROR("Problems sending data");
+        return -1;
+    }
+
+    return 0;
+}
 
 int http_server_create(hstates_t *hs, uint16_t port)
 {
@@ -328,39 +361,4 @@ int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
 }
 
 
-int get_receive(hstates_t *hs)
-{
-    INFO("get_receive");
-    char *path = http_get_header(&hs->hd_lists, ":path", 5);
-    callback_type_t callback;
 
-    if (hs->path_callback_list_count == 0) {
-        WARN("Path-callback list is empty");
-        //return value 0 => an error can be send, 1 => problems
-        return http_set_header(&hs->hd_lists, ":status", "400");
-    }
-
-    int i;
-    for (i = 0; i <= hs->path_callback_list_count; i++) {
-        char *path_in_list = hs->path_callback_list[i].name;
-        if ((strncmp(path_in_list, path, strlen(path)) == 0) && strlen(path) == strlen(path_in_list)) {
-            callback.cb = hs->path_callback_list[i].ptr;
-            break;
-        }
-        if (i == hs->path_callback_list_count) {
-            WARN("No function associated with this path");
-            //return value 0 => an error can be send, 1 => problems
-            return http_set_header(&hs->hd_lists, ":status", "400");
-        }
-    }
-
-    http_set_header(&hs->hd_lists, ":status", "200");
-    callback.cb(&hs->hd_lists);
-
-    if (h2_send_response(hs) < 0) {
-        ERROR("Problems sending data");
-        return -1;
-    }
-
-    return 0;
-}
