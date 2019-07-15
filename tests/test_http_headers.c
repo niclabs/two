@@ -1,10 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 #include "unit.h"
-#include "logging.h"
-
 
 #include "http_headers.h"
 
