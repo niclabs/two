@@ -67,7 +67,7 @@ int http_server_destroy(hstates_t *hs);
  * @return   0          The action was successful
  * @return   -1         The action fail
  */
-int http_set_resource(hstates_t *hs, callback_type_t callback, char *path);
+int http_set_resource_cb(hstates_t *hs, callback_type_t callback, char *path);
 
 
 

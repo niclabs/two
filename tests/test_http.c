@@ -315,7 +315,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
 }
 
 
-void test_http_set_resource_success(void)
+void test_http_set_resource_cb_success(void)
 {
     hstates_t hs;
 
@@ -323,7 +323,7 @@ void test_http_set_resource_success(void)
     callback_type_t foo_callback;
     foo_callback.cb = foo;
 
-    int set = http_set_resource(&hs, foo_callback, "index");
+    int set = http_set_resource_cb(&hs, foo_callback, "index");
 
     TEST_ASSERT_EQUAL(0, set);
 
@@ -333,14 +333,14 @@ void test_http_set_resource_success(void)
 }
 
 
-void test_http_set_resource_fail_list_full(void)
+void test_http_set_resource_cb_fail_list_full(void)
 {
     hstates_t hs;
 
     hs.path_callback_list_count = HTTP_MAX_CALLBACK_LIST_ENTRY;
     callback_type_t foo_callback;
 
-    int set = http_set_resource(&hs, foo_callback, "index");
+    int set = http_set_resource_cb(&hs, foo_callback, "index");
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, set, "Path-callback list is full");
 }
@@ -732,7 +732,7 @@ void test_get_receive_success(void)
 
     callback_type_t foo_callback;
     foo_callback.cb = foo;
-    http_set_resource(&hs, foo_callback, "index/");
+    http_set_resource_cb(&hs, foo_callback, "index/");
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
     strcpy(hs.hd_lists.header_list_in[0].value, "index/");
@@ -762,7 +762,7 @@ void test_get_receive_fail_h2_send_response(void)
 
     callback_type_t foo_callback;
     foo_callback.cb = foo;
-    http_set_resource(&hs, foo_callback, "index/");
+    http_set_resource_cb(&hs, foo_callback, "index/");
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
     strcpy(hs.hd_lists.header_list_in[0].value, "index/");
@@ -791,7 +791,7 @@ void test_get_receive_path_not_found(void)
     http_states_init(&hs);
 
     callback_type_t foo_callback;
-    http_set_resource(&hs, foo_callback, "index/out");
+    http_set_resource_cb(&hs, foo_callback, "index/out");
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
     strcpy(hs.hd_lists.header_list_in[0].value, "index/");
@@ -846,8 +846,8 @@ int main(void)
     UNIT_TEST(test_http_server_destroy_fail_not_server);
     UNIT_TEST(test_http_server_destroy_fail_sock_destroy);
 
-    UNIT_TEST(test_http_set_resource_success);
-    UNIT_TEST(test_http_set_resource_fail_list_full);
+    UNIT_TEST(test_http_set_resource_cb_success);
+    UNIT_TEST(test_http_set_resource_cb_fail_list_full);
 
     UNIT_TEST(test_http_client_connect_success);
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);

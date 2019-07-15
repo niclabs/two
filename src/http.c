@@ -159,7 +159,7 @@ int http_server_destroy(hstates_t *hs)
 }
 
 
-int http_set_resource(hstates_t *hs, callback_type_t callback, char *path)
+int http_set_resource_cb(hstates_t *hs, callback_type_t callback, char *path)
 {
     INFO("setting function to path '%s'", path);
     int i = hs->path_callback_list_count;

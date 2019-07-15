@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     else {
         callback_type_t callback;
         callback.cb = send_text;
-        rc = http_set_resource(&http_server_state, callback, "index");
+        rc = http_set_resource_cb(&http_server_state, callback, "index");
         if (rc < 0) {
             ERROR("in http_set_resource");
         }
