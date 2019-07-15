@@ -56,4 +56,9 @@ int http_headers_set_header(http_headers_t * headers, const char * name, const c
  */
 int http_headers_get_header(http_headers_t * headers, const char * name, char * value);
 
+/**
+ * Return the number of stored headers in the header list
+ */
+int http_headers_size(http_headers_t * headers);
+
 #endif
