@@ -5,7 +5,7 @@
 #include "unity.h"
 
 void setUp();
-void tearDown(){}
+void tearDown();
 
 #define UNIT_TEST(TestFunc)                       \
     {                                             \
