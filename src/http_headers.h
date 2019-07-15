@@ -28,6 +28,7 @@
 
 typedef struct {
     char name[HTTP_MAX_HEADER_NAME_SIZE];
+    char zero; // prevent overflow of name in printf
     char value[HTTP_MAX_HEADER_VALUE_SIZE];
 } http_header_t;
 
