@@ -28,7 +28,7 @@ typedef struct RESPONSE_RECEIVED_TYPE_S {
  * @return   0          Server was successfully initialized
  * @return   -1         Server wasn't initialized
  */
-int http_init_server(hstates_t *hs, uint16_t port);
+int http_server_create(hstates_t *hs, uint16_t port);
 
 
 /*
@@ -39,7 +39,7 @@ int http_init_server(hstates_t *hs, uint16_t port);
  * @return   0          Server was successfully started
  * @return   -1         There was an error in the process
  */
-int http_start_server(hstates_t *hs);
+int http_server_start(hstates_t *hs);
 
 
 /*
@@ -54,7 +54,11 @@ int http_server_destroy(hstates_t *hs);
 
 
 /*
- * Set an internal server function to a specific path
+ * Set a callback for a given http resource. 
+ *
+ * Whenever a request to the server is performed for 
+ * the given resource, the callback will be called and 
+ * the response returned
  *
  * @param    hs         Struct with server information
  * @param    callback   Function name
@@ -63,7 +67,7 @@ int http_server_destroy(hstates_t *hs);
  * @return   0          The action was successful
  * @return   -1         The action fail
  */
-int http_set_function_to_path(hstates_t *hs, callback_type_t callback, char *path);
+int http_set_resource(hstates_t *hs, callback_type_t callback, char *path);
 
 
 

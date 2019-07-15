@@ -38,7 +38,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    int rc = http_init_server(&http_server_state, port);
+    int rc = http_server_create(&http_server_state, port);
 
     if (rc < 0) {
         ERROR("in init server");
@@ -46,13 +46,13 @@ int main(int argc, char **argv)
     else {
         callback_type_t callback;
         callback.cb = send_text;
-        rc = http_set_function_to_path(&http_server_state, callback, "index");
+        rc = http_set_resource(&http_server_state, callback, "index");
         if (rc < 0) {
-            ERROR("in http_set_function_to_path");
+            ERROR("in http_set_resource");
         }
         else {
 
-            rc = http_start_server(&http_server_state);
+            rc = http_server_start(&http_server_state);
             if (rc < 0) {
                 ERROR("in start server");
             }
