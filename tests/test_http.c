@@ -16,7 +16,7 @@
 #include <errno.h>
 
 /*Import of functions not declared in http.h */
-extern int get_receive(hstates_t *hs);
+extern int http_process_request(hstates_t *hs);
 extern void http_states_init(hstates_t *hs);
 
 DEFINE_FFF_GLOBALS;
@@ -724,7 +724,7 @@ void test_http_get_data_fail_no_data(void){
 }
 
 
-void test_get_receive_success(void)
+void test_http_process_request_success(void)
 {
     hstates_t hs;
 
@@ -740,7 +740,7 @@ void test_get_receive_success(void)
 
     h2_send_response_fake.return_val = 0;
 
-    int get = get_receive(&hs);
+    int get = http_process_request(&hs);
 
     TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
@@ -754,7 +754,7 @@ void test_get_receive_success(void)
 }
 
 
-void test_get_receive_fail_h2_send_response(void)
+void test_http_process_request_fail_h2_send_response(void)
 {
     hstates_t hs;
 
@@ -770,7 +770,7 @@ void test_get_receive_fail_h2_send_response(void)
 
     h2_send_response_fake.return_val = -1;
 
-    int get = get_receive(&hs);
+    int get = http_process_request(&hs);
 
     TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
@@ -784,7 +784,7 @@ void test_get_receive_fail_h2_send_response(void)
 }
 
 
-void test_get_receive_path_not_found(void)
+void test_http_process_request_path_not_found(void)
 {
     hstates_t hs;
 
@@ -797,17 +797,17 @@ void test_get_receive_path_not_found(void)
     strcpy(hs.hd_lists.header_list_in[0].value, "index/");
     hs.hd_lists.header_list_count_in = 1;
 
-    int get = get_receive(&hs);
+    int get = http_process_request(&hs);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "No function associated with this path");
 
     TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "400", strlen("400")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "404", strlen("404")));
 }
 
 
-void test_get_receive_path_callback_list_empty(void)
+void test_http_process_request_path_callback_list_empty(void)
 {
     hstates_t hs;
 
@@ -817,13 +817,13 @@ void test_get_receive_path_callback_list_empty(void)
     strcpy(hs.hd_lists.header_list_in[0].value, "index/");
     hs.hd_lists.header_list_count_in = 1;
 
-    int get = get_receive(&hs);
+    int get = http_process_request(&hs);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "Path-callback list is empty");
 
     TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "400", strlen("400")));
+    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "404", strlen("400")));
 }
 
 
@@ -877,10 +877,10 @@ int main(void)
     UNIT_TEST(test_http_get_data_success);
     UNIT_TEST(test_http_get_data_fail_no_data);
 
-    UNIT_TEST(test_get_receive_success);
-    UNIT_TEST(test_get_receive_fail_h2_send_response);
-    UNIT_TEST(test_get_receive_path_not_found);
-    UNIT_TEST(test_get_receive_path_callback_list_empty);
+    UNIT_TEST(test_http_process_request_success);
+    UNIT_TEST(test_http_process_request_fail_h2_send_response);
+    UNIT_TEST(test_http_process_request_path_not_found);
+    UNIT_TEST(test_http_process_request_path_callback_list_empty);
 
     return UNITY_END();
 }

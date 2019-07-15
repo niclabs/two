@@ -6,9 +6,6 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
-#include <signal.h>
-
-#include <unistd.h>
 
 #include "http.h"
 #include "http_bridge.h"
@@ -16,41 +13,96 @@
 #include "sock.h"
 #include "http2.h"
 
-void http_states_init(hstates_t *hs)
-{
-    memset(hs, 0, sizeof(*hs));
-}
+char * http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
+int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 
-/************************************Server************************************/
-int get_receive(hstates_t *hs)
-{
-    INFO("get_receive");
-    char *path = http_get_header(&hs->hd_lists, ":path", 5);
-    callback_type_t callback;
-
+int http_find_cb_for_resource(hstates_t * hs, char * path, callback_type_t * callback) {
     if (hs->path_callback_list_count == 0) {
-        WARN("Path-callback list is empty");
-        //return value 0 => an error can be send, 1 => problems
-        return http_set_header(&hs->hd_lists, ":status", "400");
+        ERROR("Path-callback list is empty");
+        return -1;
     }
 
     int i;
     for (i = 0; i <= hs->path_callback_list_count; i++) {
         char *path_in_list = hs->path_callback_list[i].name;
         if ((strncmp(path_in_list, path, strlen(path)) == 0) && strlen(path) == strlen(path_in_list)) {
-            callback.cb = hs->path_callback_list[i].ptr;
+            callback->cb = hs->path_callback_list[i].ptr;
             break;
         }
         if (i == hs->path_callback_list_count) {
-            WARN("No function associated with this path");
-            //return value 0 => an error can be send, 1 => problems
-            return http_set_header(&hs->hd_lists, ":status", "400");
+            ERROR("No callback associated for the given path");
+            return -1;
         }
     }
 
+    return 0;
+}
+
+void http_states_init(hstates_t *hs)
+{
+    memset(hs, 0, sizeof(*hs));
+}
+
+int http_error(hstates_t * hs, int code, char * msg) {
+    // Set status code
+    char strCode[4];
+    snprintf(strCode, 4, "%d", code);
+    http_set_header(&hs->hd_lists, ":status", strCode);
+
+    // Set error message
+    if (msg != NULL) {
+        http_set_data(&hs->hd_lists, (uint8_t *)msg, strlen(msg));
+    }
+
+    // Send response
+    if (h2_send_response(hs) < 0) {
+        ERROR("Could not send data");
+        return -1;
+    }
+    return 0;
+}
+
+
+int http_recv_headers(hstates_t *hs) {
+    while(hs->connection_state == 1) {
+        // receive frame
+        if (h2_receive_frame(hs) < 0) {
+            break;
+        }
+
+        // if we need to wait for continuation
+        if (hs->keep_receiving == 1) {
+            continue;
+        }
+
+        // when new headers are available return
+        if (hs->new_headers == 1) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int http_process_request(hstates_t *hs) {
+    // Get uri
+    char * uri = http_get_header(&hs->hd_lists, ":path", 5);
+
+    // TODO: parse URI removing query parameters
+
+    // find callback for resource
+    callback_type_t callback;
+    if (http_find_cb_for_resource(hs, uri, &callback) < 0) {
+        // 404
+        return http_error(hs, 404, "Not Found");
+    }
+
+    // Set default headers
     http_set_header(&hs->hd_lists, ":status", "200");
+
+    // Get response from callback
     callback.cb(&hs->hd_lists);
 
+    // Send response
     if (h2_send_response(hs) < 0) {
         ERROR("Problems sending data");
         return -1;
@@ -58,7 +110,7 @@ int get_receive(hstates_t *hs)
 
     return 0;
 }
-
+/************************************Server************************************/
 int http_server_create(hstates_t *hs, uint16_t port)
 {
     http_states_init(hs);
@@ -83,38 +135,60 @@ int http_server_create(hstates_t *hs, uint16_t port)
     return 0;
 }
 
-
 int http_server_start(hstates_t *hs)
 {
     INFO("Server waiting for a client\n");
 
 
-    while (sock_accept(&hs->server_socket, &hs->socket) >= 0) {
+    while (1) {
+        if (sock_accept(&hs->server_socket, &hs->socket) < 0) {
+            break;
+        }
+        DEBUG("New client connection");
 
-        INFO("Client found and connected\n");
-
+        // Update http_state
         hs->socket_state = 1;
         hs->connection_state = 1;
 
+        // Initialize http2 connection (send headers)
         if (h2_server_init_connection(hs) < 0) {
+            ERROR("Could not perform HTTP/2 initialization");
+
+            // TODO: terminate client and continue
+            //sock_destroy(&hs->socket);
             hs->connection_state = 0;
-            ERROR("Problems sending server data");
+            //hs->socket_state = 0;
             return -1;
         }
 
         while (hs->connection_state == 1) {
-            if (h2_receive_frame(hs) < 0) {
+            // read headers
+            hs->new_headers = 0;
+            if (http_recv_headers(hs) < 0) {
+                ERROR("An error ocurred while receiving headers");
                 break;
             }
-            if (hs->keep_receiving == 1) {
+
+            // Get the method from headers
+            char * method = http_get_header(&hs->hd_lists, ":method", 7);
+            if (strncmp(method, "GET", 3) != 0) {
+                http_error(hs, 501, "Not Implemented");
+
+                // TODO: what else to do here?
+                http_clear_header_list(hs, -1, 0);
                 continue;
             }
-            if (hs->new_headers == 1) {
-                http_clear_header_list(hs, -1, 1);
-                get_receive(hs);
-                http_clear_header_list(hs, -1, 0);
-                hs->new_headers = 0;
-            }
+
+            // TODO: read data (if POST)
+
+            // Clear headers (why?)
+            http_clear_header_list(hs, -1, 1);
+
+            // Process the http request
+            http_process_request(hs);
+           
+            // Clear headers (why?)
+            http_clear_header_list(hs, -1, 0);
         }
 
         if (sock_destroy(&hs->socket) == -1) {
