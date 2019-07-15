@@ -7,33 +7,33 @@
 
 #include <stdint.h>
 
-#ifdef HTTP_CONF_MAX_HEADER_NAME_SIZE
-#define HTTP_MAX_HEADER_NAME_SIZE HTTP_CONF_MAX_HEADER_NAME_SIZE
+#ifdef HTTP_CONF_MAX_HEADER_NAME_LEN
+#define HTTP_MAX_HEADER_NAME_LEN HTTP_CONF_MAX_HEADER_NAME_LEN
 #else
-#define HTTP_MAX_HEADER_NAME_SIZE 32
+#define HTTP_MAX_HEADER_NAME_LEN 32
 #endif
 
-#ifdef HTTP_CONF_MAX_HEADER_VALUE_SIZE
-#define HTTP_MAX_HEADER_VALUE_SIZE HTTP_CONF_MAX_HEADER_VALUE_SIZE
+#ifdef HTTP_CONF_MAX_HEADER_VALUE_LEN
+#define HTTP_MAX_HEADER_VALUE_LEN HTTP_CONF_MAX_HEADER_VALUE_LEN
 #else
-#define HTTP_MAX_HEADER_VALUE_SIZE 128
+#define HTTP_MAX_HEADER_VALUE_LEN 128
 #endif
 
-#ifdef HTTP_CONF_MAX_HEADER_COUNT
-#define HTTP_MAX_HEADER_COUNT HTTP_CONF_MAX_HEADER_COUNT
+#ifdef HTTP_CONF_MAX_HEADERS_SIZE
+#define HTTP_MAX_HEADERS_SIZE HTTP_CONF_MAX_HEADERS_SIZE
 #else
-#define HTTP_MAX_HEADER_COUNT 32
+#define HTTP_MAX_HEADERS_SIZE 32
 #endif
 
 
 typedef struct {
-    char name[HTTP_MAX_HEADER_NAME_SIZE];
+    char name[HTTP_MAX_HEADER_NAME_LEN];
     char zero; // prevent overflow of name in printf
-    char value[HTTP_MAX_HEADER_VALUE_SIZE];
+    char value[HTTP_MAX_HEADER_VALUE_LEN];
 } http_header_t;
 
 typedef struct {
-    http_header_t list[HTTP_MAX_HEADER_COUNT];
+    http_header_t list[HTTP_MAX_HEADERS_SIZE];
     uint8_t size;
 } http_headers_t;
 
