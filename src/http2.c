@@ -322,7 +322,7 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
     ERROR("Error writting goaway frame. INTERNAL ERROR");
     return rc;
   }
-
+  st->h2s.sent_go_away = 1;
   return 0;
 
 }
