@@ -42,16 +42,6 @@ typedef enum{
 int h2_send_local_settings(hstates_t *hs);
 
 /*
-* Function: h2_read_setting_from
-* Reads a setting parameter from local or remote table
-* Input: -> place: must be LOCAL or REMOTE. It indicates the table to read.
-*        -> param: it indicates which parameter to read from table.
-*        -> st: pointer to hstates_t struct where settings tables are stored.
-* Output: The value read from the table. -1 if nothing was read.
-*/
-uint32_t h2_read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
-
-/*
 * Function: h2_client_init_connection
 * Initializes HTTP2 connection between endpoints. Sends preface and local
 * settings.

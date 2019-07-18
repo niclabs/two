@@ -9,6 +9,7 @@
 
 /*---------- Import of functions not declared in http2.h ----------------*/
 extern int init_variables(hstates_t * st);
+extern uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
 extern int send_settings_ack(hstates_t *st);
 extern int check_for_settings_ack(frame_header_t *header, hstates_t *st);
@@ -526,7 +527,7 @@ void test_h2_send_local_settings_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (http_write error)");
 }
 
-void test_h2_read_setting_from(void){
+void test_read_setting_from(void){
   hstates_t hdummy;
   init_variables(&hdummy);
   int i;
@@ -534,17 +535,17 @@ void test_h2_read_setting_from(void){
     hdummy.h2s.remote_settings[i] = i+1;
     hdummy.h2s.local_settings[i] = i+7;
   }
-  uint32_t answ = h2_read_setting_from(LOCAL, 0x1, &hdummy);
+  uint32_t answ = read_setting_from(LOCAL, 0x1, &hdummy);
   TEST_ASSERT_MESSAGE(answ == 7, "Answer must be 7");
-  answ = h2_read_setting_from(REMOTE, 0x6, &hdummy);
+  answ = read_setting_from(REMOTE, 0x6, &hdummy);
   TEST_ASSERT_MESSAGE(answ == 6, "Answer must be 6");
-  answ = h2_read_setting_from(LOCAL, 0x0, &hdummy);
+  answ = read_setting_from(LOCAL, 0x0, &hdummy);
   TEST_ASSERT_MESSAGE((int)answ == -1, "Answer must be -1. Error in id! (overvalue)");
-  answ = h2_read_setting_from(REMOTE, 0x7, &hdummy);
+  answ = read_setting_from(REMOTE, 0x7, &hdummy);
   TEST_ASSERT_MESSAGE((int)answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
 }
 
-void test_h2_read_setting_from_errors(void){
+void test_read_setting_from_errors(void){
   hstates_t hdummy;
   init_variables(&hdummy);
   int i;
@@ -553,9 +554,9 @@ void test_h2_read_setting_from_errors(void){
     hdummy.h2s.local_settings[i] = i+7;
   }
   // First error, invalid parameter
-  uint32_t rc = h2_read_setting_from(LOCAL, 0x0, &hdummy);
+  uint32_t rc = read_setting_from(LOCAL, 0x0, &hdummy);
   TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid parameter");
-  rc = h2_read_setting_from(5, 0x1, &hdummy);
+  rc = read_setting_from(5, 0x1, &hdummy);
   TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid table");
 }
 
@@ -1648,7 +1649,7 @@ void test_h2_receive_frame_settings(void){
     bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
-    TEST_ASSERT_EQUAL(10,h2_read_setting_from(REMOTE,1,&st));
+    TEST_ASSERT_EQUAL(10,read_setting_from(REMOTE,1,&st));
 
 }
 
@@ -1851,8 +1852,8 @@ int main(void)
     UNIT_TEST(test_read_frame_errors);
     UNIT_TEST(test_h2_send_local_settings);
     UNIT_TEST(test_h2_send_local_settings_errors);
-    UNIT_TEST(test_h2_read_setting_from);
-    UNIT_TEST(test_h2_read_setting_from_errors);
+    UNIT_TEST(test_read_setting_from);
+    UNIT_TEST(test_read_setting_from_errors);
     UNIT_TEST(test_h2_client_init_connection);
     UNIT_TEST(test_h2_client_init_connection_errors);
     UNIT_TEST(test_h2_server_init_connection);

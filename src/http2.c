@@ -690,7 +690,7 @@ int h2_send_local_settings(hstates_t *st){
 }
 
 /*
-* Function: h2_read_setting_from
+* Function: read_setting_from
 * Reads a setting parameter from local or remote table
 * Input: -> place: must be LOCAL or REMOTE. It indicates the table to read.
 *        -> param: it indicates which parameter to read from table.
@@ -698,7 +698,7 @@ int h2_send_local_settings(hstates_t *st){
 * Output: The value read from the table. -1 if nothing was read.
 */
 
-uint32_t h2_read_setting_from(uint8_t place, uint8_t param, hstates_t *st){
+uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st){
     if(param < 1 || param > 6){
         printf("Error: %u is not a valid setting parameter\n", param);
         return -1;
