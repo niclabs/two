@@ -105,6 +105,7 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
         while (integer >= 128) {
             uint32_t encoded = integer % 128;
             encoded += 128;
+
             encoded_integer[i] = (uint8_t)encoded;
             i++;
             integer = integer / 128;
@@ -501,9 +502,12 @@ int decode_literal_header_field_without_indexing(uint8_t *header_block, char *na
         pointer += name_length;
     }
     else {
-        //TODO find name in table
-        ERROR("NOt implemented yet");
-        return -1;
+        //find entry in either static or dynamic table_length
+        if (find_entry(index, name, value) == -1) {
+            ERROR("Error en find_entry");
+            return -1;
+        }
+        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
     //decode value length
     int value_length = decode_integer(header_block + pointer, 7);
@@ -596,7 +600,6 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
 
 
 //Table related functions and definitions
-
 
 const uint32_t FIRST_INDEX_DYNAMIC = 62; // Changed type to remove warnings
 
@@ -770,19 +773,26 @@ typedef struct hpack_dynamic_table {
     int next;
     int table_length;
     headed_pair **table;
-
 } hpack_dynamic_table;
 
 //dynamic_table functions
+//TODO initialize dynamic_table properly
 hpack_dynamic_table *dynamic_table;
 
 //finds entry in dynamic table
-headed_pair *dynamic_find_entry(uint32_t index) {
+//entry is a pair name-value
+headed_pair *dynamic_find_entry(uint32_t index)
+{
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
+
     return dynamic_table->table[table_index];
 }
+
 //general method to find an entry in the table
-int find_entry(uint32_t index, char *name, char *value) {
+//entry is a pair name-value
+//return -1 in case of error, returns 0 and copy the entry values into name and value buffers
+int find_entry(uint32_t index, char *name, char *value)
+{
     const char *table_name; //add const before char to resolve compilation warnings
     const char *table_value;
 
@@ -792,7 +802,7 @@ int find_entry(uint32_t index, char *name, char *value) {
         table_value = entry->value;
     }
     else {
-        index--; //because static begins at index 1
+        index--; //because static table begins at index 1
         table_name = static_header_name_table[index];
         table_value = static_header_value_table[index];
     }
@@ -804,6 +814,6 @@ int find_entry(uint32_t index, char *name, char *value) {
         ERROR("Error en strncpy");
         return -1;
     }
-    return 1;
+    return 0;
 
 }
