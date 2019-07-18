@@ -656,12 +656,12 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
 }
 
 /*
-* Function: h2_send_local_settings
+* Function: send_local_settings
 * Sends local settings to endpoint.
 * Input: -> st: pointer to hstates_t struct where local settings are stored
 * Output: 0 if settings were sent. -1 if not.
 */
-int h2_send_local_settings(hstates_t *st){
+int send_local_settings(hstates_t *st){
     int rc;
     uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
     frame_t mysettingframe;
@@ -742,7 +742,7 @@ int h2_client_init_connection(hstates_t *st){
         return -1;
     }
     puts("Client: sending local settings...");
-    if((rc = h2_send_local_settings(st)) < 0){
+    if((rc = send_local_settings(st)) < 0){
         ERROR("Error in local settings sending");
         return -1;
     }
@@ -777,7 +777,7 @@ int h2_server_init_connection(hstates_t *st){
     }
     /*Server sends local settings to endpoint*/
     puts("Server: sending local settings...");
-    if((rc = h2_send_local_settings(st)) < 0){
+    if((rc = send_local_settings(st)) < 0){
         ERROR("Error in local settings sending");
         return -1;
     }

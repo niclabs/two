@@ -34,14 +34,6 @@ typedef enum{
 }h2_error_code_t;
 
 /*
-* Function: h2_send_local_settings
-* Sends local settings to endpoint.
-* Input: -> st: pointer to hstates_t struct where local settings are stored
-* Output: 0 if settings were sent. -1 if not.
-*/
-int h2_send_local_settings(hstates_t *hs);
-
-/*
 * Function: h2_client_init_connection
 * Initializes HTTP2 connection between endpoints. Sends preface and local
 * settings.

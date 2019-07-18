@@ -10,6 +10,7 @@
 /*---------- Import of functions not declared in http2.h ----------------*/
 extern int init_variables(hstates_t * st);
 extern uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
+extern int send_local_settings(hstates_t *st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
 extern int send_settings_ack(hstates_t *st);
 extern int check_for_settings_ack(frame_header_t *header, hstates_t *st);
@@ -487,7 +488,7 @@ void test_read_frame_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload read error)");
 }
 
-void test_h2_send_local_settings(void){
+void test_send_local_settings(void){
   /*Depends on create_settings_frame, frame_to_bytes and http_write*/
   hstates_t hdummy;
   init_variables(&hdummy);
@@ -498,15 +499,15 @@ void test_h2_send_local_settings(void){
   }
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
-  int rc = h2_send_local_settings(&hdummy);
+  int rc = send_local_settings(&hdummy);
   TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 1, "create_settings_frame must be called once");
   TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame_to_bytes must be called once");
   TEST_ASSERT_MESSAGE(size == 45, "send local settings must have written 45 bytes");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 1, "wait_setting_ack must be 1. Settings were sent");
-  TEST_ASSERT_MESSAGE(rc == 0, "return code of h2_send_local_settings must be 0");
+  TEST_ASSERT_MESSAGE(rc == 0, "return code of send_local_settings must be 0");
 }
 
-void test_h2_send_local_settings_errors(void){
+void test_send_local_settings_errors(void){
   /*Depends on create_settings_frame, frame_to_bytes and http_write*/
   hstates_t hdummy;
   init_variables(&hdummy);
@@ -521,9 +522,9 @@ void test_h2_send_local_settings_errors(void){
   // Second error, http_write error
   int frame_return[2] = {1000, 12};
   SET_RETURN_SEQ(frame_to_bytes, frame_return, 2);
-  int rc = h2_send_local_settings(&hdummy);
+  int rc = send_local_settings(&hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (create_settings_frame error)");
-  rc = h2_send_local_settings(&hdummy);
+  rc = send_local_settings(&hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (http_write error)");
 }
 
@@ -563,7 +564,7 @@ void test_read_setting_from_errors(void){
 
 
 void test_h2_client_init_connection(void){
-  /*Depends on http_write and h2_send_local_settings*/
+  /*Depends on http_write and send_local_settings*/
   hstates_t client;
   uint32_t init_vals[6] = {DEFAULT_HTS,DEFAULT_EP,DEFAULT_MCS,DEFAULT_IWS,DEFAULT_MFS,DEFAULT_MHLS};
   create_settings_frame_fake.custom_fake = create_return_zero;
@@ -586,7 +587,7 @@ void test_h2_client_init_connection(void){
 }
 
 void test_h2_client_init_connection_errors(void){
-  /*Depends on http_write and h2_send_local_settings*/
+  /*Depends on http_write and send_local_settings*/
   hstates_t client;
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
@@ -599,16 +600,16 @@ void test_h2_client_init_connection_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (http_write error)");
   // Empty 24 bytes on the buffer, so writting is possible.
   wrc = http_read(&client, bf, 24);
-  // Error in create settings frame error, so h2_send_local_settings fails
+  // Error in create settings frame error, so send_local_settings fails
   int create_return[1] = {-1};
   SET_RETURN_SEQ(create_settings_frame, create_return, 1);
   rc = h2_client_init_connection(&client);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (h2_send_local_settings error)");
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (send_local_settings error)");
 }
 
 
 void test_h2_server_init_connection(void){
-  /*Depends on http_write and h2_send_local_settings*/
+  /*Depends on http_write and send_local_settings*/
   hstates_t server;
   uint32_t init_vals[6] = {DEFAULT_HTS,DEFAULT_EP,DEFAULT_MCS,DEFAULT_IWS,DEFAULT_MFS,DEFAULT_MHLS};
   create_settings_frame_fake.custom_fake = create_return_zero;
@@ -642,7 +643,7 @@ void test_h2_server_init_connection(void){
 }
 
 void test_h2_server_init_connection_errors(void){
-  /*Depends on http_write and h2_send_local_settings*/
+  /*Depends on http_write and send_local_settings*/
   hstates_t server;
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
@@ -670,7 +671,7 @@ void test_h2_server_init_connection_errors(void){
   wrc = http_write(&server, preface_buff, HTTP2_MAX_BUFFER_SIZE - 24);
   TEST_ASSERT_MESSAGE(wrc == HTTP2_MAX_BUFFER_SIZE - 24, "Fake buffer not written (MAX BUFFER)");
   rc = h2_server_init_connection(&server);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (h2_send_local_settings error)");
+  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (send_local_settings error)");
 
 }
 
@@ -1850,8 +1851,8 @@ int main(void)
     UNIT_TEST(test_handle_settings_payload_errors);
     UNIT_TEST(test_read_frame);
     UNIT_TEST(test_read_frame_errors);
-    UNIT_TEST(test_h2_send_local_settings);
-    UNIT_TEST(test_h2_send_local_settings_errors);
+    UNIT_TEST(test_send_local_settings);
+    UNIT_TEST(test_send_local_settings_errors);
     UNIT_TEST(test_read_setting_from);
     UNIT_TEST(test_read_setting_from_errors);
     UNIT_TEST(test_h2_client_init_connection);
