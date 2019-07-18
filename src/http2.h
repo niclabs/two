@@ -98,4 +98,16 @@ int h2_send_request(hstates_t *st);
 */
 int h2_send_response(hstates_t *st);
 
+
+/*
+* Function: h2_graceful_connection_shutdown
+* Sends a GOAWAY FRAME to endpoint with the the last global open stream ID on it
+* and a NO ERROR error code. This means that the current process wants to close
+* the current connection with endpoint.
+* Input: ->st: hstates_t pointer where connection variables are stored
+* Output: 0 if no errors were found during goaway sending, -1 if not.
+*/
+
+int h2_graceful_connection_shutdown(hstates_t *st);
+
 #endif /*HTTP2_H*/
