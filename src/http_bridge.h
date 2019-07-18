@@ -47,8 +47,8 @@ typedef struct HTTP2_STATES {
     uint8_t received_end_stream;
     h2_window_manager_t incoming_window;
     h2_window_manager_t outgoing_window;
-    uint8_t sent_go_away;
-    uint8_t received_go_away; // bool
+    uint8_t sent_goaway;
+    uint8_t received_goaway; // bool
     uint8_t debug_data_buffer[0]; // TODO not implemented yet
     uint8_t debug_size; // TODO not implemented yet
 } h2states_t;

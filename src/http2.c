@@ -40,8 +40,8 @@ int init_variables(hstates_t * st){
     st->h2s.outgoing_window.window_size = DEFAULT_IWS;
     st->h2s.outgoing_window.window_used = 0;
 
-    st->h2s.sent_go_away = 0;
-    st->h2s.received_go_away = 0;
+    st->h2s.sent_goaway = 0;
+    st->h2s.received_goaway = 0;
     st->h2s.debug_size = 0;
 
     return 0;
@@ -322,7 +322,7 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
     ERROR("Error writting goaway frame. INTERNAL ERROR");
     return rc;
   }
-  st->h2s.sent_go_away = 1;
+  st->h2s.sent_goaway = 1;
   return 0;
 
 }
@@ -343,7 +343,7 @@ int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
     }
     else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
       st->h2s.current_stream.state = STREAM_CLOSED;
-      if(st->h2s.received_go_away){
+      if(st->h2s.received_goaway){
         rc = send_goaway(st, HTTP2_NO_ERROR);
         if(rc < 0){
           ERROR("Error in GOAWAY sending. INTERNAL ERROR");
@@ -362,7 +362,7 @@ int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
     }
     else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
       st->h2s.current_stream.state = STREAM_CLOSED;
-      if(st->h2s.received_go_away){
+      if(st->h2s.received_goaway){
         rc = send_goaway(st, HTTP2_NO_ERROR);
         if(rc < 0){
           ERROR("Error in GOAWAY sending. INTERNAL ERROR");
@@ -635,16 +635,16 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
       // i guess that is closed on the other side, are you?
       return -1;
   }
-  if(st->h2s.sent_go_away == 1){ // received answer to goaway
+  if(st->h2s.sent_goaway == 1){ // received answer to goaway
     st->connection_state = 0;
     INFO("Connection CLOSED");
     return 0;
   }
-  if(st->h2s.received_go_away == 1){
+  if(st->h2s.received_goaway == 1){
     INFO("Another GOAWAY has been received before");
   }
   else { // never has been seen a goaway before in this connection life
-    st->h2s.received_go_away = 1; // receiver must not open additional streams
+    st->h2s.received_goaway = 1; // receiver must not open additional streams
   }
   if(st->h2s.current_stream.stream_id > goaway_pl->last_stream_id){
     if(st->h2s.current_stream.state != STREAM_IDLE){
@@ -1185,7 +1185,7 @@ int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_
 * Output: 0 if process was made successfully, -1 if not.
 */
 int send_headers(hstates_t *st, uint8_t end_stream){
-  if(st->h2s.received_go_away){
+  if(st->h2s.received_goaway){
     ERROR("GOAWAY was received. Current process must not open a new stream");
     return -1;
   }

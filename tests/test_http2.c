@@ -226,8 +226,8 @@ void test_init_variables(void){
   TEST_ASSERT_MESSAGE(hdummy.h2s.incoming_window.window_used == 0, "window used must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.outgoing_window.window_size == DEFAULT_IWS, "window size must be DEFAULT_IWS");
   TEST_ASSERT_MESSAGE(hdummy.h2s.outgoing_window.window_used == 0, "window used must be 0");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.sent_go_away == 0, "sent go away must be 0");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.received_go_away == 0, "received go away must be 0");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.sent_goaway == 0, "sent go away must be 0");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.received_goaway == 0, "received go away must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.debug_size == 0, "debug_size must be 0");
 
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
@@ -1820,7 +1820,7 @@ void test_change_stream_state_end_stream_flag(void){
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
     TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "Stream state must be STREAM_HALF_CLOSED_LOCAL");
 
-    st.h2s.received_go_away = 0;
+    st.h2s.received_goaway = 0;
     st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
     rc = change_stream_state_end_stream_flag(&st, 1); // sending
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
@@ -1830,7 +1830,7 @@ void test_change_stream_state_end_stream_flag(void){
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
     TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE, "Stream state must be STREAM_IDLE");
 
-    // TODO branches with received_go_away = 1
+    // TODO branches with received_goaway = 1
 
 }
 
