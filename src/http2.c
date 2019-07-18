@@ -651,6 +651,11 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
       st->h2s.current_stream.state = STREAM_CLOSED;
       INFO("Current stream closed");
     }
+    int rc = send_goaway(st, HTTP2_NO_ERROR); // We send a goaway to close the connection
+    if(rc < 0){
+      ERROR("Error sending GOAWAY FRAMES");
+      return rc;
+    }
   }
   return 0;
 }
