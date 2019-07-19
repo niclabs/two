@@ -59,7 +59,7 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-void test_decode_header_block(void)
+void test_decode_header_block_literal_without_indexing(void)
 {
     //Literal Header Field Representation
     //without indexing
@@ -434,7 +434,7 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-    UNIT_TEST(test_decode_header_block);
+    UNIT_TEST(test_decode_header_block_literal_without_indexing);
     UNIT_TEST(test_encode);
 
     UNIT_TEST(test_log128);
