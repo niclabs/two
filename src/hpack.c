@@ -41,17 +41,17 @@
  **buffer: The buffer containing the bits to read
  **buffer_size: Size of the buffer
  **result: Pointer to variable to store the result
- * output: 0 if the bits are read correctly and stores it in *result; 1 if it fails
+ * output: 0 if the bits are read correctly and stores it in *result; -1 if it fails
  */
 
-uint8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result)
+int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result)
 {
     uint32_t byte_offset = current_bit_pointer / 8;
     uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
     uint8_t num_bytes = ((number_of_bits_to_read + current_bit_pointer - 1) / 8) - (current_bit_pointer / 8) + 1;
 
     if (num_bytes + byte_offset > buffer_size) {
-        return 1;
+        return -1;
     }
     uint32_t mask = 1 << (8 * num_bytes - number_of_bits_to_read);
     mask -= 1;

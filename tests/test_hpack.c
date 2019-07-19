@@ -8,7 +8,7 @@
 void tearDown(void);
 
 extern int log128(uint32_t x);
-extern uint8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result);
+extern int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result);
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern uint8_t find_prefix_size(hpack_preamble_t octet);
@@ -314,7 +314,7 @@ void test_log128(void) {
 void test_read_bits_from_bytes(void) {
     uint8_t buffer[] = { 0xD1, 0xC5, 0x6E };
     uint32_t code = 0;
-    uint8_t rs = 0;
+    int8_t rs = -1;
     //Test if it reads 1 byte correctly
     rs = read_bits_from_bytes(0, 8, buffer, 3, &code);
     TEST_ASSERT_EQUAL(0xD1, code);
@@ -356,13 +356,13 @@ void test_read_bits_from_bytes(void) {
 
     //Test border condition
     rs = read_bits_from_bytes(0, 25, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(1, rs);
+    TEST_ASSERT_EQUAL(-1, rs);
 
     rs = read_bits_from_bytes(8, 17, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(1, rs);
+    TEST_ASSERT_EQUAL(-1, rs);
 
     rs = read_bits_from_bytes(16, 10, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(1, rs);
+    TEST_ASSERT_EQUAL(-1, rs);
 
 }
 
