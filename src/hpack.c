@@ -44,7 +44,7 @@
  * output: 0 if the bits are read correctly and stores it in *result; 1 if it fails
  */
 
-uint32_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result)
+uint8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result)
 {
     uint32_t byte_offset = current_bit_pointer / 8;
     uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
