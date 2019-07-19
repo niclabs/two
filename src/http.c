@@ -15,8 +15,8 @@
 
 char * http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
 int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
-int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
-uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
+int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
+uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
 // Validate http path
 int is_valid_path(char * path) {
@@ -50,7 +50,7 @@ int error(hstates_t * hs, int code, char * msg) {
 
     // Set error message
     if (msg != NULL) {
-        http_set_data(&hs->hd_lists, (uint8_t *)msg, strlen(msg));
+        set_data(&hs->hd_lists, (uint8_t *)msg, strlen(msg));
     }
 
     // Send response
@@ -107,7 +107,7 @@ int do_request(hstates_t *hs, char * method) {
         return error(hs, 500, "Server Error");
     }
     else if (len > 0) {
-        http_set_data(&hs->hd_lists, response, len);
+        set_data(&hs->hd_lists, response, len);
     }
 
     // Send response
@@ -378,7 +378,7 @@ int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_
     }
 
     if (hs->hd_lists.data_in_size > 0) {
-        rr->size_data = http_get_data(&hs->hd_lists, rr->data);
+        rr->size_data = get_data(&hs->hd_lists, rr->data);
         rr->status_flag = atoi(http_get_header(&hs->hd_lists, ":status", 7));
     }else{
         rr->size_data = 0;
@@ -449,7 +449,7 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_s
 }
 
 
-uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
+uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
 {
     if (hd_lists->data_in_size == 0) {
         WARN("Data list is empty");
@@ -460,7 +460,7 @@ uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
 }
 
 
-int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
+int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
 {
     if (HTTP_MAX_DATA_SIZE == hd_lists->data_out_size) {
         ERROR("Data buffer full");

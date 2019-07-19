@@ -20,8 +20,8 @@ extern int do_request(hstates_t *hs, char * method);
 extern void reset_http_states(hstates_t *hs);
 extern int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
 extern char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
-extern int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
-extern uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
+extern int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
+extern uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
@@ -654,11 +654,11 @@ void test_http_get_header_fail_header_not_found(void)
 }
 
 
-void test_http_set_data_success(void)
+void test_set_data_success(void)
 {
     headers_data_lists_t hd;
 
-    int sd = http_set_data(&hd, (uint8_t *)"test", 4);
+    int sd = set_data(&hd, (uint8_t *)"test", 4);
 
     TEST_ASSERT_EQUAL( 0, sd);
 
@@ -667,13 +667,13 @@ void test_http_set_data_success(void)
 }
 
 
-void test_http_set_data_fail_big_data(void)
+void test_set_data_fail_big_data(void)
 {
     headers_data_lists_t hd;
 
     hd.data_out_size = 0;
 
-    int sd = http_set_data(&hd, (uint8_t *)"", 0);
+    int sd = set_data(&hd, (uint8_t *)"", 0);
 
     TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data too large for buffer size");
 
@@ -681,27 +681,27 @@ void test_http_set_data_fail_big_data(void)
 }
 
 
-void test_http_set_data_fail_data_full(void)
+void test_set_data_fail_data_full(void)
 {
     headers_data_lists_t hd;
 
     hd.data_out_size = HTTP_MAX_DATA_SIZE;
 
-    int sd = http_set_data(&hd, (uint8_t *)"test", 4);
+    int sd = set_data(&hd, (uint8_t *)"test", 4);
 
     TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data buffer full");
 }
 
 
 
-void test_http_get_data_success(void){
+void test_get_data_success(void){
     headers_data_lists_t hd;
 
     hd.data_in_size = 4;
     memcpy(hd.data_in, (uint8_t *)"test", 4);
 
     uint8_t buf[10];
-    int gd = http_get_data(&hd, buf);
+    int gd = get_data(&hd, buf);
 
     TEST_ASSERT_EQUAL( 4, gd);
 
@@ -709,12 +709,12 @@ void test_http_get_data_success(void){
 }
 
 
-void test_http_get_data_fail_no_data(void){
+void test_get_data_fail_no_data(void){
     headers_data_lists_t hd;
     hd.data_in_size = 0;
 
     uint8_t buf[5];
-    int gd = http_get_data( &hd, buf);
+    int gd = get_data( &hd, buf);
 
     TEST_ASSERT_EQUAL_MESSAGE( 0, gd, "Data list is empty");
 }
@@ -854,12 +854,12 @@ int main(void)
     UNIT_TEST(test_http_get_header_fail_empty_table);
     UNIT_TEST(test_http_get_header_fail_header_not_found);
 
-    UNIT_TEST(test_http_set_data_success);
-    UNIT_TEST(test_http_set_data_fail_big_data);
-    UNIT_TEST(test_http_set_data_fail_data_full);
+    UNIT_TEST(test_set_data_success);
+    UNIT_TEST(test_set_data_fail_big_data);
+    UNIT_TEST(test_set_data_fail_data_full);
 
-    UNIT_TEST(test_http_get_data_success);
-    UNIT_TEST(test_http_get_data_fail_no_data);
+    UNIT_TEST(test_get_data_success);
+    UNIT_TEST(test_get_data_fail_no_data);
 
     UNIT_TEST(test_do_request_success);
     UNIT_TEST(test_do_request_fail_h2_send_response);
