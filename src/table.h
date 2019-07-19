@@ -17,12 +17,6 @@ typedef struct TABLE_ENTRY {
 } table_pair_t;
 
 
-// Key value pair
-typedef struct KEY_POINTER_MAP {
-    char name [64];
-    void * ptr;
-} key_pointer_map_t;
-
 typedef struct HEADERS_DATA_LISTS_S {
     uint8_t header_list_count_in;
     table_pair_t header_list_in[HTTP2_MAX_HEADER_COUNT];
