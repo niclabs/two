@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         response_received_type_t rr;
         uint8_t misdatos[128];
         rr.data = misdatos;
-        rc = http_get(&http_client_state, "index", "example.org", "text", &rr);
+        rc = http_get(&http_client_state, "/index", "example.org", "text", &rr);
         if (rc < 0) {
             ERROR("in http_get");
         }

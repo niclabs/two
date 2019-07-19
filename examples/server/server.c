@@ -17,12 +17,13 @@ void cleanup(int signal)
     http_server_destroy(&http_server_state);
 }
 
-int send_text(headers_data_lists_t *headers_and_data)
+int send_text(char * method, char * uri, uint8_t * response, int maxlen)
 {
-    http_set_header(headers_and_data, "etag", "Hello world!");
-    http_set_header(headers_and_data, "expires", "Thu, 23 Jul");
-    http_set_data(headers_and_data, (uint8_t *)"Hello world!",12 );
-    return 1;
+    (void)method;
+    (void)uri;
+    (void)maxlen;
+    memcpy(response, "hello world!!!!", 16);
+    return 16;
 }
 
 int main(int argc, char **argv)
@@ -44,11 +45,9 @@ int main(int argc, char **argv)
         ERROR("in init server");
     }
     else {
-        callback_type_t callback;
-        callback.cb = send_text;
-        rc = http_set_resource_cb(&http_server_state, callback, "index");
+        rc = http_server_register_resource(&http_server_state, "GET", "/index", &send_text);
         if (rc < 0) {
-            ERROR("in http_set_resource");
+            ERROR("in http_register_resource");
         }
         else {
 
