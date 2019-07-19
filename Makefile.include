@@ -272,9 +272,15 @@ BUILD_TARGETS += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}
 # Add non-phony targets
 .PHONY: all
 all: $(BUILD_TARGETS)
+
 .PHONY: debug
 debug: CF_ALL += -g -DENABLE_DEBUG
 debug: all
+
+# disable assertions for release build
+.PHONY: release
+release: CF_ALL += -DNDEBUG
+release: all
 
 # Add target rules
 $(foreach TGT,${TARGETS},\
