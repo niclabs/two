@@ -78,6 +78,16 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_s
 }
 
 /**
+ * Utility function to check for method support
+ *
+ * @returns 1 if the method is supported by the implementation, 0 if not
+ */
+int has_method_support(char * method) {
+    if (strncmp("GET", method, 8) != 0) return 0;
+    return 1;
+}
+
+/**
  * Get received data
  *
  * @param    hd_lists         Struct with data information
@@ -308,7 +318,7 @@ int http_server_start(hstates_t *hs)
 
             // Get the method from headers
             char * method = http_get_header(&hs->hd_lists, ":method", 7);
-            if (strncmp(method, "GET", 3) != 0) {
+            if (!has_method_support(method)) {
                 error(hs, 501, "Not Implemented");
 
                 // TODO: what else to do here?
@@ -375,9 +385,9 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
         return -1;
     }
 
-    if (strcmp(method, "GET") != 0) {
+    if (!has_method_support(method)) {
         errno = EINVAL;
-        ERROR("Method %s not supported", method);
+        ERROR("Method %s not implemented yet", method);
         return -1;
     }
 
