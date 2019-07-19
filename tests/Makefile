@@ -25,7 +25,6 @@ OBJDIR := $(BUILD_DIR)/test
 
 RESULTS = $(patsubst test_%.c,$(OBJDIR)/test_%.txt,$(TESTS))
 
-
 # Test formatting variables
 null :=
 space = $(null) $(null)
