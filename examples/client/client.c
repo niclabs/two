@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <signal.h>
 
+#define LOG_LEVEL (LOG_LEVEL_INFO)
+
 #include "http.h"
 #include "logging.h"
 
@@ -27,33 +29,35 @@ int main(int argc, char **argv)
 
     int port = atoi(argv[2]);
     if (port < 0) {
-        PRINTF("Invalid port given");
+        PRINTF("%s is not a valid port", argv[2]);
         return 1;
     }
 
-    char * addr = argv[1];
+    char *addr = argv[1];
 
+    // Connect to remote server
     int rc = http_client_connect(&http_client_state, addr, port);
 
     if (rc < 0) {
-        ERROR("in client connect");
+        return 1;
+    }
+
+    size_t response_size = 128;
+    uint8_t response[response_size];
+    int status = http_get(&http_client_state, "/index", response, &response_size);
+    if (rc < 0) {
+        return 1;
+    }
+    else if (status == 200) {
+        INFO("Received %u bytes", response_size);
+        for (uint32_t i = 0; i < response_size; i++) {
+            PRINTF("%c", (char)response[i]);
+        }
+        PRINTF("\n");
     }
     else {
-        size_t response_size = 128; 
-        uint8_t response[response_size];
-        rc = http_get(&http_client_state, "/index", response, &response_size);
-        if (rc < 0) {
-            ERROR("in http_get");
-        }
-        else {
-            INFO("data received: %u \n", response_size);
-            for (uint32_t i = 0; i < response_size; i++) {
-                printf("%c", (char)response[i]);
-
-            }
-            printf("\n");
-        }
-        http_client_disconnect(&http_client_state);
+        ERROR("Server responded with status %d", status);
     }
+    http_client_disconnect(&http_client_state);
     return 0;
 }
