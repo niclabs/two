@@ -6,16 +6,11 @@
 
 #include "http_bridge.h"
 
-typedef struct CALLBACK_TYPE_S {
-    int (*cb)(headers_data_lists_t *);
-} callback_type_t;
-
 typedef struct RESPONSE_RECEIVED_TYPE_S {
     uint32_t size_data;
     int status_flag;
     uint8_t *data; //this memory MUST be initialized by the app
 }response_received_type_t;
-
 
 /*Server*/
 /*
@@ -52,24 +47,24 @@ int http_server_start(hstates_t *hs);
  */
 int http_server_destroy(hstates_t *hs);
 
-
-/*
- * Set a callback for a given http resource. 
+/**
+ * Set callback to handle an http resource 
  *
- * Whenever a request to the server is performed for 
- * the given resource, the callback will be called and 
- * the response returned
+ * A resource is composed by a method and a path
  *
- * @param    hs         Struct with server information
- * @param    callback   Function name
- * @param    path       Specific path
+ * A path consists of a sequence of path segments separated by a slash
+ * ("/") character.  A path is always defined for a URI, though the
+ * defined path may be empty (zero length) 
+ * (More info in https://tools.ietf.org/html/rfc3986#section-3.3)
  *
- * @return   0          The action was successful
- * @return   -1         The action fail
+ * For this function, the path must start with a '/'. 
+ *
+ * Attempting to define a malformed path, or a path for an unsupported method
+ * will result in an error return 
+ *
+ * @return 0 if ok, -1 if error
  */
-int http_set_resource_cb(hstates_t *hs, callback_type_t callback, char *path);
-
-
+int http_server_register_resource(hstates_t * hs, char * method, char * path, http_resource_handler_t fn);
 
 /*Client*/
 

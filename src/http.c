@@ -4,7 +4,7 @@
  */
 
 #include <errno.h>
-#include <string.h>
+#include <strings.h>
 #include <stdio.h>
 
 #include "http.h"
@@ -16,34 +16,31 @@
 char * http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
 int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 
-int http_find_cb_for_resource(hstates_t * hs, char * path, callback_type_t * callback) {
-    if (hs->path_callback_list_count == 0) {
-        ERROR("Path-callback list is empty");
-        return -1;
+// Validate http path
+int is_valid_path(char * path) {
+    if (path[0] != '/') {
+        return 0;
     }
-
-    int i;
-    for (i = 0; i <= hs->path_callback_list_count; i++) {
-        char *path_in_list = hs->path_callback_list[i].name;
-        if ((strncmp(path_in_list, path, strlen(path)) == 0) && strlen(path) == strlen(path_in_list)) {
-            callback->cb = hs->path_callback_list[i].ptr;
-            break;
-        }
-        if (i == hs->path_callback_list_count) {
-            ERROR("No callback associated for the given path");
-            return -1;
-        }
-    }
-
-    return 0;
+    return 1;
 }
 
-void http_states_init(hstates_t *hs)
+http_resource_handler_t get_resource_handler(hstates_t * hs, char * method, char * path) {
+    http_resource_t res;
+    for (int i = 0; i < hs->resource_list_size; i++) {
+        res = hs->resource_list[i];
+        if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
+            return res.handler;
+        }
+    }
+    return NULL;
+}
+
+void reset_http_states(hstates_t *hs)
 {
     memset(hs, 0, sizeof(*hs));
 }
 
-int http_error(hstates_t * hs, int code, char * msg) {
+int error(hstates_t * hs, int code, char * msg) {
     // Set status code
     char strCode[4];
     snprintf(strCode, 4, "%d", code);
@@ -63,7 +60,7 @@ int http_error(hstates_t * hs, int code, char * msg) {
 }
 
 
-int http_recv_headers(hstates_t *hs) {
+int receive_headers(hstates_t *hs) {
     while(hs->connection_state == 1) {
         // receive frame
         if (h2_receive_frame(hs) < 0) {
@@ -83,37 +80,51 @@ int http_recv_headers(hstates_t *hs) {
     return -1;
 }
 
-int http_process_request(hstates_t *hs) {
+int do_request(hstates_t *hs, char * method) {
     // Get uri
     char * uri = http_get_header(&hs->hd_lists, ":path", 5);
 
     // TODO: parse URI removing query parameters
 
     // find callback for resource
-    callback_type_t callback;
-    if (http_find_cb_for_resource(hs, uri, &callback) < 0) {
+    http_resource_handler_t handle_uri;
+    if ((handle_uri = get_resource_handler(hs, method, uri)) == NULL)  {
         // 404
-        return http_error(hs, 404, "Not Found");
+        return error(hs, 404, "Not Found");
     }
 
     // Set default headers
     http_set_header(&hs->hd_lists, ":status", "200");
 
-    // Get response from callback
-    callback.cb(&hs->hd_lists);
+    // Prepare response for callback
+    // TODO: response pointer should be pointer to hs->data_out
+    uint8_t response[HTTP_MAX_RESPONSE_SIZE];
+    int len;
+    if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
+        // if the handler returns 
+        return error(hs, 500, "Server Error");
+    }
+    else if (len > 0) {
+        http_set_data(&hs->hd_lists, response, len);
+    }
 
     // Send response
     if (h2_send_response(hs) < 0) {
-        ERROR("Problems sending data");
+        // TODO: get error code from HTTP/2
+        ERROR("HTTP/2 error ocurred. Could not send data");
         return -1;
     }
 
     return 0;
 }
-/************************************Server************************************/
+
+/************************************
+ * Server API methods 
+ ************************************/
+
 int http_server_create(hstates_t *hs, uint16_t port)
 {
-    http_states_init(hs);
+    reset_http_states(hs);
 
     hs->is_server = 1;
 
@@ -139,7 +150,6 @@ int http_server_start(hstates_t *hs)
 {
     INFO("Server waiting for a client\n");
 
-
     while (1) {
         if (sock_accept(&hs->server_socket, &hs->socket) < 0) {
             break;
@@ -164,7 +174,7 @@ int http_server_start(hstates_t *hs)
         while (hs->connection_state == 1) {
             // read headers
             hs->new_headers = 0;
-            if (http_recv_headers(hs) < 0) {
+            if (receive_headers(hs) < 0) {
                 ERROR("An error ocurred while receiving headers");
                 break;
             }
@@ -172,7 +182,7 @@ int http_server_start(hstates_t *hs)
             // Get the method from headers
             char * method = http_get_header(&hs->hd_lists, ":method", 7);
             if (strncmp(method, "GET", 3) != 0) {
-                http_error(hs, 501, "Not Implemented");
+                error(hs, 501, "Not Implemented");
 
                 // TODO: what else to do here?
                 http_clear_header_list(hs, -1, 0);
@@ -185,7 +195,7 @@ int http_server_start(hstates_t *hs)
             http_clear_header_list(hs, -1, 1);
 
             // Process the http request
-            http_process_request(hs);
+            do_request(hs, method);
            
             // Clear headers (why?)
             http_clear_header_list(hs, -1, 0);
@@ -232,21 +242,50 @@ int http_server_destroy(hstates_t *hs)
     return 0;
 }
 
-
-int http_set_resource_cb(hstates_t *hs, callback_type_t callback, char *path)
-{
-    INFO("setting function to path '%s'", path);
-    int i = hs->path_callback_list_count;
-
-    if (i == HTTP_MAX_CALLBACK_LIST_ENTRY) {
-        WARN("Path-callback list is full");
+int http_server_register_resource(hstates_t * hs, char * method, char * path, http_resource_handler_t handler) {
+    if (hs == NULL || method == NULL || path == NULL || handler == NULL) {
+        errno = EINVAL;
         return -1;
     }
 
-    strcpy(hs->path_callback_list[i].name, path);
-    hs->path_callback_list[i].ptr = callback.cb;
+    if (strcmp(method, "GET") != 0) {
+        errno = EINVAL;
+        ERROR("Method %s not supported", method);
+        return -1;
+    }
 
-    hs->path_callback_list_count = i + 1;
+    if (!is_valid_path(path)) {
+        errno = EINVAL;
+        ERROR("Path %s does not have a valid format", path);
+        return -1;
+    }
+
+    if (strlen(path) >= HTTP_MAX_PATH_SIZE) {
+        errno = EINVAL;
+        ERROR("Path length is larger than max supported size (%d). Try updating HTTP_CONF_MAX_PATH_SIZE", HTTP_MAX_PATH_SIZE);
+        return -1;
+    }
+
+    http_resource_t * res;
+    for (int i = 0; i < hs->resource_list_size; i++) {
+        res = &hs->resource_list[i];
+        if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
+            res->handler = handler;
+            return 0;
+        }
+    }
+
+    if (hs->resource_list_size >= HTTP_MAX_RESOURCES) {
+        ERROR("HTTP resource limit (%d) reached. Try changing value for HTTP_CONF_MAX_RESOURCES", HTTP_MAX_RESOURCES);
+        return -1;
+    }
+
+    res = &hs->resource_list[hs->resource_list_size++];
+    
+    // Set values
+    strncpy(res->method, method, 8);
+    strncpy(res->path, path, HTTP_MAX_PATH_SIZE);
+    res->handler = handler;
 
     return 0;
 }
@@ -257,7 +296,7 @@ int http_set_resource_cb(hstates_t *hs, callback_type_t callback, char *path)
 
 int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 {
-    http_states_init(hs);
+    reset_http_states(hs);
 
     hs->is_server = 0;
 

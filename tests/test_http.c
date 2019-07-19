@@ -16,8 +16,8 @@
 #include <errno.h>
 
 /*Import of functions not declared in http.h */
-extern int http_process_request(hstates_t *hs);
-extern void http_states_init(hstates_t *hs);
+extern int do_request(hstates_t *hs, char * method);
+extern void reset_http_states(hstates_t *hs);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
@@ -66,14 +66,12 @@ int h2_receive_frame_custom_fake(hstates_t *hs)
     return 1;
 }
 
-int foo(headers_data_lists_t *headers)
-{
-    http_set_header(headers, "ret", "ok");
-    return 1;
+int resource_handler(char * method, char * uri, uint8_t * response, int maxlen) {
+    memcpy(response, "hello world!!!!", 16);
+    return 16;
 }
 
-
-void test_http_states_init_success(void)
+void test_reset_http_states_success(void)
 {
     hstates_t hs;
 
@@ -88,7 +86,7 @@ void test_http_states_init_success(void)
     hs.keep_receiving = 1;
     hs.new_headers = 1;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_in);
@@ -164,7 +162,7 @@ void test_http_server_start_success(void)
 {
     hstates_t hs;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
     hs.server_socket_state = 1;
     hs.is_server = 1;
 
@@ -198,7 +196,7 @@ void test_http_server_start_fail_h2_server_init_connection(void)
 {
     hstates_t hs;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
     hs.server_socket_state = 1;
 
     sock_accept_fake.return_val = 0;
@@ -220,7 +218,7 @@ void test_http_server_start_fail_sock_accept(void)
 {
     hstates_t hs;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
 
     sock_accept_fake.return_val = -1;
 
@@ -315,34 +313,30 @@ void test_http_server_destroy_fail_sock_destroy(void)
 }
 
 
-void test_http_set_resource_cb_success(void)
+void test_http_register_resource_success(void)
 {
     hstates_t hs;
+    reset_http_states(&hs);
 
-    hs.path_callback_list_count = 0;
-    callback_type_t foo_callback;
-    foo_callback.cb = foo;
+    int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
+    TEST_ASSERT_EQUAL(0, res);
 
-    int set = http_set_resource_cb(&hs, foo_callback, "index");
-
-    TEST_ASSERT_EQUAL(0, set);
-
-    TEST_ASSERT_EQUAL(1, hs.path_callback_list_count);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.path_callback_list[0].name, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(foo_callback.cb, hs.path_callback_list[0].ptr);
+    TEST_ASSERT_EQUAL(1, hs.resource_list_size);
+    TEST_ASSERT_EQUAL_STRING("GET", hs.resource_list[0].method);
+    TEST_ASSERT_EQUAL_STRING("/index", hs.resource_list[0].path);
+    TEST_ASSERT_EQUAL(&resource_handler, hs.resource_list[0].handler);
 }
 
 
-void test_http_set_resource_cb_fail_list_full(void)
+void test_http_register_resource_fail_list_full(void)
 {
     hstates_t hs;
+    reset_http_states(&hs);
 
-    hs.path_callback_list_count = HTTP_MAX_CALLBACK_LIST_ENTRY;
-    callback_type_t foo_callback;
+    hs.resource_list_size = HTTP_MAX_RESOURCES;
+    int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
-    int set = http_set_resource_cb(&hs, foo_callback, "index");
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, set, "Path-callback list is full");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "Register resource should return an error if resource list is full");
 }
 
 
@@ -448,7 +442,7 @@ void test_http_get_success()
     hstates_t hs;
     response_received_type_t rr;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
     hs.connection_state = 1;
     hs.keep_receiving = 0;
     hs.new_headers = 1;
@@ -474,7 +468,7 @@ void test_http_get_fail()
     hstates_t hs;
     response_received_type_t rr;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
     hs.connection_state = 1;
     hs.keep_receiving = 0;
     hs.new_headers = 1;
@@ -500,7 +494,7 @@ void test_http_get_fail_h2_send_request()
     hstates_t hs;
     response_received_type_t rr;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
 
     h2_send_request_fake.return_val = -1;
 
@@ -522,7 +516,7 @@ void test_http_get_fail_headers_list_full()
     hstates_t hs;
     response_received_type_t rr;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
     hs.hd_lists.header_list_count_in = (uint8_t)256;
     hs.hd_lists.header_list_count_out = (uint8_t)256;
 
@@ -724,100 +718,88 @@ void test_http_get_data_fail_no_data(void){
 }
 
 
-void test_http_process_request_success(void)
+void test_do_request_success(void)
 {
     hstates_t hs;
+    reset_http_states(&hs);
 
-    http_states_init(&hs);
-
-    callback_type_t foo_callback;
-    foo_callback.cb = foo;
-    http_set_resource_cb(&hs, foo_callback, "index/");
+    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    strcpy(hs.hd_lists.header_list_in[0].value, "/index");
     hs.hd_lists.header_list_count_in = 1;
 
     h2_send_response_fake.return_val = 0;
 
-    int get = http_process_request(&hs);
+    int get = do_request(&hs, "GET");
 
     TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
     TEST_ASSERT_EQUAL(0, get);
 
-    TEST_ASSERT_EQUAL(2, hs.hd_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "200", strlen("200")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].name, "ret", strlen("ret")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].value, "ok", strlen("ok")));
+    TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL_STRING(":status", hs.hd_lists.header_list_out[0].name);
+    TEST_ASSERT_EQUAL_STRING("200", hs.hd_lists.header_list_out[0].value);
 }
 
 
-void test_http_process_request_fail_h2_send_response(void)
+void test_do_request_fail_h2_send_response(void)
 {
     hstates_t hs;
+    reset_http_states(&hs);
 
-    http_states_init(&hs);
-
-    callback_type_t foo_callback;
-    foo_callback.cb = foo;
-    http_set_resource_cb(&hs, foo_callback, "index/");
+    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    strcpy(hs.hd_lists.header_list_in[0].value, "/index");
     hs.hd_lists.header_list_count_in = 1;
 
     h2_send_response_fake.return_val = -1;
 
-    int get = http_process_request(&hs);
+    int get = do_request(&hs, "GET");
 
     TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Problems sending data");
 
-    TEST_ASSERT_EQUAL(2, hs.hd_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "200", strlen("200")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].name, "ret", strlen("ret")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[1].value, "ok", strlen("ok")));
+    TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
+    TEST_ASSERT_EQUAL_STRING(":status", hs.hd_lists.header_list_out[0].name);
+    TEST_ASSERT_EQUAL_STRING("200", hs.hd_lists.header_list_out[0].value);
 }
 
 
-void test_http_process_request_path_not_found(void)
+void test_do_request_path_not_found(void)
 {
     hstates_t hs;
+    reset_http_states(&hs);
 
-    http_states_init(&hs);
-
-    callback_type_t foo_callback;
-    http_set_resource_cb(&hs, foo_callback, "index/out");
+    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    strcpy(hs.hd_lists.header_list_in[0].value, "/bla");
     hs.hd_lists.header_list_count_in = 1;
 
-    int get = http_process_request(&hs);
+    int get = do_request(&hs, "GET");
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, get, "No function associated with this path");
+    TEST_ASSERT_EQUAL_MESSAGE(0, get, "process_request should return 0 even if error response is sent");
 
     TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].value, "404", strlen("404")));
+    TEST_ASSERT_EQUAL_STRING(":status", hs.hd_lists.header_list_out[0].name);
+    TEST_ASSERT_EQUAL_STRING("404", hs.hd_lists.header_list_out[0].value);
 }
 
 
-void test_http_process_request_path_callback_list_empty(void)
+void test_do_request_path_callback_list_empty(void)
 {
     hstates_t hs;
 
-    http_states_init(&hs);
+    reset_http_states(&hs);
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
     strcpy(hs.hd_lists.header_list_in[0].value, "index/");
     hs.hd_lists.header_list_count_in = 1;
 
-    int get = http_process_request(&hs);
+    int get = do_request(&hs, "GET");
 
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "Path-callback list is empty");
 
@@ -831,7 +813,7 @@ int main(void)
 {
     UNITY_BEGIN();
 
-    UNIT_TEST(test_http_states_init_success);
+    UNIT_TEST(test_reset_http_states_success);
 
     UNIT_TEST(test_http_server_create_success);
     UNIT_TEST(test_http_server_create_fail_sock_listen);
@@ -846,8 +828,8 @@ int main(void)
     UNIT_TEST(test_http_server_destroy_fail_not_server);
     UNIT_TEST(test_http_server_destroy_fail_sock_destroy);
 
-    UNIT_TEST(test_http_set_resource_cb_success);
-    UNIT_TEST(test_http_set_resource_cb_fail_list_full);
+    UNIT_TEST(test_http_register_resource_success);
+    UNIT_TEST(test_http_register_resource_fail_list_full);
 
     UNIT_TEST(test_http_client_connect_success);
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
@@ -877,10 +859,10 @@ int main(void)
     UNIT_TEST(test_http_get_data_success);
     UNIT_TEST(test_http_get_data_fail_no_data);
 
-    UNIT_TEST(test_http_process_request_success);
-    UNIT_TEST(test_http_process_request_fail_h2_send_response);
-    UNIT_TEST(test_http_process_request_path_not_found);
-    UNIT_TEST(test_http_process_request_path_callback_list_empty);
+    UNIT_TEST(test_do_request_success);
+    UNIT_TEST(test_do_request_fail_h2_send_response);
+    UNIT_TEST(test_do_request_path_not_found);
+    UNIT_TEST(test_do_request_path_callback_list_empty);
 
     return UNITY_END();
 }

@@ -58,7 +58,46 @@ typedef struct HTTP2_STATES {
 
 #define HTTP_MAX_CALLBACK_LIST_ENTRY 32
 
+#ifdef HTTP_CONF_MAX_RESOURCES
+#define HTTP_MAX_RESOURCES (HTTP_CONF_MAX_RESOURCES)
+#else
+#define HTTP_MAX_RESOURCES (16)
+#endif
 
+#ifdef HTTP_CONF_MAX_PATH_SIZE
+#define HTTP_MAX_PATH_SIZE (HTTP_CONF_MAX_PATH_SIZE)
+#else
+#define HTTP_MAX_PATH_SIZE (32)
+#endif
+
+#ifdef HTTP_CONF_MAX_RESPONSE_SIZE
+#define HTTP_MAX_RESPONSE_SIZE (HTTP_CONF_MAX_RESPONSE_SIZE)
+#else
+#define HTTP_MAX_RESPONSE_SIZE (128)
+#endif
+
+/**
+ * Definition of a resource handler, i.e. an action to perform on call of a given
+ * method and uri
+ *
+ * the following params are given to the handler
+ *
+ * @param method    HTTP method that triggered the request. There is not need to check for 
+ *                  method support, the server only will call the method on reception of a 
+ *                  matching method and path as registered with http_register_resource_handler()
+ * @param uri       HTTP uri including path and query params that triggered the request
+ * @param response  pointer to an uint8 array to store the response
+ * @param maxlen    maximum length of the response
+ *
+ * the handler must return the number of bytes written or -1 if an error ocurred
+ */ 
+typedef int (* http_resource_handler_t) (char * method, char * uri, uint8_t * response, int maxlen);
+
+typedef struct {
+    char path[HTTP_MAX_PATH_SIZE];
+    char method[8];
+    http_resource_handler_t handler;
+} http_resource_t;
 
 typedef struct HTTP_STATES {
     uint8_t connection_state;
@@ -71,6 +110,11 @@ typedef struct HTTP_STATES {
     headers_data_lists_t hd_lists;
     uint8_t path_callback_list_count;
     key_pointer_map_t path_callback_list[HTTP_MAX_CALLBACK_LIST_ENTRY];
+
+    // Resource handler list
+    http_resource_t resource_list[HTTP_MAX_RESOURCES];
+    uint8_t resource_list_size;
+
     uint8_t new_headers;    //boolean. Notifies HTTP if new headers were written
     uint8_t keep_receiving; //boolean. 0 = END STREAM, 1 = keep_receiving, 2 = GO AWAY
 } hstates_t;
