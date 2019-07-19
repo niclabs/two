@@ -64,6 +64,13 @@ typedef struct HTTP2_STATES {
 #define HTTP_MAX_RESOURCES (16)
 #endif
 
+#ifdef HTTP_CONF_MAX_HOST_SIZE
+#define HTTP_MAX_HOST_SIZE (HTTP_CONF_MAX_HOST_SIZE)
+#else
+#define HTTP_MAX_HOST_SIZE (64)
+#endif
+
+
 #ifdef HTTP_CONF_MAX_PATH_SIZE
 #define HTTP_MAX_PATH_SIZE (HTTP_CONF_MAX_PATH_SIZE)
 #else
@@ -100,6 +107,8 @@ typedef struct {
 } http_resource_t;
 
 typedef struct HTTP_STATES {
+    char host[HTTP_MAX_HOST_SIZE];
+
     uint8_t connection_state;
     uint8_t socket_state;
     sock_t socket; // client socket

@@ -95,15 +95,11 @@ int http_client_connect(hstates_t *hs, char *address, uint16_t port);
  * Send a GET request to server and wait for an answer
  *
  * @param    hs                         Struct with client information
- * @param    path                       Path where looking for answer
- * @param    host                       Host for query
- * @param    accept_type                Type accepted for answer
+ * @param    uri                        Request URI
  * @param    response_received_type_t   Struct for response data
- *
- * @return   0                          The action was successful
- * @return   -1                         The action failed
+ * @return   0 if the request was succesful or -1 if an error ocurred
  */
-int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_received_type_t *rr);
+int http_get(hstates_t *hs, char *uri, response_received_type_t *rr);
 
 
 /*

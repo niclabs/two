@@ -460,7 +460,7 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
 }
 
 /************************************
- * Server API methods 
+ * Client API methods 
  ************************************/
 
 
@@ -492,6 +492,9 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
         return -1;
     }
 
+    // Copy address into host field
+    strncpy(hs->host, addr, HTTP_MAX_HOST_SIZE);
+
     return 0;
 }
 
@@ -521,16 +524,15 @@ int http_start_client(hstates_t *hs)
 
 
 
-int http_get(hstates_t *hs, char *path, char *host, char *accept_type, response_received_type_t *rr)
+int http_get(hstates_t *hs, char *uri, response_received_type_t *rr)
 {
     int method = http_set_header(&hs->hd_lists, ":method", "GET");
     int scheme = http_set_header(&hs->hd_lists, ":scheme", "https");
-    int set_path = http_set_header(&hs->hd_lists, ":path", path);
-    int set_host = http_set_header(&hs->hd_lists, "host", host);
-    int set_accept = http_set_header(&hs->hd_lists, "accept", accept_type);
+    int set_path = http_set_header(&hs->hd_lists, ":path", uri);
+    int set_host = http_set_header(&hs->hd_lists, "Host", hs->host);
 
-    if (method < 0 || scheme < 0 || set_path < 0 || set_host < 0 || set_accept < 0) {
-        ERROR("Cannot add headers to query");
+    if (method < 0 || scheme < 0 || set_path < 0 || set_host < 0) {
+        ERROR("Failed to set headers for request");
         return -1;
     }
     if (h2_send_request(hs) < 0) {
