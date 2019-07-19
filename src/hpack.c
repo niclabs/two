@@ -620,6 +620,13 @@ int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *v
         }
         return rc;
     }
+    if (preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED) {
+        int rc = decode_literal_header_field_never_indexed(bytes, name, value);
+        if (rc < 0) {
+            ERROR("Error in decode_literal_header_field_never_indexed");
+        }
+        return rc;
+    }
     else {
         ERROR("Not implemented yet.");
         return -1;
