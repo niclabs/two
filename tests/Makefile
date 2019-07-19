@@ -64,14 +64,13 @@ $(OBJDIR)/%.txt: $(OBJDIR)/%.$(EXT)
 
 # Build test binaries
 $(OBJDIR)/test_%.$(EXT): LDFLAGS += --coverage
-$(OBJDIR)/test_%.$(EXT): LDLIBS  += -lm
 $(OBJDIR)/test_%.$(EXT): $(OBJDIR)/tests/test_%.o $(OBJDIR)/src/%.o $(OBJDIR)/tests/unity/unity.o
 	@mkdir -p $(dir $@)
 	$(TRACE_LD)
 	$(Q)$(strip $(LINK))
 
 # Object specific CFLAGS
-$(OBJDIR)/src/%.o: CFLAGS += -DTEST -fprofile-arcs -ftest-coverage
+$(OBJDIR)/src/%.o: CFLAGS += -DNDEBUG -fprofile-arcs -ftest-coverage
 $(OBJDIR)/tests/%.o: CFLAGS += -Wno-unused-parameter
 
 # Add extra build files
