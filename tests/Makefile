@@ -13,11 +13,8 @@ TARGET=test.PHONY
 
 SUBDIRS := unity
 
-# Constant configuration for tests
+# General CFLAG configuration for tests
 CFLAGS := -g
-CFLAGS += -DHTTP_CONF_MAX_HEADER_NAME_LEN=8
-CFLAGS += -DHTTP_CONF_MAX_HEADER_VALUE_LEN=16
-CFLAGS += -DHTTP_CONF_MAX_HEADERS_SIZE=3
 
 # Add sources
 TESTS   := $(notdir $(wildcard $(BASEDIR)/tests/*.c))
