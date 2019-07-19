@@ -559,28 +559,44 @@ int decode_literal_header_field_without_indexing(uint8_t *header_block, char *na
     return pointer;
 }
 
-/*
-   int decode_literal_header_field_never_indexed(uint8_t* header_block, char* name, char* value){
-    //int pointer = 0;
+
+int decode_literal_header_field_never_indexed(uint8_t *header_block, char *name, char *value)
+{
+    int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
-    if(index == 0){
-        //TODO
-        (void)name;
+
+    if (index == 0) {
+        pointer += 1;
         //decode huffman name
         //decode name length
+        int name_length = decode_integer(header_block + pointer, 7);
+        pointer += encoded_integer_size(name_length, 7);
         //decode name
+        char *rc = strncpy(name, (char *)header_block + pointer, name_length);
+        if (rc <= (char *)0) {
+            ERROR("Error en strncpy");
+            return -1;
+        }
+        pointer += name_length;
     }
-    else{
-        //TODO find name in table
+    else {
+        //find entry in either static or dynamic table_length
+        int rc = find_entry(index, name, value);
+        if (rc == -1) {
+            ERROR("Error en find_entry");
+            return -1;
+        }
+        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));
     }
-    //TODO
     //decode value length
+    int value_length = decode_integer(header_block + pointer, 7);
+    pointer += encoded_integer_size(value_length, 7);
     //decode value
-    (void)value;
-    //TODO add to dynamic table
-    ERROR("Not implemented yet.");
-    return -1;
-   }*/
+    strncpy(value, (char *)header_block + pointer, value_length);
+    pointer += value_length;
+
+    return pointer;
+}
 
 /*
    int decode_dynamic_table_size(uint8_t* header_block){
