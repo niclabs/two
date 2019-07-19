@@ -83,13 +83,12 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
  * Initialize a connection from client to server
  *
  * @param    hs         Struct with client information
+ * @param    addr       Server address
  * @param    port       Port number
- * @param    ip         Server IP address
  *
- * @return   0          Successfully started connection
- * @return   -1         The connection fail
+ * @return   0 if connection was succesful or -1 if an error ocurred
  */
-int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
+int http_client_connect(hstates_t *hs, char *address, uint16_t port);
 
 
 /*

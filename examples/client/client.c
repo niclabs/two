@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 
     char * addr = argv[1];
 
-    int rc = http_client_connect(&http_client_state, port, addr);
+    int rc = http_client_connect(&http_client_state, addr, port);
 
     if (rc < 0) {
         ERROR("in client connect");

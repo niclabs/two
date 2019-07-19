@@ -351,7 +351,7 @@ void test_http_client_connect_success(void)
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = 0;
 
-    int cc = http_client_connect(&hs, 12, "::");
+    int cc = http_client_connect(&hs, "::1", 8888);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
@@ -376,7 +376,7 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
     sock_connect_fake.return_val = 0;
     h2_client_init_connection_fake.return_val = -1;
 
-    int cc = http_client_connect(&hs, 12, "::");
+    int cc = http_client_connect(&hs, "::1", 8888);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
@@ -401,7 +401,7 @@ void test_http_client_connect_fail_sock_connect(void)
     sock_connect_fake.return_val = -1;
     sock_destroy_fake.return_val = 0;
 
-    int cc = http_client_connect(&hs, 12, "::");
+    int cc = http_client_connect(&hs, "::1", 8888);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
     TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
@@ -424,7 +424,7 @@ void test_http_client_connect_fail_sock_create(void)
 
     sock_create_fake.return_val = -1;
 
-    int cc = http_client_connect(&hs, 12, "::");
+    int cc = http_client_connect(&hs, "::1", 8888);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
 

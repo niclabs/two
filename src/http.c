@@ -464,7 +464,7 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
  ************************************/
 
 
-int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
+int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 {
     reset_http_states(hs);
 
@@ -477,7 +477,7 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
 
     hs->socket_state = 1;
 
-    if (sock_connect(&hs->socket, ip, port) < 0) {
+    if (sock_connect(&hs->socket, addr, port) < 0) {
         ERROR("Error on client connection");
         http_client_disconnect(hs);
         return -1;
