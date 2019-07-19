@@ -566,7 +566,7 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 
 int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 {
-    return send_client_request(hs, uri, "GET", response, size);
+    return send_client_request(hs, "GET", uri, response, size);
 }
 
 int http_client_disconnect(hstates_t *hs)
