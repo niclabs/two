@@ -8,6 +8,7 @@
 void tearDown(void);
 
 extern int log128(uint32_t x);
+extern uint32_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result);
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern uint8_t find_prefix_size(hpack_preamble_t octet);
@@ -310,6 +311,61 @@ void test_log128(void) {
 
 }
 
+void test_read_bits_from_bytes(void) {
+    uint8_t buffer[] = { 0xD1, 0xC5, 0x6E };
+    uint32_t code = 0;
+    uint32_t rs = 0;
+    //Test if it reads 1 byte correctly
+    rs = read_bits_from_bytes(0, 8, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0xD1, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    rs = read_bits_from_bytes(8, 8, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0xC5, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    rs = read_bits_from_bytes(16, 8, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0x6E, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    //Test reading different number of bits
+    rs = read_bits_from_bytes(0, 1, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0x1, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    rs = read_bits_from_bytes(0, 3, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0x6, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    rs = read_bits_from_bytes(0, 5, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0x1A, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    //Test reading between bytes
+    rs = read_bits_from_bytes(4, 8, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0x1C, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    rs = read_bits_from_bytes(12, 8, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0x56, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    rs = read_bits_from_bytes(4, 16, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(0x1C56, code);
+    TEST_ASSERT_EQUAL(0, rs);
+
+    //Test border condition
+    rs = read_bits_from_bytes(0, 25, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(1, rs);
+
+    rs = read_bits_from_bytes(8, 17, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(1, rs);
+
+    rs = read_bits_from_bytes(16, 10, buffer, 3, &code);
+    TEST_ASSERT_EQUAL(1, rs);
+
+}
+
 void test_decode_integer(void){
     uint8_t bytes1[] = {
             30//000 11110
@@ -365,6 +421,7 @@ int main(void)
     UNIT_TEST(test_encode);
 
     UNIT_TEST(test_log128);
+    UNIT_TEST(test_read_bits_from_bytes);
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
 
