@@ -7,6 +7,8 @@
 #include <strings.h>
 #include <stdio.h>
 
+//#define LOG_LEVEL (LOG_LEVEL_DEBUG)
+
 #include "http.h"
 #include "http_bridge.h"
 #include "logging.h"
@@ -102,7 +104,7 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_s
     size_t header_size_t = header_size;
     for (k = 0; k < i; k++) {
         if ((strncmp(hd_lists->header_list_in[k].name, header, header_size) == 0) && header_size_t == strlen(hd_lists->header_list_in[k].name)) {
-            INFO("RETURNING value of '%s' header; '%s'", hd_lists->header_list_in[k].name, hd_lists->header_list_in[k].value);
+            DEBUG("RETURNING value of '%s' header; '%s'", hd_lists->header_list_in[k].name, hd_lists->header_list_in[k].value);
             return hd_lists->header_list_in[k].value;
         }
     }
@@ -360,6 +362,7 @@ int http_server_start(hstates_t *hs)
 
             // Get the method from headers
             char *method = http_get_header(&hs->hd_lists, ":method", 7);
+            DEBUG("Received %s request", method);
             if (!has_method_support(method)) {
                 error(hs, 501, "Not Implemented");
 
