@@ -17,17 +17,17 @@ typedef struct {
 } huffman_encoded_word_t;
 
 typedef struct {
-    uint32_t codes[HUFFMAN_TABLE_SIZE];
-    uint32_t symbols[HUFFMAN_TABLE_SIZE];
+    const uint32_t codes[HUFFMAN_TABLE_SIZE];
+    const uint32_t symbols[HUFFMAN_TABLE_SIZE];
 #ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
-    uint8_t huffman_length[HUFFMAN_TABLE_SIZE];
+    const uint8_t huffman_length[HUFFMAN_TABLE_SIZE];
 #endif
-    uint8_t sR[NUMBER_OF_CODE_LENGTHS];
-    uint8_t code_length[NUMBER_OF_CODE_LENGTHS];
+    const uint8_t sR[NUMBER_OF_CODE_LENGTHS];
+    const uint8_t code_length[NUMBER_OF_CODE_LENGTHS];
 } huffman_tree_t;
 
-/*void huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint8_t sym)
+/*void huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint8_t sym)*/
 
-uint8_t huffman_decode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *encoded)*/
+/*uint8_t huffman_decode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *encoded)*/
 
 #endif //HPACK_HUFFMAN_H
