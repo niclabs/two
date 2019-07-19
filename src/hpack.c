@@ -593,6 +593,8 @@ int decode_literal_header_field_without_indexing(uint8_t *header_block, char *na
    }
  */
 
+//decodes a header depending on the get_preamble
+//returns the amount of octets in which the pointer has move to read all the headers
 int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *value)
 {
     if (preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING) {
