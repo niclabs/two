@@ -34,13 +34,13 @@
  */
 
 /*
- * Function: Reads bits from a buffer of bytes.
+ * Function: Reads bits from a buffer of bytes (max number of bits it can read is 32).
  * Input:
- **current_bit_pointer: The bit from where to start reading (inclusive)
- **number_of_bits_to_read: The number of bits to read from the buffer
- **buffer: The buffer containing the bits to read
- **buffer_size: Size of the buffer
- **result: Pointer to variable to store the result
+ * - current_bit_pointer: The bit from where to start reading (inclusive)
+ * - number_of_bits_to_read: The number of bits to read from the buffer
+ * - *buffer: The buffer containing the bits to read
+ * - buffer_size: Size of the buffer
+ * - *result: Pointer to variable to store the result
  * output: 0 if the bits are read correctly and stores it in *result; -1 if it fails
  */
 
