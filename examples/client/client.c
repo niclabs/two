@@ -25,7 +25,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    uint16_t port = atoi(argv[2]);
+    int port = atoi(argv[2]);
     if (port < 0) {
         PRINTF("Invalid port given");
         return 1;
@@ -39,17 +39,16 @@ int main(int argc, char **argv)
         ERROR("in client connect");
     }
     else {
-        response_received_type_t rr;
-        uint8_t misdatos[128];
-        rr.data = misdatos;
-        rc = http_get(&http_client_state, "/index", "example.org", "text", &rr);
+        size_t response_size = 128; 
+        uint8_t response[response_size];
+        rc = http_get(&http_client_state, "/index", response, &response_size);
         if (rc < 0) {
             ERROR("in http_get");
         }
         else {
-            INFO("data received: %u \n", rr.size_data);
-            for (uint32_t i = 0; i < rr.size_data; i++) {
-                printf("%c", (char)rr.data[i]);
+            INFO("data received: %u \n", response_size);
+            for (uint32_t i = 0; i < response_size; i++) {
+                printf("%c", (char)response[i]);
 
             }
             printf("\n");

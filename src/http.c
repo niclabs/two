@@ -13,6 +13,9 @@
 #include "sock.h"
 #include "http2.h"
 
+#ifndef MIN
+#define MIN(n, m)   (((n) < (m)) ? (n) : (m))
+#endif
 
 /*********************************************************
  * Private HTTP API methods
@@ -125,14 +128,11 @@ int has_method_support(char * method) {
  *
  * @return                    Data lengt
  */
-uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
+uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer, size_t size)
 {
-    if (hd_lists->data_in_size == 0) {
-        WARN("Data list is empty");
-        return 0;
-    }
-    memcpy(data_buffer, hd_lists->data_in, hd_lists->data_in_size);
-    return hd_lists->data_in_size;
+    int copysize = MIN(hd_lists->data_in_size, size);
+    memcpy(data_buffer, hd_lists->data_in, copysize);
+    return copysize;
 }
 
 /*
@@ -463,6 +463,56 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
  * Client API methods 
  ************************************/
 
+int receive_server_response(hstates_t *hs)
+{
+    // TODO: receive headers (?)
+
+    http_clear_header_list(hs, -1, 0); // why?
+
+    // Receive data
+    while (hs->connection_state == 1) {
+        if (h2_receive_frame(hs) < 0) {
+            break;
+        }
+        if (hs->keep_receiving == 1) {
+            continue;
+        }
+        if (hs->hd_lists.data_in_size > 0) {
+          return 0;
+        }
+    }
+
+    return -1;
+}
+
+
+int send_client_request(hstates_t * hs, char * method, char * uri, uint8_t * response, size_t * size) {
+    if (http_set_header(&hs->hd_lists, ":method", method) < 0 ||
+            http_set_header(&hs->hd_lists, ":scheme", "http") < 0 || 
+            http_set_header(&hs->hd_lists, ":path", uri) < 0 ||
+            http_set_header(&hs->hd_lists, "Host", hs->host) < 0) {
+        ERROR("Failed to set headers for request");
+        return -1;
+    }
+
+    // Try to send request
+    if (h2_send_request(hs) < 0) {
+        ERROR("Failed to send request %s %s", method, uri);
+        return -1;
+    }
+
+    if (receive_server_response(hs) < 0) {
+        ERROR("An error ocurred while waiting for server response");
+        return -1;
+    }
+    
+    int status = atoi(http_get_header(&hs->hd_lists, ":status", 7));
+
+    // Get response data (TODO: should we just copy the pointer?)
+    *size = get_data(&hs->hd_lists, response, *size);
+
+    return status;
+}
 
 int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 {
@@ -500,65 +550,10 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
     return 0;
 }
 
-int http_start_client(hstates_t *hs)
+int http_get(hstates_t *hs, char *uri, uint8_t * response, size_t * size)
 {
-    http_clear_header_list(hs, -1, 0);
-    while (hs->connection_state == 1) {
-        if (h2_receive_frame(hs) < 0) {
-            break;
-        }
-        if (hs->keep_receiving == 1) {
-            continue;
-        }
-        if (hs->hd_lists.data_in_size > 0) {
-          return 0;
-        }
-    }
-    INFO("Client off the while");
-    hs->connection_state = 0;
-    hs->socket_state = 0;
-    if (sock_destroy(&hs->socket) == -1) {
-        WARN("Could not destroy client socket");
-        return -1;
-    }
-    return -1;
+    return send_client_request(hs, uri, "GET", response, size);
 }
-
-
-
-int http_get(hstates_t *hs, char *uri, response_received_type_t *rr)
-{
-    int method = http_set_header(&hs->hd_lists, ":method", "GET");
-    int scheme = http_set_header(&hs->hd_lists, ":scheme", "https");
-    int set_path = http_set_header(&hs->hd_lists, ":path", uri);
-    int set_host = http_set_header(&hs->hd_lists, "Host", hs->host);
-
-    if (method < 0 || scheme < 0 || set_path < 0 || set_host < 0) {
-        ERROR("Failed to set headers for request");
-        return -1;
-    }
-    if (h2_send_request(hs) < 0) {
-        ERROR("Cannot send query");
-        return -1;
-    }
-    http_clear_header_list(hs, -1, 1);
-
-    if (http_start_client(hs) < 0) {
-        rr->status_flag=400;
-        rr->size_data = 0;
-        return -1;
-    }
-
-    if (hs->hd_lists.data_in_size > 0) {
-        rr->size_data = get_data(&hs->hd_lists, rr->data);
-        rr->status_flag = atoi(http_get_header(&hs->hd_lists, ":status", 7));
-    }else{
-        rr->size_data = 0;
-    }
-    return 0;
-}
-
-
 
 int http_client_disconnect(hstates_t *hs)
 {
@@ -576,10 +571,3 @@ int http_client_disconnect(hstates_t *hs)
 
     return 0;
 }
-
-
-/************************************Headers************************************/
-
-
-
-

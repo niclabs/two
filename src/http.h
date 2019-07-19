@@ -6,13 +6,6 @@
 
 #include "http_bridge.h"
 
-typedef struct RESPONSE_RECEIVED_TYPE_S {
-    uint32_t size_data;
-    int status_flag;
-    uint8_t *data; //this memory MUST be initialized by the app
-}response_received_type_t;
-
-
 /***********************************************
  * Server API methods
  *
@@ -92,14 +85,15 @@ int http_client_connect(hstates_t *hs, char *address, uint16_t port);
 
 
 /*
- * Send a GET request to server and wait for an answer
+ * Send a GET request to server and wait for a reply
  *
  * @param    hs                         Struct with client information
  * @param    uri                        Request URI
- * @param    response_received_type_t   Struct for response data
- * @return   0 if the request was succesful or -1 if an error ocurred
+ * @param    response                   Pointer to a char array where to store the server response
+ * @param    size                       Pointer to size_t storing the maximum response size expected, the value will be updated upon server response
+ * @return http status or -1 if an unexpected error ocurred
  */
-int http_get(hstates_t *hs, char *uri, response_received_type_t *rr);
+int http_get(hstates_t *hs, char *uri, uint8_t * response, size_t * size);
 
 
 /*
