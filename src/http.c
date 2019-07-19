@@ -18,16 +18,17 @@
 #endif
 
 /*********************************************************
- * Private HTTP API methods
- *********************************************************/
+* Private HTTP API methods
+*********************************************************/
 
-/** 
+/**
  * Parse URI into path and query parameters
  *
  * TODO: This function should probably be an API function
  * TODO: improve according to https://tools.ietf.org/html/rfc3986
  */
-int parse_uri(char * uri, char * path, char * query_params) {
+int parse_uri(char *uri, char *path, char *query_params)
+{
     if (uri == NULL || path == NULL) {
         errno = EINVAL;
         return -1;
@@ -115,8 +116,11 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_s
  *
  * @returns 1 if the method is supported by the implementation, 0 if not
  */
-int has_method_support(char * method) {
-    if (strncmp("GET", method, 8) != 0) return 0;
+int has_method_support(char *method)
+{
+    if (strncmp("GET", method, 8) != 0) {
+        return 0;
+    }
     return 1;
 }
 
@@ -131,6 +135,7 @@ int has_method_support(char * method) {
 uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer, size_t size)
 {
     int copysize = MIN(hd_lists->data_in_size, size);
+
     memcpy(data_buffer, hd_lists->data_in, copysize);
     return copysize;
 }
@@ -160,17 +165,18 @@ int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
     return 0;
 }
 
-/* 
+/*
  * Check for valid HTTP path according to
  * RFC 2396 (see https://tools.ietf.org/html/rfc2396#section-3.3)
- * 
- * TODO: for now this function only checks that the path starts 
+ *
+ * TODO: for now this function only checks that the path starts
  * by a '/'. Validity of the path should be implemented according to
  * the RFC
  *
  * @return 1 if the path is valid or 0 if not
  * */
-int is_valid_path(char * path) {
+int is_valid_path(char *path)
+{
     if (path[0] != '/') {
         return 0;
     }
@@ -180,8 +186,10 @@ int is_valid_path(char * path) {
 /**
  * Get a resource handler for the given path
  */
-http_resource_handler_t get_resource_handler(hstates_t * hs, char * method, char * path) {
+http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *path)
+{
     http_resource_t res;
+
     for (int i = 0; i < hs->resource_list_size; i++) {
         res = hs->resource_list[i];
         if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
@@ -202,9 +210,11 @@ void reset_http_states(hstates_t *hs)
 /**
  * Send an http error with the given code and message
  */
-int error(hstates_t * hs, int code, char * msg) {
+int error(hstates_t *hs, int code, char *msg)
+{
     // Set status code
     char strCode[4];
+
     snprintf(strCode, 4, "%d", code);
     http_set_header(&hs->hd_lists, ":status", strCode);
 
@@ -224,8 +234,9 @@ int error(hstates_t * hs, int code, char * msg) {
 /**
  * Read headers from the request
  */
-int receive_headers(hstates_t *hs) {
-    while(hs->connection_state == 1) {
+int receive_headers(hstates_t *hs)
+{
+    while (hs->connection_state == 1) {
         // receive frame
         if (h2_receive_frame(hs) < 0) {
             break;
@@ -247,14 +258,16 @@ int receive_headers(hstates_t *hs) {
 /**
  * Perform request for the given method and uri
  */
-int do_request(hstates_t *hs, char * method, char * uri) {
+int do_request(hstates_t *hs, char *method, char *uri)
+{
     // parse URI removing query parameters
     char path[HTTP_MAX_PATH_SIZE];
+
     parse_uri(uri, path, NULL);
 
     // find callback for resource
     http_resource_handler_t handle_uri;
-    if ((handle_uri = get_resource_handler(hs, method, path)) == NULL)  {
+    if ((handle_uri = get_resource_handler(hs, method, path)) == NULL) {
         // 404
         return error(hs, 404, "Not Found");
     }
@@ -267,7 +280,7 @@ int do_request(hstates_t *hs, char * method, char * uri) {
     uint8_t response[HTTP_MAX_RESPONSE_SIZE];
     int len;
     if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
-        // if the handler returns 
+        // if the handler returns
         return error(hs, 500, "Server Error");
     }
     else if (len > 0) {
@@ -285,8 +298,8 @@ int do_request(hstates_t *hs, char * method, char * uri) {
 }
 
 /************************************
- * Server API methods 
- ************************************/
+* Server API methods
+************************************/
 
 int http_server_create(hstates_t *hs, uint16_t port)
 {
@@ -346,7 +359,7 @@ int http_server_start(hstates_t *hs)
             }
 
             // Get the method from headers
-            char * method = http_get_header(&hs->hd_lists, ":method", 7);
+            char *method = http_get_header(&hs->hd_lists, ":method", 7);
             if (!has_method_support(method)) {
                 error(hs, 501, "Not Implemented");
 
@@ -359,13 +372,13 @@ int http_server_start(hstates_t *hs)
 
             // Clear headers (why?)
             http_clear_header_list(hs, -1, 1);
-    
+
             // Get uri
-            char * uri = http_get_header(&hs->hd_lists, ":path", 5);
+            char *uri = http_get_header(&hs->hd_lists, ":path", 5);
 
             // Process the http request
             do_request(hs, method, uri);
-           
+
             // Clear headers (why?)
             http_clear_header_list(hs, -1, 0);
         }
@@ -411,7 +424,8 @@ int http_server_destroy(hstates_t *hs)
     return 0;
 }
 
-int http_server_register_resource(hstates_t * hs, char * method, char * path, http_resource_handler_t handler) {
+int http_server_register_resource(hstates_t *hs, char *method, char *path, http_resource_handler_t handler)
+{
     if (hs == NULL || method == NULL || path == NULL || handler == NULL) {
         errno = EINVAL;
         return -1;
@@ -435,7 +449,7 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
         return -1;
     }
 
-    http_resource_t * res;
+    http_resource_t *res;
     for (int i = 0; i < hs->resource_list_size; i++) {
         res = &hs->resource_list[i];
         if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
@@ -450,7 +464,7 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
     }
 
     res = &hs->resource_list[hs->resource_list_size++];
-    
+
     // Set values
     strncpy(res->method, method, 8);
     strncpy(res->path, path, HTTP_MAX_PATH_SIZE);
@@ -460,8 +474,8 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
 }
 
 /************************************
- * Client API methods 
- ************************************/
+* Client API methods
+************************************/
 
 int receive_server_response(hstates_t *hs)
 {
@@ -478,19 +492,19 @@ int receive_server_response(hstates_t *hs)
             continue;
         }
         if (hs->hd_lists.data_in_size > 0) {
-          return 0;
+            return 0;
         }
     }
 
     return -1;
 }
 
-
-int send_client_request(hstates_t * hs, char * method, char * uri, uint8_t * response, size_t * size) {
+int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size)
+{
     if (http_set_header(&hs->hd_lists, ":method", method) < 0 ||
-            http_set_header(&hs->hd_lists, ":scheme", "http") < 0 || 
-            http_set_header(&hs->hd_lists, ":path", uri) < 0 ||
-            http_set_header(&hs->hd_lists, "Host", hs->host) < 0) {
+        http_set_header(&hs->hd_lists, ":scheme", "http") < 0 ||
+        http_set_header(&hs->hd_lists, ":path", uri) < 0 ||
+        http_set_header(&hs->hd_lists, "Host", hs->host) < 0) {
         ERROR("Failed to set headers for request");
         return -1;
     }
@@ -505,7 +519,7 @@ int send_client_request(hstates_t * hs, char * method, char * uri, uint8_t * res
         ERROR("An error ocurred while waiting for server response");
         return -1;
     }
-    
+
     int status = atoi(http_get_header(&hs->hd_lists, ":status", 7));
 
     // Get response data (TODO: should we just copy the pointer?)
@@ -550,7 +564,7 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
     return 0;
 }
 
-int http_get(hstates_t *hs, char *uri, uint8_t * response, size_t * size)
+int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 {
     return send_client_request(hs, uri, "GET", response, size);
 }
