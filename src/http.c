@@ -471,24 +471,26 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
     hs->is_server = 0;
 
     if (sock_create(&(hs->socket)) < 0) {
-        ERROR("Error on client creation");
+        ERROR("Failed to create socket for client connection");
         return -1;
     }
 
     hs->socket_state = 1;
 
     if (sock_connect(&hs->socket, addr, port) < 0) {
-        ERROR("Error on client connection");
+        ERROR("Connection to remote address %s failed", addr);
         http_client_disconnect(hs);
         return -1;
     }
 
-    INFO("Client connected to server\n");
+    INFO("Connected to %s", addr);
 
+    // Connected
     hs->connection_state = 1;
 
+    // Initialize http/2 connection
     if (h2_client_init_connection(hs) < 0) {
-        ERROR("Problems sending client data");
+        ERROR("Failed to perform HTTP/2 initialization");
         return -1;
     }
 
