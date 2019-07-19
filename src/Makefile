@@ -7,4 +7,5 @@ SOURCES = http.c \
           hpack.c \
           hpack_utils.c \
           sock.c \
+          cbuf.c \
           utils.c
