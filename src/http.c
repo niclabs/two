@@ -14,7 +14,9 @@
 #include "http2.h"
 
 char * http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
+int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
 int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
+uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
 // Validate http path
 int is_valid_path(char * path) {

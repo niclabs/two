@@ -18,6 +18,10 @@
 /*Import of functions not declared in http.h */
 extern int do_request(hstates_t *hs, char * method);
 extern void reset_http_states(hstates_t *hs);
+extern int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
+extern char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
+extern int http_set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
+extern uint32_t http_get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
