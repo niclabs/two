@@ -93,17 +93,6 @@ int http_client_connect(hstates_t *hs, uint16_t port, char *ip);
 
 
 /*
- * Wait for data from server
- *
- * @param    hs         Struct with client information
- *
- * @return   0          Successfully started connection
- * @return   -1         The connection fail
- */
-int http_start_client(hstates_t* hs);
-
-
-/*
  * Send a GET request to server and wait for an answer
  *
  * @param    hs                         Struct with client information
