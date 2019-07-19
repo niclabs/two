@@ -26,7 +26,7 @@ typedef struct {
     const uint8_t code_length[NUMBER_OF_CODE_LENGTHS];
 } huffman_tree_t;
 
-/*void huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint8_t sym)*/
+int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint8_t sym);
 
 /*uint8_t huffman_decode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *encoded)*/
 
