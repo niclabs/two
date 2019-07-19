@@ -59,6 +59,59 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
+void test_decode_header_block_literal_never_indexed(void)
+{
+    //Literal Header Field Representation
+    //Never indexed
+    //No huffman encoding - Header name as string literal
+    uint8_t header_block_size = 10;
+    uint8_t header_block_name_literal[] = {
+        16,     //00010000 prefix=0001, index=0
+        4,      //h=0, name length = 4;
+        'h',    //name string
+        'o',    //name string
+        'l',    //name string
+        'a',    //name string
+        3,      //h=0, value length = 3;
+        'v',    //value string
+        'a',    //value string
+        'l'     //value string
+    };
+    char *expected_name = "hola";
+    char *expected_value = "val";
+
+    headers_data_lists_t h_list;
+
+    memset(&h_list, 0, sizeof(headers_data_lists_t));
+    int rc = decode_header_block(header_block_name_literal, header_block_size, &h_list);
+
+    TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
+    TEST_ASSERT_EQUAL_STRING(expected_name, h_list.header_list_in[0].name);
+    TEST_ASSERT_EQUAL(0, strcmp(expected_value, h_list.header_list_in[0].value));
+
+    //Literal Header Field Representation
+    //Never indexed
+    //No huffman encoding - Header name as static table index
+
+    memset(&h_list, 0, sizeof(headers_data_lists_t));
+
+    header_block_size = 5;
+    uint8_t header_block_name_indexed[] = {
+        17,     //00010001 prefix=0001, index=1
+        3,      //h=0, value length = 3;
+        'v',
+        'a',
+        'l'
+    };
+    expected_name = ":authority";
+    rc = decode_header_block(header_block_name_indexed, header_block_size, &h_list);
+
+    TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
+    TEST_ASSERT_EQUAL_STRING(expected_name, h_list.header_list_in[0].name);
+    TEST_ASSERT_EQUAL(0, strcmp(expected_value, h_list.header_list_in[0].value));
+
+}
+
 void test_decode_header_block_literal_without_indexing(void)
 {
     //Literal Header Field Representation
@@ -455,6 +508,7 @@ int main(void)
     UNIT_TESTS_BEGIN();
 
     UNIT_TEST(test_decode_header_block_literal_without_indexing);
+    UNIT_TEST(test_decode_header_block_literal_never_indexed);
     UNIT_TEST(test_encode);
 
     UNIT_TEST(test_log128);
