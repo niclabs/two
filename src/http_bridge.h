@@ -108,8 +108,6 @@ typedef struct HTTP_STATES {
     uint8_t is_server; // boolean flag to know if current hstates if server or client
     h2states_t h2s;
     headers_data_lists_t hd_lists;
-    uint8_t path_callback_list_count;
-    key_pointer_map_t path_callback_list[HTTP_MAX_CALLBACK_LIST_ENTRY];
 
     // Resource handler list
     http_resource_t resource_list[HTTP_MAX_RESOURCES];

@@ -84,7 +84,6 @@ void test_reset_http_states_success(void)
     hs.hd_lists.header_list_count_out = 1;
     hs.hd_lists.data_in_size = 1;
     hs.hd_lists.data_out_size = 1;
-    hs.path_callback_list_count = 1;
     hs.connection_state = 1;
     hs.server_socket_state = 1;
     hs.keep_receiving = 1;
@@ -97,7 +96,6 @@ void test_reset_http_states_success(void)
     TEST_ASSERT_EQUAL(0, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.data_out_size);
-    TEST_ASSERT_EQUAL(0, hs.path_callback_list_count);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(0, hs.keep_receiving);
@@ -793,19 +791,19 @@ void test_do_request_path_not_found(void)
 }
 
 
-void test_do_request_path_callback_list_empty(void)
+void test_do_request_no_resources(void)
 {
     hstates_t hs;
 
     reset_http_states(&hs);
 
     strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "index/");
+    strcpy(hs.hd_lists.header_list_in[0].value, "/index");
     hs.hd_lists.header_list_count_in = 1;
 
     int get = do_request(&hs, "GET");
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, get, "Path-callback list is empty");
+    TEST_ASSERT_EQUAL_MESSAGE(0, get, "Do request should return 0 even if no resources are found");
 
     TEST_ASSERT_EQUAL(1, hs.hd_lists.header_list_count_out);
     TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[0].name, ":status", strlen(":status")));
@@ -866,7 +864,7 @@ int main(void)
     UNIT_TEST(test_do_request_success);
     UNIT_TEST(test_do_request_fail_h2_send_response);
     UNIT_TEST(test_do_request_path_not_found);
-    UNIT_TEST(test_do_request_path_callback_list_empty);
+    UNIT_TEST(test_do_request_no_resources);
 
     return UNITY_END();
 }
