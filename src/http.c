@@ -14,10 +14,40 @@
 #include "http2.h"
 
 
-
 /*********************************************************
  * Private HTTP API methods
  *********************************************************/
+
+/** 
+ * Parse URI into path and query parameters
+ *
+ * TODO: This function should probably be an API function
+ * TODO: improve according to https://tools.ietf.org/html/rfc3986
+ */
+int parse_uri(char * uri, char * path, char * query_params) {
+    if (uri == NULL || path == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (strlen(uri) == 0) {
+        strcpy(path, "/");
+    }
+
+    char *ptr = index(uri, '?');
+    if (ptr) {
+        if (query_params) {
+            strcpy(query_params, ptr + 1);
+        }
+        *ptr = '\0';
+    }
+    else if (query_params) {
+        strcpy(query_params, "");
+    }
+
+    strcpy(path, uri);
+    return 0;
+}
 
 /*
  * Add a header and its value to the headers list
@@ -218,11 +248,13 @@ int receive_headers(hstates_t *hs) {
  * Perform request for the given method and uri
  */
 int do_request(hstates_t *hs, char * method, char * uri) {
-    // TODO: parse URI removing query parameters
+    // parse URI removing query parameters
+    char path[HTTP_MAX_PATH_SIZE];
+    parse_uri(uri, path, NULL);
 
     // find callback for resource
     http_resource_handler_t handle_uri;
-    if ((handle_uri = get_resource_handler(hs, method, uri)) == NULL)  {
+    if ((handle_uri = get_resource_handler(hs, method, path)) == NULL)  {
         // 404
         return error(hs, 404, "Not Found");
     }
