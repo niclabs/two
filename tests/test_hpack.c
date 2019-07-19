@@ -65,7 +65,7 @@ void test_decode_header_block_literal_without_indexing(void)
     //without indexing
     //No huffman encoding - Header name as string literal
     uint8_t header_block_size = 10;
-    uint8_t header_block_name_indexed[] = {
+    uint8_t header_block_name_literal[] = {
         0,      //00000000 prefix=00, index=0
         4,      //h=0, name length = 4;
         'h',    //name string
@@ -81,7 +81,7 @@ void test_decode_header_block_literal_without_indexing(void)
     char *expected_value = "val";
 
     headers_data_lists_t h_list;
-    int rc = decode_header_block(header_block, header_block_size, &h_list);
+    int rc = decode_header_block(header_block_name_literal, header_block_size, &h_list);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(0, strcmp(expected_name, h_list.header_list_in[0].name));
@@ -92,7 +92,6 @@ void test_decode_header_block_literal_without_indexing(void)
     //No huffman encoding - Header name as static table index
 
     memset(&h_list, 0, sizeof(headers_data_lists_t));
-    memset(&header_block, 0, sizeof(uint8_t) * header_block_size);
 
     header_block_size = 5;
     uint8_t header_block_name_indexed[] = {
