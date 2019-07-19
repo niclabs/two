@@ -5,7 +5,16 @@ SRCDIR ?= ../../src
 CONTIKI ?= ../../../contiki
 
 PROJECTDIRS += $(SRCDIR)
-PROJECT_SOURCEFILES=sock.c cbuf.c
+PROJECT_SOURCEFILES=http.c \
+          http_bridge.c \
+          http2.c \
+          http2utils.c \
+          frames.c \
+          hpack.c \
+          hpack_utils.c \
+          sock.c \
+          cbuf.c \
+          utils.c
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
