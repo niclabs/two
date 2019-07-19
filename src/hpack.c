@@ -875,11 +875,11 @@ int find_entry(uint32_t index, char *name, char *value)
         table_name = static_header_name_table[index];
         table_value = static_header_value_table[index];
     }
-    if (strncpy(name, table_name, strlen(table_name))) {
+    if (strncpy(name, table_name, strlen(table_name)) <= (char *)0) {
         ERROR("Error en strncpy");
         return -1;
     }
-    if (strncpy(value, table_value, strlen(table_value))) {
+    if (strncpy(value, table_value, strlen(table_value)) <= (char *)0) {
         ERROR("Error en strncpy");
         return -1;
     }
