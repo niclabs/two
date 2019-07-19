@@ -870,7 +870,8 @@ int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_
 #else
     for (int i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
         int symbol_index = huffman_tree->sR[i];
-        int top = symbol_index + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree->sR[symbol_index + 1]) : HUFFMAN_TABLE_SIZE;
+        int top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree->sR[i + 1]) : HUFFMAN_TABLE_SIZE;
+
         for (int j = symbol_index; j < top; j++) {
             if (huffman_tree->symbols[j] == sym) {
                 result->length = huffman_tree->code_length[i];
