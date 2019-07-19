@@ -12,7 +12,14 @@ typedef struct RESPONSE_RECEIVED_TYPE_S {
     uint8_t *data; //this memory MUST be initialized by the app
 }response_received_type_t;
 
-/*Server*/
+
+/***********************************************
+ * Server API methods
+ *
+ * TODO: make server/client methods toggable
+ * by use of a macro (reduce binary size)
+ ***********************************************/
+
 /*
  * Given a port number and a struct for server information, this function
  * initialize a server
@@ -66,7 +73,11 @@ int http_server_destroy(hstates_t *hs);
  */
 int http_server_register_resource(hstates_t * hs, char * method, char * path, http_resource_handler_t fn);
 
-/*Client*/
+
+/*************************************************************
+ * Client API methods
+ *************************************************************/
+
 
 /*
  * Initialize a connection from client to server
