@@ -273,7 +273,7 @@ BUILD_TARGETS += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}
 .PHONY: all
 all: $(BUILD_TARGETS)
 .PHONY: debug
-debug: CF_ALL += -g
+debug: CF_ALL += -g -DENABLE_DEBUG
 debug: all
 
 # Add target rules
