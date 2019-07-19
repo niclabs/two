@@ -13,12 +13,123 @@
 #include "sock.h"
 #include "http2.h"
 
-char * http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
-int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
-int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
-uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
-// Validate http path
+
+/*********************************************************
+ * Private HTTP API methods
+ *********************************************************/
+
+/*
+ * Add a header and its value to the headers list
+ *
+ * @param    hd_lists         Struct with headers information
+ * @param    name             New headers name
+ * @param    value            New headers value
+ *
+ * @return   0                Successfully added pair
+ * @return   -1               There was an error in the process
+ */
+int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value)
+{
+    int i = hd_lists->header_list_count_out;
+
+    if (i == HTTP2_MAX_HEADER_COUNT) {
+        WARN("Headers list is full");
+        return -1;
+    }
+
+    strcpy(hd_lists->header_list_out[i].name, name);
+    strcpy(hd_lists->header_list_out[i].value, value);
+
+    hd_lists->header_list_count_out = i + 1;
+
+    return 0;
+}
+
+/*
+ * Search by a value of a header in the header list
+ *
+ * @param    hd_lists         Struct with headers information
+ * @param    header           Header name
+ * @param    header_size      Size of header name
+ *
+ * @return                    Value finded
+ */
+char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size)
+{
+    int i = hd_lists->header_list_count_in;
+
+    if (i == 0) {
+        WARN("Headers list is empty");
+        return NULL;
+    }
+
+    int k;
+    size_t header_size_t = header_size;
+    for (k = 0; k < i; k++) {
+        if ((strncmp(hd_lists->header_list_in[k].name, header, header_size) == 0) && header_size_t == strlen(hd_lists->header_list_in[k].name)) {
+            INFO("RETURNING value of '%s' header; '%s'", hd_lists->header_list_in[k].name, hd_lists->header_list_in[k].value);
+            return hd_lists->header_list_in[k].value;
+        }
+    }
+
+    WARN("Header '%s' not found in headers list", header);
+    return NULL;
+}
+
+/**
+ * Get received data
+ *
+ * @param    hd_lists         Struct with data information
+ * @param    data_buffer      Buffer for data received
+ *
+ * @return                    Data lengt
+ */
+uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
+{
+    if (hd_lists->data_in_size == 0) {
+        WARN("Data list is empty");
+        return 0;
+    }
+    memcpy(data_buffer, hd_lists->data_in, hd_lists->data_in_size);
+    return hd_lists->data_in_size;
+}
+
+/*
+ * Add data to be sent to data lists
+ *
+ * @param    hd_lists   Struct with data information
+ * @param    data       Data
+ * @param    data_size  Size of data
+ *
+ * @return   0          Successfully added data
+ * @return   -1         There was an error in the process
+ */
+int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
+{
+    if (HTTP_MAX_DATA_SIZE == hd_lists->data_out_size) {
+        ERROR("Data buffer full");
+        return -1;
+    }
+    if (data_size <= 0 || data_size > 128) {
+        ERROR("Data too large for buffer size");
+        return -1;
+    }
+    hd_lists->data_out_size = data_size;
+    memcpy(hd_lists->data_out, data, data_size);
+    return 0;
+}
+
+/* 
+ * Check for valid HTTP path according to
+ * RFC 2396 (see https://tools.ietf.org/html/rfc2396#section-3.3)
+ * 
+ * TODO: for now this function only checks that the path starts 
+ * by a '/'. Validity of the path should be implemented according to
+ * the RFC
+ *
+ * @return 1 if the path is valid or 0 if not
+ * */
 int is_valid_path(char * path) {
     if (path[0] != '/') {
         return 0;
@@ -26,6 +137,9 @@ int is_valid_path(char * path) {
     return 1;
 }
 
+/**
+ * Get a resource handler for the given path
+ */
 http_resource_handler_t get_resource_handler(hstates_t * hs, char * method, char * path) {
     http_resource_t res;
     for (int i = 0; i < hs->resource_list_size; i++) {
@@ -37,11 +151,17 @@ http_resource_handler_t get_resource_handler(hstates_t * hs, char * method, char
     return NULL;
 }
 
+/**
+ * Set all hstates values to its initial values
+ */
 void reset_http_states(hstates_t *hs)
 {
     memset(hs, 0, sizeof(*hs));
 }
 
+/**
+ * Send an http error with the given code and message
+ */
 int error(hstates_t * hs, int code, char * msg) {
     // Set status code
     char strCode[4];
@@ -61,7 +181,9 @@ int error(hstates_t * hs, int code, char * msg) {
     return 0;
 }
 
-
+/**
+ * Read headers from the request
+ */
 int receive_headers(hstates_t *hs) {
     while(hs->connection_state == 1) {
         // receive frame
@@ -82,6 +204,9 @@ int receive_headers(hstates_t *hs) {
     return -1;
 }
 
+/**
+ * Perform request for the given method and uri
+ */
 int do_request(hstates_t *hs, char * method) {
     // Get uri
     char * uri = http_get_header(&hs->hd_lists, ":path", 5);
@@ -292,8 +417,9 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
     return 0;
 }
 
-
-/************************************Client************************************/
+/************************************
+ * Server API methods 
+ ************************************/
 
 
 int http_client_connect(hstates_t *hs, uint16_t port, char *ip)
@@ -408,72 +534,6 @@ int http_client_disconnect(hstates_t *hs)
 
 /************************************Headers************************************/
 
-int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value)
-{
-    int i = hd_lists->header_list_count_out;
-
-    if (i == HTTP2_MAX_HEADER_COUNT) {
-        WARN("Headers list is full");
-        return -1;
-    }
-
-    strcpy(hd_lists->header_list_out[i].name, name);
-    strcpy(hd_lists->header_list_out[i].value, value);
-
-    hd_lists->header_list_count_out = i + 1;
-
-    return 0;
-}
-
-
-char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size)
-{
-    int i = hd_lists->header_list_count_in;
-
-    if (i == 0) {
-        WARN("Headers list is empty");
-        return NULL;
-    }
-
-    int k;
-    size_t header_size_t = header_size;
-    for (k = 0; k < i; k++) {
-        if ((strncmp(hd_lists->header_list_in[k].name, header, header_size) == 0) && header_size_t == strlen(hd_lists->header_list_in[k].name)) {
-            INFO("RETURNING value of '%s' header; '%s'", hd_lists->header_list_in[k].name, hd_lists->header_list_in[k].value);
-            return hd_lists->header_list_in[k].value;
-        }
-    }
-
-    WARN("Header '%s' not found in headers list", header);
-    return NULL;
-}
-
-
-uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer)
-{
-    if (hd_lists->data_in_size == 0) {
-        WARN("Data list is empty");
-        return 0;
-    }
-    memcpy(data_buffer, hd_lists->data_in, hd_lists->data_in_size);
-    return hd_lists->data_in_size;
-}
-
-
-int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
-{
-    if (HTTP_MAX_DATA_SIZE == hd_lists->data_out_size) {
-        ERROR("Data buffer full");
-        return -1;
-    }
-    if (data_size <= 0 || data_size > 128) {
-        ERROR("Data too large for buffer size");
-        return -1;
-    }
-    hd_lists->data_out_size = data_size;
-    memcpy(hd_lists->data_out, data, data_size);
-    return 0;
-}
 
 
 
