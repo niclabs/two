@@ -4,8 +4,8 @@
  * Defines the DEBUG() INFO() WARN() and ERROR() macros that will print
  * a message depending on the level defined by the variable LOG_LEVEL (default is INFO)
  *
- * When debugging, it might be useful to set level to DEBUG, either by setting the variable
- * ENABLE_DEBUG to 1, by using the -DENABLE_DEBUG=1 on compilation, or by directly setting the LOG_LEVEL
+ * When debugging, it might be useful to set level to DEBUG, either by setting the constant
+ * ENABLE_DEBUG, by using the -DENABLE_DEBUG on compilation, or by directly setting the LOG_LEVEL
  * variable to DEBUG, by using -DLOG_LEVEL=LOG_LEVEL_DEBUG
  *
  * @author Felipe Lalanne <flalanne@niclabs.cl>
@@ -34,7 +34,7 @@
 #define LOG_PRINT(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-#if defined(ENABLE_DEBUG) && ENABLE_DEBUG == 1
+#if defined(ENABLE_DEBUG)
 #define LOG_LEVEL (LOG_LEVEL_DEBUG)
 #endif
 
