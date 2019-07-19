@@ -328,7 +328,7 @@ PT_THREAD(sock_wait_data(sock_t * sock))
     PT_END(&sock->pt);
 }
 
-void send_data(struct sock_socket * s) 
+static void send_data(struct sock_socket * s) 
 {
     if (s == NULL || s->flags & SOCKET_FLAGS_SENDING || cbuf_len(&s->cout) == 0) return;
 
@@ -345,7 +345,7 @@ void send_data(struct sock_socket * s)
     s->last_send = len;
 }
 
-void handle_ack(struct sock_socket * s) {
+static void handle_ack(struct sock_socket * s) {
     if (s == NULL || (s->flags & SOCKET_FLAGS_SENDING) == 0)  return;
 
     // remove data from send buffer
@@ -357,7 +357,7 @@ void handle_ack(struct sock_socket * s) {
     send_data(s);
 }
 
-void handle_rexmit(struct sock_socket * s) {
+static void handle_rexmit(struct sock_socket * s) {
     if (s == NULL || (s->flags & SOCKET_FLAGS_SENDING) == 0)  return;
     
     s->flags &= ~SOCKET_FLAGS_SENDING;
@@ -366,7 +366,7 @@ void handle_rexmit(struct sock_socket * s) {
     send_data(s);
 }
 
-void handle_tcp_event(void *state)
+static void handle_tcp_event(void *state)
 {
     struct sock_socket *s = (struct sock_socket *)state;
 
@@ -465,7 +465,6 @@ void handle_tcp_event(void *state)
         memb_free(&sockets, s); 
     } 
     else if(cbuf_len(&s->cout) == 0 && s->flags & SOCKET_FLAGS_CLOSING) {
-        DEBUG("HERE");
         // unset the closing flag
         s->flags &= ~SOCKET_FLAGS_CONNECTED;
         s->flags &= ~SOCKET_FLAGS_CLOSING;
