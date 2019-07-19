@@ -217,10 +217,7 @@ int receive_headers(hstates_t *hs) {
 /**
  * Perform request for the given method and uri
  */
-int do_request(hstates_t *hs, char * method) {
-    // Get uri
-    char * uri = http_get_header(&hs->hd_lists, ":path", 5);
-
+int do_request(hstates_t *hs, char * method, char * uri) {
     // TODO: parse URI removing query parameters
 
     // find callback for resource
@@ -330,9 +327,12 @@ int http_server_start(hstates_t *hs)
 
             // Clear headers (why?)
             http_clear_header_list(hs, -1, 1);
+    
+            // Get uri
+            char * uri = http_get_header(&hs->hd_lists, ":path", 5);
 
             // Process the http request
-            do_request(hs, method);
+            do_request(hs, method, uri);
            
             // Clear headers (why?)
             http_clear_header_list(hs, -1, 0);

@@ -16,7 +16,7 @@
 #include <errno.h>
 
 /*Import of functions not declared in http.h */
-extern int do_request(hstates_t *hs, char * method);
+extern int do_request(hstates_t *hs, char * method, char * uri);
 extern void reset_http_states(hstates_t *hs);
 extern int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
 extern char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
@@ -727,13 +727,9 @@ void test_do_request_success(void)
 
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
-    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "/index");
-    hs.hd_lists.header_list_count_in = 1;
-
     h2_send_response_fake.return_val = 0;
 
-    int get = do_request(&hs, "GET");
+    int get = do_request(&hs, "GET", "/index");
 
     TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
@@ -752,13 +748,9 @@ void test_do_request_fail_h2_send_response(void)
 
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
-    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "/index");
-    hs.hd_lists.header_list_count_in = 1;
-
     h2_send_response_fake.return_val = -1;
 
-    int get = do_request(&hs, "GET");
+    int get = do_request(&hs, "GET", "/index");
 
     TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
 
@@ -777,11 +769,7 @@ void test_do_request_path_not_found(void)
 
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
-    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "/bla");
-    hs.hd_lists.header_list_count_in = 1;
-
-    int get = do_request(&hs, "GET");
+    int get = do_request(&hs, "GET", "/bla");
 
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "process_request should return 0 even if error response is sent");
 
@@ -797,11 +785,7 @@ void test_do_request_no_resources(void)
 
     reset_http_states(&hs);
 
-    strcpy(hs.hd_lists.header_list_in[0].name, ":path");
-    strcpy(hs.hd_lists.header_list_in[0].value, "/index");
-    hs.hd_lists.header_list_count_in = 1;
-
-    int get = do_request(&hs, "GET");
+    int get = do_request(&hs, "GET", "/index");
 
     TEST_ASSERT_EQUAL_MESSAGE(0, get, "Do request should return 0 even if no resources are found");
 
