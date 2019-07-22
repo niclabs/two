@@ -38,6 +38,53 @@
 int find_entry(uint32_t index, char *name, char *value);
 
 /*
+ * Function: Writes bits from 'code' (the representation in huffman)
+ * from an array of huffman_encoded_word_t to a buffer
+ * using exactly the sum of all lengths of encoded words.
+ * Input:
+ * - *encoded_words: Array of encoded_words to compress
+ * - encoded_words_size: Size of encoded_words array
+ * - *buffer: The buffer to store the result of the compression
+ * - buffer_size: Size of the buffer
+ * output: 0 if the bits are stored correctly ; -1 if it fails because the size of the buffer is less than the required to store the result
+ */
+int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size)
+{
+    int32_t sum = 0;
+
+    for (int i = 0; i < encoded_words_size; i++) {
+        sum += encoded_words[i].length;
+    }
+    uint8_t required_bytes = sum % 8 ? (sum / 8) + 1 : sum / 8;
+    if (required_bytes > buffer_size) {
+        return -1;
+    }
+    int cur = 0;
+    int byte_offset = 0;
+    int bit_offset = 0;
+
+    for (int i = 0; i < encoded_words_size; i++) {
+        huffman_encoded_word_t word = encoded_words[i];
+        uint32_t code = word.code;
+        uint8_t code_length = word.length;
+        code <<= (32 - code_length);
+        while (code_length) {
+            uint8_t bits_to_write = 8 - bit_offset > code_length ? code_length : (8 - bit_offset);
+            uint32_t mask = (1 << bits_to_write) - 1;
+            mask <<= (32 - bits_to_write);
+            uint32_t bits = mask & code;
+            bits >>= (32 - (8 - bit_offset));
+            buffer[byte_offset] |= bits;
+            code <<= bits_to_write;
+            code_length -= bits_to_write;
+            cur += bits_to_write;
+            byte_offset = cur / 8;
+            bit_offset = cur - 8 * byte_offset;
+        }
+    }
+    return 0;
+}
+/*
  * Function: Reads bits from a buffer of bytes (max number of bits it can read is 32).
  * Input:
  * - current_bit_pointer: The bit from where to start reading (inclusive)
