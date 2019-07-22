@@ -4,8 +4,6 @@
 #include <assert.h>
 
 #include "headers.h"
-
-#define ENABLE_DEBUG
 #include "logging.h"
 
 void headers_init(headers_t *headers, header_t *hlist, int maxlen)
@@ -54,7 +52,7 @@ int headers_set(headers_t *headers, const char *name, const char *value)
     assert(name != NULL);
     assert(value != NULL);
 
-    // TODO: should we check value len or just write the
+    // TODO: should we check value len or just write the truncated value?
     if (strlen(name) > MAX_HEADER_NAME_LEN || strlen(value) > MAX_HEADER_VALUE_LEN) {
         errno = EINVAL;
         return -1;
