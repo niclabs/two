@@ -93,7 +93,7 @@ int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value)
  */
 char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size)
 {
-    int i = hd_lists->header_list_count_in;
+    int i = hd_lists->headers_in.count;
 
     if (i == 0) {
         WARN("Headers list is empty");
@@ -103,9 +103,9 @@ char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_s
     int k;
     size_t header_size_t = header_size;
     for (k = 0; k < i; k++) {
-        if ((strncmp(hd_lists->header_list_in[k].name, header, header_size) == 0) && header_size_t == strlen(hd_lists->header_list_in[k].name)) {
-            DEBUG("RETURNING value of '%s' header; '%s'", hd_lists->header_list_in[k].name, hd_lists->header_list_in[k].value);
-            return hd_lists->header_list_in[k].value;
+        if ((strncmp(hd_lists->headers_in.headers[k].name, header, header_size) == 0) && header_size_t == strlen(hd_lists->headers_in.headers[k].name)) {
+            DEBUG("RETURNING value of '%s' header; '%s'", hd_lists->headers_in.headers[k].name, hd_lists->headers_in.headers[k].value);
+            return hd_lists->headers_in.headers[k].value;
         }
     }
 

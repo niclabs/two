@@ -530,8 +530,8 @@ uint32_t get_header_block_fragment_size(frame_header_t* frame_header, headers_pa
 * Input: header_block, header_block_size, header_data_list
 * Output: block_size or -1 if error
 */
-int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_data_lists_t* h_list){//return size of header_list (header_count)
-    int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, h_list->header_list_in, &(h_list->header_list_count_in));
+int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_t* headers){//return size of header_list (header_count)
+    int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, headers);
     return rc;
 }
 

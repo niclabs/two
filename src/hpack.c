@@ -767,7 +767,7 @@ int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *v
 //as it decodes one, the pointer of the headers move forwards
 //also has to update the decoded header lists
 //returns the amount of octets in which the pointer has move to read all the headers
-int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header_t* h_list, uint8_t * header_counter)
+int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t* headers)//header_t* h_list, uint8_t * header_counter)
 {
     int pointer = 0;
 
@@ -775,8 +775,8 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
 
     while (pointer < header_block_size) {
         hpack_preamble_t preamble = get_preamble(header_block[pointer]);
-        int rc = decode_header(header_block + pointer, preamble, h_list[*header_counter].name,
-                               h_list[*header_counter].value);
+        int rc = decode_header(header_block + pointer, preamble, headers->headers[headers->count].name,
+                               headers->headers[headers->count].value);
 
         if (rc < 0) {
             ERROR("Error in decode_header");
@@ -786,7 +786,7 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
         pointer += rc;
         headers_decoded += 1;
     }
-    *header_counter += headers_decoded;
+    headers->count += headers_decoded;
     if (pointer > header_block_size) {
         ERROR("Error decoding header block...");
         return -1;

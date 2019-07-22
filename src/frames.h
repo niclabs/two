@@ -127,7 +127,7 @@ int bytes_to_frame_header(uint8_t* byte_array, int size, frame_header_t* frame_h
 
 int read_headers_payload(uint8_t* read_buffer, frame_header_t* frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t * padding);
 uint32_t get_header_block_fragment_size(frame_header_t* frame_header, headers_payload_t *headers_payload);
-int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_data_lists_t* h_list);
+int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_t* headers);
 
 /*frame continuation methods*/
 int read_continuation_payload(uint8_t* buff_read, frame_header_t* frame_header, continuation_payload_t* continuation_payload, uint8_t * continuation_block_fragment);
