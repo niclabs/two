@@ -937,6 +937,27 @@ uint32_t dynamic_table_size()
     }
     return total_size;
 }
+
+//add an header pair entry in the table
+//header pair is a name string and a value string
+int dynamic_table_add_entry(char *name, char *value)
+{
+    uint32_t entry_size = (uint32_t)(strlen(name) + strlen(value) + 32);
+
+    if (entry_size > dynamic_table.max_size) {
+        ERROR("New entry size exceeds the size of table");
+        return -1; //entry's size exceeds the size of table
+    }
+
+    while (entry_size + dynamic_table_size() > max_size) {
+        dynamic_table.first = (dynamic_table.first + 1) % table_length;
+    }
+
+    dynamic_table.table[dynamic_table.next].name = name;
+    dynamic_table.table[dynamic_table.next].value = value;
+    dynamic_table.next = (dynamic_table.next + 1) % dynamic_table.length;
+    return 0;
+}
 //finds entry in dynamic table
 //entry is a pair name-value
 header_pair *dynamic_find_entry(uint32_t index)
