@@ -908,12 +908,18 @@ typedef struct hpack_dynamic_table {
 //TODO initialize dynamic_table properly
 hpack_dynamic_table dynamic_table;
 
-dynamic_table.max_size = DYNAMIC_TABLE_MAX_SIZE; //TODO , example max size
-dynamic_table.length = (uint32_t)((dynamic_table.max_size / 32) + 1);
-dynamic_table.first = 0;
-dynamic_table.next = 0;
-header_pair table[dynamic_table.length];
-dynamic_table.table = table;
+#define DYNAMIC_TABLE_MAX_SIZE 12000
+
+int init_dynamic_table(hpack_dynamic_table *dynamic_table)
+{
+    dynamic_table->max_size = DYNAMIC_TABLE_MAX_SIZE; //TODO , example max size
+    dynamic_table->table_length = (uint32_t)((dynamic_table->max_size / 32) + 1);
+    dynamic_table->first = 0;
+    dynamic_table->next = 0;
+    header_pair table[dynamic_table->table_length];
+    dynamic_table->table = table;
+    return 0;
+}
 
 //returns the actual table length, it is the number of entries in the table_length
 uint32_t dynamic_table_length()
