@@ -224,18 +224,22 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     return str_length + encoded_string_length_size;
 }
 
+uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words){
+    uint32_t encoded_word_bit_length = 0;
+    for (uint16_t i = 0; i < str_length; i++) {
+        hpack_huffman_encode(&encoded_words[i], (uint8_t)str[i]);
+        encoded_word_bit_length += encoded_words[i].length;
+    }
+    return encoded_word_bit_length;
+}
 
 
 int encode_huffman_string(char *str, uint8_t *encoded_string)
 {
     uint32_t str_length = strlen(str); //TODO check if strlen is ok to use here
-    uint32_t encoded_word_bit_length = 0;
     huffman_encoded_word_t encoded_words[str_length];
 
-    for (uint16_t i = 0; i < str_length; i++) {
-        hpack_huffman_encode(&encoded_words[i], (uint8_t)str[i]);
-        encoded_word_bit_length += encoded_words[i].length;
-    }
+    uint32_t encoded_word_bit_length = encode_huffman_word(str,str_length, encoded_words);
 
     uint8_t encoded_word_byte_length = encoded_word_bit_length % 8 ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
 
