@@ -15,7 +15,7 @@ void test_headers(void)
 	int res;
 	char long_value[32];
 	char value[16];
-	char short_value[4];
+	char short_value[5];
 
 	header_t hlist[3];
 	// initialize headers
@@ -75,10 +75,10 @@ void test_headers(void)
 	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should equal to 3 after third write");
 
 	// Check read into shorter array
-	res = headers_get(&headers, "sad song", short_value);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "succesful read of existing header should return 0");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("make it better", short_value, "read of existing header into shorter array should truncate the value");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read");
+	res = headers_get_len(&headers, "sad song", short_value, 4);
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "succesful read_len of existing header should return 0");
+	TEST_ASSERT_EQUAL_STRING_MESSAGE("make", short_value, "read_len of existing header into shorter array should truncate the value");
+	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read_len");
 
 	// Check read into a full list
 	res = headers_get(&headers, "sad song", long_value);

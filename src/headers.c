@@ -5,9 +5,10 @@
 
 #include "headers.h"
 
+#define ENABLE_DEBUG
 #include "logging.h"
 
-void headers_init(headers_t *headers, header_t * hlist, int maxlen)
+void headers_init(headers_t *headers, header_t *hlist, int maxlen)
 {
     memset(headers, 0, sizeof(*headers));
     memset(hlist, 0, maxlen * sizeof(header_t));
@@ -52,7 +53,8 @@ int headers_set(headers_t *headers, const char *name, const char *value)
     assert(headers != NULL);
     assert(name != NULL);
     assert(value != NULL);
-    
+
+    // TODO: should we check value len or just write the
     if (strlen(name) > MAX_HEADER_NAME_LEN || strlen(value) > MAX_HEADER_VALUE_LEN) {
         errno = EINVAL;
         return -1;
@@ -88,7 +90,12 @@ int headers_set(headers_t *headers, const char *name, const char *value)
     return 0;
 }
 
-int headers_get(headers_t * headers, const char * name, char * value)
+int headers_get(headers_t *headers, const char *name, char *value)
+{
+    return headers_get_len(headers, name, value, MAX_HEADER_VALUE_LEN);
+}
+
+int headers_get_len(headers_t *headers, const char *name, char *value, size_t len)
 {
     // Assertions for debugging
     assert(headers != NULL);
@@ -104,8 +111,10 @@ int headers_get(headers_t * headers, const char * name, char * value)
         // case insensitive name comparison of headers
         if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
             // found a header with the same name
-            strncpy(value, headers->headers[i].value, MAX_HEADER_VALUE_LEN);
-            DEBUG("Read: '%s':'%s'", name, headers->headers[i].value);
+            DEBUG("Found '%s'", name);
+            strncpy(value, headers->headers[i].value, len);
+            value[len] = '\0';
+            DEBUG("Read: '%s'", value);
             return 0;
         }
     }
