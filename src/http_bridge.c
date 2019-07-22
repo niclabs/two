@@ -78,15 +78,15 @@ int http_clear_header_list(hstates_t *hs, int index, int flag)
 
         return 0;
     }
-    if (index >= hs->hd_lists.header_list_count_out && index <= HTTP2_MAX_HEADER_COUNT) {
+    if (index >= hs->hd_lists.headers_out.count && index <= HTTP2_MAX_HEADER_COUNT) {
         return 0;
     }
     if (index <= HTTP2_MAX_HEADER_COUNT && index >= 0) {
-        hs->hd_lists.header_list_count_out = index;
+        hs->hd_lists.headers_out.count = index;
         return 0;
     }
 
-    hs->hd_lists.header_list_count_out = 0;
+    hs->hd_lists.headers_out.count = 0;
 
     return 0;
 

@@ -67,17 +67,17 @@ int parse_uri(char *uri, char *path, char *query_params)
  */
 int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value)
 {
-    int i = hd_lists->header_list_count_out;
+    int i = hd_lists->headers_out.count;
 
     if (i == HTTP2_MAX_HEADER_COUNT) {
         WARN("Headers list is full");
         return -1;
     }
 
-    strcpy(hd_lists->header_list_out[i].name, name);
-    strcpy(hd_lists->header_list_out[i].value, value);
+    strcpy(hd_lists->headers_out.headers[i].name, name);
+    strcpy(hd_lists->headers_out.headers[i].value, value);
 
-    hd_lists->header_list_count_out = i + 1;
+    hd_lists->headers_out.count = i + 1;
 
     return 0;
 }
