@@ -4,6 +4,7 @@
 #include "hpack_utils.h"
 #include "hpack_huffman.h"
 #include "table.h"
+#include "headers.h"
 #include <stdio.h>
 /*
  *
@@ -766,7 +767,7 @@ int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *v
 //as it decodes one, the pointer of the headers move forwards
 //also has to update the decoded header lists
 //returns the amount of octets in which the pointer has move to read all the headers
-int decode_header_block(uint8_t *header_block, uint8_t header_block_size, table_pair_t* h_list, int * header_counter)
+int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header_t* h_list, uint8_t * header_counter)
 {
     int pointer = 0;
 

@@ -1,5 +1,5 @@
 #include "http_bridge.h"
-
+#include "headers.h"
 #ifndef TABLE_H
 #define TABLE_H
 
@@ -19,9 +19,9 @@ typedef struct TABLE_ENTRY {
 
 typedef struct HEADERS_DATA_LISTS_S {
     uint8_t header_list_count_in;
-    table_pair_t header_list_in[HTTP2_MAX_HEADER_COUNT];
+    header_t header_list_in[HTTP2_MAX_HEADER_COUNT];
     uint8_t header_list_count_out;
-    table_pair_t header_list_out[HTTP2_MAX_HEADER_COUNT];
+    header_t header_list_out[HTTP2_MAX_HEADER_COUNT];
     uint32_t data_in_size;
     uint8_t data_in[HTTP_MAX_DATA_SIZE];
     uint32_t data_out_size;

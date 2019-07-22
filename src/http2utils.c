@@ -77,7 +77,7 @@ uint32_t get_setting_value(uint32_t* settings_table, sett_param_t setting_to_get
     return settings_table[setting_to_get-1];
 }
 
-uint32_t get_header_list_size(table_pair_t* header_list, uint8_t header_count){
+uint32_t get_header_list_size(header_t* header_list, uint8_t header_count){
     uint32_t header_list_size = 0;
     for(uint8_t i = 0; i< header_count; i++){
         header_list_size += strlen(header_list[i].name);
