@@ -49,7 +49,7 @@ int main(int argc, char **argv)
         return 1;
     }
     else if (status == 200) {
-        INFO("Received %u bytes", response_size);
+        INFO("Received %d bytes", (int)response_size);
         for (uint32_t i = 0; i < response_size; i++) {
             PRINTF("%c", (char)response[i]);
         }
