@@ -37,6 +37,8 @@ FAIL_COUNT = $(words $(FAIL))
 IGNORE = $(shell grep -s IGNORE $(OBJDIR)/*.txt)
 IGNORE_COUNT = $(words $(IGNORE))
 
+# Include Makefile.extra if it exists
+-include $(BASEDIR)/tests/Makefile.extra
 
 test: $(RESULTS)
 	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
