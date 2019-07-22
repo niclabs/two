@@ -25,10 +25,10 @@ typedef struct {
     int maxlen;
 } headers_t;
 
-int headers_init(headers_t * headers, header_t * hlist, int maxlen);
+void headers_init(headers_t * headers, header_t * hlist, int maxlen);
 int headers_add(headers_t * headers, const char * name, const char * value);
 int headers_set(headers_t * headers, const char * name, const char * value);
 int headers_get(header_t * headers, const char * name, char * value);
-int headers_count(header_t * headers);
+int headers_count(headers_t * headers);
 
 #endif
