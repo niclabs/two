@@ -1,22 +1,22 @@
 #ifndef HEADERS_H
 #define HEADERS_H
 
-#ifndef CONF_MAX_HEADER_NAME_SIZE
-#define MAX_HEADER_NAME_SIZE (32)
+#ifndef CONF_MAX_HEADER_NAME_LEN
+#define MAX_HEADER_NAME_LEN (16)
 #else
-#define MAX_HEADER_NAME_SIZE (CONF_MAX_HEADER_NAME_SIZE)
+#define MAX_HEADER_NAME_LEN (CONF_MAX_HEADER_NAME_LEN)
 #endif
 
-#ifndef CONF_MAX_HEADER_VALUE_SIZE
-#define MAX_HEADER_VALUE_SIZE (32)
+#ifndef CONF_MAX_HEADER_VALUE_LEN
+#define MAX_HEADER_VALUE_LEN (32)
 #else
-#define MAX_HEADER_VALUE_SIZE (CONF_MAX_HEADER_VALUE_SIZE)
+#define MAX_HEADER_VALUE_LEN (CONF_MAX_HEADER_VALUE_LEN)
 #endif
 
 
 typedef struct {
-    char name[MAX_HEADER_NAME_SIZE];
-    char value[MAX_HEADER_VALUE_SIZE];
+    char name[MAX_HEADER_NAME_LEN + 1];
+    char value[MAX_HEADER_VALUE_LEN + 1];
 } header_t;
 
 typedef struct {
