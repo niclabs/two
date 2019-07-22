@@ -914,6 +914,17 @@ dynamic_table.first = 0;
 dynamic_table.next = 0;
 header_pair table[dynamic_table.length];
 dynamic_table.table = table;
+
+//returns the actual table length, it is the number of entries in the table_length
+uint32_t dynamic_table_length()
+{
+    uint32_t table_length_used = dynamic_table.first < dynamic_table.next ?
+                                 (dynamic_table.next - dynamic_table.first) % dynamic_table.length :
+                                 (dynamic_table.table_length - dynamic_table.first + dynamic_table.next) % dynamic_table.table_length;
+
+    return table_length_used;
+}
+
 //finds entry in dynamic table
 //entry is a pair name-value
 header_pair *dynamic_find_entry(uint32_t index)
