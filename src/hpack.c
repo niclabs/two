@@ -965,16 +965,18 @@ int dynamic_table_add_entry(char *name, char *value)
     return 0;
 }
 
-int dynamic_table_resize(uint32_t new_max_size)
-{
-    if (new_max_size > DYNAMIC_TABLE_MAX_SIZE) {
-        ERROR("Resize operation exceeds the maximum size set by the protocol");
-        return -1;
-    }
+//int dynamic_table_resize(uint32_t new_max_size)
+//{
+//    if (new_max_size > DYNAMIC_TABLE_MAX_SIZE) {
+//        ERROR("Resize operation exceeds the maximum size set by the protocol");
+//        return -1;
+//    }
 
-    uint32_t new_table_length = (uint32_t)(new_max_size / 32) + 1;
+//uint32_t new_table_length = (uint32_t)(new_max_size / 32) + 1;
+//    ERROR("INCOMPLETE");
+//    return -1;
 
-}
+//}
 
 
 
