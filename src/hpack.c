@@ -40,7 +40,7 @@ int find_entry(uint32_t index, char *name, char *value);
 /*
  * Function: Writes bits from 'code' (the representation in huffman)
  * from an array of huffman_encoded_word_t to a buffer
- * using exactly the sum of all lengths of encoded words.
+ * using exactly the sum of all lengths of encoded words bits.
  * Input:
  * - *encoded_words: Array of encoded_words to compress
  * - encoded_words_size: Size of encoded_words array
@@ -56,9 +56,12 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
         sum += encoded_words[i].length;
     }
     uint8_t required_bytes = sum % 8 ? (sum / 8) + 1 : sum / 8;
+    
     if (required_bytes > buffer_size) {
+        ERROR("Buffer size is less than the required amount in pack_encoded_words_to_bytes");
         return -1;
     }
+
     int cur = 0;
     int byte_offset = 0;
     int bit_offset = 0;
@@ -84,6 +87,7 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
     }
     return 0;
 }
+
 /*
  * Function: Reads bits from a buffer of bytes (max number of bits it can read is 32).
  * Input:
@@ -214,37 +218,36 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     }
     return str_length + encoded_string_length_size;
 }
-/*
-   int encode_huffman_word(char* str, uint8_t* encoded_word){
-    (void) str;
-    (void) encoded_word;
-    ERROR("Not implemented yet");
-    return -1;
-   }
- */
 
-/*
-   int encode_huffman_string(char* str, uint8_t* encoded_string){
+void encode_huffman_word(char *str, huffman_encoded_word_t *encoded_word)
+{
+    uint8_t sym = (uint8_t)(*str);
 
+    hpack_huffman_encode(&huffman_tree, encoded_word, sym);
+}
+
+
+int encode_huffman_string(char *str, uint8_t *encoded_string)
+{
     uint8_t encoded_word[HTTP2_MAX_HBF_BUFFER];
-    int encoded_word_length = encode_huffman_word(str, encoded_word); //save de encoded word in "encoded_word" and returns the length of the encoded word
+    int encoded_word_length = encode_huffman_word(str, encoded_word);
 
-    if(encoded_word_length>=HTTP2_MAX_HBF_BUFFER){
+    if (encoded_word_length >= HTTP2_MAX_HBF_BUFFER) {
         ERROR("word too big, does not fit on the encoded_word_buffer");
         return -1;
     }
-    int encoded_word_length_size = encode_integer(encoded_word_length,7, encoded_string);//encodes the length of the encoded word, adn returns the size of the encoding of the length of the encoded word
+    int encoded_word_length_size = encode_integer(encoded_word_length, 7, encoded_string);  //encodes the length of the encoded word, adn returns the size of the encoding of the length of the encoded word
 
-    encoded_string[0] |= (uint8_t)128;//check this
+    encoded_string[0] |= (uint8_t)128;                                                      //check this
 
-    int new_size = encoded_word_length+encoded_word_length_size;
+    int new_size = encoded_word_length + encoded_word_length_size;
 
-    for(int i = 0; i < encoded_word_length; i++){
-        encoded_string[i+encoded_word_length_size] = encoded_word[i];
+    for (int i = 0; i < encoded_word_length; i++) {
+        encoded_string[i + encoded_word_length_size] = encoded_word[i];
     }
     return new_size;
-   };
- */
+}
+
 
 /*
    int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
