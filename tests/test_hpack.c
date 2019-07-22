@@ -153,7 +153,7 @@ void test_decode_header_block_literal_never_indexed(void)
     char *expected_name = "hola";
     char *expected_value = "val";
 
-    headers_data_lists_t h_list;
+    table_pair_t h_list;
 
     memset(&h_list, 0, sizeof(headers_data_lists_t));
     int rc = decode_header_block(header_block_name_literal, header_block_size, &h_list);
