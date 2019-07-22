@@ -925,7 +925,7 @@ int init_dynamic_table(hpack_dynamic_table *dynamic_table)
 uint32_t dynamic_table_length()
 {
     uint32_t table_length_used = dynamic_table.first < dynamic_table.next ?
-                                 (dynamic_table.next - dynamic_table.first) % dynamic_table.length :
+                                 (dynamic_table.next - dynamic_table.first) % dynamic_table.table_length :
                                  (dynamic_table.table_length - dynamic_table.first + dynamic_table.next) % dynamic_table.table_length;
 
     return table_length_used;
@@ -936,10 +936,10 @@ uint32_t dynamic_table_length()
 uint32_t dynamic_table_size()
 {
     uint32_t total_size = 0;
-    uint32_t table_length = length();
+    uint32_t table_length = dynamic_table_length();
 
     for (uint32_t i = 0; i < table_length; i++) {
-        total_size += header_pair_size(table[(i + dynamic_table->first) % table_length]);
+        total_size += header_pair_size(dynamic_table.table[(i + dynamic_table.first) % table_length]);
     }
     return total_size;
 }
@@ -955,13 +955,13 @@ int dynamic_table_add_entry(char *name, char *value)
         return -1; //entry's size exceeds the size of table
     }
 
-    while (entry_size + dynamic_table_size() > max_size) {
-        dynamic_table.first = (dynamic_table.first + 1) % table_length;
+    while (entry_size + dynamic_table_size() > dynamic_table.max_size) {
+        dynamic_table.first = (dynamic_table.first + 1) % dynamic_table.table_length;
     }
 
     dynamic_table.table[dynamic_table.next].name = name;
     dynamic_table.table[dynamic_table.next].value = value;
-    dynamic_table.next = (dynamic_table.next + 1) % dynamic_table.length;
+    dynamic_table.next = (dynamic_table.next + 1) % dynamic_table.table_length;
     return 0;
 }
 
@@ -980,7 +980,7 @@ int dynamic_table_resize(uint32_t new_max_size)
 
 //finds entry in dynamic table
 //entry is a pair name-value
-header_pair *dynamic_find_entry(uint32_t index)
+header_pair dynamic_find_entry(uint32_t index)
 {
     uint32_t table_index = (dynamic_table.next + dynamic_table.table_length - (index - 61)) % dynamic_table.table_length;
 
@@ -996,9 +996,9 @@ int find_entry(uint32_t index, char *name, char *value)
     const char *table_value;
 
     if (index >= FIRST_INDEX_DYNAMIC) {
-        header_pair *entry = dynamic_find_entry(index);
-        table_name = entry->name;
-        table_value = entry->value;
+        header_pair entry = dynamic_find_entry(index);
+        table_name = entry.name;
+        table_value = entry.value;
     }
     else {
         index--; //because static table begins at index 1
