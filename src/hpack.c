@@ -33,6 +33,10 @@
    }
  */
 
+//finds an entry (pair name-value) in either the static or dynamic table_length
+//returns -1 in case of Error
+int find_entry(uint32_t index, char *name, char *value);
+
 /*
  * Function: Reads bits from a buffer of bytes (max number of bits it can read is 32).
  * Input:
@@ -43,11 +47,6 @@
  * - *result: Pointer to variable to store the result
  * output: 0 if the bits are read correctly and stores it in *result; -1 if it fails
  */
-
-//finds an entry (pair name-value) in either the static or dynamic table_length
-//returns -1 in case of Error
-int find_entry(uint32_t index, char *name, char *value);
-
 int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result)
 {
     uint32_t byte_offset = current_bit_pointer / 8;
