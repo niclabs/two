@@ -432,7 +432,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
           change_stream_state_end_stream_flag(st, 0); //0 is for receiving
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(st->hd_lists.headers_in.headers, st->hd_lists.headers_in.count);
+      uint32_t header_list_size = get_header_list_size(&st->hd_lists.headers_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         ERROR("Header list size greater than max alloweed. Send HTTP 431");
@@ -517,7 +517,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(st->hd_lists.headers_in.headers, st->hd_lists.headers_in.count);
+      uint32_t header_list_size = get_header_list_size(&st->hd_lists.headers_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         WARN("Header list size greater than max alloweed. Send HTTP 431");
@@ -1199,7 +1199,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     return -1;
   }
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-  int size = compress_headers(st->hd_lists.headers_out, encoded_bytes);
+  int size = compress_headers(&st->hd_lists.headers_out, encoded_bytes);
   if(size < 0){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     return -1;
