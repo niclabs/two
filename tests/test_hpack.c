@@ -403,7 +403,7 @@ void test_log128(void)
 
 }
 
-void test_pack_encoded_words_to_bytes(void)
+void test_pack_encoded_words_to_bytes_test1(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*www.example.com*/
         { .code = 0x78, .length = 7 },
@@ -423,7 +423,8 @@ void test_pack_encoded_words_to_bytes(void)
         { .code = 0x29, .length = 6 }
     };
     uint8_t buffer[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    uint8_t expected_result[] = { 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0x80 };
+    uint8_t expected_result[] = { 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff};
+
     int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 15, buffer, 12);
 
     TEST_ASSERT_EQUAL(0, rs);
@@ -432,6 +433,58 @@ void test_pack_encoded_words_to_bytes(void)
     }
 }
 
+
+void test_pack_encoded_words_to_bytes_test2(void)
+{
+    huffman_encoded_word_t encoded_buffer[] = {/*no-cache*/
+            { .code = 0x2a, .length = 6 },
+            { .code = 0x7 , .length = 5 },
+            { .code = 0x16, .length = 6 },
+            { .code = 0x4, .length = 5 },
+            { .code = 0x3, .length = 5 },
+            { .code = 0x4, .length = 5 },
+            { .code = 0x27, .length = 6 },
+            { .code = 0x5, .length = 5 },
+    };
+    uint8_t buffer[6] = { 0, 0, 0, 0, 0, 0};
+    //a8eb 1064 9cbf
+    uint8_t expected_result[] = { 0xa8, 0xeb, 0x10, 0x64, 0x9c, 0xbf};
+
+    int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 8, buffer, 6);
+
+    TEST_ASSERT_EQUAL(0, rs);
+    for (int i = 0; i < 6; i++) {
+        TEST_ASSERT_EQUAL(expected_result[i], buffer[i]);
+    }
+}
+
+void test_pack_encoded_words_to_bytes_test3(void)
+{
+    huffman_encoded_word_t encoded_buffer[] = {/*custom-value*/
+            { .code = 0x4, .length = 5 },
+            { .code = 0x2d , .length = 6 },
+            { .code = 0x8 , .length = 5 },
+            { .code = 0x9 , .length = 5 },
+            { .code = 0x7 , .length = 5 },
+            { .code = 0x29 , .length = 6 },
+            { .code = 0x16, .length = 6 },/*-*/
+            { .code = 0x77, .length = 7 },
+            { .code = 0x3, .length = 5 },
+            { .code = 0x28, .length = 6 },
+            { .code = 0x2d, .length = 6 },
+            { .code = 0x5, .length = 5 },
+    };
+    uint8_t buffer[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    //25a8 49e9 5bb8 e8b4 bf
+    uint8_t expected_result[] = { 0x25, 0xa8, 0x49, 0xe9, 0x5b, 0xb8, 0xe8, 0xb4, 0xbf};
+
+    int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 12, buffer, 9);
+
+    TEST_ASSERT_EQUAL(0, rs);
+    for (int i = 0; i < 9; i++) {
+        TEST_ASSERT_EQUAL(expected_result[i], buffer[i]);
+    }
+}
 void test_read_bits_from_bytes(void)
 {
     uint8_t buffer[] = { 0xD1, 0xC5, 0x6E };
@@ -548,7 +601,9 @@ int main(void)
 
     UNIT_TEST(test_log128);
     UNIT_TEST(test_read_bits_from_bytes);
-    UNIT_TEST(test_pack_encoded_words_to_bytes);
+    UNIT_TEST(test_pack_encoded_words_to_bytes_test1);
+    UNIT_TEST(test_pack_encoded_words_to_bytes_test2);
+    UNIT_TEST(test_pack_encoded_words_to_bytes_test3);
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
 

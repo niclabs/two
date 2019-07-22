@@ -86,6 +86,10 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
             bit_offset = cur - 8 * byte_offset;
         }
     }
+    if(bit_offset > 0) {
+        uint8_t padding = (1 << (8 - bit_offset))-1;
+        buffer[byte_offset] |= padding;
+    }
     return 0;
 }
 
