@@ -925,6 +925,18 @@ uint32_t dynamic_table_length()
     return table_length_used;
 }
 
+//returns the size of the table
+//this is the sum of each header pair's size
+uint32_t dynamic_table_size()
+{
+    uint32_t total_size = 0;
+    uint32_t table_length = length();
+
+    for (uint32_t i = 0; i < table_length; i++) {
+        total_size += header_pair_size(table[(i + dynamic_table->first) % table_length]);
+    }
+    return total_size;
+}
 //finds entry in dynamic table
 //entry is a pair name-value
 header_pair *dynamic_find_entry(uint32_t index)
