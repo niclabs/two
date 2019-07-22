@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#define HUFFMAN_TABLE_SIZE 257
+#define HUFFMAN_TABLE_SIZE 256
 #define NUMBER_OF_CODE_LENGTHS 21
 #define INCLUDE_HUFFMAN_LENGTH_TABLE 1
 
@@ -26,7 +26,7 @@ typedef struct {
     const uint8_t code_length[NUMBER_OF_CODE_LENGTHS];
 } huffman_tree_t;
 
-int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint16_t sym);
+int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint8_t sym);
 
 /*uint8_t huffman_decode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *encoded)*/
 

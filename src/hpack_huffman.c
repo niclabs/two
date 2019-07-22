@@ -260,8 +260,7 @@ const huffman_tree_t huffman_tree = {
         0x7ffffeeu,
         0x7ffffefu,
         0x7fffff0u,
-        0x3ffffeeu,
-        0x3fffffffu
+        0x3ffffeeu
     },
     .symbols = {
         /*Codes of length 5*/
@@ -541,7 +540,6 @@ const huffman_tree_t huffman_tree = {
         10,
         13,
         22,
-        256
     },
 #ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
     .huffman_length = {
@@ -800,8 +798,7 @@ const huffman_tree_t huffman_tree = {
         27,
         27,
         27,
-        26,
-        30
+        26
     },
 #endif
     .sR = {
@@ -859,14 +856,12 @@ const huffman_tree_t huffman_tree = {
  * - sym: Symbol to encode
  * Output: 0 if it can encode the given symbol, -1 otherwise
  */
-int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint16_t sym)
+int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint8_t sym)
 {
     result->code = huffman_tree->codes[sym];
 #ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
-    if (sym < HUFFMAN_TABLE_SIZE) {
-        result->length = huffman_tree->huffman_length[sym];
-        return 0;
-    }
+    result->length = huffman_tree->huffman_length[sym];
+    return 0;
 #else
     for (int i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
         int symbol_index = huffman_tree->sR[i];
@@ -879,6 +874,6 @@ int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_
             }
         }
     }
-#endif
     return -1;
+#endif
 }

@@ -75,10 +75,10 @@ void test_hpack_huffman_encode_random(void){
 
     /*Test last value*/
 
-    rs = hpack_huffman_encode(&huffman_tree, &result, 256);
+    /*rs = hpack_huffman_encode(&huffman_tree, &result, 256);
     TEST_ASSERT_EQUAL(0x3fffffff, result.code);
     TEST_ASSERT_EQUAL(30, result.length);
-    TEST_ASSERT_EQUAL(0, rs);
+    TEST_ASSERT_EQUAL(0, rs);*/
 
 }
 
@@ -101,6 +101,7 @@ void test_hpack_huffman_encode_unique(void) {
 /*Test to check if encode return the same value twice*/
 void test_hpack_huffman_encode_twice(void) {
     int8_t rs = -1;
+    (void)rs;
     huffman_encoded_word_t result;
     huffman_encoded_word_t result2;
 
@@ -112,6 +113,7 @@ void test_hpack_huffman_encode_twice(void) {
         TEST_ASSERT_EQUAL(result.length, result2.length);
     }
 }
+
 int main(void)
 {
     UNITY_BEGIN();
