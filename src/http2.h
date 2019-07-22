@@ -4,6 +4,8 @@
 
 
 /*Default settings values*/
+// TODO: use more descriptive names
+// i.e. DEFAULT_HEADER_TABLE_SIZE instead of DEFAULT_HTS
 #define DEFAULT_HTS 4096
 #define DEFAULT_EP 1
 #define DEFAULT_MCS 99999
