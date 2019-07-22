@@ -887,6 +887,13 @@ typedef struct hpack_header_pair {
     char *value;
 } header_pair;
 
+//return the size of a header HeaderPair
+//the size is the sum of octets used for its encoding and 32;
+uint32_t header_pair_size(header_pair h)
+{
+    return (uint32_t)(strlen(h.name) + strlen(h.value) + 32);
+}
+
 //typedefs for dinamic
 //TODO check size of struct
 typedef struct hpack_dynamic_table {
