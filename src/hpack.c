@@ -881,11 +881,11 @@ const char *const static_header_name_table[] = { name_0, name_1, name_2, name_3,
 const char *const static_header_value_table[] = { value_0, value_1, value_2, value_3, value_4, value_5, value_6, value_7, value_8, value_9, value_10, value_11, value_12, value_13, value_14, value_15, value_16, value_17, value_18, value_19, value_20, value_21, value_22, value_23, value_24, value_25, value_26, value_27, value_28, value_29, value_30, value_31, value_32, value_33, value_34, value_35, value_36, value_37, value_38, value_39, value_40, value_41, value_42, value_43, value_44, value_45, value_46, value_47, value_48, value_49, value_50, value_51, value_52, value_53, value_54, value_55, value_56, value_57, value_58, value_59, value_60 };
 
 
-//typedef for HeadedPair
-typedef struct hpack_headed_pair {
+//typedef for HeaderPair
+typedef struct hpack_header_pair {
     char *name;
     char *value;
-} headed_pair;
+} header_pair;
 
 //typedefs for dinamic
 //TODO check size of struct
@@ -903,7 +903,7 @@ hpack_dynamic_table *dynamic_table;
 
 //finds entry in dynamic table
 //entry is a pair name-value
-headed_pair *dynamic_find_entry(uint32_t index)
+header_pair *dynamic_find_entry(uint32_t index)
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
@@ -919,7 +919,7 @@ int find_entry(uint32_t index, char *name, char *value)
     const char *table_value;
 
     if (index >= FIRST_INDEX_DYNAMIC) {
-        headed_pair *entry = dynamic_find_entry(index);
+        header_pair *entry = dynamic_find_entry(index);
         table_name = entry->name;
         table_value = entry->value;
     }
