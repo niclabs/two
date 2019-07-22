@@ -897,24 +897,24 @@ uint32_t header_pair_size(header_pair h)
 //typedefs for dinamic
 //TODO check size of struct
 typedef struct hpack_dynamic_table {
-    int max_size;
-    int first;
-    int next;
-    int table_length;
-    headed_pair **table;
+    uint32_t max_size;
+    uint32_t first;
+    uint32_t next;
+    uint32_t table_length;
+    header_pair *table;
 } hpack_dynamic_table;
 
 //dynamic_table functions
 //TODO initialize dynamic_table properly
-hpack_dynamic_table *dynamic_table;
+hpack_dynamic_table dynamic_table;
 
 //finds entry in dynamic table
 //entry is a pair name-value
 header_pair *dynamic_find_entry(uint32_t index)
 {
-    uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
+    uint32_t table_index = (dynamic_table.next + dynamic_table.table_length - (index - 61)) % dynamic_table.table_length;
 
-    return dynamic_table->table[table_index];
+    return dynamic_table.table[table_index];
 }
 
 //general method to find an entry in the table
