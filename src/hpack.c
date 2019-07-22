@@ -958,6 +958,20 @@ int dynamic_table_add_entry(char *name, char *value)
     dynamic_table.next = (dynamic_table.next + 1) % dynamic_table.length;
     return 0;
 }
+
+int dynamic_table_resize(uint32_t new_max_size)
+{
+    if (new_max_size > DYNAMIC_TABLE_MAX_SIZE) {
+        ERROR("Resize operation exceeds the maximum size set by the protocol");
+        return -1;
+    }
+
+    uint32_t new_table_length = (uint32_t)(new_max_size / 32) + 1;
+
+}
+
+
+
 //finds entry in dynamic table
 //entry is a pair name-value
 header_pair *dynamic_find_entry(uint32_t index)
