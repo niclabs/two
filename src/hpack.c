@@ -56,7 +56,7 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
         sum += encoded_words[i].length;
     }
     uint8_t required_bytes = sum % 8 ? (sum / 8) + 1 : sum / 8;
-    
+
     if (required_bytes > buffer_size) {
         ERROR("Buffer size is less than the required amount in pack_encoded_words_to_bytes");
         return -1;
@@ -229,23 +229,31 @@ void encode_huffman_word(char *str, huffman_encoded_word_t *encoded_word)
 
 int encode_huffman_string(char *str, uint8_t *encoded_string)
 {
-    uint8_t encoded_word[HTTP2_MAX_HBF_BUFFER];
-    int encoded_word_length = encode_huffman_word(str, encoded_word);
+    uint32_t str_length = strlen(str); //TODO check if strlen is ok to use here
+    uint32_t encoded_word_bit_length = 0;
+    huffman_encoded_word_t encoded_words[str_length];
 
-    if (encoded_word_length >= HTTP2_MAX_HBF_BUFFER) {
-        ERROR("word too big, does not fit on the encoded_word_buffer");
+    for (int i = 0; i < str_length; i++) {
+        encode_huffman_word(str[i], &encoded_words[i]);
+        encoded_word_bit_length += encoded_words[i].length;
+    }
+
+    uint8_t encoded_word_byte_length = encoded_word_bit_length % 8 ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
+
+    if (encoded_word_byte_length  >= HTTP2_MAX_HBF_BUFFER) {
+        ERROR("word too big, does not fit on the buffer_encoded");
         return -1;
     }
-    int encoded_word_length_size = encode_integer(encoded_word_length, 7, encoded_string);  //encodes the length of the encoded word, adn returns the size of the encoding of the length of the encoded word
+    uint8_t buffer_encoded[encoded_word_byte_length];
+    pack_encoded_words_to_bytes(encoded_words, str_length, buffer_encoded, encoded_word_byte_length);
 
-    encoded_string[0] |= (uint8_t)128;                                                      //check this
-
-    int new_size = encoded_word_length + encoded_word_length_size;
+    int encoded_word_length_size = encode_integer(encoded_word_byte_length, 7, encoded_string);
 
     for (int i = 0; i < encoded_word_length; i++) {
-        encoded_string[i + encoded_word_length_size] = encoded_word[i];
+        encoded_string[i + encoded_word_length_size] = buffer_encoded[i];
     }
-    return new_size;
+
+    return encoded_word_byte_length + encoded_word_length_size;
 }
 
 
