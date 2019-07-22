@@ -2,6 +2,7 @@
 #include "logging.h"
 
 #include "hpack_utils.h"
+#include "hpack_huffman.h"
 #include "table.h"
 #include <stdio.h>
 /*
@@ -219,12 +220,6 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     return str_length + encoded_string_length_size;
 }
 
-void encode_huffman_word(char *str, huffman_encoded_word_t *encoded_word)
-{
-    uint8_t sym = (uint8_t)(*str);
-
-    hpack_huffman_encode(&huffman_tree, encoded_word, sym);
-}
 
 
 int encode_huffman_string(char *str, uint8_t *encoded_string)
@@ -233,8 +228,8 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
     uint32_t encoded_word_bit_length = 0;
     huffman_encoded_word_t encoded_words[str_length];
 
-    for (int i = 0; i < str_length; i++) {
-        encode_huffman_word(str[i], &encoded_words[i]);
+    for (uint16_t i = 0; i < str_length; i++) {
+        hpack_huffman_encode(&encoded_words[i], (uint8_t)str[i]);
         encoded_word_bit_length += encoded_words[i].length;
     }
 
@@ -244,12 +239,13 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
         ERROR("word too big, does not fit on the buffer_encoded");
         return -1;
     }
+
     uint8_t buffer_encoded[encoded_word_byte_length];
     pack_encoded_words_to_bytes(encoded_words, str_length, buffer_encoded, encoded_word_byte_length);
 
     int encoded_word_length_size = encode_integer(encoded_word_byte_length, 7, encoded_string);
 
-    for (int i = 0; i < encoded_word_length; i++) {
+    for (int i = 0; i < encoded_word_byte_length; i++) {
         encoded_string[i + encoded_word_length_size] = buffer_encoded[i];
     }
 

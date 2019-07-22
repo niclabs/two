@@ -5,6 +5,7 @@ SOURCES = http.c \
           http2utils.c \
           frames.c \
           hpack.c \
+          hpack_huffman.c \
           hpack_utils.c \
           sock.c \
           cbuf.c \

@@ -3,7 +3,7 @@
 //
 #include "hpack_huffman.h"
 
-const huffman_tree_t huffman_tree = {
+static const huffman_tree_t huffman_tree = {
     .codes = {
         0x1ff8u,
         0x7fffd8u,
@@ -856,20 +856,20 @@ const huffman_tree_t huffman_tree = {
  * - sym: Symbol to encode
  * Output: 0 if it can encode the given symbol, -1 otherwise
  */
-int8_t hpack_huffman_encode(const huffman_tree_t *huffman_tree, huffman_encoded_word_t *result, uint8_t sym)
+int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
 {
-    result->code = huffman_tree->codes[sym];
+    result->code = huffman_tree.codes[sym];
 #ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
-    result->length = huffman_tree->huffman_length[sym];
+    result->length = huffman_tree.huffman_length[sym];
     return 0;
 #else
     for (int i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
-        int symbol_index = huffman_tree->sR[i];
-        int top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree->sR[i + 1]) : HUFFMAN_TABLE_SIZE;
+        int symbol_index = huffman_tree.sR[i];
+        int top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[i + 1]) : HUFFMAN_TABLE_SIZE;
 
         for (int j = symbol_index; j < top; j++) {
-            if (huffman_tree->symbols[j] == sym) {
-                result->length = huffman_tree->code_length[i];
+            if (huffman_tree.symbols[j] == sym) {
+                result->length = huffman_tree.code_length[i];
                 return 0;
             }
         }

@@ -3,12 +3,14 @@
 #include "fff.h"
 #include "logging.h"
 #include "hpack.h"
+#include "hpack_huffman.h"
 #include "table.h"
 
 void tearDown(void);
 
 extern int log128(uint32_t x);
 extern int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result);
+extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern uint8_t find_prefix_size(hpack_preamble_t octet);
@@ -17,6 +19,7 @@ extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_int
 
 
 DEFINE_FFF_GLOBALS;
+FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t*, uint8_t);
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t*);
@@ -35,8 +38,9 @@ DEFINE_FFF_GLOBALS;
  */
 
 /* List of fakes used by this unit tester */
-/*#define FFF_FAKES_LIST(FAKE)        \
-    FAKE(uint32_24_to_byte_array)   \
+#define FFF_FAKES_LIST(FAKE)        \
+    FAKE(hpack_huffman_encode)
+/*    FAKE(uint32_24_to_byte_array)   \
     FAKE(uint32_31_to_byte_array)   \
     FAKE(uint32_to_byte_array)      \
     FAKE(uint16_to_byte_array)      \
@@ -53,7 +57,7 @@ DEFINE_FFF_GLOBALS;
 void setUp(void)
 {
     /* Register resets */
-    //FFF_FAKES_LIST(RESET_FAKE);
+    FFF_FAKES_LIST(RESET_FAKE);
 
     /* reset common FFF internal structures */
     FFF_RESET_HISTORY();
@@ -399,6 +403,35 @@ void test_log128(void)
 
 }
 
+void test_pack_encoded_words_to_bytes(void)
+{
+    huffman_encoded_word_t encoded_buffer[] = {/*www.example.com*/
+        { .code = 0x78, .length = 7 },
+        { .code = 0x78, .length = 7 },
+        { .code = 0x78, .length = 7 },
+        { .code = 0x17, .length = 6 },
+        { .code = 0x5, .length = 5 },
+        { .code = 0x79, .length = 7 },
+        { .code = 0x3, .length = 5 },
+        { .code = 0x29, .length = 6 },
+        { .code = 0x2b, .length = 6 },
+        { .code = 0x28, .length = 6 },
+        { .code = 0x5, .length = 5 },
+        { .code = 0x17, .length = 6 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x7, .length = 5 },
+        { .code = 0x29, .length = 6 }
+    };
+    uint8_t buffer[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    uint8_t expected_result[] = { 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0x80 };
+    int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 15, buffer, 12);
+
+    TEST_ASSERT_EQUAL(0, rs);
+    for (int i = 0; i < 12; i++) {
+        TEST_ASSERT_EQUAL(expected_result[i], buffer[i]);
+    }
+}
+
 void test_read_bits_from_bytes(void)
 {
     uint8_t buffer[] = { 0xD1, 0xC5, 0x6E };
@@ -515,6 +548,7 @@ int main(void)
 
     UNIT_TEST(test_log128);
     UNIT_TEST(test_read_bits_from_bytes);
+    UNIT_TEST(test_pack_encoded_words_to_bytes);
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
 

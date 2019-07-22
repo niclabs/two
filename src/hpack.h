@@ -9,7 +9,6 @@
 #include <stdint.h>
 #include "logging.h"
 #include "table.h"
-#include "hpack_huffman.h"
 
 
 typedef enum{
