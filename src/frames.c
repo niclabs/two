@@ -399,12 +399,12 @@ int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_pay
 * Input: table of headers, size of the table, array to save the bytes
 * Output: compressed headers size or -1 if error
 */
-int compress_headers(header_t* headers, uint8_t headers_count, uint8_t* compressed_headers){
+int compress_headers(headers_t* headers_out, uint8_t* compressed_headers){
     //TODO implement default compression
     //now it is without compression
     int pointer = 0;
-    for(uint8_t i = 0; i<headers_count; i++){
-        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0,headers[i].value, 0, headers[i].name,  0, compressed_headers+pointer);
+    for(uint8_t i = 0; i<headers_out->count; i++){
+        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0,headers_out->headers[i].value, 0, headers_out->headers[i].name,  0, compressed_headers+pointer);
         pointer += rc;
     }
     return pointer;

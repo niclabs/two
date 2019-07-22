@@ -164,7 +164,7 @@ int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_pay
 //TODO
 
 /*Headers compression*/
-int compress_headers(header_t* headers, uint8_t headers_count, uint8_t* compressed_headers);
+int compress_headers(headers_t* headers_out);
 //int compress_headers_with_strategy(char* headers, int headers_size, uint8_t* compressed_headers, int compressed_headers_size, uint8_t bool_table_compression, uint8_t bool_huffman_compression);
 
 

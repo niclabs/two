@@ -1199,7 +1199,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     return -1;
   }
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-  int size = compress_headers(st->hd_lists.headers_out.headers, st->hd_lists.headers_out.count , encoded_bytes);
+  int size = compress_headers(st->hd_lists.headers_out, encoded_bytes);
   if(size < 0){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     return -1;
