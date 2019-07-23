@@ -562,7 +562,15 @@ hpack_preamble_t get_preamble(uint8_t preamble)
     return -1;
 }
 
-
+/*
+ * Function: decode_integer
+ * Decodes an integer using prefix bits for first byte
+ * Input:
+ *      -> *bytes: Bytes storing encoded integer
+ *      -> prefix: size of prefix used to encode integer
+ * Output:
+ *      returns the decoded integer if succesful, -1 otherwise
+ */
 uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
 {
     int pointer = 0;
