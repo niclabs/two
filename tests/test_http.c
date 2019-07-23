@@ -347,7 +347,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
 void test_http_register_resource_success(void)
 {
     hstates_t hs;
-
+    hs.resource_list_size = 0;
 
     int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
     TEST_ASSERT_EQUAL(0, res);
