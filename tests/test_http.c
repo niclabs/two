@@ -135,7 +135,7 @@ void test_http_server_create_success(void)
 
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
-
+    FFF_RESET_HISTORY();
     int is = http_server_create(&hs, 12);
 
     TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
