@@ -263,19 +263,6 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     }
     return str_length + encoded_string_length_size;
 }
-int pack_non_huffman_string_and_size(char *string, uint8_t *encoded_buffer)
-{
-    int pointer = 0;
-    int string_size = strlen(string);
-    int encoded_size = encode_integer(string_size, 7, encoded_buffer + pointer);
-
-    pointer += encoded_size;
-    for (int i = 0; i < string_size; i++) {
-        encoded_buffer[pointer + i] = string[i];
-    }
-    pointer += string_size;
-    return pointer;
-}
 
 /*
  * Function: encode_huffman_word
@@ -509,14 +496,14 @@ int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffma
         //pointer += pack_huffman_string_and_size(name_string,encoded_buffer+pointer);
     }
     else {
-        pointer += pack_non_huffman_string_and_size(name_string, encoded_buffer + pointer);
+        pointer += encode_non_huffman_string(name_string, encoded_buffer + pointer);
     }
     if (value_huffman_bool != 0) {
         //TODO
         //pointer += pack_huffman_string_and_size(value_string,encoded_buffer+pointer);
     }
     else {
-        pointer += pack_non_huffman_string_and_size(value_string, encoded_buffer + pointer);
+        pointer += encode_non_huffman_string(value_string, encoded_buffer + pointer);
     }
     return pointer;
 }
