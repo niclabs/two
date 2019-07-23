@@ -867,7 +867,7 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
 #else
     for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
         uint8_t symbol_index = huffman_tree.sR[i];
-        uint8_t top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[i + 1]) : HUFFMAN_TABLE_SIZE;
+        uint16_t top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[i + 1]) : HUFFMAN_TABLE_SIZE;
 
         for (uint8_t j = symbol_index; j < top; j++) {
             if (huffman_tree.symbols[j] == sym) {
@@ -891,15 +891,16 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
  */
 int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t* sym){
     uint8_t index = 0;
-
     for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
         if (huffman_tree.code_length[i] == encoded->length) {
             index = i;
             break;
         }
     }
+
     uint8_t symbol_index = huffman_tree.sR[index];
-    uint8_t top = index + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[index + 1]) : HUFFMAN_TABLE_SIZE;
+    uint16_t top = index + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[index + 1]) : HUFFMAN_TABLE_SIZE;
+
     for (uint8_t i = symbol_index; i < top; i++) {
         uint8_t code_index = huffman_tree.symbols[i];
         if (huffman_tree.codes[code_index] == encoded->code) {
