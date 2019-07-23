@@ -165,7 +165,6 @@ int log128(uint32_t x)
 
 
 /* Function: encoded_integer_size
- * Encode a num with a prefix p
  * Input:
  *      -> num: Number to encode
  *      -> prefix: Size of prefix
@@ -192,10 +191,16 @@ uint32_t encoded_integer_size(uint32_t num, uint8_t prefix)
 
 
 /*
+ * Function: encode_integer
  * encode an integer with the given prefix
  * and save the encoded integer in "encoded_integer"
  * encoded_integer must be an array of the size calculated by encoded_integer_size
- * returns the encoded_integer_size
+ * Input:
+ *      -> integer: number to encode
+ *      -> prefix:  prefix size
+ *      -> *encoded_integer: location to store the result of the encoding
+ * Output:
+ *      returns the encoded_integer_size
  */
 int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
