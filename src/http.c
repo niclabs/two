@@ -9,8 +9,9 @@
 
 //#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 
-#include "headers.h"
+
 #include "http.h"
+#include "headers.h"
 #include "http_bridge.h"
 #include "logging.h"
 #include "sock.h"
