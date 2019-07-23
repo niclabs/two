@@ -319,8 +319,8 @@ int decode_non_huffman_string(char *str, uint8_t *encoded_string)
     uint32_t str_length = decode_integer(encoded_string, 7);
     uint32_t str_length_size = encoded_integer_size(str_length, 7);
 
-    for(uint16_t i = 0; i < str_length; i++){
-        str[i] = (char) encoded_string[str_length_size + i];
+    for (uint16_t i = 0; i < str_length; i++) {
+        str[i] = (char)encoded_string[str_length_size + i];
     }
     return str_length;
 }
@@ -367,11 +367,11 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
 
     uint8_t encoded_word_byte_length = encoded_word_bit_length % 8 ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
 
-    uint8_t buffer_encoded[encoded_word_byte_length];
+    uint8_t encoded_buffer[encoded_word_byte_length];
 
-    memset(buffer_encoded, 0, encoded_word_byte_length);
+    memset(encoded_buffer, 0, encoded_word_byte_length);
 
-    pack_encoded_words_to_bytes(encoded_words, str_length, buffer_encoded, encoded_word_byte_length);
+    pack_encoded_words_to_bytes(encoded_words, str_length, encoded_buffer, encoded_word_byte_length);
 
     int encoded_word_length_size = encode_integer(encoded_word_byte_length, 7, encoded_string);
 
@@ -384,12 +384,68 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
     }
 
     for (int i = 0; i < encoded_word_byte_length; i++) {
-        encoded_string[i + encoded_word_length_size] = buffer_encoded[i];
+        encoded_string[i + encoded_word_length_size] = encoded_buffer[i];
     }
 
     return encoded_word_byte_length + encoded_word_length_size;
 }
 
+int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position)
+{
+    huffman_encoded_word_t encoded_word;
+
+    for (uint8_t i = 5; i < 31; i++) { //search through all lengths possible
+        if (bit_position + i >= 8 * encoded_string_size) {
+            return -1;
+        }
+        uint32_t result = 0;
+        int8_t rc = read_bits_from_bytes(bit_position, i, encoded_string, encoded_string_size, &result);
+        if (rc < 0) {
+            ERROR("Error while trying to read bits from encoded_string in decode_huffman_word");
+            return -1;
+        }
+        encoded_word.code = result;
+        encoded_word.length = i;
+        uint8_t decoded_sym = 0;
+
+        rc = hpack_huffman_decode(&encoded_word, &decoded_sym);
+
+        if (rc == 0) {/*Code is found on huffman tree*/
+            str[0] = (char)decoded_sym;
+            return i;
+        }
+    }
+    return -1;
+}
+
+int decode_huffman_string(char *str, uint8_t *encoded_string)
+{
+    uint32_t str_length = decode_integer(encoded_string, 7);
+    uint32_t str_length_size = encoded_integer_size(str_length, 7);
+    uint8_t *encoded_buffer = encoded_string + str_length_size;
+    uint16_t bit_position = 0;
+
+    for (int i = 0; (bit_position / 8) < str_length; i++) {
+        int32_t word_length = decode_huffman_word(str + i, encoded_buffer, str_length, bit_position);
+        if (word_length < 0) {
+            if (8 * str_length - bit_position < 8) {
+                uint8_t bits_left = 8 * str_length - bit_position;
+                uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
+                if ((bits_left & mask) == mask) {
+                    return 0;
+                }
+                else {
+                    ERROR("Error while trying to decode padding in decode_huffman_string");
+                    return -1;
+                }
+            }
+            else {
+                return -1;
+            }
+        }
+        bit_position += word_length;
+    }
+}
 
 /*
    int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
@@ -769,7 +825,7 @@ int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *v
 //as it decodes one, the pointer of the headers move forwards
 //also has to update the decoded header lists
 //returns the amount of octets in which the pointer has move to read all the headers
-int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t* headers)//header_t* h_list, uint8_t * header_counter)
+int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
     int pointer = 0;
 
