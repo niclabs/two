@@ -26,7 +26,7 @@ FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int)
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 
 FAKE_VALUE_FUNC(int, encode, hpack_preamble_t , uint32_t , uint32_t ,char*, uint8_t , char*, uint8_t , uint8_t*);
-FAKE_VALUE_FUNC(int, decode_header_block, uint8_t* , uint8_t , headers_data_lists_t*);
+FAKE_VALUE_FUNC(int, decode_header_block, uint8_t*, uint8_t , headers_t*);
 
 
 /* List of fakes used by this unit tester */
@@ -724,19 +724,24 @@ int encode_fake_custom(hpack_preamble_t preamble, uint32_t max_size, uint32_t in
 }
 
 void test_compress_headers(void){
-    table_pair_t headers[1];
-    strcpy(headers[0].name, "hola");
-    strcpy(headers[0].value, "val");
-    uint8_t headers_count = 1;
+    headers_t headers;
+    header_t hlist[1];
+    strcpy(hlist[0].name, "hola");
+    strcpy(hlist[0].value, "val");
+    int maxlen = 1;
+    headers.headers = hlist;
+    headers.count = 1;
+    headers.maxlen = maxlen;
+//    uint8_t headers_count = 1;
     uint8_t compressed_headers[256];
 
     encode_fake.custom_fake = encode_fake_custom;
 
-    int rc = compress_headers(headers, headers_count, compressed_headers);
+    int rc = compress_headers(&headers, compressed_headers);
 
     TEST_ASSERT_EQUAL(10, rc);
     uint8_t expected_compressed_headers[]={
-            0,//01000000 prefix=00, index=0
+            0,//00000000 prefix=00, index=0
             4,//h=0, name length = 4;
             'h',//name string
             'o',//name string

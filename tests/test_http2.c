@@ -93,14 +93,14 @@ FAKE_VALUE_FUNC(int, bytes_to_frame_header, uint8_t*, int , frame_header_t*);
 FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*, frame_header_t*, settings_payload_t*, settings_pair_t*);
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size,frame_header_t*, headers_payload_t*);
-FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_data_lists_t*);
+FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_t*);
 FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);
-FAKE_VALUE_FUNC(uint32_t, get_header_list_size, table_pair_t*, uint8_t);
+FAKE_VALUE_FUNC(uint32_t, get_header_list_size, headers_t*);
 
 
-FAKE_VALUE_FUNC( int, compress_headers, table_pair_t* , uint8_t , uint8_t* );
+FAKE_VALUE_FUNC( int, compress_headers, headers_t* , uint8_t* );
 FAKE_VALUE_FUNC( int, create_headers_frame, uint8_t * , int , uint32_t , frame_header_t* , headers_payload_t* ,uint8_t*);
 FAKE_VALUE_FUNC( int, headers_payload_to_bytes, frame_header_t* , headers_payload_t* , uint8_t* );
 FAKE_VALUE_FUNC( int, create_continuation_frame, uint8_t * , int , uint32_t , frame_header_t* , continuation_payload_t* , uint8_t*);
@@ -867,7 +867,7 @@ void test_handle_headers_payload_full_message_header_no_end_stream(void){
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting end headers must be 0. Full message received");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0");
-  //TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 20, "count in must be 20");//needs mock to check this
+  //TEST_ASSERT_MESSAGE(st.hd_lists.headers_in.count == 20, "count in must be 20");//needs mock to check this
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
 }
 
@@ -894,7 +894,7 @@ void test_handle_headers_payload_full_message_header_end_stream(void){
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting end headers must be 0. Full message received");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0");
-  //TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 20, "count in must be 20");//needs mock to chek this
+  //TEST_ASSERT_MESSAGE(st.hd_lists.headers_in.count == 20, "count in must be 20");//needs mock to chek this
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE, "Stream must be HALF CLOSED REMOTE");
   TEST_ASSERT_MESSAGE(st.h2s.received_end_stream == 0, "received end stream was reverted inside function, must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
@@ -979,7 +979,7 @@ void test_handle_continuation_payload_end_headers_flag_set(void){
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0, fragments were received");
-  //TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 70, "header list count in must be 70");
+  //TEST_ASSERT_MESSAGE(st.hd_lists.headers_in.count == 70, "header list count in must be 70");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
@@ -1011,7 +1011,7 @@ void test_handle_continuation_payload_end_headers_end_stream_flag_set(void){
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.header_block_fragments_pointer == 0, "pointer must be 0, fragments were received");
-  //TEST_ASSERT_MESSAGE(st.hd_lists.header_list_count_in == 70, "header list count in must be 70");
+  //TEST_ASSERT_MESSAGE(st.hd_lists.headers_in.count == 70, "header list count in must be 70");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waitinf for end headers must be 0");
   TEST_ASSERT_MESSAGE(st.new_headers == 1, "new headers received, so it must be 1");
   TEST_ASSERT_MESSAGE(st.keep_receiving == 0, "keep receiving must be 0");
@@ -1228,7 +1228,7 @@ void test_send_headers_one_header(void){
   hstates_t st;
   st.is_server = 0;
   int rc = init_variables(&st);
-  st.hd_lists.header_list_count_out = 10;
+  st.hd_lists.headers_out.count= 10;
   int create_headers_return[1] = {0};
   SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
   int create_continuation_return[1] = {0};
@@ -1250,14 +1250,14 @@ void test_send_headers_with_continuation(void){
 
 
   st.is_server = 0;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
     st.hd_lists.data_out_sent = 0;
   int rc = init_variables(&st);
-  st.hd_lists.header_list_count_out = 10;
+  st.hd_lists.headers_out.count = 10;
   int create_headers_return[1] = {0};
   SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
   int create_continuation_return[1] = {0};
@@ -1282,11 +1282,11 @@ void test_send_headers_errors(void){
   hstates_t st2; // Second error, compress headers failure
   init_variables(&st2);
   int compress_return[2] = {-1, 20};
-  st2.hd_lists.header_list_count_out = 10;
+  st2.hd_lists.headers_out.count = 10;
   SET_RETURN_SEQ(compress_headers, compress_return, 2);
   hstates_t st3; // Third error, stream verification error
   init_variables(&st3);
-  st3.hd_lists.header_list_count_out = 10;
+  st3.hd_lists.headers_out.count = 10;
   st3.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
   int rc = send_headers(&st1, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no headers to send)");
@@ -1327,8 +1327,8 @@ void test_flow_control_receive_window_update(void){
 
 void test_get_size_data_to_send(void){
     hstates_t st;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1373,8 +1373,8 @@ void test_handle_data_payload(void){
     data_payload.data = data;
 
     hstates_t st;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1419,15 +1419,16 @@ int is_flag_set_fake_custom(uint8_t flags, uint8_t queried_flag){
     return 0;
 }
 
-int receive_header_block_fake_custom(uint8_t*header_block, int size, headers_data_lists_t* headers_data_list){
-    strncpy(headers_data_list->header_list_in[headers_data_list->header_list_count_in].name, (char*)"name", 4);
-    strncpy(headers_data_list->header_list_in[headers_data_list->header_list_count_in].value, (char*)"value",5);
-    headers_data_list->header_list_count_in += 1;
+int receive_header_block_fake_custom(uint8_t*header_block, int size, headers_t* headers){
+    strncpy(headers->headers[headers->count].name, (char*)"name", 4);
+    strncpy(headers->headers[headers->count].value, (char*)"value",5);
+    headers->count += 1;
     return size;
 }
 
 void test_h2_receive_frame_headers_wait_end_headers(void){
     hstates_t st;
+    memset(&st, 0, sizeof(&st));
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1438,7 +1439,6 @@ void test_h2_receive_frame_headers_wait_end_headers(void){
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_headers_payload_fake.custom_fake = read_headers_payload_fake_custom;
     receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
-
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(1, st.h2s.waiting_for_end_headers_flag);
@@ -1447,9 +1447,9 @@ void test_h2_receive_frame_headers_wait_end_headers(void){
 
 void test_h2_receive_frame_headers(void){
     hstates_t st;
-
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    memset(&st, 0, sizeof(&st));
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1469,16 +1469,16 @@ void test_h2_receive_frame_headers(void){
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(0, st.h2s.waiting_for_end_headers_flag);
-    TEST_ASSERT_EQUAL(1,st.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(strncmp("name",st.hd_lists.header_list_in[0].name,4),0);
-    TEST_ASSERT_EQUAL(strncmp("value",st.hd_lists.header_list_in[0].value,5),0);
+    TEST_ASSERT_EQUAL(1,st.hd_lists.headers_in.count);
+    TEST_ASSERT_EQUAL(strncmp("name",st.hd_lists.headers_in.headers[0].name,4),0);
+    TEST_ASSERT_EQUAL(strncmp("value",st.hd_lists.headers_in.headers[0].value,5),0);
 
 }
 
 void test_h2_receive_frame_data_stream_closed(void){
     hstates_t st;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1502,8 +1502,8 @@ int read_data_payload_fake_custom(uint8_t* buff_read,frame_header_t* frame_heade
 
 void test_h2_receive_frame_data_ok(void){
     hstates_t st;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1547,8 +1547,8 @@ int read_continuation_payload_fake_custom(uint8_t* buff_read, frame_header_t* fr
 
 void test_h2_receive_frame_continuation(void){
     hstates_t st;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1584,9 +1584,9 @@ void test_h2_receive_frame_continuation(void){
     //    TEST_ASSERT_EQUAL(bytes[i+19], st.h2s.header_block_fragments[i]);
     //}
 
-    TEST_ASSERT_EQUAL(1,st.hd_lists.header_list_count_in);
-    TEST_ASSERT_EQUAL(strncmp("name",st.hd_lists.header_list_in[0].name,4),0);
-    TEST_ASSERT_EQUAL(strncmp("value",st.hd_lists.header_list_in[0].value,5),0);
+    TEST_ASSERT_EQUAL(1,st.hd_lists.headers_in.count);
+    TEST_ASSERT_EQUAL(strncmp("name",st.hd_lists.headers_in.headers[0].name,4),0);
+    TEST_ASSERT_EQUAL(strncmp("value",st.hd_lists.headers_in.headers[0].value,5),0);
 }
 
 
@@ -1679,8 +1679,8 @@ void test_h2_receive_frame_settings_ack(void){
 
 void test_send_data(void){
   hstates_t st;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1697,8 +1697,8 @@ int rc = init_variables(&st);
 
 void test_send_data_full_sending(void){
   hstates_t st;
-    st.hd_lists.header_list_count_in = 0;
-    st.hd_lists.header_list_count_out = 0;
+    st.hd_lists.headers_in.count = 0;
+    st.hd_lists.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1731,8 +1731,8 @@ void test_send_data_errors(void){
   int frame_bytes_ret[2] = {10,10};
   SET_RETURN_SEQ(frame_to_bytes, frame_bytes_ret, 2);
   hstates_t st1; //First error, no data to sned
-    st1.hd_lists.header_list_count_in = 0;
-    st1.hd_lists.header_list_count_out = 0;
+    st1.hd_lists.headers_in.count = 0;
+    st1.hd_lists.headers_out.count = 0;
     st1.hd_lists.data_in_size = 0;
     st1.hd_lists.data_out_size = 0;
     st1.hd_lists.data_in_received = 0;
@@ -1742,8 +1742,8 @@ void test_send_data_errors(void){
   rc = send_data(&st1, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no data out)");
   hstates_t st2; //Second error, wrong state stream
-    st2.hd_lists.header_list_count_in = 0;
-    st2.hd_lists.header_list_count_out = 0;
+    st2.hd_lists.headers_in.count = 0;
+    st2.hd_lists.headers_out.count = 0;
     st2.hd_lists.data_in_size = 0;
     st2.hd_lists.data_out_size = 0;
     st2.hd_lists.data_in_received = 0;
@@ -1757,8 +1757,8 @@ void test_send_data_errors(void){
   rc = send_data(&st2, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream half closed local)");
   hstates_t st3; //Third error, create_data_frame error
-    st3.hd_lists.header_list_count_in = 0;
-    st3.hd_lists.header_list_count_out = 0;
+    st3.hd_lists.headers_in.count = 0;
+    st3.hd_lists.headers_out.count = 0;
     st3.hd_lists.data_in_size = 0;
     st3.hd_lists.data_out_size = 0;
     st3.hd_lists.data_in_received = 0;

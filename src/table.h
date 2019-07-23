@@ -11,11 +11,11 @@
 #define HTTP_MAX_DATA_SIZE 128
 
 // Key value pair
-typedef struct TABLE_ENTRY {
+/*typedef struct TABLE_ENTRY {
     char name [32];
     char value [128];
 } table_pair_t;
-
+*/
 
 typedef struct HEADERS_DATA_LISTS_S {
     headers_t headers_in;
