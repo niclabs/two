@@ -562,22 +562,7 @@ hpack_preamble_t get_preamble(uint8_t preamble)
     return -1;
 }
 
-/*uint32_t decode_integer(uint8_t* bytes, uint8_t prefix){
-    int pointer = 0;
-    uint8_t first_byte = (bytes[0]<<(8-prefix))>>(8-prefix);
-    uint32_t sum = (pow(2,prefix)-1);
-    if(first_byte==(uint8_t)sum){
-        pointer +=1;
-        while(bytes[pointer]&(uint8_t)128){
 
-        }
-
-    }
-    else{
-        return (uint32_t)first_byte;
-    }
-   }
- */
 uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
 {
     int pointer = 0;
