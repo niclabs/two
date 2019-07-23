@@ -265,7 +265,8 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
 
 /*
  * Function: encode_huffman_word
- * Encodes an Array of char and stores the result in an Array of huffman_encoded_word_t.
+ * Encodes an Array of char using huffman tree compression
+ * and stores the result in an Array of huffman_encoded_word_t.
  * This function is meant to be used with encode_huffman_string.
  * Input:
  *      -> *str: Array to encode
