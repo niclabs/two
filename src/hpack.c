@@ -38,9 +38,9 @@
  * Function: find_entry
  * finds an entry (pair name-value) in either the static or dynamic table_length
  * Input:
- *      -> index:
- *      -> *name:
- *      -> *value:
+ *      -> index: //TODO
+ *      -> *name: //TODO
+ *      -> *value: //TODO
  * Output:
  *      0 if success, -1 in case of Error
 */
@@ -139,6 +139,14 @@ int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits
     return 0;
 }
 
+/*
+ * Function: log128
+ * Compute the log128 of the input
+ * Input:
+ *      -> x: variable to apply log128
+ * Output:
+ *      returns log128(x)
+ */
 int log128(uint32_t x)
 {
     uint32_t n = 0;
