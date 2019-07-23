@@ -34,8 +34,16 @@
    }
  */
 
-//finds an entry (pair name-value) in either the static or dynamic table_length
-//returns -1 in case of Error
+/*
+ * Function: find_entry
+ * finds an entry (pair name-value) in either the static or dynamic table_length
+ * Input:
+ *      -> index:
+ *      -> *name:
+ *      -> *value:
+ * Output:
+ *      0 if success, -1 in case of Error
+*/
 int find_entry(uint32_t index, char *name, char *value);
 
 /*
