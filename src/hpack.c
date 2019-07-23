@@ -288,7 +288,8 @@ uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *
 
 /*
  * Function: encode_huffman_string
- * Encodes an Array of char and stores the result in the given buffer.
+ * Encodes an Array of char using huffman tree compression
+ * and stores the result in the given buffer.
  * Input:
  *      -> *str: Array to encode
  *      -> *encoded_string: Buffer to store the result of the compression process.
