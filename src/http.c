@@ -446,6 +446,7 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 {
     if (hs == NULL || method == NULL || path == NULL || handler == NULL) {
         errno = EINVAL;
+        ERROR("ERROR found %d",errno );
         return -1;
     }
 
