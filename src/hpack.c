@@ -567,7 +567,14 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *v
 
    }*/
 
-
+/*
+ * Function: get_preamble
+ * Matches a numeric preamble to a hpack_preamble_t
+ * Input:
+ *      -> preamble: Number representing the preamble of the integer to encode
+ * Output:
+ *      An hpack_preamble_t if it can parse the given preamble or -1 if it fails
+ */
 hpack_preamble_t get_preamble(uint8_t preamble)
 {
     if (preamble & INDEXED_HEADER_FIELD) {
