@@ -12,14 +12,16 @@ extern int log128(uint32_t x);
 extern int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result);
 extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
+extern int encode_huffman_string(char *str, uint8_t *encoded_string);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
+extern uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
 extern uint8_t find_prefix_size(hpack_preamble_t octet);
 extern uint32_t decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
 
 
 DEFINE_FFF_GLOBALS;
-FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t*, uint8_t);
+FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t*);
@@ -54,6 +56,72 @@ FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t*, uint8_t);
     FAKE(decode_header_block)
  */
 
+/*----------Value Return for FAKEs ----------*/
+int8_t hpack_huffman_encode_return_w(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x78;
+    h->length = 7;
+    return 0;
+}
+
+int8_t hpack_huffman_encode_return_dot(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x17;
+    h->length = 6;
+    return 0;
+}
+
+int8_t hpack_huffman_encode_return_a(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x17;
+    h->length = 6;
+    return 0;
+}
+
+int8_t hpack_huffman_encode_return_e(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x5;
+    h->length = 5;
+    return 0;
+}
+
+int8_t hpack_huffman_encode_return_x(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x79;
+    h->length = 7;
+    return 0;
+}
+
+int8_t hpack_huffman_encode_return_m(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x29;
+    h->length = 6;
+    return 0;
+}
+int8_t hpack_huffman_encode_return_p(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x2b;
+    h->length = 6;
+    return 0;
+}
+int8_t hpack_huffman_encode_return_l(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x28;
+    h->length = 6;
+    return 0;
+}
+int8_t hpack_huffman_encode_return_c(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x4;
+    h->length = 5;
+    return 0;
+}
+int8_t hpack_huffman_encode_return_o(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x7;
+    h->length = 5;
+    return 0;
+}
 void setUp(void)
 {
     /* Register resets */
@@ -423,7 +491,7 @@ void test_pack_encoded_words_to_bytes_test1(void)
         { .code = 0x29, .length = 6 }
     };
     uint8_t buffer[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    uint8_t expected_result[] = { 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff};
+    uint8_t expected_result[] = { 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff };
 
     int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 15, buffer, 12);
 
@@ -437,18 +505,18 @@ void test_pack_encoded_words_to_bytes_test1(void)
 void test_pack_encoded_words_to_bytes_test2(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*no-cache*/
-            { .code = 0x2a, .length = 6 },
-            { .code = 0x7 , .length = 5 },
-            { .code = 0x16, .length = 6 },
-            { .code = 0x4, .length = 5 },
-            { .code = 0x3, .length = 5 },
-            { .code = 0x4, .length = 5 },
-            { .code = 0x27, .length = 6 },
-            { .code = 0x5, .length = 5 },
+        { .code = 0x2a, .length = 6 },
+        { .code = 0x7, .length = 5 },
+        { .code = 0x16, .length = 6 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x3, .length = 5 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x27, .length = 6 },
+        { .code = 0x5, .length = 5 },
     };
-    uint8_t buffer[6] = { 0, 0, 0, 0, 0, 0};
+    uint8_t buffer[6] = { 0, 0, 0, 0, 0, 0 };
     //a8eb 1064 9cbf
-    uint8_t expected_result[] = { 0xa8, 0xeb, 0x10, 0x64, 0x9c, 0xbf};
+    uint8_t expected_result[] = { 0xa8, 0xeb, 0x10, 0x64, 0x9c, 0xbf };
 
     int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 8, buffer, 6);
 
@@ -461,22 +529,22 @@ void test_pack_encoded_words_to_bytes_test2(void)
 void test_pack_encoded_words_to_bytes_test3(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*custom-value*/
-            { .code = 0x4, .length = 5 },
-            { .code = 0x2d , .length = 6 },
-            { .code = 0x8 , .length = 5 },
-            { .code = 0x9 , .length = 5 },
-            { .code = 0x7 , .length = 5 },
-            { .code = 0x29 , .length = 6 },
-            { .code = 0x16, .length = 6 },/*-*/
-            { .code = 0x77, .length = 7 },
-            { .code = 0x3, .length = 5 },
-            { .code = 0x28, .length = 6 },
-            { .code = 0x2d, .length = 6 },
-            { .code = 0x5, .length = 5 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x2d, .length = 6 },
+        { .code = 0x8, .length = 5 },
+        { .code = 0x9, .length = 5 },
+        { .code = 0x7, .length = 5 },
+        { .code = 0x29, .length = 6 },
+        { .code = 0x16, .length = 6 },    /*-*/
+        { .code = 0x77, .length = 7 },
+        { .code = 0x3, .length = 5 },
+        { .code = 0x28, .length = 6 },
+        { .code = 0x2d, .length = 6 },
+        { .code = 0x5, .length = 5 },
     };
-    uint8_t buffer[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint8_t buffer[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     //25a8 49e9 5bb8 e8b4 bf
-    uint8_t expected_result[] = { 0x25, 0xa8, 0x49, 0xe9, 0x5b, 0xb8, 0xe8, 0xb4, 0xbf};
+    uint8_t expected_result[] = { 0x25, 0xa8, 0x49, 0xe9, 0x5b, 0xb8, 0xe8, 0xb4, 0xbf };
 
     int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 12, buffer, 9);
 
@@ -542,6 +610,33 @@ void test_read_bits_from_bytes(void)
 
 }
 
+void test_encode_huffman_word(void)
+{
+    uint32_t str_length = 15;
+    char *str = "www.example.com";
+    int8_t (*hpack_huffman_encode_arr[])(huffman_encoded_word_t*, uint8_t) = {hpack_huffman_encode_return_w,
+                                                                              hpack_huffman_encode_return_w,
+                                                                              hpack_huffman_encode_return_w,
+                                                                              hpack_huffman_encode_return_dot,
+                                                                              hpack_huffman_encode_return_e,
+                                                                              hpack_huffman_encode_return_x,
+                                                                              hpack_huffman_encode_return_a,
+                                                                              hpack_huffman_encode_return_m,
+                                                                              hpack_huffman_encode_return_p,
+                                                                              hpack_huffman_encode_return_l,
+                                                                              hpack_huffman_encode_return_e,
+                                                                              hpack_huffman_encode_return_dot,
+                                                                              hpack_huffman_encode_return_c,
+                                                                              hpack_huffman_encode_return_o,
+                                                                              hpack_huffman_encode_return_m,};
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_arr, 15);
+
+    huffman_encoded_word_t encoded_words[str_length];
+    uint32_t encoded_word_bit_length = encode_huffman_word(str, str_length, encoded_words);
+    TEST_ASSERT_EQUAL(90,encoded_word_bit_length);
+
+}
+
 void test_decode_integer(void)
 {
     uint8_t bytes1[] = {
@@ -554,7 +649,7 @@ void test_decode_integer(void)
 
     uint8_t bytes2[] = {
         31,     //000 11111
-        0       //
+        0       //+
     };
     rc = decode_integer(bytes2, prefix);
     TEST_ASSERT_EQUAL(31, rc);
@@ -608,6 +703,8 @@ int main(void)
     UNIT_TEST(test_encode_integer);
 
     UNIT_TEST(test_encode_non_huffman_string);
+
+    UNIT_TEST(test_encode_huffman_word);
 
     UNIT_TEST(test_find_prefix_size);
     UNIT_TEST(test_decode_integer);
