@@ -265,6 +265,24 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
 }
 
 /*
+ * Function: decode_non_huffman_string
+ * Decodes an Array of char not compressed with Huffman Compression
+ * Input:
+ *      -> *str: Buffer to store encoded array
+ *      -> *encoded_string: Buffer containing encoded bytes
+ * Output:
+ *      return the number of bytes written in str
+ */
+int decode_non_huffman_string(char *str, uint8_t *encoded_string)
+{
+    int str_length = strlen((char*)encoded_string);
+    for(int i = 0; i < str_length; i++){
+        str[i] = (char) encoded_string[i];
+    }
+    return str_length;
+}
+
+/*
  * Function: encode_huffman_word
  * Encodes an Array of char using huffman tree compression
  * and stores the result in an Array of huffman_encoded_word_t.
