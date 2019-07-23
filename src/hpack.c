@@ -229,7 +229,8 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
 
 /*
  * Function: encode_huffman_word
- * Encodes an Array of char and stores the result in an Array of huffman_encoded_word_t
+ * Encodes an Array of char and stores the result in an Array of huffman_encoded_word_t.
+ * This function is meant to be used with encode_huffman_string.
  * Input:
  *      -> *str: Array to encode
  *      -> str_length: Size of the array to encode
@@ -248,7 +249,15 @@ uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *
     return encoded_word_bit_length;
 }
 
-
+/*
+ * Function: encode_huffman_string
+ * Encodes an Array of char and stores the result in the given buffer.
+ * Input:
+ *      -> *str: Array to encode
+ *      -> *encoded_string: Buffer to store the result of the compression process.
+ * Output:
+ *      returns the size (in bytes) of the compressed array.
+ */
 int encode_huffman_string(char *str, uint8_t *encoded_string)
 {
     uint32_t str_length = strlen(str); //TODO check if strlen is ok to use here
