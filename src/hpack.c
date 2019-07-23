@@ -164,7 +164,14 @@ int log128(uint32_t x)
 
 
 
-/*returns the amount of octets used to encode a int num with a prefix p*/
+/* Function: encoded_integer_size
+ * Encode a num with a prefix p
+ * Input:
+ *      -> num: Number to encode
+ *      -> prefix: Size of prefix
+ * Output:
+ *      returns the amount of octets used to encode num
+ */
 uint32_t encoded_integer_size(uint32_t num, uint8_t prefix)
 {
     uint8_t p = 255;
