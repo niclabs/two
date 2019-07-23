@@ -24,6 +24,8 @@ extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_int
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
+FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t*);
+
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t*);
