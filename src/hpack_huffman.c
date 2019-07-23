@@ -849,7 +849,8 @@ static const huffman_tree_t huffman_tree = {
     },
 };
 
-/* Function: hpack_huffman_encode
+/*
+ * Function: hpack_huffman_encode
  * encodes the given symbol using the encoded representation stored in the huffman_tree
  * Input:
  *      -> *huffman_tree: Pointer to the huffman tree storing the encoded symbols
@@ -864,11 +865,11 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
     result->length = huffman_tree.huffman_length[sym];
     return 0;
 #else
-    for (int i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
-        int symbol_index = huffman_tree.sR[i];
-        int top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[i + 1]) : HUFFMAN_TABLE_SIZE;
+    for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
+        uint8_t symbol_index = huffman_tree.sR[i];
+        uint8_t top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[i + 1]) : HUFFMAN_TABLE_SIZE;
 
-        for (int j = symbol_index; j < top; j++) {
+        for (uint8_t j = symbol_index; j < top; j++) {
             if (huffman_tree.symbols[j] == sym) {
                 result->length = huffman_tree.code_length[i];
                 return 0;
@@ -878,3 +879,33 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
     return -1;
 #endif
 }
+
+/*
+ * Function: hpack_huffman_decode
+ * Decodes the given encoded word and stores the result in sym
+ * Input:
+ *      -> *encoded: Struct containing encoded word
+ *      -> *sym: Byte to store result
+ * Output:
+ *      Returns the decoded symbol if successful, if it cannot find the symbol it returns -1
+ */
+int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t* sym){
+    uint8_t index = 0;
+
+    for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
+        if (huffman_tree.code_length[i] == encoded->length) {
+            index = i;
+            break;
+        }
+    }
+    uint8_t symbol_index = huffman_tree.sR[index];
+    uint8_t top = index + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[index + 1]) : HUFFMAN_TABLE_SIZE;
+    for (uint8_t i = symbol_index; i < top; i++) {
+        uint8_t code_index = huffman_tree->symbols[i];
+        if (huffman_tree->codes[code_index] == encoded->code) {
+            return code_index;
+        }
+    }
+    return -1;
+}
+

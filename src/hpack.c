@@ -362,25 +362,6 @@ uint8_t find_prefix_size(hpack_preamble_t octet)
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 }
 
-/*
-   int pack_huffman_string_and_size(char* string,uint8_t* encoded_buffer){
-    uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
-    int pointer = 0;
-    int encoded_size = encode_huffman_string(string, encoded_string);
-    if(encoded_size>=HTTP2_MAX_HBF_BUFFER){
-        ERROR("string encoded size too big");
-        return -1;
-    }
-    int encoded_size_size = encode_integer(encoded_size,7,encoded_buffer+pointer);
-    encoded_buffer[pointer] |=(uint8_t)128; //set hauffman bit
-    pointer += encoded_size_size;
-    for(int i = 0; i< encoded_size;i++){
-        encoded_buffer[pointer+i]=encoded_string[i];
-    }
-    pointer += encoded_size;
-    return pointer;
-   }
- */
 
 /*
    int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
@@ -536,7 +517,7 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *v
         }
         else {
             if (index == (uint8_t)0) {
-                pointer += encode_literal_header_field_new_name( name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
+                pointer += encode_literal_header_field_new_name(name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
             }
             else {
                 //TOD0
