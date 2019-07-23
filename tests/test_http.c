@@ -138,8 +138,8 @@ void test_http_server_create_success(void)
     FFF_RESET_HISTORY();
     int is = http_server_create(&hs, 12);
 
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
+    TEST_ASSERT_EQUAL(sock_create_fake.call_count,1);
+    TEST_ASSERT_EQUAL(sock_listen_fake.call_count, 1);
 
     TEST_ASSERT_EQUAL(0, is);
 
@@ -158,9 +158,9 @@ void test_http_server_create_fail_sock_listen(void)
 
     int is = http_server_create(&hs, 12);
 
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_listen, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[2]);
+    TEST_ASSERT_EQUAL(sock_create_fake.call_count, 1);
+    TEST_ASSERT_EQUAL(sock_listen_fake.call_count, 1);
+    TEST_ASSERT_EQUAL(sock_destroy_fake.call_count, 1);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Partial error in server creation");
 
@@ -177,7 +177,7 @@ void test_http_server_create_fail_sock_create(void)
 
     int is = http_server_create(&hs, 12);
 
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
+    TEST_ASSERT_EQUAL(sock_create_fake.call_count, 1);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Error in server creation");
 
@@ -207,12 +207,10 @@ void test_http_server_start_success(void)
 
     int is = http_server_start(&hs);
 
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)h2_receive_frame, fff.call_history[2]);
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[3]);
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[4]);
-    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[5]);
+    TEST_ASSERT_EQUAL(2, sock_accept_fake.call_count);
+    TEST_ASSERT_EQUAL(2, h2_server_init_connection_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 
@@ -226,7 +224,7 @@ void test_http_server_start_success(void)
 void test_http_server_start_fail_h2_server_init_connection(void)
 {
     hstates_t hs;
-
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
     hs.server_socket_state = 1;
 
@@ -235,8 +233,8 @@ void test_http_server_start_fail_h2_server_init_connection(void)
 
     int is = http_server_start(&hs);
 
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)h2_server_init_connection, fff.call_history[1]);
+    TEST_ASSERT_EQUAL(1, sock_accept_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_server_init_connection_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 
@@ -248,14 +246,14 @@ void test_http_server_start_fail_h2_server_init_connection(void)
 void test_http_server_start_fail_sock_accept(void)
 {
     hstates_t hs;
-
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     sock_accept_fake.return_val = -1;
 
     int is = http_server_start(&hs);
 
-    TEST_ASSERT_EQUAL((void *)sock_accept, fff.call_history[0]);
+    TEST_ASSERT_EQUAL(1, sock_accept_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Not client found");
 
@@ -267,7 +265,8 @@ void test_http_server_start_fail_sock_accept(void)
 void test_http_server_destroy_success(void)
 {
     hstates_t hs;
-
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
     hs.socket_state = 1;
     hs.server_socket_state = 1;
 
@@ -275,8 +274,7 @@ void test_http_server_destroy_success(void)
 
     int d = http_server_destroy(&hs);
 
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[1]);
+    TEST_ASSERT_EQUAL(2, sock_destroy_fake.call_count);
 
     TEST_ASSERT_EQUAL(0, d);
 
@@ -289,7 +287,8 @@ void test_http_server_destroy_success(void)
 void test_http_server_destroy_success_without_client(void)
 {
     hstates_t hs;
-
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
     hs.server_socket_state = 1;
     hs.socket_state = 1;
 
@@ -298,8 +297,8 @@ void test_http_server_destroy_success_without_client(void)
 
     int d = http_server_destroy(&hs);
 
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[1]);
+    TEST_ASSERT_EQUAL(2, sock_destroy_fake.call_count);
+
 
     TEST_ASSERT_EQUAL(0, d);
 
@@ -312,7 +311,8 @@ void test_http_server_destroy_success_without_client(void)
 void test_http_server_destroy_fail_not_server(void)
 {
     hstates_t hs;
-
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
     hs.server_socket_state = 0;
 
     int d = http_server_destroy(&hs);
@@ -324,7 +324,8 @@ void test_http_server_destroy_fail_not_server(void)
 void test_http_server_destroy_fail_sock_destroy(void)
 {
     hstates_t hs;
-
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
     hs.socket_state = 1;
     hs.server_socket_state = 1;
 
@@ -333,8 +334,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
 
     int d = http_server_destroy(&hs);
 
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[1]);
+    TEST_ASSERT_EQUAL(2, sock_destroy_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Error in server disconnection");
 
@@ -347,6 +347,8 @@ void test_http_server_destroy_fail_sock_destroy(void)
 void test_http_register_resource_success(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
     hs.resource_list_size = 0;
 
     int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
@@ -362,6 +364,7 @@ void test_http_register_resource_success(void)
 void test_http_register_resource_fail_list_full(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     hs.resource_list_size = HTTP_MAX_RESOURCES;
@@ -375,6 +378,8 @@ void test_http_register_resource_fail_list_full(void)
 void test_http_client_connect_success(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
 
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
@@ -382,9 +387,9 @@ void test_http_client_connect_success(void)
 
     int cc = http_client_connect(&hs, "::1", 8888);
 
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)h2_client_init_connection, fff.call_history[2]);
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_client_init_connection_fake.call_count);
 
     TEST_ASSERT_EQUAL(0, cc);
 
@@ -400,6 +405,8 @@ void test_http_client_connect_success(void)
 void test_http_client_connect_fail_h2_client_init_connection(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
 
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = 0;
@@ -407,9 +414,9 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 
     int cc = http_client_connect(&hs, "::1", 8888);
 
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)h2_client_init_connection, fff.call_history[2]);
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_client_init_connection_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Problems sending client data");
 
@@ -425,6 +432,8 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 void test_http_client_connect_fail_sock_connect(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
 
     sock_create_fake.return_val = 0;
     sock_connect_fake.return_val = -1;
@@ -432,9 +441,9 @@ void test_http_client_connect_fail_sock_connect(void)
 
     int cc = http_client_connect(&hs, "::1", 8888);
 
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
-    TEST_ASSERT_EQUAL((void *)sock_connect, fff.call_history[1]);
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[2]);
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client connection");
 
@@ -450,12 +459,14 @@ void test_http_client_connect_fail_sock_connect(void)
 void test_http_client_connect_fail_sock_create(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    reset_http_states(&hs);
 
     sock_create_fake.return_val = -1;
 
     int cc = http_client_connect(&hs, "::1", 8888);
 
-    TEST_ASSERT_EQUAL((void *)sock_create, fff.call_history[0]);
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client creation");
 
@@ -815,7 +826,7 @@ void test_do_request_success(void)
 
     int get = do_request(&hs, "GET", "/index");
 
-    TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
+    TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
 
     TEST_ASSERT_EQUAL(0, get);
 
@@ -837,7 +848,7 @@ void test_do_request_fail_h2_send_response(void)
 
     int get = do_request(&hs, "GET", "/index");
 
-    TEST_ASSERT_EQUAL((void *)h2_send_response, fff.call_history[0]);
+    TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Problems sending data");
 
