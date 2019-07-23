@@ -95,6 +95,16 @@ void test_reset_http_states_success(void)
     hstates_t hs;
 
     hs.socket_state = 1;
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_custom_fake(&headers_in, hlist_in, maxlen);
+    headers_init_custom_fake(&headers_out, hlist_out, maxlen);
+
+    hs.hd_lists.headers_in = headers_in;
+    hs.hd_lists.headers_out = headers_out;
     hs.hd_lists.headers_in.count = 1;
     hs.hd_lists.headers_out.count = 1;
     hs.hd_lists.data_in_size = 1;
@@ -104,6 +114,7 @@ void test_reset_http_states_success(void)
     hs.keep_receiving = 1;
     hs.new_headers = 1;
 
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
@@ -179,7 +190,10 @@ void test_http_server_start_success(void)
 {
     hstates_t hs;
 
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
+
+
     hs.server_socket_state = 1;
     hs.is_server = 1;
 
@@ -815,7 +829,6 @@ void test_do_request_fail_h2_send_response(void)
 {
     hstates_t hs;
     headers_init_fake.custom_fake = headers_init_custom_fake;
-
     reset_http_states(&hs);
 
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
