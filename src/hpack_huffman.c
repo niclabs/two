@@ -887,7 +887,7 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
  *      -> *encoded: Struct containing encoded word
  *      -> *sym: Byte to store result
  * Output:
- *      Returns the decoded symbol if successful, if it cannot find the symbol it returns -1
+ *      Returns 0 if successful, if it cannot find the symbol it returns -1
  */
 int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t* sym){
     uint8_t index = 0;
@@ -901,9 +901,10 @@ int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t* sym){
     uint8_t symbol_index = huffman_tree.sR[index];
     uint8_t top = index + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[index + 1]) : HUFFMAN_TABLE_SIZE;
     for (uint8_t i = symbol_index; i < top; i++) {
-        uint8_t code_index = huffman_tree->symbols[i];
-        if (huffman_tree->codes[code_index] == encoded->code) {
-            return code_index;
+        uint8_t code_index = huffman_tree.symbols[i];
+        if (huffman_tree.codes[code_index] == encoded->code) {
+            *sym = code_index;
+            return 0;
         }
     }
     return -1;
