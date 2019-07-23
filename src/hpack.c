@@ -243,6 +243,47 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
     return octets_size;
 }
 
+/*
+ * Function: decode_integer
+ * Decodes an integer using prefix bits for first byte
+ * Input:
+ *      -> *bytes: Bytes storing encoded integer
+ *      -> prefix: size of prefix used to encode integer
+ * Output:
+ *      returns the decoded integer if succesful, -1 otherwise
+ */
+uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
+{
+    int pointer = 0;
+    uint8_t b0 = bytes[0];
+
+    b0 = b0 << (8 - prefix);
+    b0 = b0 >> (8 - prefix);
+    uint8_t p = 255;
+    p = p << (8 - prefix);
+    p = p >> (8 - prefix);
+    if (b0 != p) {
+        return (uint32_t)b0;
+    }
+    else {
+        uint32_t integer = (uint32_t)p;
+        uint32_t depth = 0;
+        for (uint32_t i = 1;; i++) {
+            uint8_t bi = bytes[pointer + i];
+            if (!(bi & (uint8_t)128)) {
+                integer += (uint32_t)bi * ((uint32_t)1 << depth);
+                return integer;
+            }
+            else {
+                bi = bi << 1;
+                bi = bi >> 1;
+                integer += (uint32_t)bi * ((uint32_t)1 << depth);
+            }
+            depth = depth + 7;
+        }
+    }
+    return -1;
+}
 
 /*
  * Function: encode_non_huffman_string
@@ -271,14 +312,14 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
  *      -> *str: Buffer to store encoded array
  *      -> *encoded_string: Buffer containing encoded bytes
  * Output:
- *      return the number of bytes written in str
+ *      return the number of bytes written in str if succesful or -1 otherwise
  */
 int decode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
     uint32_t str_length = decode_integer(encoded_string, 7);
     uint32_t str_length_size = encoded_integer_size(str_length, 7);
 
-    for(int i = 0; i < str_length; i++){
+    for(uint16_t i = 0; i < str_length; i++){
         str[i] = (char) encoded_string[str_length_size + i];
     }
     return str_length;
@@ -582,47 +623,6 @@ hpack_preamble_t get_preamble(uint8_t preamble)
     return -1;
 }
 
-/*
- * Function: decode_integer
- * Decodes an integer using prefix bits for first byte
- * Input:
- *      -> *bytes: Bytes storing encoded integer
- *      -> prefix: size of prefix used to encode integer
- * Output:
- *      returns the decoded integer if succesful, -1 otherwise
- */
-uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
-{
-    int pointer = 0;
-    uint8_t b0 = bytes[0];
-
-    b0 = b0 << (8 - prefix);
-    b0 = b0 >> (8 - prefix);
-    uint8_t p = 255;
-    p = p << (8 - prefix);
-    p = p >> (8 - prefix);
-    if (b0 != p) {
-        return (uint32_t)b0;
-    }
-    else {
-        uint32_t integer = (uint32_t)p;
-        uint32_t depth = 0;
-        for (uint32_t i = 1;; i++) {
-            uint8_t bi = bytes[pointer + i];
-            if (!(bi & (uint8_t)128)) {
-                integer += (uint32_t)bi * ((uint32_t)1 << depth);
-                return integer;
-            }
-            else {
-                bi = bi << 1;
-                bi = bi >> 1;
-                integer += (uint32_t)bi * ((uint32_t)1 << depth);
-            }
-            depth = depth + 7;
-        }
-    }
-    return -1;
-}
 /*
    int decode_literal_header_field_incremental_index(uint8_t* header_block, char* name, char* value){
     //int pointer = 0;
