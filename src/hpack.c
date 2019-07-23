@@ -243,7 +243,15 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 }
 
 
-
+/*
+ * Function: encode_non_huffman_string
+ * Encodes an Array of char without using Huffman Compression
+ * Input:
+ *      -> *str: Array to encode
+ *      -> *encoded_string: Buffer to store the result of the encoding process
+ * Output:
+ *      returns the size in octets(bytes) of the encoded string
+ */
 int encode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
     int str_length = strlen(str);
