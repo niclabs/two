@@ -94,14 +94,6 @@ void test_reset_http_states_success(void)
 {
     hstates_t hs;
 
-    headers_t headers_in;
-    headers_t headers_out;
-    int maxlen = 1;
-    header_t hlist_in[maxlen];
-    header_t hlist_out[maxlen];
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    headers_init(&headers_in, hlist_in, maxlen);
-    headers_init(&headers_out, hlist_out, maxlen);
     hs.socket_state = 1;
     hs.hd_lists.headers_in.count = 1;
     hs.hd_lists.headers_out.count = 1;
@@ -341,8 +333,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
 void test_http_register_resource_success(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    reset_http_states(&hs);
+
 
     int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
     TEST_ASSERT_EQUAL(0, res);

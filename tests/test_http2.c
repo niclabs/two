@@ -83,6 +83,18 @@ int clean_buffer(void){
   return 0;
 }
 
+
+int headers_init_custom_fake(headers_t *headers, header_t *hlist, int maxlen)
+{
+  memset(headers, 0, sizeof(*headers));
+  memset(hlist, 0, maxlen * sizeof(*hlist));
+  headers->headers = hlist;
+  headers->maxlen = maxlen;
+  headers->count = 0;
+  return 0;
+}
+
+
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, verify_setting, uint16_t, uint32_t);
 FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t*);
@@ -1447,13 +1459,15 @@ void test_h2_receive_frame_headers_wait_end_headers(void){
 
 void test_h2_receive_frame_headers(void){
     hstates_t st;
-    memset(&st, 0, sizeof(&st));
-    st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_custom_fake(&headers_in, hlist_in, maxlen);
+    headers_init_custom_fake(&headers_out, hlist_out, maxlen);
+    st.hd_lists.headers_in = headers_in;
+    st.hd_lists.headers_out = headers_out;
 
     int rc = init_variables(&st);
     st.is_server = 1;
@@ -1502,8 +1516,15 @@ int read_data_payload_fake_custom(uint8_t* buff_read,frame_header_t* frame_heade
 
 void test_h2_receive_frame_data_ok(void){
     hstates_t st;
-    st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_custom_fake(&headers_in, hlist_in, maxlen);
+    headers_init_custom_fake(&headers_out, hlist_out, maxlen);
+    st.hd_lists.headers_in = headers_in;
+    st.hd_lists.headers_out = headers_out;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1547,8 +1568,15 @@ int read_continuation_payload_fake_custom(uint8_t* buff_read, frame_header_t* fr
 
 void test_h2_receive_frame_continuation(void){
     hstates_t st;
-    st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_custom_fake(&headers_in, hlist_in, maxlen);
+    headers_init_custom_fake(&headers_out, hlist_out, maxlen);
+    st.hd_lists.headers_in = headers_in;
+    st.hd_lists.headers_out = headers_out;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
