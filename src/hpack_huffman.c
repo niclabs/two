@@ -849,11 +849,12 @@ static const huffman_tree_t huffman_tree = {
     },
 };
 
-/* Function: encodes the given symbol using the encoded representation stored in the huffman_tree
+/* Function: hpack_huffman_encode
+ * encodes the given symbol using the encoded representation stored in the huffman_tree
  * Input:
- * - *huffman_tree: Pointer to the huffman tree storing the encoded symbols
- * - *result: Pointer to struct to save the result of the encoding
- * - sym: Symbol to encode
+ *      -> *huffman_tree: Pointer to the huffman tree storing the encoded symbols
+ *      -> *result: Pointer to struct to save the result of the encoding
+ *      -> sym: Symbol to encode
  * Output: 0 if it can encode the given symbol, -1 otherwise
  */
 int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
