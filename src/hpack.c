@@ -263,6 +263,19 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     }
     return str_length + encoded_string_length_size;
 }
+int pack_non_huffman_string_and_size(char *string, uint8_t *encoded_buffer)
+{
+    int pointer = 0;
+    int string_size = strlen(string);
+    int encoded_size = encode_integer(string_size, 7, encoded_buffer + pointer);
+
+    pointer += encoded_size;
+    for (int i = 0; i < string_size; i++) {
+        encoded_buffer[pointer + i] = string[i];
+    }
+    pointer += string_size;
+    return pointer;
+}
 
 /*
  * Function: encode_huffman_word
@@ -340,6 +353,14 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
    };
  */
 
+/*
+ * Function: find_prefix_size
+ * Given the preamble octet returns the size of the prefix
+ * Input:
+ *      -> octet: Preamble of encoding
+ * Output:
+ *      returns the size in bits of the prefix.
+ */
 uint8_t find_prefix_size(hpack_preamble_t octet)
 {
     if ((INDEXED_HEADER_FIELD & octet) == INDEXED_HEADER_FIELD) {
@@ -374,19 +395,6 @@ uint8_t find_prefix_size(hpack_preamble_t octet)
    }
  */
 
-int pack_non_huffman_string_and_size(char *string, uint8_t *encoded_buffer)
-{
-    int pointer = 0;
-    int string_size = strlen(string);
-    int encoded_size = encode_integer(string_size, 7, encoded_buffer + pointer);
-
-    pointer += encoded_size;
-    for (int i = 0; i < string_size; i++) {
-        encoded_buffer[pointer + i] = string[i];
-    }
-    pointer += string_size;
-    return pointer;
-}
 /*
    int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
     int pointer = 0;
