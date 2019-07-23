@@ -1440,7 +1440,7 @@ int receive_header_block_fake_custom(uint8_t*header_block, int size, headers_t* 
 
 void test_h2_receive_frame_headers_wait_end_headers(void){
     hstates_t st;
-    memset(&st, 0, sizeof(&st));
+    memset(&st, 0, sizeof(st));
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
