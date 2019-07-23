@@ -44,7 +44,7 @@
  *      -> *value: //TODO
  * Output:
  *      0 if success, -1 in case of Error
-*/
+ */
 int find_entry(uint32_t index, char *name, char *value);
 
 /*
@@ -492,15 +492,13 @@ int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffma
     int pointer = 0;
 
     if (name_huffman_bool != 0) {
-        //TODO
-        //pointer += pack_huffman_string_and_size(name_string,encoded_buffer+pointer);
+        pointer += encode_huffman_string(name_string, encoded_buffer + pointer);
     }
     else {
         pointer += encode_non_huffman_string(name_string, encoded_buffer + pointer);
     }
     if (value_huffman_bool != 0) {
-        //TODO
-        //pointer += pack_huffman_string_and_size(value_string,encoded_buffer+pointer);
+        pointer += encode_huffman_string(value_string, encoded_buffer + pointer);
     }
     else {
         pointer += encode_non_huffman_string(value_string, encoded_buffer + pointer);
