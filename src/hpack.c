@@ -275,9 +275,11 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
  */
 int decode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
-    int str_length = strlen((char*)encoded_string);
+    uint32_t str_length = decode_integer(encoded_string, 7);
+    uint32_t str_length_size = encoded_integer_size(str_length, 7);
+
     for(int i = 0; i < str_length; i++){
-        str[i] = (char) encoded_string[i];
+        str[i] = (char) encoded_string[str_length_size + i];
     }
     return str_length;
 }
