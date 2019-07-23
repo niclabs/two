@@ -5,6 +5,7 @@
 #include "fff.h"
 #include "http.h"
 #include "http_bridge.h"
+#include "headers.h"
 
 
 #include <stdio.h>
@@ -22,6 +23,7 @@ extern int http_set_header(headers_data_lists_t *hd_lists, char *name, char *val
 extern char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
 extern int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 extern uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
+//extern void headers_init(headers_t * headers, header_t * hlist, int maxlen);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
@@ -35,6 +37,7 @@ FAKE_VALUE_FUNC(int, h2_receive_frame, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_send_response, hstates_t *);
 FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 FAKE_VALUE_FUNC(int, h2_send_request, hstates_t *);
+FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
 
 
 
@@ -51,6 +54,7 @@ FAKE_VALUE_FUNC(int, h2_send_request, hstates_t *);
     FAKE(h2_send_response)                \
     FAKE(http_clear_header_list)          \
     FAKE(h2_send_request)                 \
+    FAKE(headers_init)
 
 
 void setUp()
@@ -62,6 +66,17 @@ void setUp()
     FFF_RESET_HISTORY();
 }
 
+
+
+int headers_init_custom_fake(headers_t *headers, header_t *hlist, int maxlen)
+{
+    memset(headers, 0, sizeof(*headers));
+    memset(hlist, 0, maxlen * sizeof(*hlist));
+    headers->headers = hlist;
+    headers->maxlen = maxlen;
+    headers->count = 0;
+    return 0;
+}
 
 int h2_receive_frame_custom_fake(hstates_t *hs)
 {
@@ -79,6 +94,14 @@ void test_reset_http_states_success(void)
 {
     hstates_t hs;
 
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 1;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_init(&headers_in, hlist_in, maxlen);
+    headers_init(&headers_out, hlist_out, maxlen);
     hs.socket_state = 1;
     hs.hd_lists.headers_in.count = 1;
     hs.hd_lists.headers_out.count = 1;
@@ -318,6 +341,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
 void test_http_register_resource_success(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
@@ -589,6 +613,17 @@ void test_http_set_header_success(void)
 {
     hstates_t hs;
 
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_init(&headers_in, hlist_in, maxlen);
+    headers_init(&headers_out, hlist_out, maxlen);
+    hs.hd_lists.headers_in = headers_in;
+    hs.hd_lists.headers_out = headers_out;
+
     hs.hd_lists.headers_out.count = 0;
     int set = http_set_header(&hs.hd_lists, "settings", "server:on");
 
@@ -601,6 +636,17 @@ void test_http_set_header_fail_list_full(void)
 {
     hstates_t hs;
 
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_init(&headers_in, hlist_in, maxlen);
+    headers_init(&headers_out, hlist_out, maxlen);
+    hs.hd_lists.headers_in = headers_in;
+    hs.hd_lists.headers_out = headers_out;
+
     hs.hd_lists.headers_out.count = HTTP2_MAX_HEADER_COUNT;
     int set = http_set_header(&hs.hd_lists, "settings", "server:on");
 
@@ -612,6 +658,16 @@ void test_http_set_header_fail_list_full(void)
 void test_http_get_header_success(void)
 {
     hstates_t hs;
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_init(&headers_in, hlist_in, maxlen);
+    headers_init(&headers_out, hlist_out, maxlen);
+    hs.hd_lists.headers_in = headers_in;
+    hs.hd_lists.headers_out = headers_out;
 
     strcpy(hs.hd_lists.headers_in.headers[0].name, "something1");
     strcpy(hs.hd_lists.headers_in.headers[0].value, "one");
@@ -630,6 +686,17 @@ void test_http_get_header_fail_empty_table(void)
 {
     hstates_t hs;
 
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_init(&headers_in, hlist_in, maxlen);
+    headers_init(&headers_out, hlist_out, maxlen);
+    hs.hd_lists.headers_in = headers_in;
+    hs.hd_lists.headers_out = headers_out;
+
     hs.hd_lists.headers_in.count = 0;
     char *buf = http_get_header(&hs.hd_lists, "settings", 8);
 
@@ -640,6 +707,17 @@ void test_http_get_header_fail_empty_table(void)
 void test_http_get_header_fail_header_not_found(void)
 {
     hstates_t hs;
+
+    headers_t headers_in;
+    headers_t headers_out;
+    int maxlen = 2;
+    header_t hlist_in[maxlen];
+    header_t hlist_out[maxlen];
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_init(&headers_in, hlist_in, maxlen);
+    headers_init(&headers_out, hlist_out, maxlen);
+    hs.hd_lists.headers_in = headers_in;
+    hs.hd_lists.headers_out = headers_out;
 
     strcpy(hs.hd_lists.headers_in.headers[0].name, "something1");
     strcpy(hs.hd_lists.headers_in.headers[0].value, "one");
@@ -723,6 +801,7 @@ void test_get_data_fail_no_data(void){
 void test_do_request_success(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
@@ -744,6 +823,8 @@ void test_do_request_success(void)
 void test_do_request_fail_h2_send_response(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+
     reset_http_states(&hs);
 
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
@@ -765,6 +846,7 @@ void test_do_request_fail_h2_send_response(void)
 void test_do_request_path_not_found(void)
 {
     hstates_t hs;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
@@ -782,7 +864,7 @@ void test_do_request_path_not_found(void)
 void test_do_request_no_resources(void)
 {
     hstates_t hs;
-
+    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     int get = do_request(&hs, "GET", "/index");

@@ -5,6 +5,7 @@
 #define HTTP_H
 
 #include "http_bridge.h"
+#include "headers.h"
 
 /***********************************************
  * Server API methods

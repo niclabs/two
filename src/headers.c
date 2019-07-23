@@ -6,14 +6,21 @@
 #include "headers.h"
 #include "logging.h"
 
-void headers_init(headers_t *headers, header_t *hlist, int maxlen)
+int headers_init(headers_t *headers, header_t *hlist, int maxlen)
 {
     memset(headers, 0, sizeof(*headers));
-    memset(hlist, 0, maxlen * sizeof(header_t));
+    int rc = memset(hlist, 0, maxlen * sizeof(*hlist));
+    ERROR("memset returning %d", rc);
+    if (rc <= 0){
+        ERROR("memset returning %d", rc);
+        return -1;
+
+    }
 
     headers->headers = hlist;
     headers->maxlen = maxlen;
     headers->count = 0;
+    return 0;
 }
 
 int headers_add(headers_t *headers, const char *name, const char *value)

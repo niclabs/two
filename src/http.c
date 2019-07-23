@@ -9,11 +9,13 @@
 
 //#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 
+#include "headers.h"
 #include "http.h"
 #include "http_bridge.h"
 #include "logging.h"
 #include "sock.h"
 #include "http2.h"
+
 
 #ifndef MIN
 #define MIN(n, m)   (((n) < (m)) ? (n) : (m))
@@ -207,6 +209,16 @@ http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *
 void reset_http_states(hstates_t *hs)
 {
     memset(hs, 0, sizeof(*hs));
+    headers_t headers_in;
+    int maxlen = 20; //TODO static for now...
+    header_t hlist_in[maxlen];
+    headers_init(&headers_in, hlist_in, maxlen);
+
+    headers_t headers_out;
+    header_t hlist_out[maxlen];
+    headers_init(&headers_out, hlist_out, maxlen);
+    hs->hd_lists.headers_in = headers_in;
+    hs->hd_lists.headers_out = headers_out;
 }
 
 /**
