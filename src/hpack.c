@@ -39,7 +39,8 @@
 int find_entry(uint32_t index, char *name, char *value);
 
 /*
- * Function: Writes bits from 'code' (the representation in huffman)
+ * Function: pack_encoded_words_to_bytes
+ * Writes bits from 'code' (the representation in huffman)
  * from an array of huffman_encoded_word_t to a buffer
  * using exactly the sum of all lengths of encoded words bits.
  * Input:
@@ -95,13 +96,14 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
 }
 
 /*
- * Function: Reads bits from a buffer of bytes (max number of bits it can read is 32).
+ * Function: read_bits_from_bytes
+ * Reads bits from a buffer of bytes (max number of bits it can read is 32).
  * Input:
- * - current_bit_pointer: The bit from where to start reading (inclusive)
- * - number_of_bits_to_read: The number of bits to read from the buffer
- * - *buffer: The buffer containing the bits to read
- * - buffer_size: Size of the buffer
- * - *result: Pointer to variable to store the result
+ * -> current_bit_pointer: The bit from where to start reading (inclusive)
+ * -> number_of_bits_to_read: The number of bits to read from the buffer
+ * -> *buffer: The buffer containing the bits to read
+ * -> buffer_size: Size of the buffer
+ * -> *result: Pointer to variable to store the result
  * output: 0 if the bits are read correctly and stores it in *result; -1 if it fails
  */
 int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result)
@@ -225,6 +227,16 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     return str_length + encoded_string_length_size;
 }
 
+/*
+ * Function: encode_huffman_word
+ * Encodes an Array of char and stores the result in an Array of huffman_encoded_word_t
+ * Input:
+ *      -> *str: Array to encode
+ *      -> str_length: Size of the array to encode
+ *      -> *encoded_words: Array to store the result of the encoding process
+ * Output:
+ *      Returns the sum of all bit lengths of the encoded_words
+ */
 uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words)
 {
     uint32_t encoded_word_bit_length = 0;
