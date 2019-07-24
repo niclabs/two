@@ -47,8 +47,10 @@ typedef struct hpack_dynamic_table {
    int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers);
  */
 
-int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t* headers);
+int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
-int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index,char* value_string, uint8_t value_huffman_bool, char* name_string, uint8_t name_huffman_bool, uint8_t* encoded_buffer);
+int decode_header_block_from_table(hpack_dynamic_table *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
+
+int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *value_string, uint8_t value_huffman_bool, char *name_string, uint8_t name_huffman_bool, uint8_t *encoded_buffer);
 
 #endif //TWO_HPACK_H

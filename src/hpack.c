@@ -895,6 +895,15 @@ int decode_header(hpack_dynamic_table *dynamic_table, uint8_t *bytes, hpack_prea
  */
 int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
+    decode_header_block_from_table(NULL, header_block, header_block_size, headers);
+}
+
+//decodes an array of headers,
+//as it decodes one, the pointer of the headers move forwards
+//also has to update the decoded header lists
+//returns the amount of octets in which the pointer has move to read all the headers
+int decode_header_block_from_table(hpack_dynamic_table *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
+{
     int pointer = 0;
 
     int headers_decoded = 0;
