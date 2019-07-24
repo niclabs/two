@@ -23,6 +23,24 @@ typedef enum{
 }hpack_preamble_t;
 
 
+
+//typedef for HeaderPair
+typedef struct hpack_header_pair {
+    char *name;
+    char *value;
+} header_pair;
+
+//typedefs for dinamic
+//TODO check size of struct
+typedef struct hpack_dynamic_table {
+    uint32_t max_size;
+    uint32_t first;
+    uint32_t next;
+    uint32_t table_length;
+    header_pair *table;
+} hpack_dynamic_table;
+
+
 /*
 int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers);
 int compress_static(char* headers, int headers_size, uint8_t* compressed_headers);
