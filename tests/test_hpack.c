@@ -246,6 +246,36 @@ void test_decode_header_block_literal_never_indexed(void)
     TEST_ASSERT_EQUAL_STRING(expected_name, h_list.headers_in.headers[0].name);
     TEST_ASSERT_EQUAL(0, strcmp(expected_value, h_list.headers_in.headers[0].value));
 
+    //Literal Header Field Representation
+    //Never indexed
+    //No huffman encoding - Header name as dynamic table index
+    hpack_dynamic_table dynamic_table;
+    memset(&dynamic_table, 0, sizeof(hpack_dynamic_table));
+
+    memset(&h_list, 0, sizeof(headers_data_lists_t));
+    hpack_init_dynamic_table(&dynamic_table, 4000);
+
+    char *new_name = "new_name";
+    char *new_value = "new_value";
+
+    dynamic_table_add_entry(&dynamic_table, new_name, new_value);
+
+    uint8_t header_block_dynamic_index[] = {
+        16,
+        0,
+        3,
+        'v',
+        'a',
+        'l'
+    };
+    encode_integer(62, 4, header_block_dynamic_index);
+
+    rc = decode_header_block_from_table(&dynamic_table, header_block_dynamic_index, header_block_size, &h_list.headers_in);
+
+    TEST_ASSERT_EQUAL(header_block_size, rc);
+    TEST_ASSERT_EQUAL_STRING(new_name, h_list.headers_in.headers[0].name);
+    TEST_ASSERT_EQUAL(0, strcmp(expected_value, h_list.headers_in.headers[0].value));
+
 }
 
 void test_decode_header_block_literal_without_indexing(void)
