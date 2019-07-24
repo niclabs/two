@@ -1219,8 +1219,8 @@ header_pair dynamic_find_entry(hpack_dynamic_table *dynamic_table, uint32_t inde
 //return -1 in case of error, returns 0 and copy the entry values into name and value buffers
 int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, char *value)
 {
-    const char *table_name; //add const before char to resolve compilation warnings
-    const char *table_value;
+    char *table_name; //add const before char to resolve compilation warnings
+    char *table_value;
 
     if (index >= FIRST_INDEX_DYNAMIC) {
         if(dynamic_table == NULL){
