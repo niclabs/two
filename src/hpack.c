@@ -907,6 +907,13 @@ int decode_header(hpack_dynamic_table *dynamic_table, uint8_t *bytes, hpack_prea
         }
         return rc;
     }
+    if (preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+        int rc = decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
+        if (rc < 0) {
+            ERROR("Error in decode_literal_header_field_never_indexed");
+        }
+        return rc;
+    }
     else {
         ERROR("Not implemented yet.");
         return -1;
