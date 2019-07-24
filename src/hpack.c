@@ -802,32 +802,47 @@ int decode_literal_header_field_never_indexed(uint8_t *header_block, char *name,
         pointer += 1;
         //decode huffman name
         //decode name length
-        int name_length = decode_integer(header_block + pointer, 7);
-        pointer += encoded_integer_size(name_length, 7);
-        //decode name
-        char *rc = strncpy(name, (char *)header_block + pointer, name_length);
-        if (rc <= (char *)0) {
-            ERROR("Error en strncpy");
-            return -1;
+        uint8_t huffman_name_bit = 128u & *(header_block + pointer);
+        if (huffman_name_bit) {
+            int rc = decode_huffman_string(name, header_block + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
+                return -1;
+            }
+            pointer += rc;
+        } else {
+            int rc = decode_non_huffman_string(name, header_block + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
+                return -1;
+            }
+            pointer += rc;
         }
-        pointer += name_length;
     }
     else {
         //find entry in either static or dynamic table_length
-        int rc = find_entry(index, name, value);
-        if (rc == -1) {
+        if (find_entry(index, name, value) == -1) {
             ERROR("Error en find_entry");
             return -1;
         }
-        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));
+        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
-    //decode value length
-    int value_length = decode_integer(header_block + pointer, 7);
-    pointer += encoded_integer_size(value_length, 7);
-    //decode value
-    strncpy(value, (char *)header_block + pointer, value_length);
-    pointer += value_length;
-
+    uint8_t huffman_name_bit = 128u & *(header_block + pointer);
+    if (huffman_name_bit) {
+        int rc = decode_huffman_string(value, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
+            return -1;
+        }
+        pointer += rc;
+    } else {
+        int rc = decode_non_huffman_string(value, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
+            return -1;
+        }
+        pointer += rc;
+    }
     return pointer;
 }
 
