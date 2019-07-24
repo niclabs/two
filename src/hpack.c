@@ -424,23 +424,25 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
     uint32_t str_length_size = encoded_integer_size(str_length, 7);
     uint8_t *encoded_buffer = encoded_string + str_length_size;
     uint16_t bit_position = 0;
-    int i = 0;
-    for (i = 0; (bit_position - 1) / 8 < str_length; i++) {
+    uint16_t i = 0;
+
+    for (i = 0; (bit_position - 1) / 8 < (int32_t)str_length; i++) {
         int32_t word_length = decode_huffman_word(str + i, encoded_buffer, str_length, bit_position);
         if (word_length < 0) {
             if (8 * str_length - bit_position < 8) {
                 uint8_t bits_left = 8 * str_length - bit_position;
                 uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
-                uint8_t last_byte = encoded_buffer[str_length-1];
+                uint8_t last_byte = encoded_buffer[str_length - 1];
                 if ((last_byte & mask) == mask) {
                     return i;
                 }
                 else {
-                    ERROR("Error while trying to decode padding in decode_huffman_string\n");
+                    ERROR("Error while trying to decode padding in decode_huffman_string");
                     return -1;
                 }
             }
             else {
+                ERROR("Couldn't decode string in decode_huffman_string");
                 return -1;
             }
         }
