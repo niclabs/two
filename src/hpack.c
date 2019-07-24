@@ -895,7 +895,7 @@ int decode_header(hpack_dynamic_table *dynamic_table, uint8_t *bytes, hpack_prea
  */
 int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
-    decode_header_block_from_table(NULL, header_block, header_block_size, headers);
+    return decode_header_block_from_table(NULL, header_block, header_block_size, headers);
 }
 
 //decodes an array of headers,
