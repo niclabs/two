@@ -1127,18 +1127,46 @@ int dynamic_table_add_entry(char *name, char *value)
     return 0;
 }
 
-//int dynamic_table_resize(uint32_t new_max_size)
-//{
-//    if (new_max_size > DYNAMIC_TABLE_MAX_SIZE) {
-//        ERROR("Resize operation exceeds the maximum size set by the protocol");
-//        return -1;
-//    }
+int dynamic_table_resize(uint32_t new_max_size, uint32_t dynamic_table_max_size)
+{
+    if (new_max_size > dynamic_table_max_size) {
+        ERROR("Resize operation exceeds the maximum size set by the protocol");
+        return -1;
+    }
 
-//uint32_t new_table_length = (uint32_t)(new_max_size / 32) + 1;
-//    ERROR("INCOMPLETE");
-//    return -1;
+    uint32_t new_table_length = (uint32_t)(new_max_size / 32) + 1;
+    header_pair new_table[new_table_length];
 
-//}
+    uint32_t new_first = 0;
+    uint32_t new_next = 0;
+    uint32_t new_size = 0;
+
+    uint32_t i = dynamic_table.first;
+    uint32_t j = 0;
+
+    uint32_t table_length_used = dynamic_table_length();
+
+    while (j < table_length_used && (new_size + header_pair_size(dynamic_table.table[i])) <= new_max_size) {
+        new_table[j] = dynamic_table.table[i];
+        i = (i + 1) % dynamic_table.table_length;
+        j++;
+        new_next = (new_next + 1) % new_table_length;
+        new_size += header_pair_size(dynamic_table.table[i]);
+    }
+
+    //clean last table_length
+    memset(&dynamic_table.table, 0, sizeof(dynamic_table.table));
+
+    dynamic_table.max_size = new_max_size;
+    dynamic_table.table_length = new_table_length;
+    dynamic_table.next = new_next;
+    dynamic_table.first = new_first;
+    dynamic_table.table = new_table;
+
+
+    return 0;
+
+}
 
 
 
