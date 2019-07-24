@@ -1223,6 +1223,10 @@ int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, c
     const char *table_value;
 
     if (index >= FIRST_INDEX_DYNAMIC) {
+        if(dynamic_table == NULL){
+          ERROR("Dynamic table not initialized");
+          return -1;
+        }
         header_pair entry = dynamic_find_entry(dynamic_table, index);
         table_name = entry.name;
         table_value = entry.value;
