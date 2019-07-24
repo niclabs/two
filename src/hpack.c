@@ -390,6 +390,19 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
     return encoded_word_byte_length + encoded_word_length_size;
 }
 
+/*
+ * Function: decode_huffman_word
+ * Given the bit position from where to start to read, tries to decode de bits using
+ * different lengths (from smallest (5) to largest(30)) and stores the result byte in *str
+ * Input:
+ *      -> *str: Pointer to byte to store the result of the decompression process
+ *      -> *encoded_string: Buffer storing compressed representation of string to decompress
+ *      -> encoded_string_size: Size (in octets) given by header, this is not the same as the decompressed string size
+ *      -> bit_position: Starts to decompress from this bit in the *encoded_string
+ * Output:
+ *      Stores the result in the first byte of str and returns the size in bits of
+ *      the encoded word (e.g. 5 or 6 or 7 ...), if an error occurs the return value is -1.
+ */
 int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position)
 {
     huffman_encoded_word_t encoded_word;
