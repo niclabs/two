@@ -730,6 +730,15 @@ hpack_preamble_t get_preamble(uint8_t preamble)
     return -1;
    }*/
 
+/*
+ * Function: decode_literal_header_field_without_indexing
+ * Decodes a literal header field without indexing and stores the result in name and value
+ * Input:
+ *      -> *header_block: Header block to decode
+ *      -> *name: Buffer to store result of name decoding
+ *      -> *value: Buffer to store result of value decoding
+ *
+ */
 int decode_literal_header_field_without_indexing(uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
