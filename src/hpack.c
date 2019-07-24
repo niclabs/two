@@ -45,7 +45,7 @@
  * Output:
  *      0 if success, -1 in case of Error
  */
-int find_entry(uint32_t index, char *name, char *value);
+int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, char *value);
 
 /*
  * Function: pack_encoded_words_to_bytes
@@ -730,16 +730,7 @@ hpack_preamble_t get_preamble(uint8_t preamble)
     return -1;
    }*/
 
-/*
- * Function: decode_literal_header_field_without_indexing
- * Decodes a literal header field without indexing and stores the result in name and value
- * Input:
- *      -> *header_block: Header block to decode
- *      -> *name: Buffer to store result of name decoding
- *      -> *value: Buffer to store result of value decoding
- *
- */
-int decode_literal_header_field_without_indexing(uint8_t *header_block, char *name, char *value)
+int decode_literal_header_field_without_indexing(hpack_dynamic_table *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
@@ -767,7 +758,7 @@ int decode_literal_header_field_without_indexing(uint8_t *header_block, char *na
     }
     else {
         //find entry in either static or dynamic table_length
-        if (find_entry(index, name, value) == -1) {
+        if (find_entry(dynamic_table, index, name, value) == -1) {
             ERROR("Error en find_entry");
             return -1;
         }
@@ -793,7 +784,7 @@ int decode_literal_header_field_without_indexing(uint8_t *header_block, char *na
 }
 
 
-int decode_literal_header_field_never_indexed(uint8_t *header_block, char *name, char *value)
+int decode_literal_header_field_never_indexed(hpack_dynamic_table *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
@@ -821,7 +812,8 @@ int decode_literal_header_field_never_indexed(uint8_t *header_block, char *name,
     }
     else {
         //find entry in either static or dynamic table_length
-        if (find_entry(index, name, value) == -1) {
+        int rc = find_entry(dynamic_table, index, name, value);
+        if (rc == -1) {
             ERROR("Error en find_entry");
             return -1;
         }
@@ -867,17 +859,17 @@ int decode_literal_header_field_never_indexed(uint8_t *header_block, char *name,
  *      returns the amount of octets in which the pointer has moved to read all the headers
  *
  */
-int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *value)
+int decode_header(hpack_dynamic_table *dynamic_table, uint8_t *bytes, hpack_preamble_t preamble, char *name, char *value)
 {
     if (preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING) {
-        int rc = decode_literal_header_field_without_indexing(bytes, name, value);
+        int rc = decode_literal_header_field_without_indexing(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in decode_literal_header_field_without_indexing");
         }
         return rc;
     }
     if (preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED) {
-        int rc = decode_literal_header_field_never_indexed(bytes, name, value);
+        int rc = decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in decode_literal_header_field_never_indexed");
         }
@@ -909,7 +901,7 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
 
     while (pointer < header_block_size) {
         hpack_preamble_t preamble = get_preamble(header_block[pointer]);
-        int rc = decode_header(header_block + pointer, preamble, headers->headers[headers->count].name,
+        int rc = decode_header(dynamic_table, header_block + pointer, preamble, headers->headers[headers->count].name,
                                headers->headers[headers->count].value);
 
         if (rc < 0) {
@@ -1121,7 +1113,7 @@ typedef struct hpack_dynamic_table {
 int hpack_init_dynamic_table(hpack_dynamic_table *dynamic_table, uint32_t dynamic_table_max_size)
 {
     dynamic_table->max_size = dynamic_table_max_size;
-    dynamic_table->table_length = (uint32_t)((dynamic_table.max_size / 32) + 1);
+    dynamic_table->table_length = (uint32_t)((dynamic_table->max_size / 32) + 1);
     dynamic_table->first = 0;
     dynamic_table->next = 0;
     header_pair table[dynamic_table->table_length];
@@ -1130,51 +1122,51 @@ int hpack_init_dynamic_table(hpack_dynamic_table *dynamic_table, uint32_t dynami
 }
 
 //returns the actual table length, it is the number of entries in the table_length
-uint32_t dynamic_table_length()
+uint32_t dynamic_table_length(hpack_dynamic_table *dynamic_table)
 {
-    uint32_t table_length_used = dynamic_table.first < dynamic_table.next ?
-                                 (dynamic_table.next - dynamic_table.first) % dynamic_table.table_length :
-                                 (dynamic_table.table_length - dynamic_table.first + dynamic_table.next) % dynamic_table.table_length;
+    uint32_t table_length_used = dynamic_table->first < dynamic_table->next ?
+                                 (dynamic_table->next - dynamic_table->first) % dynamic_table->table_length :
+                                 (dynamic_table->table_length - dynamic_table->first + dynamic_table->next) % dynamic_table->table_length;
 
     return table_length_used;
 }
 
 //returns the size of the table
 //this is the sum of each header pair's size
-uint32_t dynamic_table_size()
+uint32_t dynamic_table_size(hpack_dynamic_table *dynamic_table)
 {
     uint32_t total_size = 0;
-    uint32_t table_length = dynamic_table_length();
+    uint32_t table_length = dynamic_table_length(dynamic_table);
 
     for (uint32_t i = 0; i < table_length; i++) {
-        total_size += header_pair_size(dynamic_table.table[(i + dynamic_table.first) % table_length]);
+        total_size += header_pair_size(dynamic_table->table[(i + dynamic_table->first) % table_length]);
     }
     return total_size;
 }
 
 //add an header pair entry in the table
 //header pair is a name string and a value string
-int dynamic_table_add_entry(char *name, char *value)
+int dynamic_table_add_entry(hpack_dynamic_table *dynamic_table, char *name, char *value)
 {
     uint32_t entry_size = (uint32_t)(strlen(name) + strlen(value) + 32);
 
-    if (entry_size > dynamic_table.max_size) {
+    if (entry_size > dynamic_table->max_size) {
         ERROR("New entry size exceeds the size of table");
         return -1; //entry's size exceeds the size of table
     }
 
-    while (entry_size + dynamic_table_size() > dynamic_table.max_size) {
-        dynamic_table.first = (dynamic_table.first + 1) % dynamic_table.table_length;
+    while (entry_size + dynamic_table_size(dynamic_table) > dynamic_table->max_size) {
+        dynamic_table->first = (dynamic_table->first + 1) % dynamic_table->table_length;
     }
 
-    dynamic_table.table[dynamic_table.next].name = name;
-    dynamic_table.table[dynamic_table.next].value = value;
-    dynamic_table.next = (dynamic_table.next + 1) % dynamic_table.table_length;
+    dynamic_table->table[dynamic_table->next].name = name;
+    dynamic_table->table[dynamic_table->next].value = value;
+    dynamic_table->next = (dynamic_table->next + 1) % dynamic_table->table_length;
     return 0;
 }
 //make an update of the size of the dynamic table_length
 //returns -1 in case of error, 0 in success
-int dynamic_table_resize(uint32_t new_max_size, uint32_t dynamic_table_max_size)
+int dynamic_table_resize(hpack_dynamic_table *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
 {
     if (new_max_size > dynamic_table_max_size) {
         ERROR("Resize operation exceeds the maximum size set by the protocol");
@@ -1188,27 +1180,27 @@ int dynamic_table_resize(uint32_t new_max_size, uint32_t dynamic_table_max_size)
     uint32_t new_next = 0;
     uint32_t new_size = 0;
 
-    uint32_t i = dynamic_table.first;
+    uint32_t i = dynamic_table->first;
     uint32_t j = 0;
 
-    uint32_t table_length_used = dynamic_table_length();
+    uint32_t table_length_used = dynamic_table_length(dynamic_table);
 
-    while (j < table_length_used && (new_size + header_pair_size(dynamic_table.table[i])) <= new_max_size) {
-        new_table[j] = dynamic_table.table[i];
-        i = (i + 1) % dynamic_table.table_length;
+    while (j < table_length_used && (new_size + header_pair_size(dynamic_table->table[i])) <= new_max_size) {
+        new_table[j] = dynamic_table->table[i];
+        i = (i + 1) % dynamic_table->table_length;
         j++;
         new_next = (new_next + 1) % new_table_length;
-        new_size += header_pair_size(dynamic_table.table[i]);
+        new_size += header_pair_size(dynamic_table->table[i]);
     }
 
     //clean last table_length
-    memset(&dynamic_table.table, 0, sizeof(dynamic_table.table));
+    memset(&dynamic_table->table, 0, sizeof(dynamic_table->table));
 
-    dynamic_table.max_size = new_max_size;
-    dynamic_table.table_length = new_table_length;
-    dynamic_table.next = new_next;
-    dynamic_table.first = new_first;
-    dynamic_table.table = new_table;
+    dynamic_table->max_size = new_max_size;
+    dynamic_table->table_length = new_table_length;
+    dynamic_table->next = new_next;
+    dynamic_table->first = new_first;
+    dynamic_table->table = new_table;
 
 
     return 0;
@@ -1219,23 +1211,23 @@ int dynamic_table_resize(uint32_t new_max_size, uint32_t dynamic_table_max_size)
 
 //finds entry in dynamic table
 //entry is a pair name-value
-header_pair dynamic_find_entry(uint32_t index)
+header_pair dynamic_find_entry(hpack_dynamic_table *dynamic_table, uint32_t index)
 {
-    uint32_t table_index = (dynamic_table.next + dynamic_table.table_length - (index - 61)) % dynamic_table.table_length;
+    uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
-    return dynamic_table.table[table_index];
+    return dynamic_table->table[table_index];
 }
 
 //general method to find an entry in the table
 //entry is a pair name-value
 //return -1 in case of error, returns 0 and copy the entry values into name and value buffers
-int find_entry(uint32_t index, char *name, char *value)
+int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, char *value)
 {
     const char *table_name; //add const before char to resolve compilation warnings
     const char *table_value;
 
     if (index >= FIRST_INDEX_DYNAMIC) {
-        header_pair entry = dynamic_find_entry(index);
+        header_pair entry = dynamic_find_entry(dynamic_table, index);
         table_name = entry.name;
         table_value = entry.value;
     }
