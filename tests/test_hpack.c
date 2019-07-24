@@ -22,6 +22,7 @@ extern int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t e
 extern uint8_t find_prefix_size(hpack_preamble_t octet);
 extern uint32_t decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
+extern int dynamic_table_add_entry(hpack_dynamic_table *dynamic_table, char *name, char *value);
 
 
 DEFINE_FFF_GLOBALS;
