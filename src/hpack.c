@@ -39,9 +39,9 @@
  * Function: find_entry
  * finds an entry (pair name-value) in either the static or dynamic table_length
  * Input:
- *      -> index: //TODO
- *      -> *name: //TODO
- *      -> *value: //TODO
+ *      -> index: table's position of the entry
+ *      -> *name: buffer where the name of the entry will be stored
+ *      -> *value: buffer where the value of the entry will be stored
  * Output:
  *      0 if success, -1 in case of Error
  */
