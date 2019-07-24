@@ -395,7 +395,7 @@ int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_
     huffman_encoded_word_t encoded_word;
 
     for (uint8_t i = 5; i < 31; i++) { //search through all lengths possible
-        if (bit_position + i >= 8 * encoded_string_size) {
+        if (bit_position + i > 8 * encoded_string_size) {
             return -1;
         }
         uint32_t result = 0;
@@ -424,18 +424,19 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
     uint32_t str_length_size = encoded_integer_size(str_length, 7);
     uint8_t *encoded_buffer = encoded_string + str_length_size;
     uint16_t bit_position = 0;
-
-    for (int i = 0; (bit_position / 8) < str_length; i++) {
+    int i = 0;
+    for (i = 0; (bit_position - 1) / 8 < str_length; i++) {
         int32_t word_length = decode_huffman_word(str + i, encoded_buffer, str_length, bit_position);
         if (word_length < 0) {
             if (8 * str_length - bit_position < 8) {
                 uint8_t bits_left = 8 * str_length - bit_position;
                 uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
-                if ((bits_left & mask) == mask) {
-                    return 0;
+                uint8_t last_byte = encoded_buffer[str_length-1];
+                if ((last_byte & mask) == mask) {
+                    return i;
                 }
                 else {
-                    ERROR("Error while trying to decode padding in decode_huffman_string");
+                    ERROR("Error while trying to decode padding in decode_huffman_string\n");
                     return -1;
                 }
             }
@@ -445,6 +446,7 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
         }
         bit_position += word_length;
     }
+    return i;
 }
 
 /*
