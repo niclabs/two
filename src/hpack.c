@@ -1067,19 +1067,17 @@ typedef struct hpack_dynamic_table {
     header_pair *table;
 } hpack_dynamic_table;
 
-//dynamic_table functions
-//TODO initialize dynamic_table properly
-hpack_dynamic_table dynamic_table;
 
 
-int init_dynamic_table(hpack_dynamic_table dynamic_table, uint32_t dynamic_table_max_size)
+
+int hpack_init_dynamic_table(hpack_dynamic_table *dynamic_table, uint32_t dynamic_table_max_size)
 {
-    dynamic_table.max_size = dynamic_table_max_size;
-    dynamic_table.table_length = (uint32_t)((dynamic_table.max_size / 32) + 1);
-    dynamic_table.first = 0;
-    dynamic_table.next = 0;
-    header_pair table[dynamic_table.table_length];
-    dynamic_table.table = table;
+    dynamic_table->max_size = dynamic_table_max_size;
+    dynamic_table->table_length = (uint32_t)((dynamic_table.max_size / 32) + 1);
+    dynamic_table->first = 0;
+    dynamic_table->next = 0;
+    header_pair table[dynamic_table->table_length];
+    dynamic_table->table = table;
     return 0;
 }
 
