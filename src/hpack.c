@@ -1232,14 +1232,8 @@ int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, c
         table_name = static_header_name_table[index];
         table_value = static_header_value_table[index];
     }
-    if (strncpy(name, table_name, strlen(table_name)) <= (char *)0) {
-        ERROR("Error en strncpy");
-        return -1;
-    }
-    if (strncpy(value, table_value, strlen(table_value)) <= (char *)0) {
-        ERROR("Error en strncpy");
-        return -1;
-    }
+    strncpy(name, table_name, strlen(table_name));
+    strncpy(value, table_value, strlen(table_value));
     return 0;
 
 }
