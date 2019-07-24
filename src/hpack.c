@@ -707,28 +707,60 @@ hpack_preamble_t get_preamble(uint8_t preamble)
     return -1;
 }
 
-/*
-   int decode_literal_header_field_incremental_index(uint8_t* header_block, char* name, char* value){
-    //int pointer = 0;
+
+int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table *dynamic_table, uint8_t *header_block, char *name, char *value)
+{
+    int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));//decode index
-    if(index == 0){
-        //TODO
+
+    if (index == 0) {
+        pointer += 1;
         //decode huffman name
         //decode name length
-        //decode name
-        (void)name;
+        uint8_t huffman_name_bit = 128u & *(header_block + pointer);
+        if (huffman_name_bit) {
+            int rc = decode_huffman_string(name, header_block + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to decode huffman string in decode_literal_header_field_with_incremental_indexing");
+                return -1;
+            }
+            pointer += rc;
+        } else {
+            int rc = decode_non_huffman_string(name, header_block + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to decode non huffman string in decode_literal_header_field_with_incremental_indexing");
+                return -1;
+            }
+            pointer += rc;
+        }
     }
-    else{
-        //TODO find name in table
+    else {
+        //find entry in either static or dynamic table_length
+        if (find_entry(dynamic_table, index, name, value) == -1) {
+            ERROR("Error en find_entry");
+            return -1;
+        }
+        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
-    //TODO
-    //decode value length
-    //decode value
-    (void)value;
+    uint8_t huffman_name_bit = 128u & *(header_block + pointer);
+    if (huffman_name_bit) {
+        int rc = decode_huffman_string(value, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode huffman string in decode_literal_header_field_with_incremental_indexing");
+            return -1;
+        }
+        pointer += rc;
+    } else {
+        int rc = decode_non_huffman_string(value, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode non huffman string in decode_literal_header_field_with_incremental_indexing");
+            return -1;
+        }
+        pointer += rc;
+    }
     //TODO add to dynamic table
-    ERROR("Not implemented yet.");
-    return -1;
-   }*/
+    return pointer;
+}
 
 int decode_literal_header_field_without_indexing(hpack_dynamic_table *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
