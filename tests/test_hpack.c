@@ -17,6 +17,7 @@ extern int encode_huffman_string(char *str, uint8_t *encoded_string);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern int decode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
+extern int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
 extern uint8_t find_prefix_size(hpack_preamble_t octet);
 extern uint32_t decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
@@ -24,7 +25,7 @@ extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_int
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
-FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t*);
+FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
 
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t*);
@@ -124,6 +125,62 @@ int8_t hpack_huffman_encode_return_o(huffman_encoded_word_t *h, uint8_t sym)
 {
     h->code = 0x7;
     h->length = 5;
+    return 0;
+}
+
+/*Decode*/
+int8_t hpack_huffman_decode_return_not_found(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    return -1;
+}
+int8_t hpack_huffman_decode_return_w(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'w';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_dot(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'.';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_e(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'e';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_x(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'x';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_a(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'a';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_m(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'m';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_p(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'p';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_l(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'l';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_c(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'c';
+    return 0;
+}
+int8_t hpack_huffman_decode_return_o(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'o';
     return 0;
 }
 void setUp(void)
@@ -446,25 +503,26 @@ void test_decode_non_huffman_string(void)
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
     int rc = decode_non_huffman_string(decoded_string, encoded_string);
-    for(int i = 0; i < rc; i++){
+    for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
 }
 
 /*Test to see if decoding and encoded non huffman string yields the same string*/
-void test_encode_then_decode_non_huffman_string(void){
+void test_encode_then_decode_non_huffman_string(void)
+{
     char str[] = "www.example.com";
     uint8_t encoded_string[30];
     char result[30];
 
     memset(encoded_string, 0, 30);
-    memset(result,0,30);
+    memset(result, 0, 30);
 
     int rc = encode_non_huffman_string(str, encoded_string);
     int rc2 = decode_non_huffman_string(result, encoded_string);
-    TEST_ASSERT_EQUAL(rc,rc2+1);
-    for(int i = 0; i < rc; i++){
-        TEST_ASSERT_EQUAL(str[i],result[i]);
+    TEST_ASSERT_EQUAL(rc, rc2 + 1);
+    for (int i = 0; i < rc; i++) {
+        TEST_ASSERT_EQUAL(str[i], result[i]);
     }
 }
 
@@ -732,6 +790,68 @@ void test_encode_huffman_string(void)
     TEST_ASSERT_EQUAL(-1, rc);
 
 }
+void test_decode_huffman_word(void)
+{
+    uint8_t encoded_string[] = { 0xf1,
+                                 0xe3,
+                                 0xc2,
+                                 0xe5,
+                                 0xf2,
+                                 0x3a,
+                                 0x6b,
+                                 0xa0,
+                                 0xab,
+                                 0x90,
+                                 0xf4,
+                                 0xff };
+    char expected_decoded_string[] = "www.example.com";
+
+    uint8_t expected_word_length[] = { 7, 7, 7, 6, 5, 7, 5, 6, 6, 6, 5, 6, 5, 5, 6 };
+
+    int8_t(*hpack_huffman_decode_arr[])(huffman_encoded_word_t *, uint8_t *) = { hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_w,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_w,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_w,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_dot,
+                                                                                 hpack_huffman_decode_return_e,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_x,
+                                                                                 hpack_huffman_decode_return_a,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_m,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_p,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_l,
+                                                                                 hpack_huffman_decode_return_e,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_dot,
+                                                                                 hpack_huffman_decode_return_c,
+                                                                                 hpack_huffman_decode_return_o,
+                                                                                 hpack_huffman_decode_return_not_found,
+                                                                                 hpack_huffman_decode_return_m };
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_arr, 29);
+
+    char decoded_sym = (char)0;
+    uint8_t encoded_string_size = 12;
+    uint16_t bit_position = 0;
+
+    for (int i = 0; i < 15; i++) {
+        int8_t rc = decode_huffman_word(&decoded_sym, encoded_string, encoded_string_size, bit_position);
+        printf("%c\n",expected_decoded_string[i]);
+        TEST_ASSERT_EQUAL(expected_word_length[i], rc);
+        TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_sym);
+        bit_position += rc;
+    }
+    TEST_ASSERT_EQUAL(29, hpack_huffman_decode_fake.call_count);
+}
 
 void test_decode_integer(void)
 {
@@ -800,7 +920,7 @@ int main(void)
 
 
     UNIT_TEST(test_encode_huffman_word);
-
+    UNIT_TEST(test_decode_huffman_word);
     UNIT_TEST(test_encode_non_huffman_string);
     UNIT_TEST(test_encode_huffman_string);
 
