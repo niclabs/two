@@ -439,8 +439,8 @@ int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_
  *      -> *str: Buffer to store the result of the decompression process, this buffer must be bigger than encoded_string
  *      -> *encoded_string: Buffer containing a string compressed using Huffman Compression
  * Output:
- *      Stores the decompressed version of encoded_string in str if successful and returns the number of bytes used
- *      in str, if it fails to decode the string the return value is -1
+ *      Stores the decompressed version of encoded_string in str if successful and returns the number of bytes read
+ *      of encoded_string, if it fails to decode the string the return value is -1
  */
 int decode_huffman_string(char *str, uint8_t *encoded_string)
 {
@@ -458,7 +458,7 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
                 uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
                 uint8_t last_byte = encoded_buffer[str_length - 1];
                 if ((last_byte & mask) == mask) {
-                    return i;
+                    return str_length;
                 }
                 else {
                     ERROR("Error while trying to decode padding in decode_huffman_string");
@@ -472,7 +472,7 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
         }
         bit_position += word_length;
     }
-    return i;
+    return str_length;
 }
 
 /*
@@ -739,15 +739,22 @@ int decode_literal_header_field_without_indexing(uint8_t *header_block, char *na
         pointer += 1;
         //decode huffman name
         //decode name length
-        int name_length = decode_integer(header_block + pointer, 7);
-        pointer += encoded_integer_size(name_length, 7);
-        //decode name
-        char *rc = strncpy(name, (char *)header_block + pointer, name_length);
-        if (rc <= (char *)0) {
-            ERROR("Error en strncpy");
-            return -1;
+        uint8_t huffman_name_bit = 128u & *(header_block + pointer);
+        if (huffman_name_bit) {
+            int rc = decode_huffman_string(name, header_block + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
+                return -1;
+            }
+            pointer += rc;
+        } else {
+            int rc = decode_non_huffman_string(name, header_block + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
+                return -1;
+            }
+            pointer += rc;
         }
-        pointer += name_length;
     }
     else {
         //find entry in either static or dynamic table_length
@@ -757,13 +764,22 @@ int decode_literal_header_field_without_indexing(uint8_t *header_block, char *na
         }
         pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
-    //decode value length
-    int value_length = decode_integer(header_block + pointer, 7);
-    pointer += encoded_integer_size(value_length, 7);
-    //decode value
-    strncpy(value, (char *)header_block + pointer, value_length);
-    pointer += value_length;
-
+    uint8_t huffman_name_bit = 128u & *(header_block + pointer);
+    if (huffman_name_bit) {
+        int rc = decode_huffman_string(value, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
+            return -1;
+        }
+        pointer += rc;
+    } else {
+        int rc = decode_non_huffman_string(value, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
+            return -1;
+        }
+        pointer += rc;
+    }
     return pointer;
 }
 
@@ -860,7 +876,7 @@ int decode_header(uint8_t *bytes, hpack_preamble_t preamble, char *name, char *v
  *      -> headers: //TODO
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
-*/
+ */
 int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
     int pointer = 0;
