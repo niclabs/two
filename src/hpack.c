@@ -1267,9 +1267,17 @@ header_pair dynamic_find_entry(hpack_dynamic_table *dynamic_table, uint32_t inde
     return dynamic_table->table[table_index];
 }
 
-//general method to find an entry in the table
-//entry is a pair name-value
-//return -1 in case of error, returns 0 and copy the entry values into name and value buffers
+/*
+ * Function: find_entry
+ * General method to an entry in the table, entry is a pair name-value
+ * Input:
+ *      -> *dynamic_table: //TODO
+ *      -> index: //TODO
+ *      -> *name: //TODO
+ *      -> *value: //TODO
+ * Output:
+ *      return -1 in case of error, returns 0 and copy the entry values into name and value buffers
+ */
 int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, char *value)
 {
     const char *table_name; //add const before char to resolve compilation warnings
