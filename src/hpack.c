@@ -1197,8 +1197,17 @@ int dynamic_table_add_entry(hpack_dynamic_table *dynamic_table, char *name, char
     dynamic_table->next = (dynamic_table->next + 1) % dynamic_table->table_length;
     return 0;
 }
-//make an update of the size of the dynamic table_length
-//returns -1 in case of error, 0 in success
+
+/*
+ * Function: dynamic_table_resize
+ * Makes an update of the size of the dynamic table_length
+ * Input:
+ *      -> *dynamic_table: //TODO
+ *      -> new_max_size: //TODO
+ *      -> dynamic_table_max_size: //TODO
+ * Output:
+ *      return 0 if the update is succesful, or -1 otherwise
+ */
 int dynamic_table_resize(hpack_dynamic_table *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
 {
     if (new_max_size > dynamic_table_max_size) {
