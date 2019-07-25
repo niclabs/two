@@ -15,6 +15,7 @@ extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words,
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int encode_huffman_string(char *str, uint8_t *encoded_string);
 extern int decode_huffman_string(char *str, uint8_t *encoded_string);
+extern int decode_string(char *str, uint8_t *encoded_string);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern int decode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
@@ -1028,11 +1029,85 @@ void test_encode_then_decode_huffman_string(void)
     int rc = encode_huffman_string(str, encoded_string);
     (void)rc;
     int rc2 = decode_huffman_string(result, encoded_string);
-
     for (int i = 0; i < rc2; i++) {
         TEST_ASSERT_EQUAL(str[i], result[i]);
     }
 }
+
+void test_decode_string(void)
+{
+    uint8_t encoded_string[] = { 0x0f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d };
+    char decoded_string[30];
+
+    /*Test decode a non huffman string*/
+    memset(decoded_string, 0, 30);
+    char expected_decoded_string[] = "www.example.com";
+    int rc = decode_string(decoded_string, encoded_string);
+    TEST_ASSERT_EQUAL(15, rc);
+    for (int i = 0; i < rc; i++) {
+        TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
+    }
+    memset(decoded_string, 0, 30);
+    int8_t(*hpack_huffman_decode_arr[])(huffman_encoded_word_t *, uint8_t * ) = { hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_w,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_w,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_w,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_dot,
+                                                                                  hpack_huffman_decode_return_e,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_x,
+                                                                                  hpack_huffman_decode_return_a,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_m,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_p,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_l,
+                                                                                  hpack_huffman_decode_return_e,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_dot,
+                                                                                  hpack_huffman_decode_return_c,
+                                                                                  hpack_huffman_decode_return_o,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_m,
+                                                                                  hpack_huffman_decode_return_not_found };
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_arr, 30);
+    uint8_t encoded_string_huffman[] = { 0x8c,
+                                         0xf1,
+                                         0xe3,
+                                         0xc2,
+                                         0xe5,
+                                         0xf2,
+                                         0x3a,
+                                         0x6b,
+                                         0xa0,
+                                         0xab,
+                                         0x90,
+                                         0xf4,
+                                         0xff };
+    int rc2 = decode_string(decoded_string, encoded_string_huffman);
+
+    TEST_ASSERT_EQUAL(12,rc2);
+    for (int i = 0; i < rc2; i++) {
+        TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
+    }
+    /*Test border condition*/
+    /*Padding wrong*/
+    uint8_t encoded_string2[] = { 0x81, 0x1b };
+    char expected_decoded_string2[] = "a";
+    char decoded_string2[] = { 0, 0 };
+
+    rc = decode_huffman_string(decoded_string2, encoded_string2);
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
 void test_decode_integer(void)
 {
     uint8_t bytes1[] = {
@@ -1111,6 +1186,7 @@ int main(void)
     UNIT_TEST(test_decode_integer);
     UNIT_TEST(test_decode_non_huffman_string);
     UNIT_TEST(test_decode_huffman_string);
+    UNIT_TEST(test_decode_string);
 
     UNIT_TEST(test_encode_then_decode_non_huffman_string);
     UNIT_TEST(test_encode_then_decode_huffman_string);
