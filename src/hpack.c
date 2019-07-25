@@ -1066,7 +1066,7 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
  * decodes an array of headers using a dynamic_table, as it decodes one, the pointer of the headers
  * moves forward also updates the decoded header list
  * Input:
- *      -> *dynamic_table:
+ *      -> *dynamic_table: //TODO
  *      -> *header_block: //TODO
  *      -> header_block_size: //TODO
  *      -> headers: //TODO
@@ -1101,8 +1101,14 @@ int decode_header_block_from_table(hpack_dynamic_table *dynamic_table, uint8_t *
 }
 
 
-//return the size of a header HeaderPair
-//the size is the sum of octets used for its encoding and 32;
+/*
+ * Function: header_pair_size
+ * Input:
+ *      -> h: //TODO change the name of this variable
+ * Output:
+ *      return the size of a header HeaderPair, the size is
+ *      the sum of octets used for its encoding and 32
+ */
 uint32_t header_pair_size(header_pair h)
 {
     return (uint32_t)(strlen(h.name) + strlen(h.value) + 32);
