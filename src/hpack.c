@@ -1251,8 +1251,15 @@ int dynamic_table_resize(hpack_dynamic_table *dynamic_table, uint32_t new_max_si
 
 
 
-//finds entry in dynamic table
-//entry is a pair name-value
+/*
+ * Function: dynamic_find_entry
+ * Finds entry in dynamic table, entry is a pair name-value
+ * Input:
+ *      -> *dynamic_table: //TODO
+ *      -> index: //TODO
+ * Output:
+ *       //TODO
+ */
 header_pair dynamic_find_entry(hpack_dynamic_table *dynamic_table, uint32_t index)
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
