@@ -832,13 +832,13 @@ int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffma
 {
     int pointer = 0;
 
-    int rc = encode_string(name_string, encoded_buffer + pointer);
+    int rc = encode_string(name_string, encoded_buffer + pointer, name_huffman_bool);
     if (rc < 0){
         ERROR("Error while trying to encode in encode_literal_header_field_new_name");
         return -1;
     }
     pointer += rc;
-    rc = encode_string(value_string, encoded_buffer + pointer);
+    rc = encode_string(value_string, encoded_buffer + pointer, value_huffman_bool);
     if (rc < 0){
         ERROR("Error while trying to encode in encode_literal_header_field_new_name");
         return -1;
