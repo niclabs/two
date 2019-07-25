@@ -667,15 +667,6 @@ uint32_t decode_string(char *str, uint8_t *encoded_buffer)
     return rc;
 }
 
-/*
-   int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
-    if(huffman){
-        return encode_huffman_string(str, encoded_string);
-    }else{
-        return encode_non_huffman_string(str,encoded_string);
-    }
-   };
- */
 
 /*
  * Function: find_prefix_size
@@ -699,6 +690,15 @@ uint8_t find_prefix_size(hpack_preamble_t octet)
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 }
 
+/*
+   int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
+    if(huffman){
+        return encode_huffman_string(str, encoded_string);
+    }else{
+        return encode_non_huffman_string(str,encoded_string);
+    }
+   };
+ */
 
 /*
    int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
@@ -865,10 +865,6 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *v
     }
 }
 
-
-/*int decode(uint8_t *encoded_buffer){
-
-   }*/
 
 /*
  * Function: get_preamble
