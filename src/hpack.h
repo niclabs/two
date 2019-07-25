@@ -38,7 +38,7 @@ typedef struct hpack_dynamic_table {
     uint32_t next;
     uint32_t table_length;
     header_pair *table;
-} hpack_dynamic_table;
+} hpack_dynamic_table_t;
 
 
 /*
@@ -49,10 +49,10 @@ typedef struct hpack_dynamic_table {
 
 int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
-int decode_header_block_from_table(hpack_dynamic_table *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
+int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
 int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *value_string, uint8_t value_huffman_bool, char *name_string, uint8_t name_huffman_bool, uint8_t *encoded_buffer);
 
-int hpack_init_dynamic_table(hpack_dynamic_table *dynamic_table, uint32_t dynamic_table_max_size);
+int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size);
 
 #endif //TWO_HPACK_H

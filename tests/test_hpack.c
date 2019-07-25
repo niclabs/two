@@ -23,7 +23,7 @@ extern int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t e
 extern uint8_t find_prefix_size(hpack_preamble_t octet);
 extern uint32_t decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
-extern int dynamic_table_add_entry(hpack_dynamic_table *dynamic_table, char *name, char *value);
+extern int dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
 
 
 DEFINE_FFF_GLOBALS;
@@ -250,8 +250,8 @@ void test_decode_header_block_literal_never_indexed(void)
     //Literal Header Field Representation
     //Never indexed
     //No huffman encoding - Header name as dynamic table index
-    hpack_dynamic_table dynamic_table;
-    memset(&dynamic_table, 0, sizeof(hpack_dynamic_table));
+    hpack_dynamic_table_t dynamic_table;
+    memset(&dynamic_table, 0, sizeof(hpack_dynamic_table_t));
 
     memset(&h_list, 0, sizeof(headers_data_lists_t));
     hpack_init_dynamic_table(&dynamic_table, 4000);
