@@ -699,7 +699,7 @@ uint8_t find_prefix_size(hpack_preamble_t octet)
  *      -> *encoded_string: Buffer to store the encoded
  *      -> ḧuffman_bit: Boolean value to choose compression or not
  * Output:
- *      Return the number of bytes used to store the encoded string
+ *      Return the number of bytes used to store the encoded string, or if the encoding fails it returns -1
  */
 int encode_string(char *str, uint8_t *encoded_string, uint8_t huffman_bit)
 {
@@ -816,7 +816,18 @@ int encode_string(char *str, uint8_t *encoded_string, uint8_t huffman_bit)
    }
  */
 
-
+/*
+ * Function: encode_literal_header_field_new_name
+ * Encodes a name and a value using the compression strategy defined by name_huffman_bool and value_huffman_bool
+ * Input:
+ *      -> *name_string: name of the header field to encode
+ *      -> name_huffman_bool: Boolean value used to indicate if name_string is to be compressed or not
+ *      -> *value_string: value of the header field to encode
+ *      -> value_huffman_bool: Boolean value used to indicate if value_string is to be compressed or not
+ *      -> *encoded_buffer: Buffer to store the result of the encoding process
+ *  Output:
+ *      Returns the number of bytes used to encode name and value, or -1 if an error occurs while encoding
+ */
 int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer)
 {
     int pointer = 0;
