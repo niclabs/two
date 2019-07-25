@@ -690,8 +690,18 @@ uint8_t find_prefix_size(hpack_preamble_t octet)
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 }
 
-
-int encode_string(char *str, uint8_t huffman_bit, uint8_t *encoded_string)
+/*
+ * Function: encode_string
+ * Encodes the given string with or without Huffman Compression and stores the result in encoded_string
+ * The string is compressed if huffman_bit is not equal to 0
+ * Input:
+ *      -> *str: Buffer containing string to encode
+ *      -> *encoded_string: Buffer to store the encoded
+ *      -> ḧuffman_bit: Boolean value to choose compression or not
+ * Output:
+ *      Return the number of bytes used to store the encoded string
+ */
+int encode_string(char *str, uint8_t *encoded_string, uint8_t huffman_bit)
 {
     if (huffman_bit) {
         return encode_huffman_string(str, encoded_string);
