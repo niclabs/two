@@ -870,6 +870,21 @@ int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_h
     return pointer;
 }
 
+/*
+ * Function: encode
+ * Encodes a header field
+ * Input:
+ *      -> preamble: Indicates the type to encode
+ *      -> max_size: Max size of the dynamic table
+ *      -> index: Index to encode if not equal to 0, if equal to 0 encodes a literal header field representation
+ *      -> *name_string: name of the header field to encode
+ *      -> name_huffman_bool: Boolean value used to indicate if the name_string is to be compressed using Huffman Compression
+ *      -> *value_string: value of the header field to encode
+ *      -> value_huffman_bool: Boolean value used to indicate if the value_string is to be compressed using Huffman Compression
+ *      -> *encoded_buffer: Buffer to store the result of the encoding process
+ * Output:
+ *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
+ */
 int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *value_string, uint8_t value_huffman_bool, char *name_string, uint8_t name_huffman_bool, uint8_t *encoded_buffer)
 {
     if (preamble == DYNAMIC_TABLE_SIZE_UPDATE) { // dynamicTableSizeUpdate
@@ -889,11 +904,20 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *v
         }
         else {
             if (index == (uint8_t)0) {
-                pointer += encode_literal_header_field_new_name(name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
+                int rc = encode_literal_header_field_new_name(name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
+                if(rc < 0){
+                    ERROR("Error while trying to encode")
+                    return -1;
+                }
+                pointer += rc;
             }
             else {
-                //TOD0
-                //pointer += encode_literal_header_field_indexed_name( value_string, value_huffman_bool, encoded_buffer + pointer);
+                int rc = encode_literal_header_field_indexed_name( value_string, value_huffman_bool, encoded_buffer + pointer);
+                if(rc < 0){
+                    ERROR("Error while trying to encode")
+                    return -1;
+                }
+                pointer += rc;
             }
             return pointer;
         }
