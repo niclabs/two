@@ -1114,7 +1114,15 @@ uint32_t header_pair_size(header_pair h)
     return (uint32_t)(strlen(h.name) + strlen(h.value) + 32);
 }
 
-
+/*
+ * Function: hpack_init_dynamic_table
+ * //TODO
+ * Input:
+ *      -> *dynamic_table: //TODO
+ *      -> dynamic_table_max_size: //TODO
+ * Output:
+ *      //TODO
+ */
 int hpack_init_dynamic_table(hpack_dynamic_table *dynamic_table, uint32_t dynamic_table_max_size)
 {
     dynamic_table->max_size = dynamic_table_max_size;
