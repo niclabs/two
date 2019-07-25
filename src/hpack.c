@@ -1168,7 +1168,16 @@ uint32_t dynamic_table_size(hpack_dynamic_table *dynamic_table)
     return total_size;
 }
 
-//add an header pair entry in the table
+/*
+ * Function: dynamic_table_add_entry
+ * Add an header pair entry in the table
+ * Input:
+ *      -> *dynamic_table: //TODO
+ *      -> *name: //TODO
+ *      -> *value: //TODO
+ * Output:
+ *      //TODO
+ */
 //header pair is a name string and a value string
 int dynamic_table_add_entry(hpack_dynamic_table *dynamic_table, char *name, char *value)
 {
