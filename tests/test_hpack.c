@@ -362,7 +362,7 @@ void test_encode(void)
         (uint8_t)'l'
     };
 
-    int rc = encode(preamble, max_size, index, value_string, value_huffman_bool, name_string, name_huffman_bool, encoded_buffer);
+    int rc = encode(preamble, max_size, index, name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer);
 
 
     TEST_ASSERT_EQUAL(10, rc);
@@ -1100,7 +1100,7 @@ void test_decode_string(void)
     int rc2 = decode_string(decoded_string, encoded_string_huffman);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
 
-    TEST_ASSERT_EQUAL(12,rc2);
+    TEST_ASSERT_EQUAL(12, rc2);
     for (int i = 0; i < rc2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }

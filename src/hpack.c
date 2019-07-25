@@ -885,7 +885,7 @@ int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_h
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *value_string, uint8_t value_huffman_bool, char *name_string, uint8_t name_huffman_bool, uint8_t *encoded_buffer)
+int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool,  uint8_t *encoded_buffer)
 {
     if (preamble == DYNAMIC_TABLE_SIZE_UPDATE) { // dynamicTableSizeUpdate
         int encoded_max_size_length = encode_integer(max_size, 5, encoded_buffer);
@@ -906,7 +906,7 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *v
             if (index == (uint8_t)0) {
                 int rc = encode_literal_header_field_new_name(name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
                 if(rc < 0){
-                    ERROR("Error while trying to encode")
+                    ERROR("Error while trying to encode");
                     return -1;
                 }
                 pointer += rc;
@@ -914,7 +914,7 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *v
             else {
                 int rc = encode_literal_header_field_indexed_name( value_string, value_huffman_bool, encoded_buffer + pointer);
                 if(rc < 0){
-                    ERROR("Error while trying to encode")
+                    ERROR("Error while trying to encode");
                     return -1;
                 }
                 pointer += rc;
