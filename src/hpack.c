@@ -1034,7 +1034,7 @@ int decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *bytes, hpack_pr
     if (preamble == INDEXED_HEADER_FIELD) {
         int rc = decode_indexed_header_field(dynamic_table, bytes, name, value);
         if (rc < 0) {
-            ERROR("Error in decode_literal_header_field_without_indexing ");
+            ERROR("Error in decode_indexed_header_field ");
         }
         return rc;
     }
