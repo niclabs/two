@@ -833,30 +833,33 @@ int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffma
     int pointer = 0;
 
     int rc = encode_string(name_string, encoded_buffer + pointer, name_huffman_bool);
-    if (rc < 0){
-        ERROR("Error while trying to encode in encode_literal_header_field_new_name");
+
+    if (rc < 0) {
+        ERROR("Error while trying to encode name in encode_literal_header_field_new_name");
         return -1;
     }
     pointer += rc;
     rc = encode_string(value_string, encoded_buffer + pointer, value_huffman_bool);
-    if (rc < 0){
-        ERROR("Error while trying to encode in encode_literal_header_field_new_name");
+    if (rc < 0) {
+        ERROR("Error while trying to encode value in encode_literal_header_field_new_name");
         return -1;
     }
     pointer += rc;
     return pointer;
 }
-/*
-   int encode_literal_header_field_indexed_name( char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
+
+
+int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer)
+{
     int pointer = 0;
 
-    if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(value_string,encoded_buffer+pointer);
+    int rc = encode_string(value_string, encoded_buffer, value_huffman_bool);
+    if (rc < 0){
+        ERROR("Error while trying to encode value in encode_literal_header_field_indexed_name");
+        return -1;
     }
     return pointer;
-   }*/
+}
 
 int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *value_string, uint8_t value_huffman_bool, char *name_string, uint8_t name_huffman_bool, uint8_t *encoded_buffer)
 {
