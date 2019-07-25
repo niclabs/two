@@ -475,13 +475,24 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
     return str_length;
 }
 
+/*
+ * Function: decode_string
+ * Decodes an string according to its huffman bit, if it's 1 the string is decoded using huffman decompression
+ * if it's 0 it copies the content of the encoded_buffer to str.
+ * Input:
+ *      -> *str: Buffer to store the result of the decoding process
+ *      -> *encoded_buffer: Buffer containing the string to decode
+ * Output:
+ *      Returns the number of bytes read from encoded_buffer in the decoding process if succesful,
+ *      if the process fails the function returns -1
+*/
 uint32_t decode_string(char *str, uint8_t *encoded_buffer)
 {
     //decode huffman name
     //decode name length
-    uint8_t huffman_name_bit = 128u & *(encoded_buffer);
+    uint8_t huffman_bit = 128u & *(encoded_buffer);
     int rc = 0;
-    if (huffman_name_bit) {
+    if (huffman_bit) {
         rc = decode_huffman_string(str, encoded_buffer);
         if (rc < 0) {
             return -1;
