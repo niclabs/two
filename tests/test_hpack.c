@@ -187,6 +187,21 @@ int8_t hpack_huffman_decode_return_o(huffman_encoded_word_t *encoded, uint8_t *s
     *sym = (uint8_t)'o';
     return 0;
 }
+int8_t(*hpack_huffman_encode_wwwdotexampledotcom_arr[])(huffman_encoded_word_t *, uint8_t) = { hpack_huffman_encode_return_w,
+                                                                                               hpack_huffman_encode_return_w,
+                                                                                               hpack_huffman_encode_return_w,
+                                                                                               hpack_huffman_encode_return_dot,
+                                                                                               hpack_huffman_encode_return_e,
+                                                                                               hpack_huffman_encode_return_x,
+                                                                                               hpack_huffman_encode_return_a,
+                                                                                               hpack_huffman_encode_return_m,
+                                                                                               hpack_huffman_encode_return_p,
+                                                                                               hpack_huffman_encode_return_l,
+                                                                                               hpack_huffman_encode_return_e,
+                                                                                               hpack_huffman_encode_return_dot,
+                                                                                               hpack_huffman_encode_return_c,
+                                                                                               hpack_huffman_encode_return_o,
+                                                                                               hpack_huffman_encode_return_m };
 void setUp(void)
 {
     /* Register resets */
@@ -746,22 +761,7 @@ void test_encode_huffman_word(void)
     uint32_t str_length = 15;
     char *str = "www.example.com";
 
-    int8_t(*hpack_huffman_encode_arr[])(huffman_encoded_word_t *, uint8_t) = { hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_dot,
-                                                                               hpack_huffman_encode_return_e,
-                                                                               hpack_huffman_encode_return_x,
-                                                                               hpack_huffman_encode_return_a,
-                                                                               hpack_huffman_encode_return_m,
-                                                                               hpack_huffman_encode_return_p,
-                                                                               hpack_huffman_encode_return_l,
-                                                                               hpack_huffman_encode_return_e,
-                                                                               hpack_huffman_encode_return_dot,
-                                                                               hpack_huffman_encode_return_c,
-                                                                               hpack_huffman_encode_return_o,
-                                                                               hpack_huffman_encode_return_m, };
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_arr, 15);
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
 
     huffman_encoded_word_t encoded_words[str_length];
     uint32_t encoded_word_bit_length = encode_huffman_word(str, str_length, encoded_words);
@@ -773,22 +773,6 @@ void test_encode_huffman_string(void)
 {
     char *str = "www.example.com";
     uint8_t encoded_string[30];
-
-    int8_t(*hpack_huffman_encode_arr[])(huffman_encoded_word_t *, uint8_t) = { hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_dot,
-                                                                               hpack_huffman_encode_return_e,
-                                                                               hpack_huffman_encode_return_x,
-                                                                               hpack_huffman_encode_return_a,
-                                                                               hpack_huffman_encode_return_m,
-                                                                               hpack_huffman_encode_return_p,
-                                                                               hpack_huffman_encode_return_l,
-                                                                               hpack_huffman_encode_return_e,
-                                                                               hpack_huffman_encode_return_dot,
-                                                                               hpack_huffman_encode_return_c,
-                                                                               hpack_huffman_encode_return_o,
-                                                                               hpack_huffman_encode_return_m };
 
     uint8_t expected_encoded_string[] = {
         0x8c,
@@ -806,7 +790,7 @@ void test_encode_huffman_string(void)
         0xff
     };
 
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_arr, 15);
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
     int rc = encode_huffman_string(str, encoded_string);
     TEST_ASSERT_EQUAL(13, rc);
     for (int i = 0; i < rc; i++) {
@@ -1010,22 +994,8 @@ void test_encode_then_decode_huffman_string(void)
                                                                                   hpack_huffman_decode_return_m,
                                                                                   hpack_huffman_decode_return_not_found };
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_arr, 30);
-    int8_t(*hpack_huffman_encode_arr[])(huffman_encoded_word_t *, uint8_t) = { hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_w,
-                                                                               hpack_huffman_encode_return_dot,
-                                                                               hpack_huffman_encode_return_e,
-                                                                               hpack_huffman_encode_return_x,
-                                                                               hpack_huffman_encode_return_a,
-                                                                               hpack_huffman_encode_return_m,
-                                                                               hpack_huffman_encode_return_p,
-                                                                               hpack_huffman_encode_return_l,
-                                                                               hpack_huffman_encode_return_e,
-                                                                               hpack_huffman_encode_return_dot,
-                                                                               hpack_huffman_encode_return_c,
-                                                                               hpack_huffman_encode_return_o,
-                                                                               hpack_huffman_encode_return_m };
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_arr, 15);
+
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
     int rc = encode_huffman_string(str, encoded_string);
     (void)rc;
     int rc2 = decode_huffman_string(result, encoded_string);
