@@ -235,7 +235,19 @@ int8_t(*hpack_huffman_decode_wwwdotexampledotcom_arr[])(huffman_encoded_word_t *
                                                                                                  hpack_huffman_decode_return_not_found };
 int8_t(*hpack_huffman_decode_bad_padding_arr[])(huffman_encoded_word_t *, uint8_t *) = { hpack_huffman_decode_return_a,
                                                                                          hpack_huffman_decode_return_not_found };
-
+uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
+                                          0xf1,
+                                          0xe3,
+                                          0xc2,
+                                          0xe5,
+                                          0xf2,
+                                          0x3a,
+                                          0x6b,
+                                          0xa0,
+                                          0xab,
+                                          0x90,
+                                          0xf4,
+                                          0xff };
 void setUp(void)
 {
     /* Register resets */
@@ -808,21 +820,7 @@ void test_encode_huffman_string(void)
     char *str = "www.example.com";
     uint8_t encoded_string[30];
 
-    uint8_t expected_encoded_string[] = {
-        0x8c,
-        0xf1,
-        0xe3,
-        0xc2,
-        0xe5,
-        0xf2,
-        0x3a,
-        0x6b,
-        0xa0,
-        0xab,
-        0x90,
-        0xf4,
-        0xff
-    };
+    uint8_t* expected_encoded_string = encoded_wwwdotexampledotcom;
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
     int rc = encode_huffman_string(str, encoded_string);
@@ -842,20 +840,10 @@ void test_encode_huffman_string(void)
     TEST_ASSERT_EQUAL(-1, rc);
 
 }
+
 void test_decode_huffman_word(void)
 {
-    uint8_t encoded_string[] = { 0xf1,
-                                 0xe3,
-                                 0xc2,
-                                 0xe5,
-                                 0xf2,
-                                 0x3a,
-                                 0x6b,
-                                 0xa0,
-                                 0xab,
-                                 0x90,
-                                 0xf4,
-                                 0xff };
+    uint8_t* encoded_string = encoded_wwwdotexampledotcom + 1; //We don't need to decode as string the first byte
     char expected_decoded_string[] = "www.example.com";
 
     uint8_t expected_word_length[] = { 7, 7, 7, 6, 5, 7, 5, 6, 6, 6, 5, 6, 5, 5, 6 };
@@ -882,19 +870,7 @@ void test_decode_huffman_string(void)
 
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
-    uint8_t encoded_string[] = { 0x8c,
-                                 0xf1,
-                                 0xe3,
-                                 0xc2,
-                                 0xe5,
-                                 0xf2,
-                                 0x3a,
-                                 0x6b,
-                                 0xa0,
-                                 0xab,
-                                 0x90,
-                                 0xf4,
-                                 0xff };
+    uint8_t* encoded_string = encoded_wwwdotexampledotcom;
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
 
@@ -970,19 +946,7 @@ void test_decode_string(void)
     memset(decoded_string, 0, 30);
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
-    uint8_t encoded_string_huffman[] = { 0x8c,
-                                         0xf1,
-                                         0xe3,
-                                         0xc2,
-                                         0xe5,
-                                         0xf2,
-                                         0x3a,
-                                         0x6b,
-                                         0xa0,
-                                         0xab,
-                                         0x90,
-                                         0xf4,
-                                         0xff };
+    uint8_t* encoded_string_huffman = encoded_wwwdotexampledotcom;
     int rc2 = decode_string(decoded_string, encoded_string_huffman);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
 
