@@ -848,7 +848,16 @@ int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffma
     return pointer;
 }
 
-
+/*
+ * Function: encode_literal_header_field_indexed_name
+ * Encodes a value using the compression strategy defined by value_huffman_bool
+ * Input:
+ *      -> *value_string: value of the header field to encode
+ *      -> value_huffman_bool: Boolean value used to indicate if value_string is to be compressed or not
+ *      -> *encoded_buffer: Buffer to store the result of the encoding process
+ * Output:
+ *      Returns the number of bytes used to encde the value, or -1 if an error occurs while encoding
+ */
 int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer)
 {
     int pointer = 0;
