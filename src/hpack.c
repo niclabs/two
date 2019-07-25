@@ -285,27 +285,6 @@ uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
     return -1;
 }
 
-uint32_t decode_string(char *str, uint8_t *encoded_buffer)
-{
-    //decode huffman name
-    //decode name length
-    uint8_t huffman_name_bit = 128u & *(encoded_buffer);
-    int rc = 0
-             if (huffman_name_bit) {
-        rc = decode_huffman_string(str, encoded_buffer);
-        if (rc < 0) {
-            return -1;
-        }
-    }
-    else {
-        rc = decode_non_huffman_string(str, encoded_buffer);
-        if (rc < 0) {
-            return -1;
-        }
-    }
-    return rc;
-}
-
 /*
  * Function: encode_non_huffman_string
  * Encodes an Array of char without using Huffman Compression
@@ -494,6 +473,27 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
         bit_position += word_length;
     }
     return str_length;
+}
+
+uint32_t decode_string(char *str, uint8_t *encoded_buffer)
+{
+    //decode huffman name
+    //decode name length
+    uint8_t huffman_name_bit = 128u & *(encoded_buffer);
+    int rc = 0;
+    if (huffman_name_bit) {
+        rc = decode_huffman_string(str, encoded_buffer);
+        if (rc < 0) {
+            return -1;
+        }
+    }
+    else {
+        rc = decode_non_huffman_string(str, encoded_buffer);
+        if (rc < 0) {
+            return -1;
+        }
+    }
+    return rc;
 }
 
 /*
@@ -736,7 +736,7 @@ int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table *d
 
     if (index == 0) {
         pointer += 1;
-        uint32_t rc = decode_string(name, header_block + pointer);
+        int32_t rc = decode_string(name, header_block + pointer);
         if (rc < 0) {
             ERROR("Error while trying to decode string in decode_literal_header_field_with_incremental_indexing");
             return -1;
@@ -751,7 +751,7 @@ int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table *d
         }
         pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));
     }
-    uint32_t rc = decode_string(value, header_block + pointer);
+    int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
         ERROR ("Error while trying to decode string in decode_literal_header_field_with_incremental_indexing");
         return -1;
@@ -768,7 +768,7 @@ int decode_literal_header_field_without_indexing(hpack_dynamic_table *dynamic_ta
 
     if (index == 0) {
         pointer += 1;
-        uint32_t rc = decode_string(name, header_block + pointer);
+        int32_t rc = decode_string(name, header_block + pointer);
         if (rc < 0) {
             ERROR("Error while trying to decode string in decode_literal_header_field_without_indexing");
             return -1;
@@ -782,7 +782,7 @@ int decode_literal_header_field_without_indexing(hpack_dynamic_table *dynamic_ta
         }
         pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
-    uint32_t rc = decode_string(value, header_block + pointer);
+    int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
         ERROR ("Error while trying to decode string in decode_literal_header_field_without_indexing");
                        return -1;
@@ -799,7 +799,7 @@ int decode_literal_header_field_never_indexed(hpack_dynamic_table *dynamic_table
 
     if (index == 0) {
         pointer += 1;
-        uint32_t rc = decode_string(name, header_block + pointer);
+        int32_t rc = decode_string(name, header_block + pointer);
         if (rc < 0) {
             ERROR("Error while trying to decode string in decode_literal_header_field_never_indexed");
             return -1;
@@ -815,7 +815,7 @@ int decode_literal_header_field_never_indexed(hpack_dynamic_table *dynamic_table
         }
         pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));
     }
-    uint32_t rc = decode_string(value, header_block + pointer);
+    int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
         ERROR ("Error while trying to decode string in decode_literal_header_field_never_indexed");
                        return -1;
