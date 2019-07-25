@@ -821,18 +821,18 @@ int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffma
 {
     int pointer = 0;
 
-    if (name_huffman_bool != 0) {
-        pointer += encode_huffman_string(name_string, encoded_buffer + pointer);
+    int rc = encode_string(name_string, encoded_buffer + pointer);
+    if (rc < 0){
+        ERROR("Error while trying to encode in encode_literal_header_field_new_name");
+        return -1;
     }
-    else {
-        pointer += encode_non_huffman_string(name_string, encoded_buffer + pointer);
+    pointer += rc;
+    rc = encode_string(value_string, encoded_buffer + pointer);
+    if (rc < 0){
+        ERROR("Error while trying to encode in encode_literal_header_field_new_name");
+        return -1;
     }
-    if (value_huffman_bool != 0) {
-        pointer += encode_huffman_string(value_string, encoded_buffer + pointer);
-    }
-    else {
-        pointer += encode_non_huffman_string(value_string, encoded_buffer + pointer);
-    }
+    pointer += rc;
     return pointer;
 }
 /*
