@@ -28,7 +28,7 @@ typedef enum {
 typedef struct hpack_header_pair {
     char *name;
     char *value;
-} header_pair;
+} header_pair_t;
 
 //typedefs for dinamic
 //TODO check size of struct
@@ -37,7 +37,7 @@ typedef struct hpack_dynamic_table {
     uint32_t first;
     uint32_t next;
     uint32_t table_length;
-    header_pair *table;
+    header_pair_t *table;
 } hpack_dynamic_table_t;
 
 

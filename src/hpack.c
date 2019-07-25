@@ -1109,7 +1109,7 @@ int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t
  *      return the size of a header HeaderPair, the size is
  *      the sum of octets used for its encoding and 32
  */
-uint32_t header_pair_size(header_pair h)
+uint32_t header_pair_size(header_pair_t h)
 {
     return (uint32_t)(strlen(h.name) + strlen(h.value) + 32);
 }
@@ -1129,7 +1129,7 @@ int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dyna
     dynamic_table->table_length = (uint32_t)((dynamic_table->max_size / 32) + 1);
     dynamic_table->first = 0;
     dynamic_table->next = 0;
-    header_pair table[dynamic_table->table_length];
+    header_pair_t table[dynamic_table->table_length];
     dynamic_table->table = table;
     return 0;
 }
@@ -1216,7 +1216,7 @@ int dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_
     }
 
     uint32_t new_table_length = (uint32_t)(new_max_size / 32) + 1;
-    header_pair new_table[new_table_length];
+    header_pair_t new_table[new_table_length];
 
     uint32_t new_first = 0;
     uint32_t new_next = 0;
@@ -1260,7 +1260,7 @@ int dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_
  * Output:
  *       //TODO
  */
-header_pair dynamic_find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index)
+header_pair_t dynamic_find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index)
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
@@ -1288,7 +1288,7 @@ int find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name,
           ERROR("Dynamic table not initialized ");
           return -1;
         }
-        header_pair entry = dynamic_find_entry(dynamic_table, index);
+        header_pair_t entry = dynamic_find_entry(dynamic_table, index);
         table_name = entry.name;
         table_value = entry.value;
     }
