@@ -690,15 +690,17 @@ uint8_t find_prefix_size(hpack_preamble_t octet)
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 }
 
-/*
-   int encode_string(char* str, uint8_t huffman, uint8_t* encoded_string){
-    if(huffman){
+
+int encode_string(char *str, uint8_t huffman_bit, uint8_t *encoded_string)
+{
+    if (huffman_bit) {
         return encode_huffman_string(str, encoded_string);
-    }else{
-        return encode_non_huffman_string(str,encoded_string);
     }
-   };
- */
+    else {
+        return encode_non_huffman_string(str, encoded_string);
+    }
+}
+
 
 /*
    int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
