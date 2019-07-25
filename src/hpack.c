@@ -1134,7 +1134,13 @@ int hpack_init_dynamic_table(hpack_dynamic_table *dynamic_table, uint32_t dynami
     return 0;
 }
 
-//returns the actual table length, it is the number of entries in the table_length
+/*
+ * Function: dynamic_table_length
+ * Input:
+ *      -> *dynamic_table: //TODO
+ * Output:
+ *      returns the actual table length which is equal to the number of entries in the table_length
+ */
 uint32_t dynamic_table_length(hpack_dynamic_table *dynamic_table)
 {
     uint32_t table_length_used = dynamic_table->first < dynamic_table->next ?
@@ -1143,6 +1149,7 @@ uint32_t dynamic_table_length(hpack_dynamic_table *dynamic_table)
 
     return table_length_used;
 }
+
 
 //returns the size of the table
 //this is the sum of each header pair's size
