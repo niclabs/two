@@ -1047,6 +1047,7 @@ void test_decode_string(void)
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
+    /*Test decode a huffman string*/
     memset(decoded_string, 0, 30);
     int8_t(*hpack_huffman_decode_arr[])(huffman_encoded_word_t *, uint8_t * ) = { hpack_huffman_decode_return_not_found,
                                                                                   hpack_huffman_decode_return_not_found,
@@ -1077,8 +1078,12 @@ void test_decode_string(void)
                                                                                   hpack_huffman_decode_return_o,
                                                                                   hpack_huffman_decode_return_not_found,
                                                                                   hpack_huffman_decode_return_m,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_not_found,
+                                                                                  hpack_huffman_decode_return_a,
                                                                                   hpack_huffman_decode_return_not_found };
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_arr, 30);
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_arr, 34);
     uint8_t encoded_string_huffman[] = { 0x8c,
                                          0xf1,
                                          0xe3,
@@ -1093,6 +1098,7 @@ void test_decode_string(void)
                                          0xf4,
                                          0xff };
     int rc2 = decode_string(decoded_string, encoded_string_huffman);
+    TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
 
     TEST_ASSERT_EQUAL(12,rc2);
     for (int i = 0; i < rc2; i++) {
@@ -1104,8 +1110,9 @@ void test_decode_string(void)
     char expected_decoded_string2[] = "a";
     char decoded_string2[] = { 0, 0 };
 
-    rc = decode_huffman_string(decoded_string2, encoded_string2);
+    rc = decode_string(decoded_string2, encoded_string2);
     TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
 }
 
 void test_decode_integer(void)
