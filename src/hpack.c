@@ -285,6 +285,27 @@ uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
     return -1;
 }
 
+uint32_t decode_string(char *str, uint8_t *encoded_buffer)
+{
+    //decode huffman name
+    //decode name length
+    uint8_t huffman_name_bit = 128u & *(encoded_buffer);
+    int rc = 0
+             if (huffman_name_bit) {
+        rc = decode_huffman_string(str, encoded_buffer);
+        if (rc < 0) {
+            return -1;
+        }
+    }
+    else {
+        rc = decode_non_huffman_string(str, encoded_buffer);
+        if (rc < 0) {
+            return -1;
+        }
+    }
+    return rc;
+}
+
 /*
  * Function: encode_non_huffman_string
  * Encodes an Array of char without using Huffman Compression
@@ -715,24 +736,12 @@ int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table *d
 
     if (index == 0) {
         pointer += 1;
-        //decode huffman name
-        //decode name length
-        uint8_t huffman_name_bit = 128u & *(header_block + pointer);
-        if (huffman_name_bit) {
-            int rc = decode_huffman_string(name, header_block + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to decode huffman string in decode_literal_header_field_with_incremental_indexing");
-                return -1;
-            }
-            pointer += rc;
-        } else {
-            int rc = decode_non_huffman_string(name, header_block + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to decode non huffman string in decode_literal_header_field_with_incremental_indexing");
-                return -1;
-            }
-            pointer += rc;
+        uint32_t rc = decode_string(name, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode string in decode_literal_header_field_with_incremental_indexing");
+            return -1;
         }
+        pointer += rc;
     }
     else {
         //find entry in either static or dynamic table_length
@@ -740,24 +749,14 @@ int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table *d
             ERROR("Error en find_entry");
             return -1;
         }
-        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
+        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));
     }
-    uint8_t huffman_name_bit = 128u & *(header_block + pointer);
-    if (huffman_name_bit) {
-        int rc = decode_huffman_string(value, header_block + pointer);
-        if (rc < 0) {
-            ERROR("Error while trying to decode huffman string in decode_literal_header_field_with_incremental_indexing");
-            return -1;
-        }
-        pointer += rc;
-    } else {
-        int rc = decode_non_huffman_string(value, header_block + pointer);
-        if (rc < 0) {
-            ERROR("Error while trying to decode non huffman string in decode_literal_header_field_with_incremental_indexing");
-            return -1;
-        }
-        pointer += rc;
+    uint32_t rc = decode_string(value, header_block + pointer);
+    if (rc < 0) {
+        ERROR ("Error while trying to decode string in decode_literal_header_field_with_incremental_indexing");
+        return -1;
     }
+    pointer += rc;
     //TODO add to dynamic table
     return pointer;
 }
@@ -769,49 +768,26 @@ int decode_literal_header_field_without_indexing(hpack_dynamic_table *dynamic_ta
 
     if (index == 0) {
         pointer += 1;
-        //decode huffman name
-        //decode name length
-        uint8_t huffman_name_bit = 128u & *(header_block + pointer);
-        if (huffman_name_bit) {
-            int rc = decode_huffman_string(name, header_block + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
-                return -1;
-            }
-            pointer += rc;
-        } else {
-            int rc = decode_non_huffman_string(name, header_block + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
-                return -1;
-            }
-            pointer += rc;
-        }
-    }
-    else {
-        //find entry in either static or dynamic table_length
-        if (find_entry(dynamic_table, index, name, value) == -1) {
-            ERROR("Error en find_entry");
-            return -1;
-        }
-        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
-    }
-    uint8_t huffman_name_bit = 128u & *(header_block + pointer);
-    if (huffman_name_bit) {
-        int rc = decode_huffman_string(value, header_block + pointer);
+        uint32_t rc = decode_string(name, header_block + pointer);
         if (rc < 0) {
-            ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
+            ERROR("Error while trying to decode string in decode_literal_header_field_without_indexing");
             return -1;
         }
         pointer += rc;
     } else {
-        int rc = decode_non_huffman_string(value, header_block + pointer);
-        if (rc < 0) {
-            ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
+        //find entry in either static or dynamic table_length
+        if (find_entry(dynamic_table, index, name, value) == -1) {
+            ERROR("Error en find_entry ");
             return -1;
         }
-        pointer += rc;
+        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
+    uint32_t rc = decode_string(value, header_block + pointer);
+    if (rc < 0) {
+        ERROR ("Error while trying to decode string in decode_literal_header_field_without_indexing");
+                       return -1;
+    }
+    pointer += rc;
     return pointer;
 }
 
@@ -823,50 +799,28 @@ int decode_literal_header_field_never_indexed(hpack_dynamic_table *dynamic_table
 
     if (index == 0) {
         pointer += 1;
-        //decode huffman name
-        //decode name length
-        uint8_t huffman_name_bit = 128u & *(header_block + pointer);
-        if (huffman_name_bit) {
-            int rc = decode_huffman_string(name, header_block + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
-                return -1;
-            }
-            pointer += rc;
-        } else {
-            int rc = decode_non_huffman_string(name, header_block + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
-                return -1;
-            }
-            pointer += rc;
+        uint32_t rc = decode_string(name, header_block + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to decode string in decode_literal_header_field_never_indexed");
+            return -1;
         }
+        pointer += rc;
     }
     else {
         //find entry in either static or dynamic table_length
         int rc = find_entry(dynamic_table, index, name, value);
         if (rc == -1) {
-            ERROR("Error en find_entry");
+            ERROR("Error en find_entry ");
             return -1;
         }
-        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
+        pointer += encoded_integer_size(index, find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));
     }
-    uint8_t huffman_name_bit = 128u & *(header_block + pointer);
-    if (huffman_name_bit) {
-        int rc = decode_huffman_string(value, header_block + pointer);
-        if (rc < 0) {
-            ERROR("Error while trying to decode huffman string in decode_literal_header_field_without_indexing");
-            return -1;
-        }
-        pointer += rc;
-    } else {
-        int rc = decode_non_huffman_string(value, header_block + pointer);
-        if (rc < 0) {
-            ERROR("Error while trying to decode non huffman string in decode_literal_header_field_without_indexing");
-            return -1;
-        }
-        pointer += rc;
+    uint32_t rc = decode_string(value, header_block + pointer);
+    if (rc < 0) {
+        ERROR ("Error while trying to decode string in decode_literal_header_field_never_indexed");
+                       return -1;
     }
+    pointer += rc;
     return pointer;
 }
 
@@ -896,21 +850,21 @@ int decode_header(hpack_dynamic_table *dynamic_table, uint8_t *bytes, hpack_prea
     if (preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING) {
         int rc = decode_literal_header_field_without_indexing(dynamic_table, bytes, name, value);
         if (rc < 0) {
-            ERROR("Error in decode_literal_header_field_without_indexing");
+            ERROR("Error in decode_literal_header_field_without_indexing ");
         }
         return rc;
     }
     if (preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED) {
         int rc = decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
-            ERROR("Error in decode_literal_header_field_never_indexed");
+            ERROR("Error in decode_literal_header_field_never_indexed ");
         }
         return rc;
     }
     if (preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
         int rc = decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
-            ERROR("Error in decode_literal_header_field_never_indexed");
+            ERROR("Error in decode_literal_header_field_never_indexed ");
         }
         return rc;
     }
@@ -953,7 +907,7 @@ int decode_header_block_from_table(hpack_dynamic_table *dynamic_table, uint8_t *
                                headers->headers[headers->count].value);
 
         if (rc < 0) {
-            ERROR("Error in decode_header");
+            ERROR("Error in decode_header ");
             return -1;
         }
 
@@ -962,7 +916,7 @@ int decode_header_block_from_table(hpack_dynamic_table *dynamic_table, uint8_t *
     }
     headers->count += headers_decoded;
     if (pointer > header_block_size) {
-        ERROR("Error decoding header block...");
+        ERROR("Error decoding header block ... ");
         return -1;
     }
     return pointer;
@@ -978,152 +932,152 @@ const uint32_t FIRST_INDEX_DYNAMIC = 62; // Changed type to remove warnings
 
 //HeaderPairs in static table
 
-const char name_0[] = ":authority";
-const char name_1[] = ":method";
-const char name_2[] = ":method";
-const char name_3[] = ":path";
-const char name_4[] = ":path";
-const char name_5[] = ":scheme";
+const char name_0[] = " : authority ";
+const char name_1[] = " : method ";
+const char name_2[] = " : method ";
+const char name_3[] = " : path ";
+const char name_4[] = " : path ";
+const char name_5[] = " : scheme ";
 
-const char name_6[] = ":scheme";
-const char name_7[] = ":status";
-const char name_8[] = ":status";
-const char name_9[] = ":status";
-const char name_10[] = ":status";
+const char name_6[] = " : scheme ";
+const char name_7[] = " : status ";
+const char name_8[] = " : status ";
+const char name_9[] = " : status ";
+const char name_10[] = " : status ";
 
-const char name_11[] = ":status";
-const char name_12[] = ":status";
-const char name_13[] = ":status";
-const char name_14[] = "accept-charset";
-const char name_15[] = "accept-encoding";
+const char name_11[] = " : status ";
+const char name_12[] = " : status ";
+const char name_13[] = " : status ";
+const char name_14[] = "accept - charset ";
+const char name_15[] = "accept - encoding ";
 
-const char name_16[] = "accept-language";
-const char name_17[] = "accept-ranges";
-const char name_18[] = "accept";
-const char name_19[] = "access-control-allow-origin";
-const char name_20[] = "age";
+const char name_16[] = "accept - language ";
+const char name_17[] = "accept - ranges ";
+const char name_18[] = "accept ";
+const char name_19[] = "access - control - allow - origin ";
+const char name_20[] = "age ";
 
-const char name_21[] = "allow";
-const char name_22[] = "authorization";
-const char name_23[] = "cache-control";
-const char name_24[] = "content-disposition";
-const char name_25[] = "content-encoding";
+const char name_21[] = "allow ";
+const char name_22[] = "authorization ";
+const char name_23[] = "cache - control ";
+const char name_24[] = "content - disposition ";
+const char name_25[] = "content - encoding ";
 
-const char name_26[] = "content-language";
-const char name_27[] = "content-length";
-const char name_28[] = "content-location";
-const char name_29[] = "content-range";
-const char name_30[] = "content-type";
+const char name_26[] = "content - language ";
+const char name_27[] = "content - length ";
+const char name_28[] = "content - location ";
+const char name_29[] = "content - range ";
+const char name_30[] = "content - type ";
 
-const char name_31[] = "cookie";
-const char name_32[] = "date";
-const char name_33[] = "etag";
-const char name_34[] = "expect";
-const char name_35[] = "expires";
+const char name_31[] = "cookie ";
+const char name_32[] = "date ";
+const char name_33[] = "etag ";
+const char name_34[] = "expect ";
+const char name_35[] = "expires ";
 
-const char name_36[] = "from";
-const char name_37[] = "host";
-const char name_38[] = "if-match";
-const char name_39[] = "if-modified-since";
-const char name_40[] = "if-none-match";
+const char name_36[] = "from ";
+const char name_37[] = "host ";
+const char name_38[] = "if - match ";
+const char name_39[] = "if - modified - since ";
+const char name_40[] = "if - none - match ";
 
-const char name_41[] = "if-range";
-const char name_42[] = "if-unmodified-since";
-const char name_43[] = "last-modified";
-const char name_44[] = "link";
-const char name_45[] = "location";
+const char name_41[] = "if - range ";
+const char name_42[] = "if - unmodified - since ";
+const char name_43[] = "last - modified ";
+const char name_44[] = "link ";
+const char name_45[] = "location ";
 
-const char name_46[] = "max-forwards";
-const char name_47[] = "proxy-authenticate";
-const char name_48[] = "proxy-authorization";
-const char name_49[] = "range";
-const char name_50[] = "referer";
+const char name_46[] = "max - forwards ";
+const char name_47[] = "proxy - authenticate ";
+const char name_48[] = "proxy - authorization ";
+const char name_49[] = "range ";
+const char name_50[] = "referer ";
 
-const char name_51[] = "refresh";
-const char name_52[] = "retry-after";
-const char name_53[] = "server";
-const char name_54[] = "set-cookie";
-const char name_55[] = "strict-transport-security";
+const char name_51[] = "refresh ";
+const char name_52[] = "retry - after ";
+const char name_53[] = "server ";
+const char name_54[] = "set - cookie ";
+const char name_55[] = "strict - transport - security ";
 
-const char name_56[] = "transfer-encoding";
-const char name_57[] = "user-agent";
-const char name_58[] = "vary";
-const char name_59[] = "via";
-const char name_60[] = "www-authenticate";
+const char name_56[] = "transfer - encoding ";
+const char name_57[] = "user - agent ";
+const char name_58[] = "vary ";
+const char name_59[] = "via ";
+const char name_60[] = "www - authenticate ";
 //static table header values
 
-const char value_0[] = "";
-const char value_1[] = "GET";
-const char value_2[] = "POST";
-const char value_3[] = "/";
-const char value_4[] = "/index.html";
-const char value_5[] = "http";
+const char value_0[] = " ";
+const char value_1[] = "GET ";
+const char value_2[] = "POST ";
+const char value_3[] = " / ";
+const char value_4[] = " / index.html ";
+const char value_5[] = "http ";
 
-const char value_6[] = "https";
-const char value_7[] = "200";
-const char value_8[] = "204";
-const char value_9[] = "206";
-const char value_10[] = "304";
+const char value_6[] = "https ";
+const char value_7[] = " 200 ";
+const char value_8[] = " 204 ";
+const char value_9[] = " 206 ";
+const char value_10[] = " 304 ";
 
-const char value_11[] = "400";
-const char value_12[] = "404";
-const char value_13[] = "500";
-const char value_14[] = "";
-const char value_15[] = "gzip, deflate";
+const char value_11[] = " 400 ";
+const char value_12[] = " 404 ";
+const char value_13[] = " 500 ";
+const char value_14[] = " ";
+const char value_15[] = "gzip, deflate ";
 
-const char value_16[] = "";
-const char value_17[] = "";
-const char value_18[] = "";
-const char value_19[] = "";
-const char value_20[] = "";
+const char value_16[] = " ";
+const char value_17[] = " ";
+const char value_18[] = " ";
+const char value_19[] = " ";
+const char value_20[] = " ";
 
-const char value_21[] = "";
-const char value_22[] = "";
-const char value_23[] = "";
-const char value_24[] = "";
-const char value_25[] = "";
+const char value_21[] = " ";
+const char value_22[] = " ";
+const char value_23[] = " ";
+const char value_24[] = " ";
+const char value_25[] = " ";
 
-const char value_26[] = "";
-const char value_27[] = "";
-const char value_28[] = "";
-const char value_29[] = "";
-const char value_30[] = "";
+const char value_26[] = " ";
+const char value_27[] = " ";
+const char value_28[] = " ";
+const char value_29[] = " ";
+const char value_30[] = " ";
 
-const char value_31[] = "";
-const char value_32[] = "";
-const char value_33[] = "";
-const char value_34[] = "";
-const char value_35[] = "";
+const char value_31[] = " ";
+const char value_32[] = " ";
+const char value_33[] = " ";
+const char value_34[] = " ";
+const char value_35[] = " ";
 
-const char value_36[] = "";
-const char value_37[] = "";
-const char value_38[] = "";
-const char value_39[] = "";
-const char value_40[] = "";
+const char value_36[] = " ";
+const char value_37[] = " ";
+const char value_38[] = " ";
+const char value_39[] = " ";
+const char value_40[] = " ";
 
-const char value_41[] = "";
-const char value_42[] = "";
-const char value_43[] = "";
-const char value_44[] = "";
-const char value_45[] = "";
+const char value_41[] = " ";
+const char value_42[] = " ";
+const char value_43[] = " ";
+const char value_44[] = " ";
+const char value_45[] = " ";
 
-const char value_46[] = "";
-const char value_47[] = "";
-const char value_48[] = "";
-const char value_49[] = "";
-const char value_50[] = "";
+const char value_46[] = " ";
+const char value_47[] = " ";
+const char value_48[] = " ";
+const char value_49[] = " ";
+const char value_50[] = " ";
 
-const char value_51[] = "";
-const char value_52[] = "";
-const char value_53[] = "";
-const char value_54[] = "";
-const char value_55[] = "";
+const char value_51[] = " ";
+const char value_52[] = " ";
+const char value_53[] = " ";
+const char value_54[] = " ";
+const char value_55[] = " ";
 
-const char value_56[] = "";
-const char value_57[] = "";
-const char value_58[] = "";
-const char value_59[] = "";
-const char value_60[] = "";
+const char value_56[] = " ";
+const char value_57[] = " ";
+const char value_58[] = " ";
+const char value_59[] = " ";
+const char value_60[] = " ";
 
 // Then set up a table to refer to your strings.
 
@@ -1186,7 +1140,7 @@ int dynamic_table_add_entry(hpack_dynamic_table *dynamic_table, char *name, char
     uint32_t entry_size = (uint32_t)(strlen(name) + strlen(value) + 32);
 
     if (entry_size > dynamic_table->max_size) {
-        ERROR("New entry size exceeds the size of table");
+        ERROR("New entry size exceeds the size of table ");
         return -1; //entry's size exceeds the size of table
     }
 
@@ -1204,7 +1158,7 @@ int dynamic_table_add_entry(hpack_dynamic_table *dynamic_table, char *name, char
 int dynamic_table_resize(hpack_dynamic_table *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
 {
     if (new_max_size > dynamic_table_max_size) {
-        ERROR("Resize operation exceeds the maximum size set by the protocol");
+        ERROR("Resize operation exceeds the maximum size set by the protocol ");
         return -1;
     }
 
@@ -1263,7 +1217,7 @@ int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, c
 
     if (index >= FIRST_INDEX_DYNAMIC) {
         if(dynamic_table == NULL){
-          ERROR("Dynamic table not initialized");
+          ERROR("Dynamic table not initialized ");
           return -1;
         }
         header_pair entry = dynamic_find_entry(dynamic_table, index);
@@ -1280,3 +1234,4 @@ int find_entry(hpack_dynamic_table *dynamic_table, uint32_t index, char *name, c
     return 0;
 
 }
+
