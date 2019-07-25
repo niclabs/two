@@ -644,13 +644,14 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
  * Output:
  *      Returns the number of bytes read from encoded_buffer in the decoding process if succesful,
  *      if the process fails the function returns -1
-*/
+ */
 uint32_t decode_string(char *str, uint8_t *encoded_buffer)
 {
     //decode huffman name
     //decode name length
     uint8_t huffman_bit = 128u & *(encoded_buffer);
     int rc = 0;
+
     if (huffman_bit) {
         rc = decode_huffman_string(str, encoded_buffer);
         if (rc < 0) {
@@ -898,6 +899,18 @@ hpack_preamble_t get_preamble(uint8_t preamble)
     return -1;
 }
 
+int decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
+{
+    int pointer = 0;
+    uint32_t index = decode_integer(header_block, find_prefix_size(INDEXED_HEADER_FIELD));
+
+    if (find_entry(dynamic_table, index, name, value) == -1) {
+        ERROR("Error en find_entry");
+        return -1;
+    }
+    pointer += encoded_integer_size(index, find_prefix_size(INDEXED_HEADER_FIELD));
+    return pointer;
+}
 
 int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
@@ -923,7 +936,7 @@ int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t 
     }
     int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
-        ERROR ("Error while trying to decode string in decode_literal_header_field_with_incremental_indexing");
+        ERROR("Error while trying to decode string in decode_literal_header_field_with_incremental_indexing");
         return -1;
     }
     pointer += rc;
@@ -944,7 +957,8 @@ int decode_literal_header_field_without_indexing(hpack_dynamic_table_t *dynamic_
             return -1;
         }
         pointer += rc;
-    } else {
+    }
+    else {
         //find entry in either static or dynamic table_length
         if (find_entry(dynamic_table, index, name, value) == -1) {
             ERROR("Error en find_entry ");
@@ -954,8 +968,8 @@ int decode_literal_header_field_without_indexing(hpack_dynamic_table_t *dynamic_
     }
     int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
-        ERROR ("Error while trying to decode string in decode_literal_header_field_without_indexing");
-                       return -1;
+        ERROR("Error while trying to decode string in decode_literal_header_field_without_indexing");
+        return -1;
     }
     pointer += rc;
     return pointer;
@@ -987,8 +1001,8 @@ int decode_literal_header_field_never_indexed(hpack_dynamic_table_t *dynamic_tab
     }
     int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
-        ERROR ("Error while trying to decode string in decode_literal_header_field_never_indexed");
-                       return -1;
+        ERROR("Error while trying to decode string in decode_literal_header_field_never_indexed");
+        return -1;
     }
     pointer += rc;
     return pointer;
@@ -1017,21 +1031,28 @@ int decode_literal_header_field_never_indexed(hpack_dynamic_table_t *dynamic_tab
  */
 int decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *bytes, hpack_preamble_t preamble, char *name, char *value)
 {
-    if (preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING) {
+    if (preamble == INDEXED_HEADER_FIELD) {
+        int rc = decode_indexed_header_field(dynamic_table, bytes, name, value);
+        if (rc < 0) {
+            ERROR("Error in decode_literal_header_field_without_indexing ");
+        }
+        return rc;
+    }
+    else if (preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING) {
         int rc = decode_literal_header_field_without_indexing(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in decode_literal_header_field_without_indexing ");
         }
         return rc;
     }
-    if (preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED) {
+    else if (preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED) {
         int rc = decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in decode_literal_header_field_never_indexed ");
         }
         return rc;
     }
-    if (preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+    else if (preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
         int rc = decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in decode_literal_header_field_never_indexed ");
@@ -1039,7 +1060,7 @@ int decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *bytes, hpack_pr
         return rc;
     }
     else {
-        ERROR("Not implemented yet.");
+        ERROR("Error unknown preamble value");
         return -1;
     }
 }
@@ -1284,9 +1305,9 @@ int find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name,
     const char *table_value;
 
     if (index >= FIRST_INDEX_DYNAMIC) {
-        if(dynamic_table == NULL){
-          ERROR("Dynamic table not initialized ");
-          return -1;
+        if (dynamic_table == NULL) {
+            ERROR("Dynamic table not initialized ");
+            return -1;
         }
         header_pair_t entry = dynamic_find_entry(dynamic_table, index);
         table_name = entry.name;
@@ -1302,4 +1323,3 @@ int find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name,
     return 0;
 
 }
-
