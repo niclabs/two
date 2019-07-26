@@ -1168,7 +1168,6 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
 int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
     int pointer = 0;
-    int headers_decoded = 0;
 
     char tmp_name[16];
     char tmp_value[32];
@@ -1186,9 +1185,7 @@ int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t
         }
 
         pointer += rc;
-        headers_decoded += 1;
     }
-    headers->count += headers_decoded;
     if (pointer > header_block_size) {
         ERROR("Error decoding header block ... ");
         return -1;
