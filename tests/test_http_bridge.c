@@ -145,79 +145,6 @@ void test_http_read_fail_not_connected_client(void)
     free(buf);
 }
 
-
-void test_http_clear_header_list_in_success_new_index_bigger(void)
-{
-    hstates_t hs;
-
-    hs.hd_lists.headers_in.count = 4;
-    int clear = http_clear_header_list(&hs, 5, 0);
-
-    TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(4, hs.hd_lists.headers_in.count);
-}
-
-
-void test_http_clear_header_list_in_success_new_invalid_index(void)
-{
-    hstates_t hs;
-
-    hs.hd_lists.headers_in.count = 5;
-    int clear = http_clear_header_list(&hs, -6, 0);
-
-    TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
-}
-
-
-void test_http_clear_header_list_in_success_new_valid_index(void)
-{
-    hstates_t hs;
-
-    hs.hd_lists.headers_in.count = 7;
-    int clear = http_clear_header_list(&hs, 2, 0);
-
-    TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(2, hs.hd_lists.headers_in.count);
-}
-
-
-void test_http_clear_header_list_out_success_new_index_bigger(void)
-{
-    hstates_t hs;
-
-    hs.hd_lists.headers_out.count = 4;
-    int clear = http_clear_header_list(&hs, 5, 1);
-
-    TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(4, hs.hd_lists.headers_out.count);
-}
-
-
-void test_http_clear_header_list_out_success_new_invalid_index(void)
-{
-    hstates_t hs;
-
-    hs.hd_lists.headers_out.count = 5;
-    int clear = http_clear_header_list(&hs, -6, 1);
-
-    TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_out.count);
-}
-
-
-void test_http_clear_header_list_out_success_new_valid_index(void)
-{
-    hstates_t hs;
-
-    hs.hd_lists.headers_out.count = 7;
-    int clear = http_clear_header_list(&hs, 2, 1);
-
-    TEST_ASSERT_EQUAL(0, clear);
-    TEST_ASSERT_EQUAL(2, hs.hd_lists.headers_out.count);
-}
-
-
 int main(void)
 {
     UNITY_BEGIN();
@@ -229,14 +156,6 @@ int main(void)
     UNIT_TEST(test_http_read_success);
     UNIT_TEST(test_http_read_fail_sock_read);
     UNIT_TEST(test_http_read_fail_not_connected_client);
-
-    UNIT_TEST(test_http_clear_header_list_in_success_new_index_bigger);
-    UNIT_TEST(test_http_clear_header_list_in_success_new_invalid_index);
-    UNIT_TEST(test_http_clear_header_list_in_success_new_valid_index);
-
-    UNIT_TEST(test_http_clear_header_list_out_success_new_index_bigger);
-    UNIT_TEST(test_http_clear_header_list_out_success_new_invalid_index);
-    UNIT_TEST(test_http_clear_header_list_out_success_new_valid_index);
 
     return UNITY_END();
 }

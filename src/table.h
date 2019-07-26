@@ -1,26 +1,12 @@
-#include "http_bridge.h"
-#include "headers.h"
 #ifndef TABLE_H
 #define TABLE_H
 
+#include <stdint.h>
 
-/*--------------------HTTP2 structures and static values--------------------*/
-
-#define HTTP2_MAX_HEADER_COUNT 32
 #define HTTP2_MAX_HBF_BUFFER 128
 #define HTTP_MAX_DATA_SIZE 128
 
-// Key value pair
-/*typedef struct TABLE_ENTRY {
-    char name [32];
-    char value [128];
-} table_pair_t;
-*/
-
 typedef struct HEADERS_DATA_LISTS_S {
-    headers_t headers_in;
-    headers_t headers_out;
-
     uint32_t data_in_size;
     uint8_t data_in[HTTP_MAX_DATA_SIZE];
     uint32_t data_out_size;

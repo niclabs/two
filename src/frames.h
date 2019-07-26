@@ -2,7 +2,7 @@
 #define FRAMES_H
 
 #include <stdint.h>
-#include "table.h"
+#include "headers.h"
 
 
 /*note the difference between
