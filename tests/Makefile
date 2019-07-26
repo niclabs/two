@@ -16,6 +16,11 @@ SUBDIRS := unity
 # General CFLAG configuration for tests
 CFLAGS := -g
 
+# Enable debugging if DEBUG == 1
+ifeq ($(DEBUG),1)
+	CFLAGS += -DENABLE_DEBUG
+endif
+
 # Add sources
 TESTS   := $(notdir $(wildcard $(BASEDIR)/tests/*.c))
 SOURCES := $(TESTS) $(TESTS:test_%.c=../src/%.c)
