@@ -481,7 +481,7 @@ int decode_non_huffman_string(char *str, uint8_t *encoded_string)
     for (uint16_t i = 0; i < str_length; i++) {
         str[i] = (char)encoded_string[str_length_size + i];
     }
-    return str_length;
+    return str_length + str_length_size;
 }
 
 /*
@@ -631,7 +631,7 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
         }
         bit_position += word_length;
     }
-    return str_length;
+    return str_length + str_length_size;
 }
 
 /*
