@@ -453,8 +453,8 @@ void test_decode_header_block_literal_without_indexing(void)
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL(0, strcmp(expected_name, headers.headers[0].name));
-    TEST_ASSERT_EQUAL(0, strcmp(expected_value, headers.headers[0].value));
+    TEST_ASSERT_EQUAL_STRING(expected_name, headers.headers[0].name);
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers.headers[0].value);
 
     //Literal Header Field Representation
     //without indexing
@@ -464,18 +464,19 @@ void test_decode_header_block_literal_without_indexing(void)
 
     header_block_size = 5;
     uint8_t header_block_name_indexed[] = {
-        1,
+        15,
+        6,
         3,
         'v',
         'a',
         'l'
     };
-    expected_name = ":authority";
+    expected_name = "age";
     rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL(0, strcmp(expected_name, headers.headers[0].name));
-    TEST_ASSERT_EQUAL(0, strcmp(expected_value, headers.headers[0].value));
+    TEST_ASSERT_EQUAL_STRING(expected_name, headers.headers[0].name);
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers.headers[0].value);
 
 }
 
