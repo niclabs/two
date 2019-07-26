@@ -1194,12 +1194,12 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     ERROR("GOAWAY was received. Current process must not open a new stream");
     return -1;
   }
-  if(st->hd_lists.headers_out.count == 0){
+  if(st->headers_out.count == 0){
     ERROR("There are no headers to send");
     return -1;
   }
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-  int size = compress_headers(&st->hd_lists.headers_out, encoded_bytes);
+  int size = compress_headers(&st->headers_out, encoded_bytes);
   if(size < 0){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     return -1;
@@ -1263,7 +1263,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_request(hstates_t *st){
-  if(st->hd_lists.headers_out.count == 0){
+  if(st->headers_out.count == 0){
     ERROR("There were no headers to write");
     return -1;
   }
@@ -1284,7 +1284,7 @@ int h2_send_request(hstates_t *st){
 * Output: 0 if generation and sent was successfull, -1 if not
 */
 int h2_send_response(hstates_t *st){
-  if(st->hd_lists.headers_out.count == 0){
+  if(st->headers_out.count == 0){
     ERROR("There were no headers to write");
     return -1;
   }

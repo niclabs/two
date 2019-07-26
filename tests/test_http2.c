@@ -1240,7 +1240,7 @@ void test_send_headers_one_header(void){
   hstates_t st;
   st.is_server = 0;
   int rc = init_variables(&st);
-  st.hd_lists.headers_out.count= 10;
+  st.headers_out.count= 10;
   int create_headers_return[1] = {0};
   SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
   int create_continuation_return[1] = {0};
@@ -1263,13 +1263,13 @@ void test_send_headers_with_continuation(void){
 
   st.is_server = 0;
     st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    st.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
     st.hd_lists.data_out_sent = 0;
   int rc = init_variables(&st);
-  st.hd_lists.headers_out.count = 10;
+  st.headers_out.count = 10;
   int create_headers_return[1] = {0};
   SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
   int create_continuation_return[1] = {0};
@@ -1294,11 +1294,11 @@ void test_send_headers_errors(void){
   hstates_t st2; // Second error, compress headers failure
   init_variables(&st2);
   int compress_return[2] = {-1, 20};
-  st2.hd_lists.headers_out.count = 10;
+  st2.headers_out.count = 10;
   SET_RETURN_SEQ(compress_headers, compress_return, 2);
   hstates_t st3; // Third error, stream verification error
   init_variables(&st3);
-  st3.hd_lists.headers_out.count = 10;
+  st3.headers_out.count = 10;
   st3.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
   int rc = send_headers(&st1, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no headers to send)");
@@ -1340,7 +1340,7 @@ void test_flow_control_receive_window_update(void){
 void test_get_size_data_to_send(void){
     hstates_t st;
     st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    st.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1386,7 +1386,7 @@ void test_handle_data_payload(void){
 
     hstates_t st;
     st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    st.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1467,7 +1467,7 @@ void test_h2_receive_frame_headers(void){
     headers_init_custom_fake(&headers_in, hlist_in, maxlen);
     headers_init_custom_fake(&headers_out, hlist_out, maxlen);
     st.hd_lists.headers_in = headers_in;
-    st.hd_lists.headers_out = headers_out;
+    st.headers_out = headers_out;
 
     int rc = init_variables(&st);
     st.is_server = 1;
@@ -1492,7 +1492,7 @@ void test_h2_receive_frame_headers(void){
 void test_h2_receive_frame_data_stream_closed(void){
     hstates_t st;
     st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    st.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1524,7 +1524,7 @@ void test_h2_receive_frame_data_ok(void){
     headers_init_custom_fake(&headers_in, hlist_in, maxlen);
     headers_init_custom_fake(&headers_out, hlist_out, maxlen);
     st.hd_lists.headers_in = headers_in;
-    st.hd_lists.headers_out = headers_out;
+    st.headers_out = headers_out;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1576,7 +1576,7 @@ void test_h2_receive_frame_continuation(void){
     headers_init_custom_fake(&headers_in, hlist_in, maxlen);
     headers_init_custom_fake(&headers_out, hlist_out, maxlen);
     st.hd_lists.headers_in = headers_in;
-    st.hd_lists.headers_out = headers_out;
+    st.headers_out = headers_out;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1708,7 +1708,7 @@ void test_h2_receive_frame_settings_ack(void){
 void test_send_data(void){
   hstates_t st;
     st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    st.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1726,7 +1726,7 @@ int rc = init_variables(&st);
 void test_send_data_full_sending(void){
   hstates_t st;
     st.hd_lists.headers_in.count = 0;
-    st.hd_lists.headers_out.count = 0;
+    st.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
     st.hd_lists.data_in_received = 0;
@@ -1760,7 +1760,7 @@ void test_send_data_errors(void){
   SET_RETURN_SEQ(frame_to_bytes, frame_bytes_ret, 2);
   hstates_t st1; //First error, no data to sned
     st1.hd_lists.headers_in.count = 0;
-    st1.hd_lists.headers_out.count = 0;
+    st1.headers_out.count = 0;
     st1.hd_lists.data_in_size = 0;
     st1.hd_lists.data_out_size = 0;
     st1.hd_lists.data_in_received = 0;
@@ -1771,7 +1771,7 @@ void test_send_data_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no data out)");
   hstates_t st2; //Second error, wrong state stream
     st2.hd_lists.headers_in.count = 0;
-    st2.hd_lists.headers_out.count = 0;
+    st2.headers_out.count = 0;
     st2.hd_lists.data_in_size = 0;
     st2.hd_lists.data_out_size = 0;
     st2.hd_lists.data_in_received = 0;
@@ -1786,7 +1786,7 @@ void test_send_data_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream half closed local)");
   hstates_t st3; //Third error, create_data_frame error
     st3.hd_lists.headers_in.count = 0;
-    st3.hd_lists.headers_out.count = 0;
+    st3.headers_out.count = 0;
     st3.hd_lists.data_in_size = 0;
     st3.hd_lists.data_out_size = 0;
     st3.hd_lists.data_in_received = 0;

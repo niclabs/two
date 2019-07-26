@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include "sock.h"
 #include "table.h"
+#include "headers.h"
 
 
 
@@ -83,6 +84,13 @@ typedef struct HTTP2_STATES {
 #define HTTP_MAX_RESPONSE_SIZE (128)
 #endif
 
+#ifdef HTTP_CONF_MAX_HEADER_COUNT
+#define HTTP_MAX_HEADER_COUNT (HTTP_CONF_MAX_HEADER_COUNT)
+#else
+#define HTTP_MAX_HEADER_COUNT (16)
+#endif
+
+
 /**
  * Definition of a resource handler, i.e. an action to perform on call of a given
  * method and uri
@@ -117,6 +125,11 @@ typedef struct HTTP_STATES {
     uint8_t is_server; // boolean flag to know if current hstates if server or client
     h2states_t h2s;
     headers_data_lists_t hd_lists;
+
+    // Http headers storage
+    // TODO: deprecate and pass directly to http2 functions
+    headers_t headers_in;
+    headers_t headers_out;
 
     // Resource handler list
     http_resource_t resource_list[HTTP_MAX_RESOURCES];

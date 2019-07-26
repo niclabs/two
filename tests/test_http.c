@@ -23,7 +23,6 @@ extern int http_set_header(headers_data_lists_t *hd_lists, char *name, char *val
 extern char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
 extern int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 extern uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
-//extern void headers_init(headers_t * headers, header_t * hlist, int maxlen);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
@@ -38,6 +37,7 @@ FAKE_VALUE_FUNC(int, h2_send_response, hstates_t *);
 FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 FAKE_VALUE_FUNC(int, h2_send_request, hstates_t *);
 FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
+FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
 
 
 
@@ -54,7 +54,8 @@ FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
     FAKE(h2_send_response)                \
     FAKE(http_clear_header_list)          \
     FAKE(h2_send_request)                 \
-    FAKE(headers_init)
+    FAKE(headers_init)                    \
+    FAKE(headers_set)
 
 
 void setUp()
@@ -95,18 +96,8 @@ void test_reset_http_states_success(void)
     hstates_t hs;
 
     hs.socket_state = 1;
-    headers_t headers_in;
-    headers_t headers_out;
-    int maxlen = 2;
-    header_t hlist_in[maxlen];
-    header_t hlist_out[maxlen];
-    headers_init_custom_fake(&headers_in, hlist_in, maxlen);
-    headers_init_custom_fake(&headers_out, hlist_out, maxlen);
-
-    hs.hd_lists.headers_in = headers_in;
-    hs.hd_lists.headers_out = headers_out;
     hs.hd_lists.headers_in.count = 1;
-    hs.hd_lists.headers_out.count = 1;
+    hs.headers_out.count = 1;
     hs.hd_lists.data_in_size = 1;
     hs.hd_lists.data_out_size = 1;
     hs.connection_state = 1;
@@ -114,12 +105,11 @@ void test_reset_http_states_success(void)
     hs.keep_receiving = 1;
     hs.new_headers = 1;
 
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_out.count);
+    TEST_ASSERT_EQUAL(0, hs.headers_out.count);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.data_out_size);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
@@ -395,8 +385,6 @@ void test_http_client_connect_success(void)
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_out.count);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -423,7 +411,6 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_out.count);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -450,7 +437,6 @@ void test_http_client_connect_fail_sock_connect(void)
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_out.count);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -473,7 +459,6 @@ void test_http_client_connect_fail_sock_create(void)
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_out.count);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -624,130 +609,6 @@ void test_http_client_disconnect_fail(void)
     TEST_ASSERT_EQUAL(1, hs.connection_state);
 }
 
-
-void test_http_set_header_success(void)
-{
-    hstates_t hs;
-
-    headers_t headers_in;
-    headers_t headers_out;
-    int maxlen = 2;
-    header_t hlist_in[maxlen];
-    header_t hlist_out[maxlen];
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    headers_init(&headers_in, hlist_in, maxlen);
-    headers_init(&headers_out, hlist_out, maxlen);
-    hs.hd_lists.headers_in = headers_in;
-    hs.hd_lists.headers_out = headers_out;
-
-    hs.hd_lists.headers_out.count = 0;
-    int set = http_set_header(&hs.hd_lists, "settings", "server:on");
-
-    TEST_ASSERT_EQUAL(0, set);
-    TEST_ASSERT_EQUAL(1, hs.hd_lists.headers_out.count);
-}
-
-
-void test_http_set_header_fail_list_full(void)
-{
-    hstates_t hs;
-
-    headers_t headers_in;
-    headers_t headers_out;
-    int maxlen = 2;
-    header_t hlist_in[maxlen];
-    header_t hlist_out[maxlen];
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    headers_init(&headers_in, hlist_in, maxlen);
-    headers_init(&headers_out, hlist_out, maxlen);
-    hs.hd_lists.headers_in = headers_in;
-    hs.hd_lists.headers_out = headers_out;
-
-    hs.hd_lists.headers_out.count = HTTP2_MAX_HEADER_COUNT;
-    int set = http_set_header(&hs.hd_lists, "settings", "server:on");
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, set, "Headers list is full");
-    TEST_ASSERT_EQUAL(HTTP2_MAX_HEADER_COUNT, hs.hd_lists.headers_out.count);
-}
-
-
-void test_http_get_header_success(void)
-{
-    hstates_t hs;
-    headers_t headers_in;
-    headers_t headers_out;
-    int maxlen = 2;
-    header_t hlist_in[maxlen];
-    header_t hlist_out[maxlen];
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    headers_init(&headers_in, hlist_in, maxlen);
-    headers_init(&headers_out, hlist_out, maxlen);
-    hs.hd_lists.headers_in = headers_in;
-    hs.hd_lists.headers_out = headers_out;
-
-    strcpy(hs.hd_lists.headers_in.headers[0].name, "something1");
-    strcpy(hs.hd_lists.headers_in.headers[0].value, "one");
-    strcpy(hs.hd_lists.headers_in.headers[1].name, "settings");
-    strcpy(hs.hd_lists.headers_in.headers[1].value, "server:on");
-
-    hs.hd_lists.headers_in.count = 2;
-
-    char *buf = http_get_header(&hs.hd_lists, "settings", 8);
-
-    TEST_ASSERT_EQUAL(0, strncmp(buf, "server:on", strlen("server:on")));
-}
-
-
-void test_http_get_header_fail_empty_table(void)
-{
-    hstates_t hs;
-
-    headers_t headers_in;
-    headers_t headers_out;
-    int maxlen = 2;
-    header_t hlist_in[maxlen];
-    header_t hlist_out[maxlen];
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    headers_init(&headers_in, hlist_in, maxlen);
-    headers_init(&headers_out, hlist_out, maxlen);
-    hs.hd_lists.headers_in = headers_in;
-    hs.hd_lists.headers_out = headers_out;
-
-    hs.hd_lists.headers_in.count = 0;
-    char *buf = http_get_header(&hs.hd_lists, "settings", 8);
-
-    TEST_ASSERT_MESSAGE(NULL == buf, "Headers list is empty");
-}
-
-
-void test_http_get_header_fail_header_not_found(void)
-{
-    hstates_t hs;
-
-    headers_t headers_in;
-    headers_t headers_out;
-    int maxlen = 2;
-    header_t hlist_in[maxlen];
-    header_t hlist_out[maxlen];
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    headers_init(&headers_in, hlist_in, maxlen);
-    headers_init(&headers_out, hlist_out, maxlen);
-    hs.hd_lists.headers_in = headers_in;
-    hs.hd_lists.headers_out = headers_out;
-
-    strcpy(hs.hd_lists.headers_in.headers[0].name, "something1");
-    strcpy(hs.hd_lists.headers_in.headers[0].value, "one");
-    strcpy(hs.hd_lists.headers_in.headers[1].name, "something2");
-    strcpy(hs.hd_lists.headers_in.headers[1].value, "two");
-
-    hs.hd_lists.headers_in.count = 2;
-
-    char *buf = http_get_header(&hs.hd_lists, "settings", 8);
-
-    TEST_ASSERT_MESSAGE(buf == NULL, "Header not found in headers list");
-}
-
-
 void test_set_data_success(void)
 {
     headers_data_lists_t hd;
@@ -817,78 +678,92 @@ void test_get_data_fail_no_data(void){
 void test_do_request_success(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
+    // Register http resource
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
+    // Set send response
     h2_send_response_fake.return_val = 0;
 
-    int get = do_request(&hs, "GET", "/index");
+    // Perform request
+    int res = do_request(&hs, "GET", "/index");
 
+    // Check that headers_set was called with the correct parameters
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("200", headers_set_fake.arg2_val);
+
+    // Check that send response was called
     TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
 
-    TEST_ASSERT_EQUAL(0, get);
-
-    TEST_ASSERT_EQUAL(1, hs.hd_lists.headers_out.count);
-    TEST_ASSERT_EQUAL_STRING(":status", hs.hd_lists.headers_out.headers[0].name);
-    TEST_ASSERT_EQUAL_STRING("200", hs.hd_lists.headers_out.headers[0].value);
+    // Return value should be 1
+    TEST_ASSERT_EQUAL(0, res);
 }
 
 
 void test_do_request_fail_h2_send_response(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
+    // Register http resource
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
+    // Set error response from send response
     h2_send_response_fake.return_val = -1;
 
-    int get = do_request(&hs, "GET", "/index");
+    // Perform request
+    int res = do_request(&hs, "GET", "/index");
 
+    // Check that headers_set was called with the correct parameters
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("200", headers_set_fake.arg2_val);
+
+    // Check that send response was called
     TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, get, "Problems sending data");
-
-    TEST_ASSERT_EQUAL(1, hs.hd_lists.headers_out.count);
-    TEST_ASSERT_EQUAL_STRING(":status", hs.hd_lists.headers_out.headers[0].name);
-    TEST_ASSERT_EQUAL_STRING("200", hs.hd_lists.headers_out.headers[0].value);
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "h2_send_response error should trigger error response from do_request");
 }
 
 
 void test_do_request_path_not_found(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
+    // Register http resource
     http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
-    int get = do_request(&hs, "GET", "/bla");
+    // Perform request
+    int res = do_request(&hs, "GET", "/bla");
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, get, "process_request should return 0 even if error response is sent");
-
-    TEST_ASSERT_EQUAL(1, hs.hd_lists.headers_out.count);
-    TEST_ASSERT_EQUAL_STRING(":status", hs.hd_lists.headers_out.headers[0].name);
-    TEST_ASSERT_EQUAL_STRING("404", hs.hd_lists.headers_out.headers[0].value);
+    // Check that headers_set was called with the correct parameters in error()
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("404", headers_set_fake.arg2_val);
+    
+    // Test correct return value
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if error response is sent");
 }
 
 
 void test_do_request_no_resources(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
 
-    int get = do_request(&hs, "GET", "/index");
+    // Register http resource
+    int res = do_request(&hs, "GET", "/index");
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, get, "Do request should return 0 even if no resources are found");
+    // Check that headers_set was called with the correct parameters in error()
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("404", headers_set_fake.arg2_val);
 
-    TEST_ASSERT_EQUAL(1, hs.hd_lists.headers_out.count);
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.headers_out.headers[0].name, ":status", strlen(":status")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.headers_out.headers[0].value, "404", strlen("400")));
+    // Test correct return value
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if no resources are found");
 }
 
 
@@ -927,13 +802,6 @@ int main(void)
     UNIT_TEST(test_http_client_disconnect_success_v1);
     UNIT_TEST(test_http_client_disconnect_success_v2);
     UNIT_TEST(test_http_client_disconnect_fail);
-
-    UNIT_TEST(test_http_set_header_success);
-    UNIT_TEST(test_http_set_header_fail_list_full);
-
-    UNIT_TEST(test_http_get_header_success);
-    UNIT_TEST(test_http_get_header_fail_empty_table);
-    UNIT_TEST(test_http_get_header_fail_header_not_found);
 
     UNIT_TEST(test_set_data_success);
     UNIT_TEST(test_set_data_fail_big_data);

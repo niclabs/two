@@ -210,19 +210,6 @@ http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *
 void reset_http_states(hstates_t *hs)
 {
     memset(hs, 0, sizeof(*hs));
-    int maxlen = 20; //TODO static for now...
-
-    headers_t headers_in;
-    header_t hlist_in[maxlen];
-    headers_init(&headers_in, hlist_in, maxlen);
-    hs->hd_lists.headers_in = headers_in;
-
-    headers_t headers_out;
-    header_t hlist_out[maxlen];
-    headers_init(&headers_out, hlist_out, maxlen);
-    hs->hd_lists.headers_out = headers_out;
-
-
 }
 
 /**
@@ -234,7 +221,11 @@ int error(hstates_t *hs, int code, char *msg)
     char strCode[4];
 
     snprintf(strCode, 4, "%d", code);
-    http_set_header(&hs->hd_lists, ":status", strCode);
+
+    // Initialize header list
+    header_t header_list[HTTP_MAX_HEADER_COUNT];
+    headers_init(&hs->headers_out, header_list, HTTP_MAX_HEADER_COUNT);
+    headers_set(&hs->headers_out, ":status", strCode);
 
     // Set error message
     if (msg != NULL) {
@@ -289,10 +280,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
         // 404
         return error(hs, 404, "Not Found");
     }
-
-    // Set default headers
-    http_set_header(&hs->hd_lists, ":status", "200");
-
+    
     // Prepare response for callback
     // TODO: response pointer should be pointer to hs->data_out
     uint8_t response[HTTP_MAX_RESPONSE_SIZE];
@@ -304,6 +292,13 @@ int do_request(hstates_t *hs, char *method, char *uri)
     else if (len > 0) {
         set_data(&hs->hd_lists, response, len);
     }
+
+    // Initialize header list
+    header_t header_list[HTTP_MAX_HEADER_COUNT];
+    headers_init(&hs->headers_out, header_list, HTTP_MAX_HEADER_COUNT);
+
+    // Set default headers
+    headers_set(&hs->headers_out, ":status", "200");
 
     // Send response
     if (h2_send_response(hs) < 0) {
