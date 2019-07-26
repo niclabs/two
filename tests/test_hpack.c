@@ -696,7 +696,7 @@ void test_encode_then_decode_non_huffman_string(void)
 
     int rc = encode_non_huffman_string(str, encoded_string);
     int rc2 = decode_non_huffman_string(result, encoded_string);
-    TEST_ASSERT_EQUAL(rc, rc2 + 1);
+    TEST_ASSERT_EQUAL(rc, rc2);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(str[i], result[i]);
     }
@@ -1019,7 +1019,7 @@ void test_decode_string(void)
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
     int rc = decode_string(decoded_string, encoded_string);
-    TEST_ASSERT_EQUAL(15, rc);
+    TEST_ASSERT_EQUAL(16, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
