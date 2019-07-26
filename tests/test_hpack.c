@@ -1188,7 +1188,7 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-    //UNIT_TEST(test_decode_header_block_literal_without_indexing); //TODO NOT working. check this
+    UNIT_TEST(test_decode_header_block_literal_without_indexing); //TODO NOT working. check this
     //UNIT_TEST(test_decode_header_block_literal_never_indexed);//TODO NOT working. check this
     UNIT_TEST(test_encode);
 
