@@ -187,6 +187,7 @@ int error(hstates_t *hs, int code, char *msg)
  */
 int receive_headers(hstates_t *hs)
 {
+    hs->new_headers = 0;
     while (hs->connection_state == 1) {
         // receive frame
         if (h2_receive_frame(hs) < 0) {
@@ -311,7 +312,6 @@ int http_server_start(hstates_t *hs)
             headers_init(&hs->headers_in, header_list, HTTP_MAX_HEADER_COUNT);
 
             // read headers
-            hs->new_headers = 0;
             if (receive_headers(hs) < 0) {
                 ERROR("An error ocurred while receiving headers");
                 break;
