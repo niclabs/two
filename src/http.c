@@ -58,64 +58,6 @@ int parse_uri(char *uri, char *path, char *query_params)
     return 0;
 }
 
-/*
- * Add a header and its value to the headers list
- *
- * @param    hd_lists         Struct with headers information
- * @param    name             New headers name
- * @param    value            New headers value
- *
- * @return   0                Successfully added pair
- * @return   -1               There was an error in the process
- */
-int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value)
-{
-    int i = hd_lists->headers_out.count;
-
-    if (i == HTTP2_MAX_HEADER_COUNT) {
-        WARN("Headers list is full");
-        return -1;
-    }
-
-    strcpy(hd_lists->headers_out.headers[i].name, name);
-    strcpy(hd_lists->headers_out.headers[i].value, value);
-
-    hd_lists->headers_out.count = i + 1;
-
-    return 0;
-}
-
-/*
- * Search by a value of a header in the header list
- *
- * @param    hd_lists         Struct with headers information
- * @param    header           Header name
- * @param    header_size      Size of header name
- *
- * @return                    Value finded
- */
-char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size)
-{
-    int i = hd_lists->headers_in.count;
-
-    if (i == 0) {
-        WARN("Headers list is empty");
-        return NULL;
-    }
-
-    int k;
-    size_t header_size_t = header_size;
-    for (k = 0; k < i; k++) {
-        if ((strncmp(hd_lists->headers_in.headers[k].name, header, header_size) == 0) && header_size_t == strlen(hd_lists->headers_in.headers[k].name)) {
-            DEBUG("RETURNING value of '%s' header; '%s'", hd_lists->headers_in.headers[k].name, hd_lists->headers_in.headers[k].value);
-            return hd_lists->headers_in.headers[k].value;
-        }
-    }
-
-    WARN("Header '%s' not found in headers list", header);
-    return NULL;
-}
-
 /**
  * Utility function to check for method support
  *
@@ -364,6 +306,10 @@ int http_server_start(hstates_t *hs)
         }
 
         while (hs->connection_state == 1) {
+            // Initialize input header list
+            header_t header_list[HTTP_MAX_HEADER_COUNT];
+            headers_init(&hs->headers_in, header_list, HTTP_MAX_HEADER_COUNT);
+
             // read headers
             hs->new_headers = 0;
             if (receive_headers(hs) < 0) {
@@ -372,29 +318,24 @@ int http_server_start(hstates_t *hs)
             }
 
             // Get the method from headers
-            char *method = http_get_header(&hs->hd_lists, ":method", 7);
+            char method[8];
+            headers_get_len(&hs->headers_in, ":method", method, 8);
             DEBUG("Received %s request", method);
             if (!has_method_support(method)) {
                 error(hs, 501, "Not Implemented");
 
                 // TODO: what else to do here?
-                http_clear_header_list(hs, -1, 0);
                 continue;
             }
 
             // TODO: read data (if POST)
 
-            // Clear headers (why?)
-            http_clear_header_list(hs, -1, 1);
-
             // Get uri
-            char *uri = http_get_header(&hs->hd_lists, ":path", 5);
+            char uri[MAX_HEADER_VALUE_LEN];
+            headers_get(&hs->headers_in, ":path", uri);
 
             // Process the http request
             do_request(hs, method, uri);
-
-            // Clear headers (why?)
-            http_clear_header_list(hs, -1, 0);
         }
 
         if (sock_destroy(&hs->socket) == -1) {
@@ -516,10 +457,14 @@ int receive_server_response(hstates_t *hs)
 
 int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size)
 {
-    if (http_set_header(&hs->hd_lists, ":method", method) < 0 ||
-        http_set_header(&hs->hd_lists, ":scheme", "http") < 0 ||
-        http_set_header(&hs->hd_lists, ":path", uri) < 0 ||
-        http_set_header(&hs->hd_lists, "Host", hs->host) < 0) {
+    // Initialize output header list
+    header_t header_list_out[HTTP_MAX_HEADER_COUNT];
+    headers_init(&hs->headers_out, header_list_out, HTTP_MAX_HEADER_COUNT);
+
+    if (headers_set(&hs->headers_out, ":method", method) < 0 ||
+        headers_set(&hs->headers_out, ":scheme", "http") < 0 ||
+        headers_set(&hs->headers_out, ":path", uri) < 0 ||
+        headers_set(&hs->headers_out, "Host", hs->host) < 0) {
         ERROR("Failed to set headers for request");
         return -1;
     }
@@ -529,13 +474,19 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
         ERROR("Failed to send request %s %s", method, uri);
         return -1;
     }
+    
+    // Initialize input header list
+    header_t header_list_in[HTTP_MAX_HEADER_COUNT];
+    headers_init(&hs->headers_in, header_list_in, HTTP_MAX_HEADER_COUNT);
 
     if (receive_server_response(hs) < 0) {
         ERROR("An error ocurred while waiting for server response");
         return -1;
     }
 
-    int status = atoi(http_get_header(&hs->hd_lists, ":status", 7));
+    char statusStr[4];
+    headers_get_len(&hs->headers_in, ":status", statusStr, 4);
+    int status = atoi(statusStr);
 
     // Get response data (TODO: should we just copy the pointer?)
     *size = get_data(&hs->hd_lists, response, *size);

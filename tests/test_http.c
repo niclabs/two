@@ -19,8 +19,6 @@
 /*Import of functions not declared in http.h */
 extern int do_request(hstates_t *hs, char * method, char * uri);
 extern void reset_http_states(hstates_t *hs);
-extern int http_set_header(headers_data_lists_t *hd_lists, char *name, char *value);
-extern char *http_get_header(headers_data_lists_t *hd_lists, char *header, int header_size);
 extern int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 extern uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 
@@ -38,7 +36,8 @@ FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 FAKE_VALUE_FUNC(int, h2_send_request, hstates_t *);
 FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
 FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
-
+FAKE_VALUE_FUNC(int, headers_get, headers_t *, const char *, char *);
+FAKE_VALUE_FUNC(int, headers_get_len, headers_t *, const char *, char *, size_t);
 
 
 /* List of fakes used by this unit tester */
@@ -52,10 +51,11 @@ FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
     FAKE(h2_server_init_connection)       \
     FAKE(h2_receive_frame)                \
     FAKE(h2_send_response)                \
-    FAKE(http_clear_header_list)          \
     FAKE(h2_send_request)                 \
     FAKE(headers_init)                    \
-    FAKE(headers_set)
+    FAKE(headers_set)                     \
+    FAKE(headers_get)                     \
+    FAKE(headers_get_len)
 
 
 void setUp()
@@ -96,7 +96,7 @@ void test_reset_http_states_success(void)
     hstates_t hs;
 
     hs.socket_state = 1;
-    hs.hd_lists.headers_in.count = 1;
+    hs.headers_in.count = 1;
     hs.headers_out.count = 1;
     hs.hd_lists.data_in_size = 1;
     hs.hd_lists.data_out_size = 1;
@@ -108,7 +108,7 @@ void test_reset_http_states_success(void)
     reset_http_states(&hs);
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
+    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
     TEST_ASSERT_EQUAL(0, hs.headers_out.count);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
     TEST_ASSERT_EQUAL(0, hs.hd_lists.data_out_size);
@@ -410,7 +410,7 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
+    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -436,7 +436,7 @@ void test_http_client_connect_fail_sock_connect(void)
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
+    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
@@ -458,7 +458,7 @@ void test_http_client_connect_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.headers_in.count);
+    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }

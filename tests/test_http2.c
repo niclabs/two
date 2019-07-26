@@ -1262,7 +1262,7 @@ void test_send_headers_with_continuation(void){
 
 
   st.is_server = 0;
-    st.hd_lists.headers_in.count = 0;
+    st.headers_in.count = 0;
     st.headers_out.count = 0;
     st.hd_lists.data_in_size = 0;
     st.hd_lists.data_out_size = 0;
