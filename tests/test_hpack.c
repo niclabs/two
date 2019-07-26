@@ -31,6 +31,8 @@ extern int dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *n
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
+FAKE_VALUE_FUNC(int,  headers_add, headers_t * , const char * , const char * );
+
 
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t*);
@@ -52,7 +54,8 @@ FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)        \
     FAKE(hpack_huffman_encode)      \
-    FAKE(hpack_huffman_decode)
+    FAKE(hpack_huffman_decode)      \
+    FAKE(headers_add)
 /*    FAKE(uint32_24_to_byte_array)   \
     FAKE(uint32_31_to_byte_array)   \
     FAKE(uint32_to_byte_array)      \
