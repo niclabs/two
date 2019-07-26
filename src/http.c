@@ -282,7 +282,7 @@ int http_server_create(hstates_t *hs, uint16_t port)
 
 int http_server_start(hstates_t *hs)
 {
-    INFO("Server waiting for a client\n");
+    INFO("Server waiting for a client");
 
     while (1) {
         if (sock_accept(&hs->server_socket, &hs->socket) < 0) {
