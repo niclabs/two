@@ -1218,6 +1218,7 @@ uint32_t header_pair_size(header_pair_t h)
  */
 int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size)
 {
+    memset(dynamic_table, 0, sizeof(hpack_dynamic_table_t));
     dynamic_table->max_size = dynamic_table_max_size;
     dynamic_table->table_length = (uint32_t)((dynamic_table->max_size / 32) + 1);
     dynamic_table->first = 0;
