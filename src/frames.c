@@ -404,7 +404,7 @@ int compress_headers(headers_t* headers_out, uint8_t* compressed_headers){
     //now it is without compression
     int pointer = 0;
     for(uint8_t i = 0; i<headers_out->count; i++){
-        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0,headers_out->headers[i].value, 0, headers_out->headers[i].name,  0, compressed_headers+pointer);
+        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0, headers_out->headers[i].name, 0, headers_out->headers[i].value,  0, compressed_headers+pointer);
         pointer += rc;
     }
     return pointer;
