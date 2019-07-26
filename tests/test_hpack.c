@@ -444,6 +444,8 @@ void test_decode_header_block_literal_without_indexing(void)
     header_t h_list[1];
     headers_t headers;
 
+    memset(h_list, 0, sizeof(*h_list));
+
     headers.count = 0;
     headers.maxlen = 1;
     headers.headers = h_list;
