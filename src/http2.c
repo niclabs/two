@@ -414,7 +414,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
   if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
       //return bytes read.
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->headers_in));
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in);
       if(rc < 0){
         ERROR("Error was found receiving header_block");
         return -1;
@@ -498,7 +498,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   st->h2s.header_block_fragments_pointer += rc;
   if(is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&(st->headers_in)); //TODO check this: rc is the byte read from the header
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in); //TODO check this: rc is the byte read from the header
 
       if(rc < 0){
         ERROR("Error was found receiving header_block");
