@@ -443,26 +443,25 @@ void test_decode_header_block_literal_without_indexing(void)
     header_t h_list[1];
     headers_t headers;
 
-    memset(h_list, 0, sizeof(*h_list));
-
     headers.count = 0;
-    headers.maxlen = 1;
+    headers.maxlen = 3;
     headers.headers = h_list;
 
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL_STRING(expected_name, headers.headers[0].name);
-    TEST_ASSERT_EQUAL_STRING(expected_value, headers.headers[0].value);
+    TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
 
     //Literal Header Field Representation
     //without indexing
     //No huffman encoding - Header name as static table index
 
-    memset(&h_list, 0, sizeof(headers_data_lists_t));
+    headers.count = 0;
 
-    header_block_size = 5;
+    header_block_size = 6;
     uint8_t header_block_name_indexed[] = {
         15,
         6,
@@ -475,8 +474,10 @@ void test_decode_header_block_literal_without_indexing(void)
     rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL_STRING(expected_name, headers.headers[0].name);
-    TEST_ASSERT_EQUAL_STRING(expected_value, headers.headers[0].value);
+    TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
+
 
 }
 
