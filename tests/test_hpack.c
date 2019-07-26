@@ -337,7 +337,7 @@ void test_get_preamble(void)
     for (int i = 0; i < 5; i++) {
         TEST_ASSERT_EQUAL((hpack_preamble_t)preamble_arr[i], get_preamble(preamble_arr[i]));
     }
-    
+
 }
 void test_decode_header_block_literal_never_indexed(void)
 {
@@ -360,20 +360,25 @@ void test_decode_header_block_literal_never_indexed(void)
     char *expected_name = "hola";
     char *expected_value = "val";
 
-    headers_data_lists_t h_list;
+    header_t h_list[1];
+    headers_t headers;
 
-    memset(&h_list, 0, sizeof(headers_data_lists_t));
-    int rc = decode_header_block(header_block_name_literal, header_block_size, &h_list.headers_in);
+    headers.count = 0;
+    headers.maxlen = 3;
+    headers.headers = h_list;
+
+    int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL_STRING(expected_name, h_list.headers_in.headers[0].name);
-    TEST_ASSERT_EQUAL(0, strcmp(expected_value, h_list.headers_in.headers[0].value));
+    TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
 
     //Literal Header Field Representation
     //Never indexed
     //No huffman encoding - Header name as static table index
 
-    memset(&h_list, 0, sizeof(headers_data_lists_t));
+    headers.count = 0;
 
     header_block_size = 5;
     uint8_t header_block_name_indexed[] = {
@@ -384,19 +389,19 @@ void test_decode_header_block_literal_never_indexed(void)
         'l'
     };
     expected_name = ":authority";
-    rc = decode_header_block(header_block_name_indexed, header_block_size, &h_list.headers_in);
+    rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL_STRING(expected_name, h_list.headers_in.headers[0].name);
-    TEST_ASSERT_EQUAL(0, strcmp(expected_value, h_list.headers_in.headers[0].value));
+    TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
 
     //Literal Header Field Representation
     //Never indexed
     //No huffman encoding - Header name as dynamic table index
-    hpack_dynamic_table_t dynamic_table;
-    memset(&dynamic_table, 0, sizeof(hpack_dynamic_table_t));
 
-    memset(&h_list, 0, sizeof(headers_data_lists_t));
+    hpack_dynamic_table_t dynamic_table;
+
     hpack_init_dynamic_table(&dynamic_table, 4000);
 
     char *new_name = "new_name";
@@ -1214,8 +1219,8 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-    UNIT_TEST(test_decode_header_block_literal_without_indexing); //TODO NOT working. check this
-    //UNIT_TEST(test_decode_header_block_literal_never_indexed);//TODO NOT working. check this
+    UNIT_TEST(test_decode_header_block_literal_without_indexing);
+    UNIT_TEST(test_decode_header_block_literal_never_indexed);
     UNIT_TEST(test_encode);
 
     UNIT_TEST(test_get_preamble);
