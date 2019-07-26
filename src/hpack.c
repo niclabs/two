@@ -458,6 +458,10 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     int str_length = strlen(str);
     int encoded_string_length_size = encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
 
+    if (str_length + encoded_string_length_size >= HTTP2_MAX_HBF_BUFFER) {
+        ERROR("String too big, does not fit on the encoded_string");
+        return -1;
+    }
     for (int i = 0; i < str_length; i++) {                                          //TODO check if strlen is ok to use here
         encoded_string[i + encoded_string_length_size] = str[i];
     }
@@ -538,7 +542,7 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
     encoded_string[0] |= 128;
 
     if (encoded_word_byte_length + encoded_word_length_size >= HTTP2_MAX_HBF_BUFFER) {
-        ERROR("word too big, does not fit on the buffer_encoded");
+        ERROR("String too big, does not fit on the encoded_string");
         return -1;
     }
 

@@ -915,15 +915,7 @@ void test_encode_huffman_string(void)
         TEST_ASSERT_EQUAL(expected_encoded_string[i], encoded_string[i]);
     }
 
-    /*Test border condition*/
-    char str2[2 * HTTP2_MAX_HBF_BUFFER];
-    uint8_t encoded_string2[HTTP2_MAX_HBF_BUFFER];
-    hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
-    for (int i = 0; i < 2 * HTTP2_MAX_HBF_BUFFER; i++) {
-        str2[i] = 'w';
-    }
-    rc = encode_huffman_string(str2, encoded_string2);
-    TEST_ASSERT_EQUAL(-1, rc);
+
 
 }
 
@@ -1187,6 +1179,37 @@ void test_encode_literal_header_field_new_name(void)
     }
 }
 
+void test_encode_literal_header_field_new_name_error(void){
+    /*Test border condition*/
+    char name_to_encode[2 * HTTP2_MAX_HBF_BUFFER];
+    char value_to_encode[2 * HTTP2_MAX_HBF_BUFFER];
+    uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
+    memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
+    uint8_t name_huffman_bool = 0;
+    uint8_t value_huffman_bool = 0;
+    hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
+    for (int i = 0; i < 2 * HTTP2_MAX_HBF_BUFFER; i++) {
+        name_to_encode[i] = 'w';
+        value_to_encode[i] = 'w';
+    }
+    int rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
+    TEST_ASSERT_EQUAL(-1, rc);
+    char name_to_encode2[10];
+    for (int i = 0; i < 10; i++) {
+        name_to_encode2[i] = 'w';
+    }
+    rc = encode_literal_header_field_new_name(name_to_encode2,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
+    TEST_ASSERT_EQUAL(-1, rc);
+    name_huffman_bool = 1;
+    value_huffman_bool = 1;
+
+    rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
+    TEST_ASSERT_EQUAL(-1, rc);
+
+    rc = encode_literal_header_field_new_name(name_to_encode2,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -1225,6 +1248,7 @@ int main(void)
     UNIT_TEST(test_encode_then_decode_huffman_string);
 
     UNIT_TEST(test_encode_literal_header_field_new_name);
+    UNIT_TEST(test_encode_literal_header_field_new_name_error);
     /*UNIT_TEST(test_frame_to_bytes_settings);
        UNIT_TEST(test_read_headers_payload);
        UNIT_TEST(test_read_continuation_payload);
