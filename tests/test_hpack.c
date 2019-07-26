@@ -334,8 +334,7 @@ void test_get_preamble(void)
     for (int i = 0; i < 5; i++) {
         TEST_ASSERT_EQUAL((hpack_preamble_t)preamble_arr[i], get_preamble(preamble_arr[i]));
     }
-    /*TEST BORDER COND*/
-    TEST_ASSERT_EQUAL(-1, get_preamble(0xff));
+    
 }
 void test_decode_header_block_literal_never_indexed(void)
 {
@@ -1179,7 +1178,6 @@ void test_encode_literal_header_field_new_name(void)
     rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_buffer_huffman);
     TEST_ASSERT_EQUAL(19, rc);
     for (int i = 0; i < rc; i++) {
-
         TEST_ASSERT_EQUAL(expected_huffman_string_encoded[i], encoded_buffer_huffman[i]);
     }
 }
@@ -1192,6 +1190,7 @@ int main(void)
     //UNIT_TEST(test_decode_header_block_literal_never_indexed);//TODO NOT working. check this
     UNIT_TEST(test_encode);
 
+    UNIT_TEST(test_get_preamble);
     UNIT_TEST(test_log128);
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
