@@ -961,7 +961,7 @@ void test_decode_huffman_string(void)
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
 
     int rc = decode_huffman_string(decoded_string, encoded_string);
-    TEST_ASSERT_EQUAL(12, rc);
+    TEST_ASSERT_EQUAL(13, rc);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
@@ -1036,7 +1036,7 @@ void test_decode_string(void)
     int rc2 = decode_string(decoded_string, encoded_string_huffman);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
 
-    TEST_ASSERT_EQUAL(12, rc2);
+    TEST_ASSERT_EQUAL(13, rc2);
     for (int i = 0; i < rc2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }

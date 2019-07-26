@@ -617,7 +617,7 @@ int decode_huffman_string(char *str, uint8_t *encoded_string)
                 uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
                 uint8_t last_byte = encoded_buffer[str_length - 1];
                 if ((last_byte & mask) == mask) {
-                    return str_length;
+                    return str_length + str_length_size;
                 }
                 else {
                     ERROR("Error while trying to decode padding in decode_huffman_string");
