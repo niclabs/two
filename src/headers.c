@@ -39,6 +39,8 @@ int headers_add(headers_t *headers, const char *name, const char *value)
 
     // Set header value
     strncpy(headers->headers[headers->count].value, value, MAX_HEADER_VALUE_LEN - 1);
+    
+    DEBUG("Wrote header: '%s':'%s'", headers->headers[headers->count].name, headers->headers[headers->count].value);
 
     // Update header count
     headers->count++;
@@ -63,10 +65,10 @@ int headers_set(headers_t *headers, const char *name, const char *value)
     for (int i = 0; i < headers->count; i++) {
         // case insensitive name comparison of headers
         if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
-            DEBUG("Found '%s'", name);
+            DEBUG("Found header with name: '%s'", name);
             // found a header with the same name
             strncpy(headers->headers[i].value, value, MAX_HEADER_VALUE_LEN);
-            DEBUG("Wrote: '%s'", headers->headers[i].value);
+            DEBUG("Wrote header: '%s':'%s'",headers->headers[i].name, headers->headers[i].value);
             return 0;
         }
     }
@@ -82,7 +84,7 @@ int headers_set(headers_t *headers, const char *name, const char *value)
     // Set header value
     strncpy(headers->headers[headers->count].value, value, MAX_HEADER_VALUE_LEN);
 
-    DEBUG("Wrote: '%s':'%s'", headers->headers[headers->count].name, headers->headers[headers->count].value);
+    DEBUG("Wrote header: '%s':'%s'", headers->headers[headers->count].name, headers->headers[headers->count].value);
 
     // Update header count
     headers->count++;
@@ -111,10 +113,10 @@ int headers_get_len(headers_t *headers, const char *name, char *value, size_t le
         // case insensitive name comparison of headers
         if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
             // found a header with the same name
-            DEBUG("Found '%s'", name);
+            DEBUG("Found header with name '%s'", name);
             strncpy(value, headers->headers[i].value, len);
             value[len] = '\0';
-            DEBUG("Read: '%s'", value);
+            DEBUG("Read header value: '%s'", value);
             return 0;
         }
     }
