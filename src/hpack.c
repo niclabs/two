@@ -1152,13 +1152,17 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
 int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
     int pointer = 0;
-
     int headers_decoded = 0;
 
+    char tmp_name[16];
+    char tmp_value[32];
+
     while (pointer < header_block_size) {
+        memset(tmp_name, 0 , 16);
+        memset(tmp_value, 0, 32);
         hpack_preamble_t preamble = get_preamble(header_block[pointer]);
-        int rc = decode_header(dynamic_table, header_block + pointer, preamble, headers->headers[headers->count].name,
-                               headers->headers[headers->count].value);
+        int rc = decode_header(dynamic_table, header_block + pointer, preamble, tmp_name, tmp_value);
+        headers_add(headers, tmp_name, tmp_value);
 
         if (rc < 0) {
             ERROR("Error in decode_header ");
