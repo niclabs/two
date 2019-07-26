@@ -437,8 +437,6 @@ int receive_server_response(hstates_t *hs)
 {
     // TODO: receive headers (?)
 
-    http_clear_header_list(hs, -1, 0); // why?
-
     // Receive data
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
