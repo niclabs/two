@@ -10,6 +10,7 @@
 void tearDown(void);
 
 extern int log128(uint32_t x);
+extern hpack_preamble_t get_preamble(uint8_t preamble);
 extern int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result);
 extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
@@ -73,14 +74,12 @@ int8_t hpack_huffman_encode_return_w(huffman_encoded_word_t *h, uint8_t sym)
     h->length = 7;
     return 0;
 }
-
 int8_t hpack_huffman_encode_return_dot(huffman_encoded_word_t *h, uint8_t sym)
 {
     h->code = 0x17;
     h->length = 6;
     return 0;
 }
-
 int8_t hpack_huffman_encode_return_a(huffman_encoded_word_t *h, uint8_t sym)
 {
     h->code = 0x3;
@@ -324,6 +323,20 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
+void test_get_preamble(void)
+{
+    uint8_t preamble_arr[] = { (uint8_t)INDEXED_HEADER_FIELD,
+                               (uint8_t)LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING,
+                               (uint8_t)DYNAMIC_TABLE_SIZE_UPDATE,
+                               (uint8_t)LITERAL_HEADER_FIELD_NEVER_INDEXED,
+                               (uint8_t)LITERAL_HEADER_FIELD_WITHOUT_INDEXING };
+
+    for (int i = 0; i < 5; i++) {
+        TEST_ASSERT_EQUAL((hpack_preamble_t)preamble_arr[i], get_preamble(preamble_arr[i]));
+    }
+    /*TEST BORDER COND*/
+    TEST_ASSERT_EQUAL(-1, get_preamble(0xff));
+}
 void test_decode_header_block_literal_never_indexed(void)
 {
     //Literal Header Field Representation
@@ -1151,13 +1164,13 @@ void test_encode_literal_header_field_new_name(void)
 
     /*Set up encoding function call*/
     int8_t(*hpack_huffman_encode_huffman_header_name_value[22])(huffman_encoded_word_t *, uint8_t);
-    for(uint8_t i = 0; i < strlen(name_to_encode); i++){
+    for (uint8_t i = 0; i < strlen(name_to_encode); i++) {
         hpack_huffman_encode_huffman_header_name_value[i] = hpack_huffman_encode_customkey_arr[i];
     }
-    for(uint8_t i = strlen(name_to_encode); i < strlen(value_to_encode) + strlen(name_to_encode); i++){
-        hpack_huffman_encode_huffman_header_name_value[i] = hpack_huffman_encode_customvalue_arr[i-strlen(name_to_encode)];
+    for (uint8_t i = strlen(name_to_encode); i < strlen(value_to_encode) + strlen(name_to_encode); i++) {
+        hpack_huffman_encode_huffman_header_name_value[i] = hpack_huffman_encode_customvalue_arr[i - strlen(name_to_encode)];
     }
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_huffman_header_name_value, strlen(name_to_encode)+strlen(value_to_encode));
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_huffman_header_name_value, strlen(name_to_encode) + strlen(value_to_encode));
 
     name_huffman_bool = 1;
     value_huffman_bool = 1;
