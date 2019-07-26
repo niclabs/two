@@ -195,7 +195,7 @@ const char *const static_header_value_table[] = { value_0, value_1, value_2, val
 
 
 /*
- * Function: find_entry
+ * Function: find_entry_name_and_value
  * finds an entry (pair name-value) in either the static or dynamic table_length
  * Input:
  *      -> index: table's position of the entry
@@ -204,7 +204,19 @@ const char *const static_header_value_table[] = { value_0, value_1, value_2, val
  * Output:
  *      0 if success, -1 in case of Error
  */
-int find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
+int find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
+
+/*
+ * Function: find_entry_name
+ * finds an entry name in either the static or dynamic table_length
+ * Input:
+ *      -> index: table's position of the entry
+ *      -> *name: buffer where the name of the entry will be stored
+ * Output:
+ *      0 if success, -1 in case of Error
+ */
+int find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
+
 
 /*
  * Function: pack_encoded_words_to_bytes
@@ -963,7 +975,7 @@ int decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *h
     int pointer = 0;
     uint32_t index = decode_integer(header_block, find_prefix_size(INDEXED_HEADER_FIELD));
 
-    if (find_entry(dynamic_table, index, name, value) == -1) {
+    if (find_entry_name_and_value(dynamic_table, index, name, value) == -1) {
         ERROR("Error en find_entry");
         return -1;
     }
@@ -987,7 +999,7 @@ int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t 
     }
     else {
         //find entry in either static or dynamic table_length
-        if (find_entry(dynamic_table, index, name, value) == -1) {
+        if (find_entry_name(dynamic_table, index, name) == -1) {
             ERROR("Error en find_entry");
             return -1;
         }
@@ -1019,7 +1031,7 @@ int decode_literal_header_field_without_indexing(hpack_dynamic_table_t *dynamic_
     }
     else {
         //find entry in either static or dynamic table_length
-        if (find_entry(dynamic_table, index, name, value) == -1) {
+        if (find_entry_name(dynamic_table, index, name) == -1) {
             ERROR("Error en find_entry ");
             return -1;
         }
@@ -1051,7 +1063,7 @@ int decode_literal_header_field_never_indexed(hpack_dynamic_table_t *dynamic_tab
     }
     else {
         //find entry in either static or dynamic table_length
-        int rc = find_entry(dynamic_table, index, name, value);
+        int rc = find_entry_name(dynamic_table, index, name);
         if (rc == -1) {
             ERROR("Error en find_entry ");
             return -1;
@@ -1352,17 +1364,17 @@ header_pair_t dynamic_find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t 
 }
 
 /*
- * Function: find_entry
- * General method to an entry in the table, entry is a pair name-value
+ * Function: find_entry_name_and_value
+ * finds an entry (pair name-value) in either the static or dynamic table_length
  * Input:
- *      -> *dynamic_table: //TODO
- *      -> index: //TODO
- *      -> *name: //TODO
- *      -> *value: //TODO
+ *      -> *dynamic_table: table which can be modified by server or client
+ *      -> index: table's position of the entry
+ *      -> *name: buffer where the name of the entry will be stored
+ *      -> *value: buffer where the value of the entry will be stored
  * Output:
- *      return -1 in case of error, returns 0 and copy the entry values into name and value buffers
+ *      0 if success, -1 in case of Error
  */
-int find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
+int find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     const char *table_name; //add const before char to resolve compilation warnings
     const char *table_value;
@@ -1383,6 +1395,37 @@ int find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name,
     }
     strncpy(name, table_name, strlen(table_name));
     strncpy(value, table_value, strlen(table_value));
+    return 0;
+
+}
+
+/*
+ * Function: find_entry_name
+ * finds an entry name in either the static or dynamic table_length
+ * Input:
+ *      -> *dynamic_table: table which can be modified by server or client
+ *      -> index: table's position of the entry
+ *      -> *name: buffer where the name of the entry will be stored
+ * Output:
+ *      0 if success, -1 in case of Error
+ */
+int find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+{
+    const char *table_name; //add const before char to resolve compilation warnings
+
+    if (index >= FIRST_INDEX_DYNAMIC) {
+        if (dynamic_table == NULL) {
+            ERROR("Dynamic table not initialized ");
+            return -1;
+        }
+        header_pair_t entry = dynamic_find_entry(dynamic_table, index);
+        table_name = entry.name;
+    }
+    else {
+        index--; //because static table begins at index 1
+        table_name = static_header_name_table[index];
+    }
+    strncpy(name, table_name, strlen(table_name));
     return 0;
 
 }
