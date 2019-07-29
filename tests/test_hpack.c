@@ -317,6 +317,13 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0x90,
                                           0xf4,
                                           0xff };
+
+int headers_add_check_inputs(headers_t * headers, const char * name, const char * value) {
+  TEST_ASSERT_EQUAL_STRING("new_name", name);
+  TEST_ASSERT_EQUAL_STRING("val", value);
+  return 0;
+}
+
 void setUp(void)
 {
     /* Register resets */
