@@ -119,3 +119,20 @@ int headers_count(headers_t *headers)
 {
     return headers->count;
 }
+
+header_t * get_header_from_index(headers_t * headers, int index) {
+    // Assertions for debugging
+    assert(headers != NULL);
+    assert(index > 0);
+    assert(index < headers->maxlen);
+
+    return &headers->headers[index];
+}
+
+char * headers_get_name_from_index(headers_t * headers, int index) {
+    return get_header_from_index(headers, index)->name;
+}
+
+char * headers_get_value_from_index(headers_t * headers, int index) {
+    return get_header_from_index(headers, index)->value;
+}

@@ -93,6 +93,11 @@ void test_headers(void)
 	// Check read of a non existing key
 	value = headers_get(&headers, "yesterday");
 	TEST_ASSERT_EQUAL_MESSAGE(NULL, value, "read of non existing header should return NULL");
+
+    TEST_ASSERT_EQUAL_STRING("hello", headers_get_name_from_index(&headers, 0));
+    TEST_ASSERT_EQUAL_STRING("it's me", headers_get_value_from_index(&headers, 0));
+    TEST_ASSERT_EQUAL_STRING("Hey jude", headers_get_name_from_index(&headers, 1));
+    TEST_ASSERT_EQUAL_STRING("don't be afraid", headers_get_value_from_index(&headers, 1));
 }
 
 void test_headers_add(void)
