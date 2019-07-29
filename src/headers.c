@@ -29,6 +29,24 @@ int headers_add(headers_t *headers, const char *name, const char *value)
         return -1;
     }
 
+    for (int i = 0; i < headers->count; i++) {
+        // case insensitive name comparison of headers
+        if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
+            DEBUG("Found header with name: '%s'", name);
+
+            if (strlen(value) > MAX_HEADER_VALUE_LEN - strlen(headers->headers[i].value + 1)) {
+                errno = ENOMEM;
+                return -1;
+            }
+            
+            // Concatenate values
+            strncat(headers->headers[i].value, ",", MAX_HEADER_VALUE_LEN);
+            strncat(headers->headers[i].value, value, MAX_HEADER_VALUE_LEN);
+
+            return 0;
+        }
+    }
+
     if (headers->count >= headers->maxlen) {
         errno = ENOMEM;
         return -1;
@@ -39,7 +57,7 @@ int headers_add(headers_t *headers, const char *name, const char *value)
 
     // Set header value
     strncpy(headers->headers[headers->count].value, value, MAX_HEADER_VALUE_LEN - 1);
-    
+
     DEBUG("Wrote header: '%s':'%s'", headers->headers[headers->count].name, headers->headers[headers->count].value);
 
     // Update header count
@@ -68,7 +86,7 @@ int headers_set(headers_t *headers, const char *name, const char *value)
             DEBUG("Found header with name: '%s'", name);
             // found a header with the same name
             strncpy(headers->headers[i].value, value, MAX_HEADER_VALUE_LEN);
-            DEBUG("Wrote header: '%s':'%s'",headers->headers[i].name, headers->headers[i].value);
+            DEBUG("Wrote header: '%s':'%s'", headers->headers[i].name, headers->headers[i].value);
             return 0;
         }
     }
@@ -92,7 +110,7 @@ int headers_set(headers_t *headers, const char *name, const char *value)
     return 0;
 }
 
-char * headers_get(headers_t *headers, const char *name)
+char *headers_get(headers_t *headers, const char *name)
 {
     // Assertions for debugging
     assert(headers != NULL);
@@ -120,7 +138,8 @@ int headers_count(headers_t *headers)
     return headers->count;
 }
 
-header_t * get_header_from_index(headers_t * headers, int index) {
+header_t *get_header_from_index(headers_t *headers, int index)
+{
     // Assertions for debugging
     assert(headers != NULL);
     assert(index > 0);
@@ -129,10 +148,12 @@ header_t * get_header_from_index(headers_t * headers, int index) {
     return &headers->headers[index];
 }
 
-char * headers_get_name_from_index(headers_t * headers, int index) {
+char *headers_get_name_from_index(headers_t *headers, int index)
+{
     return get_header_from_index(headers, index)->name;
 }
 
-char * headers_get_value_from_index(headers_t * headers, int index) {
+char *headers_get_value_from_index(headers_t *headers, int index)
+{
     return get_header_from_index(headers, index)->value;
 }

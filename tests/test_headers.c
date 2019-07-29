@@ -105,11 +105,11 @@ void test_headers_add(void)
 	int res;
 	char * value;
 
-	header_t hlist[3];
+	header_t hlist[2];
 	// initialize headers
 	headers_t headers;
 
-	headers_init(&headers, hlist, 3);
+	headers_init(&headers, hlist, 2);
 
 	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
 	
@@ -138,22 +138,27 @@ void test_headers_add(void)
 	// test succesful write
 	res = headers_add(&headers, "hello", "it's me");
 	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should always increase size");
+	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "add header should not increase size if header has same name");
 
 	// Check read
 	value = headers_get(&headers, "hello");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye", value, "read of existing header should return first value added");
+	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye,it's me", value, "read of existing header should return concatenation of values");
 
-	// test succesful write
+	// test failed write
 	res = headers_add(&headers, "hello", "my baby");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "add header should always increase size");
+	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 if there is no more space available for the value");
+	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "add header should not increase size on failure");
+	
+    // test succesful write
+	res = headers_add(&headers, "goodbye", "my baby");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
+	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should increase size when writing a new header");
 
 	// test succesful write
-	res = headers_add(&headers, "hello", "my darling");
+	res = headers_add(&headers, "bye bye", "birdie");
 	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 if array is full");
 	TEST_ASSERT_EQUAL_MESSAGE(ENOMEM, errno, "errno should be set to ENOMEM when trying to write after list is full");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "add header should maintain size after a failure");
+	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should maintain size after a failure");
 }
 
 
