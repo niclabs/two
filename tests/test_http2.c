@@ -1837,6 +1837,18 @@ void test_send_goaway(void){
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
 }
 
+void test_send_goaway_errors(void){
+  hstates_t st;
+  int rc = init_variables(&st);
+  int create_goaway_return[2] = {-1, 0};
+  SET_RETURN_SEQ(create_goaway_frame, create_goaway_return, 2);
+  rc = send_goaway(&st, HTTP2_NO_ERROR);
+  TEST_ASSERT_MESSAGE(rc < 0, "Return code must be less than 0");
+  int frame_to_bytes_return[1] = {300};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
+  rc = send_goaway(&st, HTTP2_NO_ERROR);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (write error)" );
+}
 // TODO test_send_goaway_errors
 
 void test_change_stream_state_end_stream_flag(void){
@@ -1939,6 +1951,7 @@ int main(void)
 
     UNIT_TEST(test_prepare_new_stream);
     UNIT_TEST(test_send_goaway);
+    UNIT_TEST(test_send_goaway_errors);
     UNIT_TEST(test_change_stream_state_end_stream_flag);
 
     //TODO:
