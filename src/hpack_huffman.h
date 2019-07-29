@@ -18,7 +18,7 @@ typedef struct {
 
 typedef struct {
     const uint32_t codes[HUFFMAN_TABLE_SIZE];
-    const uint32_t symbols[HUFFMAN_TABLE_SIZE];
+    const uint8_t symbols[HUFFMAN_TABLE_SIZE];
 #ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
     const uint8_t huffman_length[HUFFMAN_TABLE_SIZE];
 #endif
