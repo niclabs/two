@@ -402,7 +402,7 @@ void test_decode_header_block_literal_never_indexed(void)
 
     hpack_dynamic_table_t dynamic_table;
 
-    hpack_init_dynamic_table(&dynamic_table, 4000);
+    hpack_init_dynamic_table(&dynamic_table, 20000);
 
     char *new_name = "new_name";
     char *new_value = "new_value";
@@ -425,7 +425,7 @@ void test_decode_header_block_literal_never_indexed(void)
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(3, headers_add_fake.call_count);
     TEST_ASSERT_EQUAL_STRING(new_name, headers_add_fake.arg1_val);
-    //TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val); TODO NOT WORKING, BUG
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
 
 }
 
