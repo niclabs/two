@@ -436,7 +436,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       uint32_t header_list_size = headers_get_header_list_size(&st->headers_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
-        ERROR("Header list size greater than max alloweed. Send HTTP 431");
+        ERROR("Header list size greater than max allowed. Send HTTP 431");
         st->keep_receiving = 0;
         //TODO send error and finish stream
         return 0;
@@ -521,7 +521,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
       uint32_t header_list_size = headers_get_header_list_size(&st->headers_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
-        WARN("Header list size greater than max alloweed. Send HTTP 431");
+        WARN("Header list size greater than max allowed. Send HTTP 431");
         st->keep_receiving = 0;
         //TODO send error and finish stream
         return 0;
