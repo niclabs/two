@@ -7,11 +7,8 @@
 #include "table.h"
 
 
-void tearDown(void);
-
 extern int log128(uint32_t x);
 extern hpack_preamble_t get_preamble(uint8_t preamble);
-extern int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result);
 extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int encode_huffman_string(char *str, uint8_t *encoded_string);
@@ -31,7 +28,8 @@ extern int dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *n
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
-FAKE_VALUE_FUNC(int,  headers_add, headers_t * , const char * , const char * );
+FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
+FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t*, uint8_t );
 
 
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
@@ -52,9 +50,10 @@ FAKE_VALUE_FUNC(int,  headers_add, headers_t * , const char * , const char * );
  */
 
 /* List of fakes used by this unit tester */
-#define FFF_FAKES_LIST(FAKE)        \
-    FAKE(hpack_huffman_encode)      \
-    FAKE(hpack_huffman_decode)      \
+#define FFF_FAKES_LIST(FAKE)                \
+    FAKE(hpack_huffman_encode)              \
+    FAKE(hpack_huffman_decode)              \
+    FAKE(hpack_utils_read_bits_from_bytes)  \
     FAKE(headers_add)
 /*    FAKE(uint32_24_to_byte_array)   \
     FAKE(uint32_31_to_byte_array)   \
@@ -318,6 +317,7 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xf4,
                                           0xff };
 
+
 int headers_add_check_inputs(headers_t * headers, const char * name, const char * value) {
   TEST_ASSERT_EQUAL_STRING("new_name", name);
   TEST_ASSERT_EQUAL_STRING("val", value);
@@ -421,7 +421,7 @@ void test_decode_header_block_literal_never_indexed(void)
     uint8_t header_block_dynamic_index[] = {
         31, // 0001 1111 , never indexed, index 15 + ...
         47, // 0010 1111 , index = 62 = 15 + 47
-        3, // val length = 3, no huffman
+        3,  // val length = 3, no huffman
         'v',
         'a',
         'l'
@@ -846,63 +846,6 @@ void test_pack_encoded_words_to_bytes_test3(void)
     }
 }
 
-void test_read_bits_from_bytes(void)
-{
-    uint8_t buffer[] = { 0xD1, 0xC5, 0x6E };
-    uint32_t code = 0;
-    int8_t rs = -1;
-
-    //Test if it reads 1 byte correctly
-    rs = read_bits_from_bytes(0, 8, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0xD1, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    rs = read_bits_from_bytes(8, 8, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0xC5, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    rs = read_bits_from_bytes(16, 8, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0x6E, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    //Test reading different number of bits
-    rs = read_bits_from_bytes(0, 1, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0x1, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    rs = read_bits_from_bytes(0, 3, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0x6, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    rs = read_bits_from_bytes(0, 5, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0x1A, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    //Test reading between bytes
-    rs = read_bits_from_bytes(4, 8, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0x1C, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    rs = read_bits_from_bytes(12, 8, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0x56, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    rs = read_bits_from_bytes(4, 16, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(0x1C56, code);
-    TEST_ASSERT_EQUAL(0, rs);
-
-    //Test border condition
-    rs = read_bits_from_bytes(0, 25, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(-1, rs);
-
-    rs = read_bits_from_bytes(8, 17, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(-1, rs);
-
-    rs = read_bits_from_bytes(16, 10, buffer, 3, &code);
-    TEST_ASSERT_EQUAL(-1, rs);
-
-}
-
 void test_encode_huffman_word(void)
 {
     uint32_t str_length = 15;
@@ -938,11 +881,12 @@ void test_decode_huffman_word(void)
 {
     uint8_t *encoded_string = encoded_wwwdotexampledotcom + 1; //We don't need to decode as string the first byte
     char expected_decoded_string[] = "www.example.com";
-
     uint8_t expected_word_length[] = { 7, 7, 7, 6, 5, 7, 5, 6, 6, 6, 5, 6, 5, 5, 6 };
+    uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41 };
 
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
+    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 29);
 
     char decoded_sym = (char)0;
     uint8_t encoded_string_size = 12;
@@ -960,13 +904,14 @@ void test_decode_huffman_word(void)
 void test_decode_huffman_string(void)
 {
     char decoded_string[30];
+    uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
 
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
     uint8_t *encoded_string = encoded_wwwdotexampledotcom;
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
-
+    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
     int rc = decode_huffman_string(decoded_string, encoded_string);
     TEST_ASSERT_EQUAL(13, rc);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
@@ -982,6 +927,8 @@ void test_decode_huffman_string_error(void)
     /*Test border condition*/
     /*Padding wrong*/
     uint8_t encoded_string2[] = { 0x81, 0x1b };
+    uint32_t return_fake_values_read_bits_from_bytes[] = { 3, 13, 27, 55, 111 };
+    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 5);
     char expected_decoded_string2[] = "a";
     char decoded_string2[] = { 0, 0 };
 
@@ -1005,6 +952,7 @@ void test_decode_huffman_string_error(void)
 void test_encode_then_decode_huffman_string(void)
 {
     char str[] = "www.example.com";
+    uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
     uint8_t encoded_string[30];
     char result[30];
 
@@ -1012,6 +960,7 @@ void test_encode_then_decode_huffman_string(void)
     memset(result, 0, 30);
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
+    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
     int rc = encode_huffman_string(str, encoded_string);
@@ -1025,8 +974,10 @@ void test_encode_then_decode_huffman_string(void)
 void test_decode_string(void)
 {
     uint8_t encoded_string[] = { 0x0f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d };
+    uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
     char decoded_string[30];
 
+    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
     /*Test decode a non huffman string*/
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
@@ -1051,6 +1002,10 @@ void test_decode_string(void)
 
 void test_decode_string_error(void)
 {
+    uint32_t return_fake_value_read_bits_from_bytes = 3;
+
+    hpack_utils_read_bits_from_bytes_fake.return_val = return_fake_value_read_bits_from_bytes;
+
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_bad_padding_arr, 2);
 
     /*Test border condition*/
@@ -1194,11 +1149,13 @@ void test_encode_literal_header_field_new_name(void)
     }
 }
 
-void test_encode_literal_header_field_new_name_error(void){
+void test_encode_literal_header_field_new_name_error(void)
+{
     /*Test border condition*/
     char name_to_encode[2 * HTTP2_MAX_HBF_BUFFER];
     char value_to_encode[2 * HTTP2_MAX_HBF_BUFFER];
     uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
+
     memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
     uint8_t name_huffman_bool = 0;
     uint8_t value_huffman_bool = 0;
@@ -1238,7 +1195,7 @@ int main(void)
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
     UNIT_TEST(test_find_prefix_size);
-    UNIT_TEST(test_read_bits_from_bytes);
+
     UNIT_TEST(test_pack_encoded_words_to_bytes_test1);
     UNIT_TEST(test_pack_encoded_words_to_bytes_test2);
     UNIT_TEST(test_pack_encoded_words_to_bytes_test3);

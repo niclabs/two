@@ -11,6 +11,7 @@
 #include "table.h"
 #include "headers.h"
 #include "hpack_huffman.h"
+#include "hpack_utils.h"
 
 
 

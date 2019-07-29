@@ -1,6 +1,5 @@
 #include "hpack.h"
 #include "logging.h"
-
 #include "hpack_utils.h"
 #include "hpack_huffman.h"
 #include "table.h"
@@ -275,41 +274,6 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
     return 0;
 }
 
-/*
- * Function: read_bits_from_bytes
- * Reads bits from a buffer of bytes (max number of bits it can read is 32).
- * Input:
- * -> current_bit_pointer: The bit from where to start reading (inclusive)
- * -> number_of_bits_to_read: The number of bits to read from the buffer
- * -> *buffer: The buffer containing the bits to read
- * -> buffer_size: Size of the buffer
- * -> *result: Pointer to variable to store the result
- * output: 0 if the bits are read correctly and stores it in *result; -1 if it fails
- */
-int8_t read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size, uint32_t *result)
-{
-    uint32_t byte_offset = current_bit_pointer / 8;
-    uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
-    uint8_t num_bytes = ((number_of_bits_to_read + current_bit_pointer - 1) / 8) - (current_bit_pointer / 8) + 1;
-
-    if (num_bytes + byte_offset > buffer_size) {
-        return -1;
-    }
-    uint32_t mask = 1 << (8 * num_bytes - number_of_bits_to_read);
-    mask -= 1;
-    mask = ~mask;
-    mask >>= bit_offset;
-    mask &= ((1 << (8 * num_bytes - bit_offset)) - 1);
-    uint32_t code = buffer[byte_offset];
-    for (int i = 1; i < num_bytes; i++) {
-        code <<= 8;
-        code |= buffer[i + byte_offset];
-    }
-    code &= mask;
-    code >>= (8 * num_bytes - number_of_bits_to_read - bit_offset);
-    *result = code;
-    return 0;
-}
 
 /*
  * Function: log128
@@ -587,17 +551,17 @@ int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_
         if (bit_position + i > 8 * encoded_string_size) {
             return -1;
         }
-        uint32_t result = 0;
-        int8_t rc = read_bits_from_bytes(bit_position, i, encoded_string, encoded_string_size, &result);
+        uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string, encoded_string_size);
+        /*int8_t rc = read_bits_from_bytes(bit_position, i, encoded_string, encoded_string_size, &result);
         if (rc < 0) {
             ERROR("Error while trying to read bits from encoded_string in decode_huffman_word");
             return -1;
-        }
+        }*/
         encoded_word.code = result;
         encoded_word.length = i;
         uint8_t decoded_sym = 0;
 
-        rc = hpack_huffman_decode(&encoded_word, &decoded_sym);
+        int8_t rc = hpack_huffman_decode(&encoded_word, &decoded_sym);
 
         if (rc == 0) {/*Code is found on huffman tree*/
             str[0] = (char)decoded_sym;
