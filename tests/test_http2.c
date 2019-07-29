@@ -1290,12 +1290,15 @@ void test_send_headers_with_continuation(void){
 
 void test_send_headers_errors(void){
   hstates_t st1; // First error, no headers to send
+  st1.headers_out.count = 0;
   init_variables(&st1);
   hstates_t st2; // Second error, compress headers failure
   init_variables(&st2);
   int compress_return[2] = {-1, 20};
   st2.headers_out.count = 10;
   SET_RETURN_SEQ(compress_headers, compress_return, 2);
+  uint32_t get_setting_return[1] = {20};
+  SET_RETURN_SEQ(get_setting_value, get_setting_return, 1);
   hstates_t st3; // Third error, stream verification error
   init_variables(&st3);
   st3.headers_out.count = 10;
