@@ -90,6 +90,11 @@ typedef struct HTTP2_STATES {
 #define HTTP_MAX_HEADER_COUNT (16)
 #endif
 
+#ifdef HTTP_CONF_MAX_DATA_SIZE
+#define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
+#else
+#define HTTP_MAX_DATA_SIZE (128)
+#endif
 
 /**
  * Definition of a resource handler, i.e. an action to perform on call of a given
@@ -114,6 +119,12 @@ typedef struct {
     http_resource_handler_t handler;
 } http_resource_t;
 
+typedef struct {
+    uint32_t size;
+    uint8_t buf[HTTP_MAX_DATA_SIZE];
+    uint32_t processed;
+} http_data_t;
+
 typedef struct HTTP_STATES {
     char host[HTTP_MAX_HOST_SIZE];
 
@@ -130,7 +141,7 @@ typedef struct HTTP_STATES {
     // TODO: deprecate and pass directly to http2 functions
     headers_t headers_in;
     headers_t headers_out;
-
+    
     // Resource handler list
     http_resource_t resource_list[HTTP_MAX_RESOURCES];
     uint8_t resource_list_size;
