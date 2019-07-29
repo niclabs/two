@@ -36,8 +36,7 @@ FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 FAKE_VALUE_FUNC(int, h2_send_request, hstates_t *);
 FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
 FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
-FAKE_VALUE_FUNC(int, headers_get, headers_t *, const char *, char *);
-FAKE_VALUE_FUNC(int, headers_get_len, headers_t *, const char *, char *, size_t);
+FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
 
 
 /* List of fakes used by this unit tester */
@@ -54,8 +53,7 @@ FAKE_VALUE_FUNC(int, headers_get_len, headers_t *, const char *, char *, size_t)
     FAKE(h2_send_request)                 \
     FAKE(headers_init)                    \
     FAKE(headers_set)                     \
-    FAKE(headers_get)                     \
-    FAKE(headers_get_len)
+    FAKE(headers_get)
 
 
 void setUp()

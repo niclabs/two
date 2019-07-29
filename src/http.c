@@ -318,8 +318,7 @@ int http_server_start(hstates_t *hs)
             }
 
             // Get the method from headers
-            char method[8];
-            headers_get_len(&hs->headers_in, ":method", method, 8);
+            char * method = headers_get(&hs->headers_in, ":method");
             DEBUG("Received %s request", method);
             if (!has_method_support(method)) {
                 error(hs, 501, "Not Implemented");
@@ -331,8 +330,7 @@ int http_server_start(hstates_t *hs)
             // TODO: read data (if POST)
 
             // Get uri
-            char uri[MAX_HEADER_VALUE_LEN];
-            headers_get(&hs->headers_in, ":path", uri);
+            char * uri = headers_get(&hs->headers_in, ":path");
 
             // Process the http request
             do_request(hs, method, uri);
@@ -482,9 +480,8 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
         return -1;
     }
 
-    char statusStr[4];
-    headers_get_len(&hs->headers_in, ":status", statusStr, 4);
-    int status = atoi(statusStr);
+    int status = atoi(headers_get(&hs->headers_in, ":status"));
+    DEBUG("Server replied with status %d", status);
 
     // Get response data (TODO: should we just copy the pointer?)
     *size = get_data(&hs->hd_lists, response, *size);

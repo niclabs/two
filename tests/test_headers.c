@@ -13,9 +13,7 @@ void tearDown(void)
 void test_headers(void)
 {
 	int res;
-	char long_value[32];
-	char value[16];
-	char short_value[5];
+	char * value;
 
 	header_t hlist[3];
 	// initialize headers
@@ -42,8 +40,7 @@ void test_headers(void)
 	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should equal to 1 after first write");
 
 	// Check read
-	res = headers_get(&headers, "hello", value);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "read of existing header should return 0");
+	value = headers_get(&headers, "hello");
 	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye", value, "read of existing header should set correct value");
 	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after a read");
 
@@ -53,9 +50,8 @@ void test_headers(void)
 	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after writing an existing key");
 
 	// Check read with different case
-	res = headers_get(&headers, "HeLlo", value);
+	value = headers_get(&headers, "HeLlo");
 	TEST_ASSERT_EQUAL_STRING_MESSAGE("it's me", value, "read of header should be case insensitive");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "read of existing header should return 0");
 	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after a read");
 
 	// test succesful write
@@ -64,9 +60,8 @@ void test_headers(void)
 	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should equal to 2 after second write");
 
 	// Check read into larger array
-	res = headers_get(&headers, "Hey jude", long_value);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "read of existing header should return 0");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("remember", long_value, "read of existing header should write to buf with correct strlen");
+	value = headers_get(&headers, "Hey jude");
+	TEST_ASSERT_EQUAL_STRING_MESSAGE("remember", value, "read of existing header should write to buf with correct strlen");
 	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should remain constant after a read");
 
 	// test succesful write
@@ -74,16 +69,9 @@ void test_headers(void)
 	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
 	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should equal to 3 after third write");
 
-	// Check read into shorter array
-	res = headers_get_len(&headers, "sad song", short_value, 4);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "succesful read_len of existing header should return 0");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("make", short_value, "read_len of existing header into shorter array should truncate the value");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read_len");
-
-	// Check read into a full list
-	res = headers_get(&headers, "sad song", long_value);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "read of existing header should return 0");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("make it better", long_value, "read of existing header should write to buf with correct strlen");
+	// Check read from a full list
+	value = headers_get(&headers, "sad song");
+	TEST_ASSERT_EQUAL_STRING_MESSAGE("make it better", value, "read of existing header should write to buf with correct strlen");
 	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read");
 
 	// test write after header size
@@ -98,20 +86,19 @@ void test_headers(void)
 	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after writing an existing key");
 
 	// Check read into already written array
-	res = headers_get(&headers, "hey jude", value);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "read of existing header should return 0");
+	value = headers_get(&headers, "hey jude");
 	TEST_ASSERT_EQUAL_STRING_MESSAGE("don't be afraid", value, "read of existing header should with correct strlen");
 	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read");
 
 	// Check read of a non existing key
-	res = headers_get(&headers, "yesterday", value);
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "read of non existing header should return -1");
+	value = headers_get(&headers, "yesterday");
+	TEST_ASSERT_EQUAL_MESSAGE(NULL, value, "read of non existing header should return NULL");
 }
 
 void test_headers_add(void)
 {
 	int res;
-	char value[16];
+	char * value;
 
 	header_t hlist[3];
 	// initialize headers
@@ -139,8 +126,7 @@ void test_headers_add(void)
 	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should equal to 1 after first write");
 
 	// Check read
-	res = headers_get(&headers, "hello", value);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "read of existing header should return 0");
+	value = headers_get(&headers, "hello");
 	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye", value, "read of existing header should set correct value");
 	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after a read");
 
@@ -150,8 +136,7 @@ void test_headers_add(void)
 	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should always increase size");
 
 	// Check read
-	res = headers_get(&headers, "hello", value);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "read of existing header should return 0");
+	value = headers_get(&headers, "hello");
 	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye", value, "read of existing header should return first value added");
 
 	// test succesful write

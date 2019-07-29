@@ -92,21 +92,15 @@ int headers_set(headers_t *headers, const char *name, const char *value)
     return 0;
 }
 
-int headers_get(headers_t *headers, const char *name, char *value)
-{
-    return headers_get_len(headers, name, value, MAX_HEADER_VALUE_LEN);
-}
-
-int headers_get_len(headers_t *headers, const char *name, char *value, size_t len)
+char * headers_get(headers_t *headers, const char *name)
 {
     // Assertions for debugging
     assert(headers != NULL);
     assert(name != NULL);
-    assert(value != NULL);
 
     if (strlen(name) > MAX_HEADER_NAME_LEN) {
         errno = EINVAL;
-        return -1;
+        return NULL;
     }
 
     for (int i = 0; i < headers->count; i++) {
@@ -114,13 +108,10 @@ int headers_get_len(headers_t *headers, const char *name, char *value, size_t le
         if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
             // found a header with the same name
             DEBUG("Found header with name '%s'", name);
-            strncpy(value, headers->headers[i].value, len);
-            value[len] = '\0';
-            DEBUG("Read header value: '%s'", value);
-            return 0;
+            return headers->headers[i].value;
         }
     }
-    return -1;
+    return NULL;
 }
 
 
