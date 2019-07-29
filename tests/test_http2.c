@@ -218,7 +218,7 @@ void setUp(void){
 void test_init_variables(void){
   hstates_t hdummy;
   hdummy.is_server = 1;
-  uint32_t init_vals[6] = {DEFAULT_HTS,DEFAULT_EP,DEFAULT_MCS,DEFAULT_IWS,DEFAULT_MFS,DEFAULT_MHLS};
+  uint32_t init_vals[6] = {DEFAULT_HEADER_TABLE_SIZE,DEFAULT_ENABLE_PUSH,DEFAULT_MAX_CONCURRENT_STREAMS,DEFAULT_INITIAL_WINDOW_SIZE,DEFAULT_MAX_FRAME_SIZE,DEFAULT_MAX_HEADER_LIST_SIZE};
   int rc = init_variables(&hdummy);
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[0] == init_vals[0], "HTS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[1] == init_vals[1], "EP in local settings is not setted");
@@ -236,9 +236,9 @@ void test_init_variables(void){
   TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.stream_id == 2, "Current stream id must be 2");
   TEST_ASSERT_MESSAGE(hdummy.h2s.current_stream.state == STREAM_IDLE, "Current stream state must be IDLE");
   TEST_ASSERT_MESSAGE(hdummy.h2s.last_open_stream_id == 1, "Last open stream id must be 1");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.incoming_window.window_size == DEFAULT_IWS, "window size must be DEFAULT_IWS");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.incoming_window.window_size == DEFAULT_INITIAL_WINDOW_SIZE, "window size must be DEFAULT_INITIAL_WINDOW_SIZE");
   TEST_ASSERT_MESSAGE(hdummy.h2s.incoming_window.window_used == 0, "window used must be 0");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.outgoing_window.window_size == DEFAULT_IWS, "window size must be DEFAULT_IWS");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.outgoing_window.window_size == DEFAULT_INITIAL_WINDOW_SIZE, "window size must be DEFAULT_INITIAL_WINDOW_SIZE");
   TEST_ASSERT_MESSAGE(hdummy.h2s.outgoing_window.window_used == 0, "window used must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.sent_goaway == 0, "sent go away must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.received_goaway == 0, "received go away must be 0");
@@ -578,7 +578,7 @@ void test_read_setting_from_errors(void){
 void test_h2_client_init_connection(void){
   /*Depends on http_write and send_local_settings*/
   hstates_t client;
-  uint32_t init_vals[6] = {DEFAULT_HTS,DEFAULT_EP,DEFAULT_MCS,DEFAULT_IWS,DEFAULT_MFS,DEFAULT_MHLS};
+  uint32_t init_vals[6] = {DEFAULT_HEADER_TABLE_SIZE,DEFAULT_ENABLE_PUSH,DEFAULT_MAX_CONCURRENT_STREAMS,DEFAULT_INITIAL_WINDOW_SIZE,DEFAULT_MAX_FRAME_SIZE,DEFAULT_MAX_HEADER_LIST_SIZE};
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
   int rc = h2_client_init_connection(&client);
@@ -623,7 +623,7 @@ void test_h2_client_init_connection_errors(void){
 void test_h2_server_init_connection(void){
   /*Depends on http_write and send_local_settings*/
   hstates_t server;
-  uint32_t init_vals[6] = {DEFAULT_HTS,DEFAULT_EP,DEFAULT_MCS,DEFAULT_IWS,DEFAULT_MFS,DEFAULT_MHLS};
+  uint32_t init_vals[6] = {DEFAULT_HEADER_TABLE_SIZE,DEFAULT_ENABLE_PUSH,DEFAULT_MAX_CONCURRENT_STREAMS,DEFAULT_INITIAL_WINDOW_SIZE,DEFAULT_MAX_FRAME_SIZE,DEFAULT_MAX_HEADER_LIST_SIZE};
   create_settings_frame_fake.custom_fake = create_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_45;
   char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";

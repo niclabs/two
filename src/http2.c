@@ -24,21 +24,21 @@ int init_variables(hstates_t * st){
     st->h2s.header_block_fragments_pointer = 0;
     st->h2s.waiting_for_end_headers_flag = 0;
 
-    st->h2s.remote_settings[0] = st->h2s.local_settings[0] = DEFAULT_HTS;
-    st->h2s.remote_settings[1] = st->h2s.local_settings[1] = DEFAULT_EP;
-    st->h2s.remote_settings[2] = st->h2s.local_settings[2] = DEFAULT_MCS;
-    st->h2s.remote_settings[3] = st->h2s.local_settings[3] = DEFAULT_IWS;
-    st->h2s.remote_settings[4] = st->h2s.local_settings[4] = DEFAULT_MFS;
-    st->h2s.remote_settings[5] = st->h2s.local_settings[5] = DEFAULT_MHLS;
+    st->h2s.remote_settings[0] = st->h2s.local_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
+    st->h2s.remote_settings[1] = st->h2s.local_settings[1] = DEFAULT_ENABLE_PUSH;
+    st->h2s.remote_settings[2] = st->h2s.local_settings[2] = DEFAULT_MAX_CONCURRENT_STREAMS;
+    st->h2s.remote_settings[3] = st->h2s.local_settings[3] = DEFAULT_INITIAL_WINDOW_SIZE;
+    st->h2s.remote_settings[4] = st->h2s.local_settings[4] = DEFAULT_MAX_FRAME_SIZE;
+    st->h2s.remote_settings[5] = st->h2s.local_settings[5] = DEFAULT_MAX_HEADER_LIST_SIZE;
     st->h2s.wait_setting_ack = 0;
     st->h2s.current_stream.stream_id = st->is_server ? 2 : 3;
     st->h2s.current_stream.state = STREAM_IDLE;
     st->h2s.last_open_stream_id = 1;
 
-    st->h2s.incoming_window.window_size = DEFAULT_IWS;
+    st->h2s.incoming_window.window_size = DEFAULT_INITIAL_WINDOW_SIZE;
     st->h2s.incoming_window.window_used = 0;
 
-    st->h2s.outgoing_window.window_size = DEFAULT_IWS;
+    st->h2s.outgoing_window.window_size = DEFAULT_INITIAL_WINDOW_SIZE;
     st->h2s.outgoing_window.window_used = 0;
 
     st->h2s.sent_goaway = 0;

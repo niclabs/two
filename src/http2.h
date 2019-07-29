@@ -4,14 +4,13 @@
 
 
 /*Default settings values*/
-// TODO: use more descriptive names
-// i.e. DEFAULT_HEADER_TABLE_SIZE instead of DEFAULT_HTS
-#define DEFAULT_HTS 4096
-#define DEFAULT_EP 1
-#define DEFAULT_MCS 99999
-#define DEFAULT_IWS 65535
-#define DEFAULT_MFS 16384
-#define DEFAULT_MHLS 99999
+#define DEFAULT_HEADER_TABLE_SIZE 4096
+#define DEFAULT_ENABLE_PUSH 1
+#define DEFAULT_MAX_CONCURRENT_STREAMS 99999
+#define DEFAULT_INITIAL_WINDOW_SIZE 65535
+#define DEFAULT_MAX_FRAME_SIZE 16384
+#define DEFAULT_MAX_HEADER_LIST_SIZE 99999
+
 
 /*Macros for table update*/
 #define LOCAL 0
