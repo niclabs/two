@@ -4,7 +4,14 @@
 #include <stdint.h>
 
 #define HTTP2_MAX_HBF_BUFFER 128
-#define HTTP_MAX_DATA_SIZE 128
+
+#ifdef HTTP_CONF_MAX_DATA_SIZE
+#define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
+#else
+#define HTTP_MAX_DATA_SIZE (128)
+#endif
+
+
 
 typedef struct HEADERS_DATA_LISTS_S {
     uint32_t data_in_size;

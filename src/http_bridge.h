@@ -90,12 +90,6 @@ typedef struct HTTP2_STATES {
 #define HTTP_MAX_HEADER_COUNT (16)
 #endif
 
-#ifdef HTTP_CONF_MAX_DATA_SIZE
-#define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
-#else
-#define HTTP_MAX_DATA_SIZE (128)
-#endif
-
 /**
  * Definition of a resource handler, i.e. an action to perform on call of a given
  * method and uri
