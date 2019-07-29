@@ -161,11 +161,33 @@ void test_headers_add(void)
 	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should maintain size after a failure");
 }
 
+void test_get_header_list_size(void){
+	int res;
+
+	// initialize headers
+	header_t hlist[2];
+	headers_t headers;
+	headers_init(&headers, hlist, 2);
+
+	// test succesful write
+	res = headers_set(&headers, "name1", "value1");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should update after succesful write");
+
+	// test succesful write
+	res = headers_set(&headers, "another", "anothervalue");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should update after succesful write");
+
+    int result = headers_get_header_list_size(&headers);
+    TEST_ASSERT_EQUAL(5 + 7 + 64 + 6 + 12 + 64, result);
+}
 
 int main(void)
 {
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_headers);
     UNIT_TEST(test_headers_add);
+    UNIT_TEST(test_get_header_list_size);
     UNIT_TESTS_END();
 }

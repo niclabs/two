@@ -94,4 +94,10 @@ char * headers_get_name_from_index(headers_t * headers, int index);
  */
 char * headers_get_value_from_index(headers_t * headers, int index);
 
+/** 
+ * Calculate size of header list for http/2
+ */
+int headers_get_header_list_size(headers_t* headers);
+
+
 #endif

@@ -38,7 +38,7 @@ int headers_add(headers_t *headers, const char *name, const char *value)
                 errno = ENOMEM;
                 return -1;
             }
-            
+
             // Concatenate values
             strncat(headers->headers[i].value, ",", MAX_HEADER_VALUE_LEN);
             strncat(headers->headers[i].value, value, MAX_HEADER_VALUE_LEN);
@@ -156,4 +156,16 @@ char *headers_get_name_from_index(headers_t *headers, int index)
 char *headers_get_value_from_index(headers_t *headers, int index)
 {
     return get_header_from_index(headers, index)->value;
+}
+
+int headers_get_header_list_size(headers_t *headers)
+{
+    int header_list_size = 0;
+
+    for (int i = 0; i < headers->count; i++) {
+        header_list_size += strlen(headers->headers[i].name);
+        header_list_size += strlen(headers->headers[i].value);
+        header_list_size += 64; //overhead of 32 octets for each, name and value
+    }
+    return header_list_size;    //OK
 }
