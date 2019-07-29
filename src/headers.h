@@ -2,6 +2,7 @@
 #define HEADERS_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 #ifndef CONF_MAX_HEADER_NAME_LEN
 #define MAX_HEADER_NAME_LEN (16)
@@ -97,7 +98,7 @@ char * headers_get_value_from_index(headers_t * headers, int index);
 /** 
  * Calculate size of header list for http/2
  */
-int headers_get_header_list_size(headers_t* headers);
+uint32_t headers_get_header_list_size(headers_t* headers);
 
 
 #endif

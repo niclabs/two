@@ -1,4 +1,5 @@
 #include "http2.h"
+#include "headers.h"
 //#define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"
 #include "utils.h"
@@ -432,7 +433,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
           change_stream_state_end_stream_flag(st, 0); //0 is for receiving
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(&st->headers_in);
+      uint32_t header_list_size = headers_get_header_list_size(&st->headers_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         ERROR("Header list size greater than max alloweed. Send HTTP 431");
@@ -517,7 +518,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
           st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
-      uint32_t header_list_size = get_header_list_size(&st->headers_in);
+      uint32_t header_list_size = headers_get_header_list_size(&st->headers_in);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         WARN("Header list size greater than max alloweed. Send HTTP 431");

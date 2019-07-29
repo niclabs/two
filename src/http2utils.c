@@ -76,14 +76,3 @@ int read_n_bytes(uint8_t *buff_read, int n,  hstates_t *hs){
 uint32_t get_setting_value(uint32_t* settings_table, sett_param_t setting_to_get){
     return settings_table[setting_to_get-1];
 }
-
-uint32_t get_header_list_size(headers_t* headers){
-    uint32_t header_list_size = 0;
-    for(uint8_t i = 0; i< headers->count; i++){
-        header_list_size += strlen(headers->headers[i].name);
-        header_list_size += strlen(headers->headers[i].value);
-        header_list_size +=64;//overhead of 32 octets for each, name and value
-    }
-    return header_list_size;//OK
-
-}

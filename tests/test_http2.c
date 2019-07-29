@@ -109,7 +109,7 @@ FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_t*);
 FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);
-FAKE_VALUE_FUNC(uint32_t, get_header_list_size, headers_t*);
+FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, headers_t*);
 
 
 FAKE_VALUE_FUNC( int, compress_headers, headers_t* , uint8_t* );
@@ -146,7 +146,7 @@ FAKE_VALUE_FUNC(int, read_goaway_payload, uint8_t*, frame_header_t*, goaway_payl
     FAKE(read_headers_payload)            \
     FAKE(read_continuation_payload)    \
     FAKE(get_setting_value)               \
-    FAKE(get_header_list_size)            \
+    FAKE(headers_get_header_list_size)            \
     FAKE(compress_headers)            \
     FAKE(headers_payload_to_bytes)            \
     FAKE(create_headers_frame)            \
@@ -821,8 +821,8 @@ void test_handle_headers_payload_no_flags(void){
   buffer_copy_fake.custom_fake = bc;
   int flag_returns[2] = {0, 0};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
-  uint32_t get_header_list_size_returns[1] = {120};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rc = handle_headers_payload(&head, &hpl, &st);
@@ -843,8 +843,8 @@ void test_handle_headers_payload_just_end_stream_flag(void){
   buffer_copy_fake.custom_fake = bc;
   int flag_returns[2] = {1, 0};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
-  uint32_t get_header_list_size_returns[1] = {120};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rc = handle_headers_payload(&head, &hpl, &st);
@@ -869,8 +869,8 @@ void test_handle_headers_payload_full_message_header_no_end_stream(void){
   SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
   // only end_headers_flag is set
   int flag_returns[2] = {0, 1};
-  uint32_t get_header_list_size_returns[1] = {120};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
@@ -898,8 +898,8 @@ void test_handle_headers_payload_full_message_header_end_stream(void){
   // both end_stream and end_header flags set
   int flag_returns[2] = {1, 1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
-  uint32_t get_header_list_size_returns[1] = {120};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rc = handle_headers_payload(&head, &hpl, &st);
@@ -929,8 +929,8 @@ void test_handle_headers_payload_errors(void){
   int flag_returns[6] = {0, 1, 0 ,1, 0, 1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 6);
   // Fifth error, header list size bigger than expected
-  uint32_t get_header_list_size_returns[1] = {129};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {129};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rc = handle_headers_payload(&head, &hpl, &st);
@@ -959,8 +959,8 @@ void test_handle_continuation_payload_no_end_headers_flag_set(void){
   buffer_copy_fake.custom_fake = bc;
   int flag_returns[1] = {0};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
-  uint32_t get_header_list_size_returns[1] = {120};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   rc = handle_continuation_payload(&head, &cont, &st);
@@ -982,8 +982,8 @@ void test_handle_continuation_payload_end_headers_flag_set(void){
   buffer_copy_fake.custom_fake = bc;
   int flag_returns[1] = {1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
-  uint32_t get_header_list_size_returns[1] = {120};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rcv_returns[1] = {70};
@@ -1014,8 +1014,8 @@ void test_handle_continuation_payload_end_headers_end_stream_flag_set(void){
   buffer_copy_fake.custom_fake = bc;
   int flag_returns[1] = {1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
-  uint32_t get_header_list_size_returns[1] = {120};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {120};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   int rcv_returns[1] = {70};
@@ -1050,8 +1050,8 @@ void test_handle_continuation_payload_errors(void){
   int flag_returns[1] = {1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
   // Fourth error, header list size too big
-  uint32_t get_header_list_size_returns[1] = {129};
-  SET_RETURN_SEQ(get_header_list_size, get_header_list_size_returns, 1);
+  uint32_t headers_get_header_list_size_returns[1] = {129};
+  SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
   rc = handle_continuation_payload(&head, &cont, &st);

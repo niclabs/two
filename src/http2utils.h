@@ -27,5 +27,4 @@ typedef enum SettingsParameters{
 int verify_setting(uint16_t id, uint32_t value);
 int read_n_bytes(uint8_t *buff_read, int n,  hstates_t *hs);
 uint32_t get_setting_value(uint32_t* settings_table, sett_param_t setting_to_get);
-uint32_t get_header_list_size(headers_t* headers);
 #endif /*HTTP2UTILS_H*/

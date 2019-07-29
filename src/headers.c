@@ -158,7 +158,7 @@ char *headers_get_value_from_index(headers_t *headers, int index)
     return get_header_from_index(headers, index)->value;
 }
 
-int headers_get_header_list_size(headers_t *headers)
+uint32_t headers_get_header_list_size(headers_t *headers)
 {
     int header_list_size = 0;
 

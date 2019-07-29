@@ -109,28 +109,6 @@ void test_get_setting_value(void){
     TEST_ASSERT_EQUAL(value_received, settings[5]);
 }
 
-void test_get_header_list_size(void){
-
-    header_t table_pair[2];
-    strcpy(table_pair[0].name, "name1");//5
-    strcpy(table_pair[0].value, "value1");//6
-    //table_pair[0].value = "value1";
-    //table_pair[1].name = "anothername";
-    strcpy(table_pair[1].name, "anothername");//11
-    strcpy(table_pair[1].value, "anothervalue");//12
-    //table_pair[1].value = "anothervalue";
-
-    headers_t headers;
-    headers.count = 2;
-    headers.maxlen = 2;
-    headers.headers = table_pair;
-
-    uint32_t expected_size =(uint32_t) strlen(table_pair[0].name) + strlen(table_pair[0].value) + 64 + strlen(table_pair[1].name) + strlen(table_pair[1].value) + 64;//adds 32 for the overhead of every header name and value (check RFC)
-
-    uint32_t result = get_header_list_size(&headers);
-    TEST_ASSERT_EQUAL(result, expected_size);
-}
-
 
 int main(void)
 {
@@ -140,7 +118,6 @@ int main(void)
     UNIT_TEST(test_read_n_bytes);
     UNIT_TEST(test_read_n_bytes_error);
     UNIT_TEST(test_get_setting_value);
-    UNIT_TEST(test_get_header_list_size);
 
     return UNIT_TESTS_END();
 }
