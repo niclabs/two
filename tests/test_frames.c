@@ -691,19 +691,11 @@ int encode_fake_custom(hpack_preamble_t preamble, uint32_t max_size, uint32_t in
     (void)name_string;
     (void)name_huffman_bool;
 
-    if(index!=0){
-        ERROR("index !=0");
-        return -1;
-    }
-    if(strcmp("hola",name_string)!=0){
-        ERROR("wrong name");
-        return -1;
-    }
-    if(strcmp("val",value_string)!=0){
-        ERROR("wrong value");
-        return -1;
-    }
 
+    TEST_ASSERT_EQUAL_MESSAGE(0, index, "Index given to encode() should start at 0");
+    TEST_ASSERT_EQUAL_STRING_MESSAGE("hola", name_string, "Header name should be 'hola'");
+    TEST_ASSERT_EQUAL_STRING_MESSAGE("val", value_string, "Header value should be 'val'");
+    
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
 
