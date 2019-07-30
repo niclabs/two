@@ -32,23 +32,8 @@ FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t*);
 FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer,uint16_t , uint8_t , uint8_t );
 FAKE_VALUE_FUNC(int, hpack_utils_log128, uint32_t);
+FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 
-/*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
-   FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t*);
-   FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t*);
-   FAKE_VALUE_FUNC(int, uint16_to_byte_array, uint16_t, uint8_t*);
-
-   FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32, uint8_t*);
-   FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_31, uint8_t*);
-   FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t*);
-   FAKE_VALUE_FUNC(uint16_t, bytes_to_uint16, uint8_t*);
-
-   FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int);
-   FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
-
-   FAKE_VALUE_FUNC(int, encode, hpack_preamble_t , uint32_t , uint32_t ,char*, uint8_t , char*, uint8_t , uint8_t*);
-   FAKE_VALUE_FUNC(int, decode_header_block, uint8_t* , uint8_t , headers_data_lists_t*);
- */
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)                \
@@ -57,20 +42,9 @@ FAKE_VALUE_FUNC(int, hpack_utils_log128, uint32_t);
     FAKE(hpack_utils_read_bits_from_bytes)  \
     FAKE(hpack_utils_check_can_read_buffer) \
     FAKE(hpack_utils_log128)                \
+    FAKE(hpack_utils_get_preamble)          \
     FAKE(headers_add)
-/*    FAKE(uint32_24_to_byte_array)   \
-    FAKE(uint32_31_to_byte_array)   \
-    FAKE(uint32_to_byte_array)      \
-    FAKE(uint16_to_byte_array)      \
-    FAKE(bytes_to_uint32)           \
-    FAKE(bytes_to_uint32_31)        \
-    FAKE(bytes_to_uint32_24)        \
-    FAKE(bytes_to_uint16)           \
-    FAKE(append_byte_arrays)        \
-    FAKE(buffer_copy)               \
-    FAKE(encode)                    \
-    FAKE(decode_header_block)
- */
+
 
 /*----------Value Return for FAKEs ----------*/
 int8_t hpack_huffman_encode_return_w(huffman_encoded_word_t *h, uint8_t sym)
@@ -336,19 +310,6 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-void test_get_preamble(void)
-{
-    uint8_t preamble_arr[] = { (uint8_t)INDEXED_HEADER_FIELD,
-                               (uint8_t)LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING,
-                               (uint8_t)DYNAMIC_TABLE_SIZE_UPDATE,
-                               (uint8_t)LITERAL_HEADER_FIELD_NEVER_INDEXED,
-                               (uint8_t)LITERAL_HEADER_FIELD_WITHOUT_INDEXING };
-
-    for (int i = 0; i < 5; i++) {
-        TEST_ASSERT_EQUAL((hpack_preamble_t)preamble_arr[i], get_preamble(preamble_arr[i]));
-    }
-
-}
 void test_decode_header_block_literal_never_indexed(void)
 {
     //Literal Header Field Representation
@@ -377,6 +338,7 @@ void test_decode_header_block_literal_never_indexed(void)
     headers.maxlen = 3;
     headers.headers = h_list;
     hpack_utils_log128_fake.return_val = 0;
+    hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)16;
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
@@ -469,7 +431,7 @@ void test_decode_header_block_literal_without_indexing(void)
     headers.maxlen = 3;
     headers.headers = h_list;
     hpack_utils_log128_fake.return_val = 0;
-
+    hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)0;
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
@@ -862,8 +824,6 @@ void test_encode_huffman_string(void)
         TEST_ASSERT_EQUAL(expected_encoded_string[i], encoded_string[i]);
     }
 
-
-
 }
 
 void test_decode_huffman_word(void)
@@ -1181,7 +1141,6 @@ int main(void)
     UNIT_TEST(test_decode_header_block_literal_never_indexed);
     UNIT_TEST(test_encode);
 
-    UNIT_TEST(test_get_preamble);
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
     UNIT_TEST(test_find_prefix_size);
@@ -1211,22 +1170,6 @@ int main(void)
 
     UNIT_TEST(test_encode_literal_header_field_new_name);
     UNIT_TEST(test_encode_literal_header_field_new_name_error);
-    /*UNIT_TEST(test_frame_to_bytes_settings);
-       UNIT_TEST(test_read_headers_payload);
-       UNIT_TEST(test_read_continuation_payload);
-       UNIT_TEST(test_create_headers_frame);
-       UNIT_TEST(test_create_continuation_frame);
-
-       UNIT_TEST(test_headers_payload_to_bytes);
-
-       UNIT_TEST(test_frame_to_bytes_headers)
-
-       UNIT_TEST(test_frame_to_bytes_continuation)
-
-       UNIT_TEST(test_frame_to_bytes_continuation)
-       UNIT_TEST(test_continuation_payload_to_bytes);
-     */
-
 
     return UNIT_TESTS_END();
 }

@@ -7,6 +7,8 @@
 extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer);
 extern int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t buffer_size);
 extern int hpack_utils_log128(uint32_t x);
+extern hpack_preamble_t hpack_utils_get_preamble(uint8_t preamble);
+
 DEFINE_FFF_GLOBALS;
 /*
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
@@ -87,12 +89,25 @@ void test_hpack_utils_log128(void)
     TEST_ASSERT_EQUAL(3, hpack_utils_log128(2097152));
 }
 
+void test_hpack_utils_get_preamble(void)
+{
+    uint8_t preamble_arr[] = { (uint8_t)INDEXED_HEADER_FIELD,
+                               (uint8_t)LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING,
+                               (uint8_t)DYNAMIC_TABLE_SIZE_UPDATE,
+                               (uint8_t)LITERAL_HEADER_FIELD_NEVER_INDEXED,
+                               (uint8_t)LITERAL_HEADER_FIELD_WITHOUT_INDEXING };
 
+    for (int i = 0; i < 5; i++) {
+        TEST_ASSERT_EQUAL((hpack_preamble_t)preamble_arr[i], hpack_utils_get_preamble(preamble_arr[i]));
+    }
+
+}
 int main(void)
 {
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_hpack_utils_read_bits_from_bytes);
     UNIT_TEST(test_hpack_utils_check_can_read_buffer);
     UNIT_TEST(test_hpack_utils_log128);
+    UNIT_TEST(test_hpack_utils_get_preamble);
     return UNIT_TESTS_END();
 }
