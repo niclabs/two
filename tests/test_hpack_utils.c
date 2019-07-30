@@ -6,6 +6,7 @@
 
 extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer);
 extern int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t buffer_size);
+extern int hpack_utils_log128(uint32_t x);
 DEFINE_FFF_GLOBALS;
 /*
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
@@ -68,12 +69,30 @@ void test_hpack_utils_read_bits_from_bytes(void)
     TEST_ASSERT_EQUAL(0x1C56, code);
 
 }
+void test_hpack_utils_log128(void)
+{
+    TEST_ASSERT_EQUAL(0, hpack_utils_log128(1));
+    TEST_ASSERT_EQUAL(0, hpack_utils_log128(2));
+    TEST_ASSERT_EQUAL(0, hpack_utils_log128(3));
+    TEST_ASSERT_EQUAL(0, hpack_utils_log128(4));
+    TEST_ASSERT_EQUAL(0, hpack_utils_log128(5));
+    TEST_ASSERT_EQUAL(0, hpack_utils_log128(25));
+    TEST_ASSERT_EQUAL(0, hpack_utils_log128(127));
+    TEST_ASSERT_EQUAL(1, hpack_utils_log128(128));
+    TEST_ASSERT_EQUAL(1, hpack_utils_log128(387));
+    TEST_ASSERT_EQUAL(1, hpack_utils_log128(4095));
+    TEST_ASSERT_EQUAL(1, hpack_utils_log128(16383));
+    TEST_ASSERT_EQUAL(2, hpack_utils_log128(16384));
+    TEST_ASSERT_EQUAL(2, hpack_utils_log128(1187752));
+    TEST_ASSERT_EQUAL(3, hpack_utils_log128(2097152));
+}
+
 
 int main(void)
 {
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_hpack_utils_read_bits_from_bytes);
     UNIT_TEST(test_hpack_utils_check_can_read_buffer);
-
+    UNIT_TEST(test_hpack_utils_log128);
     return UNIT_TESTS_END();
 }

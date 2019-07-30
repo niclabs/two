@@ -31,7 +31,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t 
 FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t*);
 FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer,uint16_t , uint8_t , uint8_t );
-
+FAKE_VALUE_FUNC(int, hpack_utils_log128, uint32_t);
 
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
    FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t*);
@@ -56,7 +56,8 @@ FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer,uint16_t , uint8_t , u
     FAKE(hpack_huffman_decode)              \
     FAKE(hpack_utils_read_bits_from_bytes)  \
     FAKE(hpack_utils_check_can_read_buffer) \
-    FAKE(headers_add)
+    FAKE(headers_add)                       \
+    FAKE(hpack_utils_log128)
 /*    FAKE(uint32_24_to_byte_array)   \
     FAKE(uint32_31_to_byte_array)   \
     FAKE(uint32_to_byte_array)      \
@@ -376,6 +377,7 @@ void test_decode_header_block_literal_never_indexed(void)
     headers.count = 0;
     headers.maxlen = 3;
     headers.headers = h_list;
+    hpack_utils_log128_fake.return_val = 0;
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
@@ -467,6 +469,7 @@ void test_decode_header_block_literal_without_indexing(void)
     headers.count = 0;
     headers.maxlen = 3;
     headers.headers = h_list;
+    hpack_utils_log128_fake.return_val = 0;
 
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
@@ -540,6 +543,7 @@ void test_encoded_integer_size(void)
 {
     uint32_t integer = 10;
     uint8_t prefix = 5;
+    hpack_utils_log128_fake.return_val = 1;
 
     INFO("encoded: %u with prefix %u", integer, prefix);
     int rc = encoded_integer_size(integer, prefix);
@@ -575,6 +579,8 @@ void test_encode_integer(void)
 
     uint32_t integer = 10;
     uint8_t prefix = 5;
+    hpack_utils_log128_fake.return_val = 1;
+
     int rc = encoded_integer_size(integer, prefix);
     uint8_t encoded_integer[4];
 
@@ -744,25 +750,6 @@ void test_find_prefix_size(void)
     octet = DYNAMIC_TABLE_SIZE_UPDATE;//001 00000
     rc = find_prefix_size(octet);
     TEST_ASSERT_EQUAL(5, rc);
-
-}
-
-void test_log128(void)
-{
-    TEST_ASSERT_EQUAL(0, log128(1));
-    TEST_ASSERT_EQUAL(0, log128(2));
-    TEST_ASSERT_EQUAL(0, log128(3));
-    TEST_ASSERT_EQUAL(0, log128(4));
-    TEST_ASSERT_EQUAL(0, log128(5));
-    TEST_ASSERT_EQUAL(0, log128(25));
-    TEST_ASSERT_EQUAL(0, log128(127));
-    TEST_ASSERT_EQUAL(1, log128(128));
-    TEST_ASSERT_EQUAL(1, log128(387));
-    TEST_ASSERT_EQUAL(1, log128(4095));
-    TEST_ASSERT_EQUAL(1, log128(16383));
-    TEST_ASSERT_EQUAL(2, log128(16384));
-    TEST_ASSERT_EQUAL(2, log128(1187752));
-    TEST_ASSERT_EQUAL(3, log128(2097152));
 
 }
 
@@ -1101,8 +1088,10 @@ void test_encode_literal_header_field_new_name(void)
     char *name_to_encode = "custom-key";
     char *value_to_encode = "custom-value";
     uint8_t encoded_buffer[24];
-
     memset(encoded_buffer, 0, 24);
+    int fake_return_log128_seq[] = {1,1,0,0};
+    SET_RETURN_SEQ(hpack_utils_log128,fake_return_log128_seq,4);
+
     uint8_t name_huffman_bool = 0;
     uint8_t value_huffman_bool = 0;
     int rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_buffer);
@@ -1194,7 +1183,6 @@ int main(void)
     UNIT_TEST(test_encode);
 
     UNIT_TEST(test_get_preamble);
-    UNIT_TEST(test_log128);
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
     UNIT_TEST(test_find_prefix_size);
