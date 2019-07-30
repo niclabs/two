@@ -26,6 +26,13 @@ jobs:
           $ci_env
           -ti $DOCKER_IMG
           bash -c "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
+    - stage: h2spec
+      name: HTTP/2 Conformance Tests
+      script:
+        - >
+          docker run --privileged -v $TWO_HOST_PATH:/home/user/work
+          -ti  $DOCKER_IMG
+          bash -c "make && (./bin/server 8888 &) && h2spec -p 8888 || /bin/true"
 
 # Environment variables
 env:
