@@ -392,19 +392,20 @@ int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_pay
     return rc;
 }
 
-
 /*
 * Function: compress_headers
 * given a set of headers, it comprisses them and save them in a bytes array
 * Input: table of headers, size of the table, array to save the bytes
 * Output: compressed headers size or -1 if error
 */
-int compress_headers(headers_t* headers_out, uint8_t* compressed_headers){
+int compress_headers(headers_t *headers_out, uint8_t *compressed_headers)
+{
     //TODO implement default compression
     //now it is without compression
     int pointer = 0;
-    for(uint8_t i = 0; i<headers_out->count; i++){
-        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0, headers_out->headers[i].name, 0, headers_out->headers[i].value,  0, compressed_headers+pointer);
+    for (uint8_t i = 0; i < headers_count(headers_out); i++)
+    {
+        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0, headers_get_name_from_index(headers_out, i), 0, headers_get_value_from_index(headers_out, i), 0, compressed_headers + pointer);
         pointer += rc;
     }
     return pointer;
