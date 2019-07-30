@@ -151,3 +151,26 @@ uint8_t hpack_utils_find_prefix_size(hpack_preamble_t octet)
     }
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 }
+
+/* Function: encoded_integer_size
+ * Input:
+ *      -> num: Number to encode
+ *      -> prefix: Size of prefix
+ * Output:
+ *      returns the amount of octets used to encode num
+ */
+uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix)
+{
+    uint8_t p = (1 << prefix) - 1;
+
+    if (num < p) {
+        return 1;
+    }
+    else if (num == p) {
+        return 2;
+    }
+    else {
+        uint32_t k = hpack_utils_log128(num - p);//log(num - p) / log(128);
+        return k + 2;
+    }
+}

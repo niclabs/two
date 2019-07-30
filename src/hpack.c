@@ -216,29 +216,6 @@ int find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t ind
  */
 int find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
 
-/* Function: encoded_integer_size
- * Input:
- *      -> num: Number to encode
- *      -> prefix: Size of prefix
- * Output:
- *      returns the amount of octets used to encode num
- */
-uint32_t encoded_integer_size(uint32_t num, uint8_t prefix)
-{
-    uint8_t p = (1 << prefix) - 1;
-
-    if (num < p) {
-        return 1;
-    }
-    else if (num == p) {
-        return 2;
-    }
-    else {
-        uint32_t k = hpack_utils_log128(num - p);//log(num - p) / log(128);
-        return k + 2;
-    }
-}
-
 /*
  * Function: decode_integer
  * Decodes an integer using prefix bits for first byte
@@ -293,7 +270,7 @@ uint32_t decode_integer(uint8_t *bytes, uint8_t prefix)
 int decode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
     uint32_t str_length = decode_integer(encoded_string, 7);
-    uint32_t str_length_size = encoded_integer_size(str_length, 7);
+    uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
 
     for (uint16_t i = 0; i < str_length; i++) {
         str[i] = (char)encoded_string[str_length_size + i];
@@ -360,7 +337,7 @@ int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_
 int decode_huffman_string(char *str, uint8_t *encoded_string)
 {
     uint32_t str_length = decode_integer(encoded_string, 7);
-    uint32_t str_length_size = encoded_integer_size(str_length, 7);
+    uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
     uint8_t *encoded_buffer = encoded_string + str_length_size;
     uint16_t bit_position = 0;
     uint16_t i = 0;
@@ -432,7 +409,7 @@ int decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *h
         ERROR("Error en find_entry");
         return -1;
     }
-    pointer += encoded_integer_size(index, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
+    pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
     return pointer;
 }
 
@@ -456,7 +433,7 @@ int decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t 
             ERROR("Error en find_entry");
             return -1;
         }
-        pointer += encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));
+        pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));
     }
     int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
@@ -488,7 +465,7 @@ int decode_literal_header_field_without_indexing(hpack_dynamic_table_t *dynamic_
             ERROR("Error en find_entry ");
             return -1;
         }
-        pointer += encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
+        pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
     int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {
@@ -521,7 +498,7 @@ int decode_literal_header_field_never_indexed(hpack_dynamic_table_t *dynamic_tab
             ERROR("Error en find_entry ");
             return -1;
         }
-        pointer += encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));
+        pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));
     }
     int32_t rc = decode_string(value, header_block + pointer);
     if (rc < 0) {

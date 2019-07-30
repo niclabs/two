@@ -1,28 +1,5 @@
 #include "hpack_encoder.h"
 
-/* Function: encoded_integer_size_internal
- * Input:
- *      -> num: Number to encode
- *      -> prefix: Size of prefix
- * Output:
- *      returns the amount of octets used to encode num
- */
-uint32_t encoded_integer_size_internal(uint32_t num, uint8_t prefix)
-{
-    uint8_t p = (1 << prefix) - 1;
-
-    if (num < p) {
-        return 1;
-    }
-    else if (num == p) {
-        return 2;
-    }
-    else {
-        uint32_t k = hpack_utils_log128(num - p);//log(num - p) / log(128);
-        return k + 2;
-    }
-}
-
 /*
  * Function: pack_encoded_words_to_bytes
  * Writes bits from 'code' (the representation in huffman)
@@ -94,7 +71,7 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
  */
 int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
-    int octets_size = encoded_integer_size_internal(integer, prefix);
+    int octets_size = hpack_utils_encoded_integer_size(integer, prefix);
     uint8_t max_first_octet = (1 << prefix) - 1;
 
     if (integer < max_first_octet) {
