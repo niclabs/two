@@ -14,17 +14,6 @@
 #include "hpack_utils.h"
 
 
-
-typedef enum {
-    INDEXED_HEADER_FIELD                            = (uint8_t) 128,
-    LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING  = (uint8_t) 64,
-    LITERAL_HEADER_FIELD_WITHOUT_INDEXING           = (uint8_t) 0,
-    LITERAL_HEADER_FIELD_NEVER_INDEXED              = (uint8_t) 16,
-    DYNAMIC_TABLE_SIZE_UPDATE                       = (uint8_t) 32
-}hpack_preamble_t;
-
-
-
 //typedef for HeaderPair
 typedef struct hpack_header_pair {
     char *name;

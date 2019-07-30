@@ -56,8 +56,8 @@ FAKE_VALUE_FUNC(int, hpack_utils_log128, uint32_t);
     FAKE(hpack_huffman_decode)              \
     FAKE(hpack_utils_read_bits_from_bytes)  \
     FAKE(hpack_utils_check_can_read_buffer) \
-    FAKE(headers_add)                       \
-    FAKE(hpack_utils_log128)
+    FAKE(hpack_utils_log128)                \
+    FAKE(headers_add)
 /*    FAKE(uint32_24_to_byte_array)   \
     FAKE(uint32_31_to_byte_array)   \
     FAKE(uint32_to_byte_array)      \
@@ -91,7 +91,6 @@ int8_t hpack_huffman_encode_return_a(huffman_encoded_word_t *h, uint8_t sym)
     h->length = 5;
     return 0;
 }
-
 int8_t hpack_huffman_encode_return_e(huffman_encoded_word_t *h, uint8_t sym)
 {
     h->code = 0x5;
