@@ -18,22 +18,22 @@ extern int encoded_integer_size(uint32_t num, uint8_t prefix);
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
 FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
-FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t*);
-FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer,uint16_t , uint8_t , uint8_t );
-FAKE_VALUE_FUNC(int, hpack_utils_log128, uint32_t);
+FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t *);
+FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer, uint16_t, uint8_t, uint8_t );
 FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
-FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_preamble_t, uint32_t, uint32_t, char*, uint8_t, char*, uint8_t,  uint8_t*);
+FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_preamble_t, uint32_t, uint32_t, char *, uint8_t, char *, uint8_t,  uint8_t *);
+FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)                \
     FAKE(hpack_huffman_decode)              \
     FAKE(hpack_utils_read_bits_from_bytes)  \
     FAKE(hpack_utils_check_can_read_buffer) \
-    FAKE(hpack_utils_log128)                \
     FAKE(hpack_utils_get_preamble)          \
     FAKE(hpack_utils_find_prefix_size)      \
     FAKE(hpack_encoder_encode)              \
+    FAKE(hpack_utils_encoded_integer_size)  \
     FAKE(headers_add)
 
 /*Decode*/
@@ -137,12 +137,33 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0x90,
                                           0xf4,
                                           0xff };
+/*
+   uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix)
+   {
+    uint8_t p = (1 << prefix) - 1;
 
+    if (num < p) {
+        printf("%d\n",1);
+        return 1;
+    }
+    else if (num == p) {
 
-int headers_add_check_inputs(headers_t * headers, const char * name, const char * value) {
-  TEST_ASSERT_EQUAL_STRING("new_name", name);
-  TEST_ASSERT_EQUAL_STRING("val", value);
-  return 0;
+        printf("%d\n",2);
+        return 2;
+    }
+    else {
+        uint32_t k = hpack_utils_log128(num - p);//log(num - p) / log(128);
+
+        printf("%d\n",k+2);
+        return k + 2;
+    }
+   }
+ */
+int headers_add_check_inputs(headers_t *headers, const char *name, const char *value)
+{
+    TEST_ASSERT_EQUAL_STRING("new_name", name);
+    TEST_ASSERT_EQUAL_STRING("val", value);
+    return 0;
 }
 
 void setUp(void)
@@ -181,7 +202,9 @@ void test_decode_header_block_literal_never_indexed(void)
     headers.count = 0;
     headers.maxlen = 3;
     headers.headers = h_list;
-    hpack_utils_log128_fake.return_val = 0;
+    uint32_t hpack_encoded_integer_size_fake_seq[] = { 1, 1, 1, 1, 2, 1 };
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 6);
+
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)16;
     hpack_utils_find_prefix_size_fake.return_val = 4;
 
@@ -275,9 +298,13 @@ void test_decode_header_block_literal_without_indexing(void)
     headers.count = 0;
     headers.maxlen = 3;
     headers.headers = h_list;
-    hpack_utils_log128_fake.return_val = 0;
+
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)0;
     hpack_utils_find_prefix_size_fake.return_val = 4;
+
+    uint32_t hpack_encoded_integer_size_fake_seq[] = { 1, 1, 2, 1 };
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 4);
+
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
@@ -318,45 +345,12 @@ void test_encode(void)
     //TODO
 }
 
-void test_encoded_integer_size(void)
-{
-    uint32_t integer = 10;
-    uint8_t prefix = 5;
-    hpack_utils_log128_fake.return_val = 1;
-
-    INFO("encoded: %u with prefix %u", integer, prefix);
-    int rc = encoded_integer_size(integer, prefix);
-    TEST_ASSERT_EQUAL(1, rc);
-
-    integer = 30;
-    prefix = 5;
-    INFO("encoded: %u with prefix %u", integer, prefix);
-    rc = encoded_integer_size(integer, prefix);
-    TEST_ASSERT_EQUAL(1, rc);
-
-    integer = 31;
-    prefix = 5;
-    INFO("encoded: %u with prefix %u", integer, prefix);
-    rc = encoded_integer_size(integer, prefix);
-    TEST_ASSERT_EQUAL(2, rc);
-
-    integer = 31;
-    prefix = 6;
-    INFO("encoded: %u with prefix %u", integer, prefix);
-    rc = encoded_integer_size(integer, prefix);
-    TEST_ASSERT_EQUAL(1, rc);
-
-    integer = 1337;
-    prefix = 5;
-    INFO("encoded: %u with prefix %u", integer, prefix);
-    rc = encoded_integer_size(integer, prefix);
-    TEST_ASSERT_EQUAL(3, rc);
-}
-
 void test_decode_non_huffman_string(void)
 {
     uint8_t encoded_string[] = { 0x0f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d };
     char decoded_string[30];
+
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
 
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
@@ -370,19 +364,19 @@ void test_decode_non_huffman_string(void)
 void test_encode_then_decode_non_huffman_string(void)
 {
     /*
-    char str[] = "www.example.com";
-    uint8_t encoded_string[30];
-    char result[30];
+       char str[] = "www.example.com";
+       uint8_t encoded_string[30];
+       char result[30];
 
-    memset(encoded_string, 0, 30);
-    memset(result, 0, 30);
+       memset(encoded_string, 0, 30);
+       memset(result, 0, 30);
 
-    int rc = encode_non_huffman_string(str, encoded_string);
-    int rc2 = decode_non_huffman_string(result, encoded_string);
-    TEST_ASSERT_EQUAL(rc, rc2);
-    for (int i = 0; i < rc; i++) {
+       int rc = encode_non_huffman_string(str, encoded_string);
+       int rc2 = decode_non_huffman_string(result, encoded_string);
+       TEST_ASSERT_EQUAL(rc, rc2);
+       for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(str[i], result[i]);
-    }*/
+       }*/
     //TODO
 }
 
@@ -420,6 +414,7 @@ void test_decode_huffman_string(void)
     char expected_decoded_string[] = "www.example.com";
     uint8_t *encoded_string = encoded_wwwdotexampledotcom;
 
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
     int rc = decode_huffman_string(decoded_string, encoded_string);
@@ -434,6 +429,7 @@ void test_decode_huffman_string(void)
 void test_decode_huffman_string_error(void)
 {
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_bad_padding_arr, 2);
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
     /*Test border condition*/
     /*Padding wrong*/
     uint8_t encoded_string2[] = { 0x81, 0x1b };
@@ -462,24 +458,24 @@ void test_decode_huffman_string_error(void)
 void test_encode_then_decode_huffman_string(void)
 {
     /*
-    char str[] = "www.example.com";
-    uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
-    uint8_t encoded_string[30];
-    char result[30];
+       char str[] = "www.example.com";
+       uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
+       uint8_t encoded_string[30];
+       char result[30];
 
-    memset(encoded_string, 0, 30);
-    memset(result, 0, 30);
+       memset(encoded_string, 0, 30);
+       memset(result, 0, 30);
 
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
-    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
+       SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
+       SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
 
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
-    int rc = encode_huffman_string(str, encoded_string);
-    (void)rc;
-    int rc2 = decode_huffman_string(result, encoded_string);
-    for (int i = 0; i < rc2; i++) {
+       SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
+       int rc = encode_huffman_string(str, encoded_string);
+       (void)rc;
+       int rc2 = decode_huffman_string(result, encoded_string);
+       for (int i = 0; i < rc2; i++) {
         TEST_ASSERT_EQUAL(str[i], result[i]);
-    }*/
+       }*/
     //TODO
 }
 
@@ -490,6 +486,7 @@ void test_decode_string(void)
     char decoded_string[30];
 
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
     /*Test decode a non huffman string*/
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
