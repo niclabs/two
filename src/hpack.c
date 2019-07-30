@@ -552,15 +552,15 @@ int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_
             return -1;
         }
         int8_t can_read_bits = hpack_utils_check_can_read_buffer(bit_position, i, encoded_string_size);
-        if (can_read_bits < 0){
+        if (can_read_bits < 0) {
             return -1;
         }
         uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
         /*int8_t rc = read_bits_from_bytes(bit_position, i, encoded_string, encoded_string_size, &result);
-        if (rc < 0) {
+           if (rc < 0) {
             ERROR("Error while trying to read bits from encoded_string in decode_huffman_word");
             return -1;
-        }*/
+           }*/
         encoded_word.code = result;
         encoded_word.length = i;
         uint8_t decoded_sym = 0;
@@ -847,7 +847,7 @@ int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_h
     int pointer = 0;
 
     int rc = encode_string(value_string, encoded_buffer, value_huffman_bool);
-    if (rc < 0){
+    if (rc < 0) {
         ERROR("Error while trying to encode value in encode_literal_header_field_indexed_name");
         return -1;
     }
@@ -889,7 +889,7 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *n
         else {
             if (index == (uint8_t)0) {
                 int rc = encode_literal_header_field_new_name(name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
-                if(rc < 0){
+                if (rc < 0) {
                     ERROR("Error while trying to encode");
                     return -1;
                 }
@@ -897,7 +897,7 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *n
             }
             else {
                 int rc = encode_literal_header_field_indexed_name( value_string, value_huffman_bool, encoded_buffer + pointer);
-                if(rc < 0){
+                if (rc < 0) {
                     ERROR("Error while trying to encode");
                     return -1;
                 }
@@ -1098,8 +1098,13 @@ int decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *bytes, hpack_pr
         }
         return rc;
     }
+    else if (preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
+        //TODO add function to decode dynamic_table_size
+        ERROR("Dynamic_table_size_update not implemented yet");
+        return -1;
+    }
     else {
-        ERROR("Error unknown preamble value");
+        ERROR("Error unknown preamble value: %d", preamble);
         return -1;
     }
 }
@@ -1141,7 +1146,7 @@ int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t
     char tmp_value[32];
 
     while (pointer < header_block_size) {
-        memset(tmp_name, 0 , 16);
+        memset(tmp_name, 0, 16);
         memset(tmp_value, 0, 32);
         hpack_preamble_t preamble = get_preamble(header_block[pointer]);
         int rc = decode_header(dynamic_table, header_block + pointer, preamble, tmp_name, tmp_value);
