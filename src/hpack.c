@@ -309,19 +309,17 @@ int log128(uint32_t x)
  */
 uint32_t encoded_integer_size(uint32_t num, uint8_t prefix)
 {
-    uint8_t p = 255;
+    uint8_t p = (1 << prefix) - 1;
 
-    p = p << (8 - prefix);
-    p = p >> (8 - prefix);
-    if (num == p) {
+    if (num < p) {
+        return 1;
+    }
+    else if (num == p) {
         return 2;
     }
-    if (num >= p) {
+    else {
         uint32_t k = log128(num - p);//log(num - p) / log(128);
         return k + 2;
-    }
-    else {
-        return 1;
     }
 }
 
@@ -340,27 +338,16 @@ uint32_t encoded_integer_size(uint32_t num, uint8_t prefix)
  */
 int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
-    int octets_size = 0;
-    uint32_t max_first_octet = (1 << prefix) - 1;
+    int octets_size = encoded_integer_size(integer, prefix);
+    uint8_t max_first_octet = (1 << prefix) - 1;
 
     if (integer < max_first_octet) {
         encoded_integer[0] = (uint8_t)(integer << (8 - prefix));
         encoded_integer[0] = (uint8_t)encoded_integer[0] >> (8 - prefix);
-        octets_size = 1;
     }
     else {
-        uint8_t b0 = 255;
-        b0 = b0 << (8 - prefix);
-        b0 = b0 >> (8 - prefix);
+        uint8_t b0 = (1 << prefix) - 1;
         integer = integer - b0;
-        if (integer == 0) {
-            octets_size = 2;
-        }
-        else {
-            uint32_t k = log128(integer);//log(integer)/log(128);
-            octets_size = k + 2;
-        }
-
         encoded_integer[0] = b0;
 
         int i = 1;
@@ -847,6 +834,7 @@ int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_h
     int pointer = 0;
 
     int rc = encode_string(value_string, encoded_buffer, value_huffman_bool);
+
     if (rc < 0) {
         ERROR("Error while trying to encode value in encode_literal_header_field_indexed_name");
         return -1;
