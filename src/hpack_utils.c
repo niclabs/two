@@ -77,3 +77,26 @@ int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t n
     }
     return 0;
 }
+
+/*
+ * Function: hpack_utils_log128
+ * Compute the log128 of the input
+ * Input:
+ *      -> x: variable to apply log128
+ * Output:
+ *      returns log128(x)
+ */
+int hpack_utils_log128(uint32_t x)
+{
+    uint32_t n = 0;
+    uint32_t m = 1;
+
+    while (m < x) {
+        m = 1 << (7 * (++n));
+    }
+
+    if (m == x) {
+        return n;
+    }
+    return n - 1;
+}

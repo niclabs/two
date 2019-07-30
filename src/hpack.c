@@ -275,31 +275,6 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
 }
 
 
-/*
- * Function: log128
- * Compute the log128 of the input
- * Input:
- *      -> x: variable to apply log128
- * Output:
- *      returns log128(x)
- */
-int log128(uint32_t x)
-{
-    uint32_t n = 0;
-    uint32_t m = 1;
-
-    while (m < x) {
-        m = 1 << (7 * (++n));
-    }
-
-    if (m == x) {
-        return n;
-    }
-    return n - 1;
-}
-
-
-
 /* Function: encoded_integer_size
  * Input:
  *      -> num: Number to encode
@@ -318,7 +293,7 @@ uint32_t encoded_integer_size(uint32_t num, uint8_t prefix)
         return 2;
     }
     else {
-        uint32_t k = log128(num - p);//log(num - p) / log(128);
+        uint32_t k = hpack_utils_log128(num - p);//log(num - p) / log(128);
         return k + 2;
     }
 }
