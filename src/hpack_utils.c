@@ -73,7 +73,6 @@ uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t 
 int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t buffer_size)
 {
     uint32_t byte_offset = current_bit_pointer / 8;
-    uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
     uint8_t num_bytes = ((number_of_bits_to_read + current_bit_pointer - 1) / 8) - (current_bit_pointer / 8) + 1;
 
     if (num_bytes + byte_offset > buffer_size) {

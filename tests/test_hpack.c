@@ -29,7 +29,8 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
 FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
-FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t*, uint8_t );
+FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t*);
+FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer,uint16_t , uint8_t , uint8_t );
 
 
 /*FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t*);
@@ -54,6 +55,7 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, u
     FAKE(hpack_huffman_encode)              \
     FAKE(hpack_huffman_decode)              \
     FAKE(hpack_utils_read_bits_from_bytes)  \
+    FAKE(hpack_utils_check_can_read_buffer) \
     FAKE(headers_add)
 /*    FAKE(uint32_24_to_byte_array)   \
     FAKE(uint32_31_to_byte_array)   \
@@ -230,6 +232,7 @@ int8_t hpack_huffman_decode_return_o(huffman_encoded_word_t *encoded, uint8_t *s
     *sym = (uint8_t)'o';
     return 0;
 }
+
 int8_t(*hpack_huffman_encode_wwwdotexampledotcom_arr[])(huffman_encoded_word_t *, uint8_t) = { hpack_huffman_encode_return_w,
                                                                                                hpack_huffman_encode_return_w,
                                                                                                hpack_huffman_encode_return_w,

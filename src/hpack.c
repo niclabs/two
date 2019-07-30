@@ -551,7 +551,7 @@ int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_
         if (bit_position + i > 8 * encoded_string_size) {
             return -1;
         }
-        int8_t can_read_bits = hpack_utils_can_read_buffer(bit_position, i, encoded_string_size);
+        int8_t can_read_bits = hpack_utils_check_can_read_buffer(bit_position, i, encoded_string_size);
         if (can_read_bits < 0){
             return -1;
         }

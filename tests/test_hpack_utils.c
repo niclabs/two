@@ -4,7 +4,7 @@
 #include "hpack_utils.h"
 #include "table.h"
 
-extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size);
+extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer);
 
 DEFINE_FFF_GLOBALS;
 /*
@@ -28,33 +28,33 @@ void test_hpack_utils_read_bits_from_bytes(void)
     uint32_t code = 0;
 
     //Test if it reads 1 byte correctly
-    code = hpack_utils_read_bits_from_bytes(0, 8, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(0, 8, buffer);
     TEST_ASSERT_EQUAL(0xD1, code);
 
-    code = hpack_utils_read_bits_from_bytes(8, 8, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(8, 8, buffer);
     TEST_ASSERT_EQUAL(0xC5, code);
 
-    code = hpack_utils_read_bits_from_bytes(16, 8, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(16, 8, buffer);
     TEST_ASSERT_EQUAL(0x6E, code);
 
     //Test reading different number of bits
-    code = hpack_utils_read_bits_from_bytes(0, 1, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(0, 1, buffer);
     TEST_ASSERT_EQUAL(0x1, code);
 
-    code = hpack_utils_read_bits_from_bytes(0, 3, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(0, 3, buffer);
     TEST_ASSERT_EQUAL(0x6, code);
 
-    code = hpack_utils_read_bits_from_bytes(0, 5, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(0, 5, buffer);
     TEST_ASSERT_EQUAL(0x1A, code);
 
     //Test reading between bytes
-    code = hpack_utils_read_bits_from_bytes(4, 8, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(4, 8, buffer);
     TEST_ASSERT_EQUAL(0x1C, code);
 
-    code = hpack_utils_read_bits_from_bytes(12, 8, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(12, 8, buffer);
     TEST_ASSERT_EQUAL(0x56, code);
 
-    code = hpack_utils_read_bits_from_bytes(4, 16, buffer, 3);
+    code = hpack_utils_read_bits_from_bytes(4, 16, buffer);
     TEST_ASSERT_EQUAL(0x1C56, code);
 
 }
