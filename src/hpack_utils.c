@@ -28,14 +28,16 @@ int byte_to_8bits_string(uint8_t b, char *str)
 /*
  * Function: hpack_utils_read_bits_from_bytes
  * Reads bits from a buffer of bytes (max number of bits it can read is 32).
+ * Before calling this function, the caller has to check if the number of bits to read from the buffer
+ * don't exceed the size of the buffer, use hpack_utils_can_read_buffer to check this condition
  * Input:
- * -> current_bit_pointer: The bit from where to start reading (inclusive)
- * -> number_of_bits_to_read: The number of bits to read from the buffer
- * -> *buffer: The buffer containing the bits to read
- * -> buffer_size: Size of the buffer
+ *      -> current_bit_pointer: The bit from where to start reading (inclusive)
+ *      -> number_of_bits_to_read: The number of bits to read from the buffer
+ *      -> *buffer: The buffer containing the bits to read
+ *      -> buffer_size: Size of the buffer
  * output: returns the bits read from
  */
-uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer, uint8_t buffer_size)
+uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer)
 {
     uint32_t byte_offset = current_bit_pointer / 8;
     uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
