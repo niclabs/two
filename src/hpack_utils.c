@@ -100,3 +100,32 @@ int hpack_utils_log128(uint32_t x)
     }
     return n - 1;
 }
+
+/*
+ * Function: hpack_utils_get_preamble
+ * Matches a numeric preamble to a hpack_preamble_t
+ * Input:
+ *      -> preamble: Number representing the preamble of the integer to encode
+ * Output:
+ *      An hpack_preamble_t if it can parse the given preamble or -1 if it fails
+ */
+hpack_preamble_t hpack_utils_get_preamble(uint8_t preamble)
+{
+    if (preamble & INDEXED_HEADER_FIELD) {
+        return INDEXED_HEADER_FIELD;
+    }
+    if (preamble & LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+        return LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
+    }
+    if (preamble & DYNAMIC_TABLE_SIZE_UPDATE) {
+        return DYNAMIC_TABLE_SIZE_UPDATE;
+    }
+    if (preamble & LITERAL_HEADER_FIELD_NEVER_INDEXED) {
+        return LITERAL_HEADER_FIELD_NEVER_INDEXED;
+    }
+    if (preamble < 16) {
+        return LITERAL_HEADER_FIELD_WITHOUT_INDEXING; // preamble = 0000
+    }
+    ERROR("wrong preamble");
+    return -1;
+}

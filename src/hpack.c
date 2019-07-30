@@ -872,35 +872,6 @@ int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *n
 }
 
 
-/*
- * Function: get_preamble
- * Matches a numeric preamble to a hpack_preamble_t
- * Input:
- *      -> preamble: Number representing the preamble of the integer to encode
- * Output:
- *      An hpack_preamble_t if it can parse the given preamble or -1 if it fails
- */
-hpack_preamble_t get_preamble(uint8_t preamble)
-{
-    if (preamble & INDEXED_HEADER_FIELD) {
-        return INDEXED_HEADER_FIELD;
-    }
-    if (preamble & LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
-        return LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
-    }
-    if (preamble & DYNAMIC_TABLE_SIZE_UPDATE) {
-        return DYNAMIC_TABLE_SIZE_UPDATE;
-    }
-    if (preamble & LITERAL_HEADER_FIELD_NEVER_INDEXED) {
-        return LITERAL_HEADER_FIELD_NEVER_INDEXED;
-    }
-    if (preamble < 16) {
-        return LITERAL_HEADER_FIELD_WITHOUT_INDEXING; // preamble = 0000
-    }
-    ERROR("wrong preamble");
-    return -1;
-}
-
 int decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
@@ -1111,7 +1082,7 @@ int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t
     while (pointer < header_block_size) {
         memset(tmp_name, 0, 16);
         memset(tmp_value, 0, 32);
-        hpack_preamble_t preamble = get_preamble(header_block[pointer]);
+        hpack_preamble_t preamble = hpack_utils_get_preamble(header_block[pointer]);
         int rc = decode_header(dynamic_table, header_block + pointer, preamble, tmp_name, tmp_value);
         headers_add(headers, tmp_name, tmp_value);
 
