@@ -129,3 +129,25 @@ hpack_preamble_t hpack_utils_get_preamble(uint8_t preamble)
     ERROR("wrong preamble");
     return -1;
 }
+
+/*
+ * Function: find_prefix_size
+ * Given the preamble octet returns the size of the prefix
+ * Input:
+ *      -> octet: Preamble of encoding
+ * Output:
+ *      returns the size in bits of the prefix.
+ */
+uint8_t hpack_utils_find_prefix_size(hpack_preamble_t octet)
+{
+    if ((INDEXED_HEADER_FIELD & octet) == INDEXED_HEADER_FIELD) {
+        return (uint8_t)7;
+    }
+    if ((LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING & octet) == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+        return (uint8_t)6;
+    }
+    if ((DYNAMIC_TABLE_SIZE_UPDATE & octet) == DYNAMIC_TABLE_SIZE_UPDATE) {
+        return (uint8_t)5;
+    }
+    return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
+}
