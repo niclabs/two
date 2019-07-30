@@ -33,7 +33,7 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, u
 FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer,uint16_t , uint8_t , uint8_t );
 FAKE_VALUE_FUNC(int, hpack_utils_log128, uint32_t);
 FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
-
+FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)                \
@@ -43,6 +43,7 @@ FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
     FAKE(hpack_utils_check_can_read_buffer) \
     FAKE(hpack_utils_log128)                \
     FAKE(hpack_utils_get_preamble)          \
+    FAKE(hpack_utils_find_prefix_size)      \
     FAKE(headers_add)
 
 
@@ -339,6 +340,7 @@ void test_decode_header_block_literal_never_indexed(void)
     headers.headers = h_list;
     hpack_utils_log128_fake.return_val = 0;
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)16;
+    hpack_utils_find_prefix_size_fake.return_val = 4;
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
@@ -432,6 +434,7 @@ void test_decode_header_block_literal_without_indexing(void)
     headers.headers = h_list;
     hpack_utils_log128_fake.return_val = 0;
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)0;
+    hpack_utils_find_prefix_size_fake.return_val = 4;
 
     int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
 
@@ -490,7 +493,7 @@ void test_encode(void)
         (uint8_t)'a',
         (uint8_t)'l'
     };
-
+    hpack_utils_find_prefix_size_fake.return_val = 4;
     int rc = encode(preamble, max_size, index, name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer);
 
 
@@ -690,28 +693,6 @@ void test_encode_then_decode_non_huffman_string(void)
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(str[i], result[i]);
     }
-}
-
-void test_find_prefix_size(void)
-{
-    hpack_preamble_t octet = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;//0000 0000
-
-    uint8_t rc = find_prefix_size(octet);
-
-    TEST_ASSERT_EQUAL(4, rc);
-
-    octet = INDEXED_HEADER_FIELD;//1 0000000
-    rc = find_prefix_size(octet);
-    TEST_ASSERT_EQUAL(7, rc);
-
-    octet = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;//01 000000
-    rc = find_prefix_size(octet);
-    TEST_ASSERT_EQUAL(6, rc);
-
-    octet = DYNAMIC_TABLE_SIZE_UPDATE;//001 00000
-    rc = find_prefix_size(octet);
-    TEST_ASSERT_EQUAL(5, rc);
-
 }
 
 void test_pack_encoded_words_to_bytes_test1(void)
@@ -1139,32 +1120,28 @@ int main(void)
 
     UNIT_TEST(test_decode_header_block_literal_without_indexing);
     UNIT_TEST(test_decode_header_block_literal_never_indexed);
-    UNIT_TEST(test_encode);
 
+    UNIT_TEST(test_encode);
     UNIT_TEST(test_encoded_integer_size);
     UNIT_TEST(test_encode_integer);
-    UNIT_TEST(test_find_prefix_size);
 
     UNIT_TEST(test_pack_encoded_words_to_bytes_test1);
     UNIT_TEST(test_pack_encoded_words_to_bytes_test2);
     UNIT_TEST(test_pack_encoded_words_to_bytes_test3);
 
-
     UNIT_TEST(test_encode_huffman_word);
-
     UNIT_TEST(test_encode_non_huffman_string);
-
     UNIT_TEST(test_encode_huffman_string);
-
 
     UNIT_TEST(test_decode_huffman_word);
     UNIT_TEST(test_decode_integer);
     UNIT_TEST(test_decode_non_huffman_string);
+
     UNIT_TEST(test_decode_huffman_string);
     UNIT_TEST(test_decode_huffman_string_error);
     UNIT_TEST(test_decode_string);
-    UNIT_TEST(test_decode_string_error);
 
+    UNIT_TEST(test_decode_string_error);
     UNIT_TEST(test_encode_then_decode_non_huffman_string);
     UNIT_TEST(test_encode_then_decode_huffman_string);
 

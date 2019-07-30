@@ -102,6 +102,27 @@ void test_hpack_utils_get_preamble(void)
     }
 
 }
+void test_hpack_utils_find_prefix_size(void)
+{
+    hpack_preamble_t octet = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;//0000 0000
+
+    uint8_t rc = hpack_utils_find_prefix_size(octet);
+
+    TEST_ASSERT_EQUAL(4, rc);
+
+    octet = INDEXED_HEADER_FIELD;//1 0000000
+    rc = hpack_utils_find_prefix_size(octet);
+    TEST_ASSERT_EQUAL(7, rc);
+
+    octet = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;//01 000000
+    rc = hpack_utils_find_prefix_size(octet);
+    TEST_ASSERT_EQUAL(6, rc);
+
+    octet = DYNAMIC_TABLE_SIZE_UPDATE;//001 00000
+    rc = hpack_utils_find_prefix_size(octet);
+    TEST_ASSERT_EQUAL(5, rc);
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -109,5 +130,6 @@ int main(void)
     UNIT_TEST(test_hpack_utils_check_can_read_buffer);
     UNIT_TEST(test_hpack_utils_log128);
     UNIT_TEST(test_hpack_utils_get_preamble);
+    UNIT_TEST(test_hpack_utils_find_prefix_size);
     return UNIT_TESTS_END();
 }
