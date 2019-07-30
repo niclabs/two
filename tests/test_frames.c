@@ -9,6 +9,7 @@
 #include "fff.h"
 #include "logging.h"
 #include "hpack.h"
+#include "headers.h"
 
 
 DEFINE_FFF_GLOBALS;
@@ -28,21 +29,28 @@ FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 FAKE_VALUE_FUNC(int, encode, hpack_preamble_t , uint32_t , uint32_t ,char*, uint8_t , char*, uint8_t , uint8_t*);
 FAKE_VALUE_FUNC(int, decode_header_block, uint8_t*, uint8_t , headers_t*);
 
+// Headers functions
+FAKE_VALUE_FUNC(int, headers_count, headers_t *);
+FAKE_VALUE_FUNC(char *, headers_get_name_from_index, headers_t *, int);
+FAKE_VALUE_FUNC(char *, headers_get_value_from_index, headers_t *, int);
 
 /* List of fakes used by this unit tester */
-#define FFF_FAKES_LIST(FAKE)        \
-    FAKE(uint32_24_to_byte_array)   \
-    FAKE(uint32_31_to_byte_array)   \
-    FAKE(uint32_to_byte_array)      \
-    FAKE(uint16_to_byte_array)      \
-    FAKE(bytes_to_uint32)           \
-    FAKE(bytes_to_uint32_31)        \
-    FAKE(bytes_to_uint32_24)        \
-    FAKE(bytes_to_uint16)           \
-    FAKE(append_byte_arrays)        \
-    FAKE(buffer_copy)               \
-    FAKE(encode)                    \
-    FAKE(decode_header_block)
+#define FFF_FAKES_LIST(FAKE)          \
+    FAKE(uint32_24_to_byte_array)     \
+    FAKE(uint32_31_to_byte_array)     \
+    FAKE(uint32_to_byte_array)        \
+    FAKE(uint16_to_byte_array)        \
+    FAKE(bytes_to_uint32)             \
+    FAKE(bytes_to_uint32_31)          \
+    FAKE(bytes_to_uint32_24)          \
+    FAKE(bytes_to_uint16)             \
+    FAKE(append_byte_arrays)          \
+    FAKE(buffer_copy)                 \
+    FAKE(encode)                      \
+    FAKE(decode_header_block)         \
+    FAKE(headers_count)               \
+    FAKE(headers_get_name_from_index) \
+    FAKE(headers_get_value_from_index)
 
 void setUp(void) {
     /* Register resets */
@@ -715,41 +723,39 @@ int encode_fake_custom(hpack_preamble_t preamble, uint32_t max_size, uint32_t in
     return 10;
 }
 
-void test_compress_headers(void){
+void test_compress_headers(void)
+{
     headers_t headers;
-    header_t hlist[1];
-    strcpy(hlist[0].name, "hola");
-    strcpy(hlist[0].value, "val");
-    int maxlen = 1;
-    headers.headers = hlist;
-    headers.count = 1;
-    headers.maxlen = maxlen;
-//    uint8_t headers_count = 1;
     uint8_t compressed_headers[256];
 
     encode_fake.custom_fake = encode_fake_custom;
 
+    // Set return values for headers functions
+    headers_count_fake.return_val = 1;
+    headers_get_name_from_index_fake.return_val = "hola";
+    headers_get_value_from_index_fake.return_val = "val";
+
     int rc = compress_headers(&headers, compressed_headers);
 
     TEST_ASSERT_EQUAL(10, rc);
-    uint8_t expected_compressed_headers[]={
-            0,//00000000 prefix=00, index=0
-            4,//h=0, name length = 4;
-            'h',//name string
-            'o',//name string
-            'l',//name string
-            'a',//name string
-            3, //h=0, value length = 3;
-            'v',//value string
-            'a',//value string
-            'l'//value string
+    uint8_t expected_compressed_headers[] = {
+        0,   //00000000 prefix=00, index=0
+        4,   //h=0, name length = 4;
+        'h', //name string
+        'o', //name string
+        'l', //name string
+        'a', //name string
+        3,   //h=0, value length = 3;
+        'v', //value string
+        'a', //value string
+        'l'  //value string
     };
 
-    for(int i=0; i<rc; i++){
+    for (int i = 0; i < rc; i++)
+    {
         TEST_ASSERT_EQUAL(expected_compressed_headers[i], compressed_headers[i]);
     }
 }
-
 
 void test_create_data_frame(void){
 
