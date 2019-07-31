@@ -50,6 +50,33 @@ int init_variables(hstates_t * st){
 }
 
 /*
+* Function: read_setting_from
+* Reads a setting parameter from local or remote table
+* Input: -> st: pointer to hstates_t struct where settings tables are stored.
+*        -> place: must be LOCAL or REMOTE. It indicates the table to read.
+*        -> param: it indicates which parameter to read from table.
+* Output: The value read from the table. -1 if nothing was read.
+*/
+
+uint32_t read_setting_from(hstates_t *st, uint8_t place, uint8_t param){
+  if(param < 1 || param > 6){
+    printf("Error: %u is not a valid setting parameter\n", param);
+    return -1;
+  }
+  else if(place == LOCAL){
+    return st->h2s.local_settings[--param];
+  }
+  else if(place == REMOTE){
+    return st->h2s.remote_settings[--param];
+  }
+  else{
+    ERROR("Error: not a valid table to read from");
+    return -1;
+  }
+  return -1;
+}
+
+/*
 * Function: update_remote_settings
 * Updates the table where remote settings are stored
 * Input: -> sframe: it must be a SETTINGS frame
@@ -435,7 +462,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
       uint32_t header_list_size = headers_get_header_list_size(&st->headers_in);
-      uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
+      uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(st, LOCAL, MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         ERROR("Header list size greater than max allowed. Send HTTP 431");
         st->keep_receiving = 0;
@@ -520,7 +547,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
           st->h2s.received_end_stream = 0;//RESET TO 0
       }
       uint32_t header_list_size = headers_get_header_list_size(&st->headers_in);
-      uint32_t MAX_HEADER_LIST_SIZE_VALUE = get_setting_value(st->h2s.local_settings,MAX_HEADER_LIST_SIZE);
+      uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(st, LOCAL, MAX_HEADER_LIST_SIZE);
       if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
         WARN("Header list size greater than max allowed. Send HTTP 431");
         st->keep_receiving = 0;
@@ -631,32 +658,6 @@ int send_local_settings(hstates_t *st){
     return 0;
 }
 
-/*
-* Function: read_setting_from
-* Reads a setting parameter from local or remote table
-* Input: -> st: pointer to hstates_t struct where settings tables are stored.
-*        -> place: must be LOCAL or REMOTE. It indicates the table to read.
-*        -> param: it indicates which parameter to read from table.
-* Output: The value read from the table. -1 if nothing was read.
-*/
-
-uint32_t read_setting_from(hstates_t *st, uint8_t place, uint8_t param){
-    if(param < 1 || param > 6){
-        printf("Error: %u is not a valid setting parameter\n", param);
-        return -1;
-    }
-    else if(place == LOCAL){
-        return st->h2s.local_settings[--param];
-    }
-    else if(place == REMOTE){
-        return st->h2s.remote_settings[--param];
-    }
-    else{
-        ERROR("Error: not a valid table to read from");
-        return -1;
-    }
-    return -1;
-}
 
 /*
 * Function: h2_client_init_connection
@@ -830,7 +831,7 @@ int h2_receive_frame(hstates_t *st){
               ERROR("GOAWAY doesnt have STREAM ID 0. PROTOCOL ERROR");
               return -1;
             }
-            uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
+            uint16_t max_frame_size = read_setting_from(st, LOCAL, MAX_FRAME_SIZE);
             uint8_t debug_data[max_frame_size];
             goaway_payload_t goaway_pl;
             rc = read_goaway_payload(buff_read, &header, &goaway_pl, debug_data);
@@ -1146,7 +1147,8 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     return -1;
   }
   uint32_t stream_id = st->h2s.current_stream.stream_id;
-  uint16_t max_frame_size = get_setting_value(st->h2s.local_settings,MAX_FRAME_SIZE);
+  uint16_t max_frame_size = read_setting_from(st, LOCAL, MAX_FRAME_SIZE);
+  ERROR("hola soy maxframesize : %u", max_frame_size);
   int rc;
   //not being considered dependencies nor padding.
   if(size <= max_frame_size){ //if headers can be send in only one frame
