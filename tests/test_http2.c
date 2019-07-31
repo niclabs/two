@@ -1318,34 +1318,7 @@ void test_send_headers_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream verification error)");
 }
 
-void test_flow_control_receive_data(void){
-    uint32_t data_received = 10;
-    hstates_t st;
-    st.h2s.incoming_window.window_size = 100;
-    st.h2s.incoming_window.window_used = 0;
-    int rc = flow_control_receive_data(&st, data_received);
-    TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(10, st.h2s.incoming_window.window_used);
-    data_received = 5;
-    rc = flow_control_receive_data(&st, data_received);
-    TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(15, st.h2s.incoming_window.window_used);
 
-}
-
-void test_flow_control_receive_window_update(void){
-    uint32_t window_size_increment = 10;
-    hstates_t st;
-    st.h2s.outgoing_window.window_size = 100;
-    st.h2s.outgoing_window.window_used = 30;
-    int rc = flow_control_receive_window_update(&st, window_size_increment);
-    TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(20, st.h2s.outgoing_window.window_used);
-    window_size_increment = 5;
-    rc = flow_control_receive_window_update(&st, window_size_increment);
-    TEST_ASSERT_EQUAL(0, rc);
-    TEST_ASSERT_EQUAL(15, st.h2s.outgoing_window.window_used);
-}
 
 void test_get_size_data_to_send(void){
     hstates_t st;
@@ -1360,6 +1333,8 @@ void test_get_size_data_to_send(void){
     st.h2s.outgoing_window.window_used = 0;
     st.hd_lists.data_out_size = 10;
     st.hd_lists.data_out_sent = 0;
+    uint32_t get_return[3] = {10, 5, 10};
+    SET_RETURN_SEQ(get_window_available_size, get_return, 3);
     uint32_t rc = get_size_data_to_send(&st);
     TEST_ASSERT_EQUAL(10,rc);
 
@@ -1564,7 +1539,7 @@ void test_h2_receive_frame_data_ok(void){
         TEST_ASSERT_EQUAL(bytes2[i + 9], st.hd_lists.data_in[i]);
     }
 
-    TEST_ASSERT_EQUAL(10,st.h2s.incoming_window.window_used);
+    TEST_ASSERT_EQUAL(10,flow_control_receive_data_fake.arg1_val);
 
 }
 
@@ -1655,7 +1630,7 @@ void test_h2_receive_frame_window_update(void){
     //is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
-    TEST_ASSERT_EQUAL(20,st.h2s.outgoing_window.window_used);
+    TEST_ASSERT_EQUAL(10,flow_control_receive_window_update_fake.arg1_val);
 }
 
 
@@ -1727,6 +1702,8 @@ int rc = init_variables(&st);
   st.hd_lists.data_out_size = 36;
   st.h2s.outgoing_window.window_size = 30;
   st.h2s.current_stream.state = STREAM_OPEN;
+  uint32_t get_return[1] = {30};
+  SET_RETURN_SEQ(get_window_available_size, get_return, 1);
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 30, "Data out sent must be 30, full data was sent");
@@ -1745,6 +1722,8 @@ void test_send_data_full_sending(void){
   st.hd_lists.data_out_size = 27;
   st.h2s.outgoing_window.window_size = 50;
   st.h2s.current_stream.state = STREAM_OPEN;
+  uint32_t get_return[1] = {27};
+  SET_RETURN_SEQ(get_window_available_size, get_return, 1);
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 0, "Data out sent must be 0, full data was sent");
@@ -1760,7 +1739,7 @@ void test_send_window_update(void){
     uint8_t window_size_increment = 10;
     rc = send_window_update(&st, window_size_increment);
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0 (there were no problems to send window update)");
-    TEST_ASSERT_EQUAL(20, st.h2s.incoming_window.window_used);
+    TEST_ASSERT_EQUAL(10, flow_control_send_window_update_fake.arg1_val);
 }
 
 void test_send_data_errors(void){
@@ -1935,8 +1914,7 @@ int main(void)
     UNIT_TEST(test_send_headers_with_continuation);
     UNIT_TEST(test_send_headers_errors);
 
-    UNIT_TEST(test_flow_control_receive_data);
-    UNIT_TEST(test_flow_control_receive_window_update);
+
 
     UNIT_TEST(test_get_size_data_to_send);
 
