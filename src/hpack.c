@@ -662,6 +662,10 @@ uint32_t header_pair_size(header_pair_t h)
     return (uint32_t)(strlen(h.name) + strlen(h.value) + 32);
 }
 
+uint32_t hpack_get_table_length(uint32_t dynamic_table_size){
+  return (uint32_t)((dynamic_table_size/ 32) + 1);
+}
+
 /*
  * Function: hpack_init_dynamic_table
  * //TODO
