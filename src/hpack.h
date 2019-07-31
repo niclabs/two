@@ -13,6 +13,7 @@
 #include "hpack_huffman.h"
 #include "hpack_utils.h"
 #include "hpack_encoder.h"
+#include "hpack_tables.h"
 
 
 //typedef for HeaderPair

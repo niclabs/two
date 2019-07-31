@@ -323,7 +323,7 @@ int encode_string(char *str, uint8_t *encoded_string, uint8_t huffman_bit)
  *  Output:
  *      Returns the number of bytes used to encode name and value, or -1 if an error occurs while encoding
  */
-int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer)
+int encode_literal_header_field_new_name(char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer)
 {
     int pointer = 0;
 
