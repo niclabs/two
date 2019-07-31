@@ -3,6 +3,7 @@ SOURCES = http.c \
           http_bridge.c \
           http2.c \
           http2utils.c \
+					http2_flowcontrol.c \
           frames.c \
           hpack.c \
           hpack_huffman.c \
