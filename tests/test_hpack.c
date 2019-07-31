@@ -12,9 +12,7 @@ extern int decode_string(char *str, uint8_t *encoded_string);
 extern int decode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
 extern uint32_t decode_integer(uint8_t *bytes, uint8_t prefix);
-extern int dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
 extern int encoded_integer_size(uint32_t num, uint8_t prefix);
-
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
@@ -28,17 +26,25 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
 FAKE_VALUE_FUNC(uint32_t, hpack_tables_get_table_length, uint32_t);
+FAKE_VALUE_FUNC(int, hpack_tables_init_dynamic_table, hpack_dynamic_table_t *, uint32_t, header_pair_t * );
+FAKE_VALUE_FUNC(int, hpack_tables_dynamic_table_add_entry,hpack_dynamic_table_t *, char *, char *);
+FAKE_VALUE_FUNC(int, hpack_tables_find_entry_name_and_value,hpack_dynamic_table_t *, uint32_t , char *, char *);
+FAKE_VALUE_FUNC(int, hpack_tables_find_entry_name,hpack_dynamic_table_t *, uint32_t , char *);
 
 /* List of fakes used by this unit tester */
-#define FFF_FAKES_LIST(FAKE)                \
-    FAKE(hpack_huffman_decode)              \
-    FAKE(hpack_utils_read_bits_from_bytes)  \
-    FAKE(hpack_utils_check_can_read_buffer) \
-    FAKE(hpack_utils_get_preamble)          \
-    FAKE(hpack_utils_find_prefix_size)      \
-    FAKE(hpack_encoder_encode)              \
-    FAKE(hpack_utils_encoded_integer_size)  \
-    FAKE(hpack_tables_get_table_length)     \
+#define FFF_FAKES_LIST(FAKE)                     \
+    FAKE(hpack_huffman_decode)                   \
+    FAKE(hpack_utils_read_bits_from_bytes)       \
+    FAKE(hpack_utils_check_can_read_buffer)      \
+    FAKE(hpack_utils_get_preamble)               \
+    FAKE(hpack_utils_find_prefix_size)           \
+    FAKE(hpack_encoder_encode)                   \
+    FAKE(hpack_utils_encoded_integer_size)       \
+    FAKE(hpack_tables_get_table_length)          \
+    FAKE(hpack_tables_init_dynamic_table)        \
+    FAKE(hpack_tables_dynamic_table_add_entry)   \
+    FAKE(hpack_tables_find_entry_name_and_value) \
+    FAKE(hpack_tables_find_entry_name)           \
     FAKE(headers_add)
 
 /*Decode*/
@@ -143,7 +149,8 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xf4,
                                           0xff };
 
-int8_t hpack_tables_static_find_name_return_authority(uint8_t index, char *name)
+
+int hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
     char authority[] = ":authority";
@@ -151,13 +158,20 @@ int8_t hpack_tables_static_find_name_return_authority(uint8_t index, char *name)
     return 0;
 }
 
-int8_t hpack_tables_static_find_name_return_age(uint8_t index, char *name)
+int hpack_tables_find_name_return_age(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
     char age[] = "age";
     strncpy(name, age, strlen(age));
     return 0;
 }
+int hpack_tables_find_name_return_new_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name){
+    (void)index;
+    char age[] = "new_name";
+    strncpy(name, age, strlen(age));
+    return 0;
+}
+
 
 int headers_add_check_inputs(headers_t *headers, const char *name, const char *value)
 {
@@ -230,7 +244,7 @@ void test_decode_header_block_literal_never_indexed(void)
         'l'
     };
     expected_name = ":authority";
-    hpack_tables_static_find_name_fake.custom_fake = hpack_tables_static_find_name_return_authority;
+    hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_authority;
     rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
@@ -248,12 +262,13 @@ void test_decode_header_block_literal_never_indexed(void)
 
     header_pair_t table[hpack_tables_get_table_length(max_dynamic_table_size)];
 
-    hpack_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
+    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
+    hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_new_name;
 
     char *new_name = "new_name";
     char *new_value = "new_value";
 
-    dynamic_table_add_entry(&dynamic_table, new_name, new_value);
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, new_name, new_value);
 
     header_block_size = 6;
 
@@ -334,7 +349,7 @@ void test_decode_header_block_literal_without_indexing(void)
         'l'
     };
     expected_name = "age";
-    hpack_tables_static_find_name_fake.custom_fake = hpack_tables_static_find_name_return_age;
+    hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_age;
     rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
