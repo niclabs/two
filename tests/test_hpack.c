@@ -24,6 +24,8 @@ FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_preamble_t, uint32_t, uint32_t, char *, uint8_t, char *, uint8_t,  uint8_t *);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
+FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *, char *);
+FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)                \
@@ -137,28 +139,21 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0x90,
                                           0xf4,
                                           0xff };
-/*
-   uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix)
-   {
-    uint8_t p = (1 << prefix) - 1;
 
-    if (num < p) {
-        printf("%d\n",1);
-        return 1;
-    }
-    else if (num == p) {
+int8_t hpack_tables_static_find_name_return_authority(uint8_t index, char *name){
+    (void)index;
+    char authority[] = ":authority";
+    strncpy(name,authority,strlen(authority));
+    return 0;
+}
 
-        printf("%d\n",2);
-        return 2;
-    }
-    else {
-        uint32_t k = hpack_utils_log128(num - p);//log(num - p) / log(128);
+int8_t hpack_tables_static_find_name_return_age(uint8_t index, char *name){
+    (void)index;
+    char age[] = "age";
+    strncpy(name,age,strlen(age));
+    return 0;
+}
 
-        printf("%d\n",k+2);
-        return k + 2;
-    }
-   }
- */
 int headers_add_check_inputs(headers_t *headers, const char *name, const char *value)
 {
     TEST_ASSERT_EQUAL_STRING("new_name", name);
@@ -230,6 +225,7 @@ void test_decode_header_block_literal_never_indexed(void)
         'l'
     };
     expected_name = ":authority";
+    hpack_tables_static_find_name_fake.custom_fake = hpack_tables_static_find_name_return_authority;
     rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
@@ -333,6 +329,7 @@ void test_decode_header_block_literal_without_indexing(void)
         'l'
     };
     expected_name = "age";
+    hpack_tables_static_find_name_fake.custom_fake = hpack_tables_static_find_name_return_age;
     rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
