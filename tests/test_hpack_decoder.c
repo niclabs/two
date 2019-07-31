@@ -5,14 +5,15 @@
 #include "hpack.h"
 #include "hpack_huffman.h"
 #include "hpack_tables.h"
+#include "hpack_decoder.h"
 #include "table.h"
 
-extern int decode_huffman_string(char *str, uint8_t *encoded_string);
-extern int decode_string(char *str, uint8_t *encoded_string);
-extern int decode_non_huffman_string(char *str, uint8_t *encoded_string);
-extern int32_t decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
-extern uint32_t decode_integer(uint8_t *bytes, uint8_t prefix);
-extern int encoded_integer_size(uint32_t num, uint8_t prefix);
+extern int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string);
+extern int hpack_decoder_decode_string(char *str, uint8_t *encoded_string);
+extern int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string);
+extern int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
+extern uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
+extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
@@ -222,7 +223,7 @@ void test_decode_header_block_literal_never_indexed(void)
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)16;
     hpack_utils_find_prefix_size_fake.return_val = 4;
 
-    int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
+    int rc = hpack_decoder_decode_header_block(header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
@@ -245,7 +246,7 @@ void test_decode_header_block_literal_never_indexed(void)
     };
     expected_name = ":authority";
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_authority;
-    rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
@@ -282,7 +283,7 @@ void test_decode_header_block_literal_never_indexed(void)
     };
 
     headers_add_fake.custom_fake = headers_add_check_inputs;
-    rc = decode_header_block_from_table(&dynamic_table, header_block_dynamic_index, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block_from_table(&dynamic_table, header_block_dynamic_index, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(3, headers_add_fake.call_count);
@@ -326,7 +327,7 @@ void test_decode_header_block_literal_without_indexing(void)
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 4);
 
 
-    int rc = decode_header_block(header_block_name_literal, header_block_size, &headers);
+    int rc = hpack_decoder_decode_header_block(header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
@@ -350,7 +351,7 @@ void test_decode_header_block_literal_without_indexing(void)
     };
     expected_name = "age";
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_age;
-    rc = decode_header_block(header_block_name_indexed, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block(header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
@@ -375,7 +376,7 @@ void test_decode_non_huffman_string(void)
 
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
-    int rc = decode_non_huffman_string(decoded_string, encoded_string);
+    int rc = hpack_decoder_decode_non_huffman_string(decoded_string, encoded_string);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
@@ -418,7 +419,7 @@ void test_decode_huffman_word(void)
     uint16_t bit_position = 0;
 
     for (int i = 0; i < 15; i++) {
-        int8_t rc = decode_huffman_word(&decoded_sym, encoded_string, encoded_string_size, bit_position);
+        int8_t rc = hpack_decoder_decode_huffman_word(&decoded_sym, encoded_string, encoded_string_size, bit_position);
         TEST_ASSERT_EQUAL(expected_word_length[i], rc);
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_sym);
         bit_position += rc;
@@ -438,7 +439,7 @@ void test_decode_huffman_string(void)
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
-    int rc = decode_huffman_string(decoded_string, encoded_string);
+    int rc = hpack_decoder_decode_huffman_string(decoded_string, encoded_string);
     TEST_ASSERT_EQUAL(13, rc);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
     for (int i = 0; i < rc; i++) {
@@ -459,7 +460,7 @@ void test_decode_huffman_string_error(void)
     char expected_decoded_string2[] = "a";
     char decoded_string2[] = { 0, 0 };
 
-    int rc = decode_huffman_string(decoded_string2, encoded_string2);
+    int rc = hpack_decoder_decode_huffman_string(decoded_string2, encoded_string2);
     TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(1, hpack_huffman_decode_fake.call_count);
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
@@ -468,7 +469,7 @@ void test_decode_huffman_string_error(void)
     uint8_t encoded_string3[] = { 0x81, 0x6f };
     char decoded_string3[] = { 0, 0 };
     char expected_decoded_string3[] = { 0, 0 };
-    rc = decode_huffman_string(decoded_string3, encoded_string3);
+    rc = hpack_decoder_decode_huffman_string(decoded_string3, encoded_string3);
     TEST_ASSERT_EQUAL(-1, rc);
     for (int i = 0; i < 2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string3[i], decoded_string3[i]);
@@ -511,7 +512,7 @@ void test_decode_string(void)
     /*Test decode a non huffman string*/
     memset(decoded_string, 0, 30);
     char expected_decoded_string[] = "www.example.com";
-    int rc = decode_string(decoded_string, encoded_string);
+    int rc = hpack_decoder_decode_string(decoded_string, encoded_string);
     TEST_ASSERT_EQUAL(16, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
@@ -521,7 +522,7 @@ void test_decode_string(void)
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     uint8_t *encoded_string_huffman = encoded_wwwdotexampledotcom;
-    int rc2 = decode_string(decoded_string, encoded_string_huffman);
+    int rc2 = hpack_decoder_decode_string(decoded_string, encoded_string_huffman);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
 
     TEST_ASSERT_EQUAL(13, rc2);
@@ -544,7 +545,7 @@ void test_decode_string_error(void)
     char expected_decoded_string2[] = "a";
     char decoded_string2[] = { 0, 0 };
 
-    int rc = decode_string(decoded_string2, encoded_string2);
+    int rc = hpack_decoder_decode_string(decoded_string2, encoded_string2);
     TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
 }
@@ -555,7 +556,7 @@ void test_decode_integer(void)
         30    //000 11110
     };
     uint8_t prefix = 5;
-    uint32_t rc = decode_integer(bytes1, prefix);
+    uint32_t rc = hpack_decoder_decode_integer(bytes1, prefix);
 
     TEST_ASSERT_EQUAL(30, rc);
 
@@ -563,21 +564,21 @@ void test_decode_integer(void)
         31,     //000 11111
         0       //+
     };
-    rc = decode_integer(bytes2, prefix);
+    rc = hpack_decoder_decode_integer(bytes2, prefix);
     TEST_ASSERT_EQUAL(31, rc);
 
     uint8_t bytes3[] = {
         31,     //000 11111
         1,      //
     };
-    rc = decode_integer(bytes3, prefix);
+    rc = hpack_decoder_decode_integer(bytes3, prefix);
     TEST_ASSERT_EQUAL(32, rc);
 
     uint8_t bytes4[] = {
         31,     //000 11111
         2,      //
     };
-    rc = decode_integer(bytes4, prefix);
+    rc = hpack_decoder_decode_integer(bytes4, prefix);
     TEST_ASSERT_EQUAL(33, rc);
 
     uint8_t bytes5[] = {
@@ -585,7 +586,7 @@ void test_decode_integer(void)
         128,    //
         1
     };
-    rc = decode_integer(bytes5, prefix);
+    rc = hpack_decoder_decode_integer(bytes5, prefix);
     TEST_ASSERT_EQUAL(128 + 31, rc);
 
     uint8_t bytes6[] = {
@@ -593,7 +594,7 @@ void test_decode_integer(void)
         154,    //
         10
     };
-    rc = decode_integer(bytes6, prefix);
+    rc = hpack_decoder_decode_integer(bytes6, prefix);
     TEST_ASSERT_EQUAL(1337, rc);
 }
 
