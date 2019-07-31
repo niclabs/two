@@ -5,15 +5,12 @@
 #ifndef TWO_HPACK_H
 #define TWO_HPACK_H
 
-#include "http_bridge.h"
+
 #include <stdint.h>
-#include "logging.h"
 #include "table.h"
 #include "headers.h"
-#include "hpack_huffman.h"
-#include "hpack_utils.h"
 #include "hpack_encoder.h"
-#include "hpack_tables.h"
+#include "hpack_decoder.h"
 
 
 /*

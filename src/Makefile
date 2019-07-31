@@ -10,6 +10,7 @@ SOURCES = http.c \
           hpack_utils.c \
           hpack_tables.c \
           hpack_encoder.c \
+          hpack_decoder.c \
           headers.c \
           sock.c \
           cbuf.c \

@@ -7,8 +7,8 @@
 
 #include <stdint.h>
 
-#define HUFFMAN_TABLE_SIZE 256
-#define NUMBER_OF_CODE_LENGTHS 21
+#define HUFFMAN_TABLE_SIZE (256)
+#define NUMBER_OF_CODE_LENGTHS (21)
 #define INCLUDE_HUFFMAN_LENGTH_TABLE 1
 
 typedef struct {

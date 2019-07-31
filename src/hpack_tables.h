@@ -2,8 +2,8 @@
 #define TWO_HPACK_TABLES_H
 #include "logging.h"
 #include <stdint.h>
-#define STATIC_TABLE_SIZE 61
-
+#define STATIC_TABLE_SIZE (61)
+#define MAX_DYNAMIC_TABLE_SIZE (4092)
 //typedef for HeaderPair
 typedef struct hpack_header_pair {
     char *name;
