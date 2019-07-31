@@ -292,8 +292,6 @@ void test_encode_integer(void)
 
 void test_encode_non_huffman_string(void)
 {
-    /*
-     * //TODO CHECK THIS TEST
     char str[] = "char_to_encode";//14
     uint8_t encoded_string[30];
     uint8_t expected_encoded_string[] = {
@@ -313,13 +311,14 @@ void test_encode_non_huffman_string(void)
             'd',
             'e'
     };
-    int rc = encode_non_huffman_string(str, encoded_string);
     hpack_utils_encoded_integer_size_fake.return_val = 1;
+
+    int rc = encode_non_huffman_string(str, encoded_string);
     TEST_ASSERT_EQUAL(15, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_string[i], encoded_string[i]);
     }
-     */
+
 }
 void test_pack_encoded_words_to_bytes_test1(void)
 {
