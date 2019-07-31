@@ -85,29 +85,6 @@ void test_read_n_bytes_error(void){
   TEST_ASSERT_MESSAGE(http_read_fake.call_count == 5, "call count must be 5");
 }
 
-void test_get_setting_value(void){
-    uint32_t settings[6];
-    settings[0] = 0;
-    settings[1] = 123123;
-    settings[2] = 1234566;
-    settings[3] = 16;
-    settings[4] = 123;
-    settings[5] = 987432958;
-
-    uint32_t value_received;
-    value_received = get_setting_value(settings, HEADER_TABLE_SIZE);
-    TEST_ASSERT_EQUAL(value_received, settings[0]);
-    value_received = get_setting_value(settings, ENABLE_PUSH);
-    TEST_ASSERT_EQUAL(value_received, settings[1]);
-    value_received = get_setting_value(settings, MAX_CONCURRENT_STREAMS);
-    TEST_ASSERT_EQUAL(value_received, settings[2]);
-    value_received = get_setting_value(settings, INITIAL_WINDOW_SIZE);
-    TEST_ASSERT_EQUAL(value_received, settings[3]);
-    value_received = get_setting_value(settings, MAX_FRAME_SIZE);
-    TEST_ASSERT_EQUAL(value_received, settings[4]);
-    value_received = get_setting_value(settings, MAX_HEADER_LIST_SIZE);
-    TEST_ASSERT_EQUAL(value_received, settings[5]);
-}
 
 
 int main(void)
@@ -117,7 +94,6 @@ int main(void)
     UNIT_TEST(test_verify_setting_errors);
     UNIT_TEST(test_read_n_bytes);
     UNIT_TEST(test_read_n_bytes_error);
-    UNIT_TEST(test_get_setting_value);
 
     return UNIT_TESTS_END();
 }
