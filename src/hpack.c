@@ -34,6 +34,8 @@
    }
  */
 //Table related functions and definitions
+//TODO
+#define MAX_DYNAMIC_TABLE_SIZE (4092)
 
 const uint32_t FIRST_INDEX_DYNAMIC = 62; // Changed type to remove warnings
 
@@ -505,6 +507,10 @@ uint32_t header_pair_size(header_pair_t h)
     return (uint32_t)(strlen(h.name) + strlen(h.value) + 32);
 }
 
+uint32_t hpack_get_table_length(uint32_t dynamic_table_size){
+  return (uint32_t)((dynamic_table_size/ 32) + 1);
+}
+
 /*
  * Function: hpack_init_dynamic_table
  * //TODO
@@ -514,14 +520,13 @@ uint32_t header_pair_size(header_pair_t h)
  * Output:
  *      //TODO
  */
-int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size)
+int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t* table)
 {
     memset(dynamic_table, 0, sizeof(hpack_dynamic_table_t));
     dynamic_table->max_size = dynamic_table_max_size;
-    dynamic_table->table_length = (uint32_t)((dynamic_table->max_size / 32) + 1);
+    dynamic_table->table_length = hpack_get_table_length(dynamic_table_max_size);
     dynamic_table->first = 0;
     dynamic_table->next = 0;
-    header_pair_t table[dynamic_table->table_length];
     dynamic_table->table = table;
     return 0;
 }
@@ -590,7 +595,7 @@ int dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, ch
     return 0;
 }
 
-/*
+/* TODO
  * Function: dynamic_table_resize
  * Makes an update of the size of the dynamic table_length
  * Input:
