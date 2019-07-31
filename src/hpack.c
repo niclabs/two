@@ -750,7 +750,7 @@ int dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, ch
     return 0;
 }
 
-/*
+/* TODO
  * Function: dynamic_table_resize
  * Makes an update of the size of the dynamic table_length
  * Input:
