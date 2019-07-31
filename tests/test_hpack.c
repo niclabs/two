@@ -4,6 +4,7 @@
 #include "logging.h"
 #include "hpack.h"
 #include "hpack_huffman.h"
+#include "hpack_tables.h"
 #include "table.h"
 
 extern int decode_huffman_string(char *str, uint8_t *encoded_string);
@@ -26,6 +27,7 @@ FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_preamble_t, uint32_t, uint32_t,
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
+FAKE_VALUE_FUNC(uint32_t, hpack_tables_get_table_length, uint32_t);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)                \
@@ -36,6 +38,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
     FAKE(hpack_utils_find_prefix_size)      \
     FAKE(hpack_encoder_encode)              \
     FAKE(hpack_utils_encoded_integer_size)  \
+    FAKE(hpack_tables_get_table_length)     \
     FAKE(headers_add)
 
 /*Decode*/
@@ -140,17 +143,19 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xf4,
                                           0xff };
 
-int8_t hpack_tables_static_find_name_return_authority(uint8_t index, char *name){
+int8_t hpack_tables_static_find_name_return_authority(uint8_t index, char *name)
+{
     (void)index;
     char authority[] = ":authority";
-    strncpy(name,authority,strlen(authority));
+    strncpy(name, authority, strlen(authority));
     return 0;
 }
 
-int8_t hpack_tables_static_find_name_return_age(uint8_t index, char *name){
+int8_t hpack_tables_static_find_name_return_age(uint8_t index, char *name)
+{
     (void)index;
     char age[] = "age";
-    strncpy(name,age,strlen(age));
+    strncpy(name, age, strlen(age));
     return 0;
 }
 
@@ -241,7 +246,7 @@ void test_decode_header_block_literal_never_indexed(void)
 
     hpack_dynamic_table_t dynamic_table;
 
-    header_pair_t table[hpack_get_table_length(max_dynamic_table_size)];
+    header_pair_t table[hpack_tables_get_table_length(max_dynamic_table_size)];
 
     hpack_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
 
