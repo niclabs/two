@@ -675,14 +675,13 @@ uint32_t hpack_get_table_length(uint32_t dynamic_table_size){
  * Output:
  *      //TODO
  */
-int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size)
+int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t* table)
 {
     memset(dynamic_table, 0, sizeof(hpack_dynamic_table_t));
     dynamic_table->max_size = dynamic_table_max_size;
-    dynamic_table->table_length = (uint32_t)((dynamic_table->max_size / 32) + 1);
+    dynamic_table->table_length = hpack_get_table_length(dynamic_table_max_size);
     dynamic_table->first = 0;
     dynamic_table->next = 0;
-    header_pair_t table[dynamic_table->table_length];
     dynamic_table->table = table;
     return 0;
 }
