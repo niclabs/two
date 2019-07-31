@@ -3,6 +3,7 @@
 #include "fff.h"
 #include "http2.h"
 #include "http2utils.h"
+#include "http2_flowcontrol.h"
 //#define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"
 
@@ -24,8 +25,6 @@ extern int send_headers_stream_verification(hstates_t *st);
 extern int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream);
 extern int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream);
 extern int send_headers(hstates_t *st, uint8_t end_stream);
-extern int flow_control_receive_data(hstates_t* st, uint32_t length);
-extern int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment);
 extern uint32_t get_size_data_to_send(hstates_t *st);
 extern int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st);
 extern int send_data(hstates_t *st, uint8_t end_stream);
@@ -130,6 +129,10 @@ FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t*, goaway_payload_t*, ui
 FAKE_VALUE_FUNC(int, goaway_payload_to_bytes, frame_header_t*, goaway_payload_t*, uint8_t*);
 FAKE_VALUE_FUNC(int, read_goaway_payload, uint8_t*, frame_header_t*, goaway_payload_t* , uint8_t*);
 
+FAKE_VALUE_FUNC(uint32_t, get_window_available_size, h2_window_manager_t);
+FAKE_VALUE_FUNC(int, flow_control_receive_data, hstates_t*, uint32_t);
+FAKE_VALUE_FUNC(int, flow_control_send_window_update, hstates_t*, uint32_t);
+FAKE_VALUE_FUNC(int, flow_control_receive_window_update, hstates_t*, uint32_t);
 
 
 #define FFF_FAKES_LIST(FAKE)              \
@@ -162,6 +165,10 @@ FAKE_VALUE_FUNC(int, read_goaway_payload, uint8_t*, frame_header_t*, goaway_payl
     FAKE(create_goaway_frame)   \
     FAKE(goaway_payload_to_bytes)   \
     FAKE(read_goaway_payload)   \
+    FAKE(get_window_available_size)           \
+    FAKE(flow_control_receive_data)   \
+    FAKE(flow_control_send_window_update)   \
+    FAKE(flow_control_receive_window_update)   \
 
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
