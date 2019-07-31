@@ -34,6 +34,8 @@
    }
  */
 //Table related functions and definitions
+//TODO
+#define MAX_DYNAMIC_TABLE_SIZE (4092)
 
 const uint32_t FIRST_INDEX_DYNAMIC = 62; // Changed type to remove warnings
 
