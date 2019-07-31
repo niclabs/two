@@ -1,10 +1,7 @@
-//
-// Created by maite on 30-05-19.
-//
-#include <stdint.h>
-#include "logging.h"
 #ifndef TWO_HPACK_UTILS_H
 #define TWO_HPACK_UTILS_H
+#include <stdint.h>
+#include "logging.h"
 
 typedef enum {
     INDEXED_HEADER_FIELD                            = (uint8_t) 128,
