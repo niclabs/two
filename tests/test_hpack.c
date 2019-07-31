@@ -241,9 +241,13 @@ void test_decode_header_block_literal_never_indexed(void)
     //Never indexed
     //No huffman encoding - Header name as dynamic table index
 
+    uint32_t max_dynamic_table_size = 3000;
+
     hpack_dynamic_table_t dynamic_table;
 
-    hpack_init_dynamic_table(&dynamic_table, 20000);
+    header_pair_t table[hpack_get_table_length(max_dynamic_table_size)];
+
+    hpack_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
 
     char *new_name = "new_name";
     char *new_value = "new_value";
