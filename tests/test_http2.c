@@ -10,7 +10,7 @@
 
 /*---------- Import of functions not declared in http2.h ----------------*/
 extern int init_variables(hstates_t * st);
-extern uint32_t read_setting_from(uint8_t place, uint8_t param, hstates_t *st);
+extern uint32_t read_setting_from(hstates_t *st, uint8_t place, uint8_t param);
 extern int send_local_settings(hstates_t *st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
 extern int send_settings_ack(hstates_t *st);
@@ -555,13 +555,13 @@ void test_read_setting_from(void){
     hdummy.h2s.remote_settings[i] = i+1;
     hdummy.h2s.local_settings[i] = i+7;
   }
-  uint32_t answ = read_setting_from(LOCAL, 0x1, &hdummy);
+  uint32_t answ = read_setting_from(&hdummy, LOCAL, 0x1);
   TEST_ASSERT_MESSAGE(answ == 7, "Answer must be 7");
-  answ = read_setting_from(REMOTE, 0x6, &hdummy);
+  answ = read_setting_from(&hdummy, REMOTE, 0x6);
   TEST_ASSERT_MESSAGE(answ == 6, "Answer must be 6");
-  answ = read_setting_from(LOCAL, 0x0, &hdummy);
+  answ = read_setting_from(&hdummy, LOCAL, 0x0);
   TEST_ASSERT_MESSAGE((int)answ == -1, "Answer must be -1. Error in id! (overvalue)");
-  answ = read_setting_from(REMOTE, 0x7, &hdummy);
+  answ = read_setting_from(&hdummy, REMOTE, 0x7);
   TEST_ASSERT_MESSAGE((int)answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
 }
 
@@ -574,9 +574,9 @@ void test_read_setting_from_errors(void){
     hdummy.h2s.local_settings[i] = i+7;
   }
   // First error, invalid parameter
-  uint32_t rc = read_setting_from(LOCAL, 0x0, &hdummy);
+  uint32_t rc = read_setting_from(&hdummy, LOCAL, 0x0);
   TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid parameter");
-  rc = read_setting_from(5, 0x1, &hdummy);
+  rc = read_setting_from(&hdummy, 5, 0x1);
   TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid table");
 }
 
@@ -866,6 +866,7 @@ void test_handle_headers_payload_full_message_header_no_end_stream(void){
   frame_header_t head;
   headers_payload_t hpl;
   hstates_t st;
+  init_variables(&st);
   st.h2s.header_block_fragments_pointer = 123;
   // returns 20
   get_header_block_fragment_size_fake.custom_fake = ghbfs;
@@ -894,6 +895,8 @@ void test_handle_headers_payload_full_message_header_end_stream(void){
   frame_header_t head;
   headers_payload_t hpl;
   hstates_t st;
+  init_variables(&st);
+  st.h2s.current_stream.state = STREAM_OPEN;
   st.h2s.header_block_fragments_pointer = 123;
   // returns 20
   get_header_block_fragment_size_fake.custom_fake = ghbfs;
@@ -1266,16 +1269,15 @@ void test_send_headers_one_header(void){
 
 void test_send_headers_with_continuation(void){
   hstates_t st;
-
-
   st.is_server = 0;
-    st.headers_in.count = 0;
-    st.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+  st.headers_in.count = 0;
+  st.headers_out.count = 0;
+  st.hd_lists.data_in_size = 0;
+  st.hd_lists.data_out_size = 0;
+  st.hd_lists.data_in_received = 0;
+  st.hd_lists.data_out_sent = 0;
   int rc = init_variables(&st);
+  st.h2s.local_settings[4] = 20;
   st.headers_out.count = 10;
   int create_headers_return[1] = {0};
   SET_RETURN_SEQ(create_headers_frame, create_headers_return, 1);
@@ -1663,7 +1665,7 @@ void test_h2_receive_frame_settings(void){
     bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
-    TEST_ASSERT_EQUAL(10,read_setting_from(REMOTE,1,&st));
+    TEST_ASSERT_EQUAL(10,read_setting_from(&st,REMOTE,1));
 
 }
 
