@@ -13,8 +13,9 @@ extern int encode_huffman_string(char *str, uint8_t *encoded_string);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer);
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
+extern int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer);
 
-DEFINE_FFF_GLOBALS;
+        DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
@@ -591,6 +592,22 @@ void test_hpack_encoder_encode(void)
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
     }
 }
+
+void test_encode_indexed_header_field(void){
+    int expected_encoding[] = {2,6,4};
+    char* names[] = {":method",":scheme",":path"};
+    char* values[] = {"GET","http","/"};
+    uint8_t encoded_buffer[] = {0,0};
+    int fake_return_seq_hpack_find_index[] = {2,6,4};
+    SET_RETURN_SEQ(hpack_tables_find_index,fake_return_seq_hpack_find_index,3);
+    hpack_utils_find_prefix_size_fake.return_val = 7;
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    for(int i = 0; i < 3; i++){
+        int rc = encode_indexed_header_field(NULL, names[i], values[i], encoded_buffer);
+        TEST_ASSERT_EQUAL(1,rc);
+        TEST_ASSERT_EQUAL(expected_encoding[i],encoded_buffer[0]);
+    }
+}
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -611,6 +628,7 @@ int main(void)
  */
     UNIT_TEST(test_encode_literal_header_field_new_name);
     UNIT_TEST(test_encode_literal_header_field_new_name_error);
+    UNIT_TEST(test_encode_indexed_header_field);
 
     return UNIT_TESTS_END();
 }
