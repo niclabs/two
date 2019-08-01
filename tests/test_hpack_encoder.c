@@ -18,11 +18,13 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
+FAKE_VALUE_FUNC(int, hpack_tables_find_index, hpack_dynamic_table_t *, char *, char *);
 
 
 #define FFF_FAKES_LIST(FAKE)                        \
     FAKE(hpack_utils_find_prefix_size)              \
-    FAKE(hpack_utils_encoded_integer_size)    \
+    FAKE(hpack_utils_encoded_integer_size)          \
+    FAKE(hpack_tables_find_index)                   \
     FAKE(hpack_huffman_encode)
 
 /*----------Value Return for FAKEs ----------*/
@@ -199,15 +201,16 @@ void test_encode_integer(void)
 
     uint32_t integer = 10;
     uint8_t prefix = 5;
-    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = {1,1,1,1,3,3,2,2,1,1,3,3};
-    SET_RETURN_SEQ(hpack_utils_encoded_integer_size,hpack_utils_encoded_integer_size_fake_seq,12);
+    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 1, 1, 1, 3, 3, 2, 2, 1, 1, 3, 3 };
+
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 12);
     int rc = hpack_utils_encoded_integer_size(integer, prefix);
     uint8_t encoded_integer[4];
 
     rc = encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(1, rc);
     uint8_t expected_bytes1[] = {
-            10    //0,0,0, 0,1,0,1,0
+        10        //0,0,0, 0,1,0,1,0
     };
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_bytes1[i], encoded_integer[i]);
@@ -220,7 +223,7 @@ void test_encode_integer(void)
     rc = encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(1, rc);
     uint8_t expected_bytes2[] = {
-            30    //0,0,0, 1,1,1,1,0
+        30        //0,0,0, 1,1,1,1,0
     };
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_bytes2[i], encoded_integer[i]);
@@ -237,9 +240,9 @@ void test_encode_integer(void)
     rc = encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(3, rc);
     uint8_t expected_bytes6[] = {
-            31,    //0,0,0, 1,1,1,1,1
-            128,
-            1
+        31,        //0,0,0, 1,1,1,1,1
+        128,
+        1
     };
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_bytes6[i], encoded_integer[i]);
@@ -253,8 +256,8 @@ void test_encode_integer(void)
     rc = encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(2, rc);
     uint8_t expected_bytes3[] = {
-            31,     //0,0,0, 1,1,1,1,1
-            0       //0 000 0000
+        31,         //0,0,0, 1,1,1,1,1
+        0           //0 000 0000
     };
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_bytes3[i], encoded_integer[i]);
@@ -268,12 +271,12 @@ void test_encode_integer(void)
     rc = encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(1, rc);
     uint8_t expected_bytes4[] = {
-            31    //0,0, 0,1,1,1,1,1
+        31        //0,0, 0,1,1,1,1,1
     };
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_bytes4[i], encoded_integer[i]);
     }
-    
+
     integer = 1337;
     prefix = 5;
     rc = hpack_utils_encoded_integer_size(integer, prefix);
@@ -281,9 +284,9 @@ void test_encode_integer(void)
     rc = encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(3, rc);
     uint8_t expected_bytes5[] = {
-            31,    //0,0,0, 1,1,1,1,1
-            154,
-            10
+        31,        //0,0,0, 1,1,1,1,1
+        154,
+        10
     };
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_bytes5[i], encoded_integer[i]);
@@ -296,22 +299,23 @@ void test_encode_non_huffman_string(void)
     char str[] = "char_to_encode";//14
     uint8_t encoded_string[30];
     uint8_t expected_encoded_string[] = {
-            14,
-            'c',
-            'h',
-            'a',
-            'r',
-            '_',
-            't',
-            'o',
-            '_',
-            'e',
-            'n',
-            'c',
-            'o',
-            'd',
-            'e'
+        14,
+        'c',
+        'h',
+        'a',
+        'r',
+        '_',
+        't',
+        'o',
+        '_',
+        'e',
+        'n',
+        'c',
+        'o',
+        'd',
+        'e'
     };
+
     hpack_utils_encoded_integer_size_fake.return_val = 1;
 
     int rc = encode_non_huffman_string(str, encoded_string);
@@ -324,21 +328,21 @@ void test_encode_non_huffman_string(void)
 void test_pack_encoded_words_to_bytes_test1(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*www.example.com*/
-            { .code = 0x78, .length = 7 },
-            { .code = 0x78, .length = 7 },
-            { .code = 0x78, .length = 7 },
-            { .code = 0x17, .length = 6 },
-            { .code = 0x5, .length = 5 },
-            { .code = 0x79, .length = 7 },
-            { .code = 0x3, .length = 5 },
-            { .code = 0x29, .length = 6 },
-            { .code = 0x2b, .length = 6 },
-            { .code = 0x28, .length = 6 },
-            { .code = 0x5, .length = 5 },
-            { .code = 0x17, .length = 6 },
-            { .code = 0x4, .length = 5 },
-            { .code = 0x7, .length = 5 },
-            { .code = 0x29, .length = 6 }
+        { .code = 0x78, .length = 7 },
+        { .code = 0x78, .length = 7 },
+        { .code = 0x78, .length = 7 },
+        { .code = 0x17, .length = 6 },
+        { .code = 0x5, .length = 5 },
+        { .code = 0x79, .length = 7 },
+        { .code = 0x3, .length = 5 },
+        { .code = 0x29, .length = 6 },
+        { .code = 0x2b, .length = 6 },
+        { .code = 0x28, .length = 6 },
+        { .code = 0x5, .length = 5 },
+        { .code = 0x17, .length = 6 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x7, .length = 5 },
+        { .code = 0x29, .length = 6 }
     };
     uint8_t buffer[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     uint8_t expected_result[] = { 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff };
@@ -355,14 +359,14 @@ void test_pack_encoded_words_to_bytes_test1(void)
 void test_pack_encoded_words_to_bytes_test2(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*no-cache*/
-            { .code = 0x2a, .length = 6 },
-            { .code = 0x7, .length = 5 },
-            { .code = 0x16, .length = 6 },
-            { .code = 0x4, .length = 5 },
-            { .code = 0x3, .length = 5 },
-            { .code = 0x4, .length = 5 },
-            { .code = 0x27, .length = 6 },
-            { .code = 0x5, .length = 5 },
+        { .code = 0x2a, .length = 6 },
+        { .code = 0x7, .length = 5 },
+        { .code = 0x16, .length = 6 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x3, .length = 5 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x27, .length = 6 },
+        { .code = 0x5, .length = 5 },
     };
     uint8_t buffer[6] = { 0, 0, 0, 0, 0, 0 };
     //a8eb 1064 9cbf
@@ -379,18 +383,18 @@ void test_pack_encoded_words_to_bytes_test2(void)
 void test_pack_encoded_words_to_bytes_test3(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*custom-value*/
-            { .code = 0x4, .length = 5 },
-            { .code = 0x2d, .length = 6 },
-            { .code = 0x8, .length = 5 },
-            { .code = 0x9, .length = 5 },
-            { .code = 0x7, .length = 5 },
-            { .code = 0x29, .length = 6 },
-            { .code = 0x16, .length = 6 },    /*-*/
-            { .code = 0x77, .length = 7 },
-            { .code = 0x3, .length = 5 },
-            { .code = 0x28, .length = 6 },
-            { .code = 0x2d, .length = 6 },
-            { .code = 0x5, .length = 5 },
+        { .code = 0x4, .length = 5 },
+        { .code = 0x2d, .length = 6 },
+        { .code = 0x8, .length = 5 },
+        { .code = 0x9, .length = 5 },
+        { .code = 0x7, .length = 5 },
+        { .code = 0x29, .length = 6 },
+        { .code = 0x16, .length = 6 },        /*-*/
+        { .code = 0x77, .length = 7 },
+        { .code = 0x3, .length = 5 },
+        { .code = 0x28, .length = 6 },
+        { .code = 0x2d, .length = 6 },
+        { .code = 0x5, .length = 5 },
     };
     uint8_t buffer[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     //25a8 49e9 5bb8 e8b4 bf
@@ -464,6 +468,7 @@ void test_encode_literal_header_field_new_name(void)
     char *name_to_encode = "custom-key";
     char *value_to_encode = "custom-value";
     uint8_t encoded_buffer[24];
+
     memset(encoded_buffer, 0, 24);
     hpack_utils_encoded_integer_size_fake.return_val = 1;
 
@@ -526,8 +531,8 @@ void test_encode_literal_header_field_new_name_error(void)
     memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
     uint8_t name_huffman_bool = 0;
     uint8_t value_huffman_bool = 0;
-    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = {1,2,2,1,2};
-    SET_RETURN_SEQ(hpack_utils_encoded_integer_size,hpack_utils_encoded_integer_size_fake_seq,5);
+    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2, 2, 1, 2 };
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 5);
 
     hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
     for (int i = 0; i < 2 * HTTP2_MAX_HBF_BUFFER; i++) {
@@ -564,17 +569,18 @@ void test_hpack_encoder_encode(void)
     uint8_t encoded_buffer[64];
 
     uint8_t expected_encoded_bytes[] = {
-            0,      //LITERAL_HEADER_FIELD_WITHOUT_INDEXING, index=0
-            4,      //name_length
-            (uint8_t)'n',
-            (uint8_t)'a',
-            (uint8_t)'m',
-            (uint8_t)'e',
-            3,    //value_length
-            (uint8_t)'v',
-            (uint8_t)'a',
-            (uint8_t)'l'
+        0,          //LITERAL_HEADER_FIELD_WITHOUT_INDEXING, index=0
+        4,          //name_length
+        (uint8_t)'n',
+        (uint8_t)'a',
+        (uint8_t)'m',
+        (uint8_t)'e',
+        3,        //value_length
+        (uint8_t)'v',
+        (uint8_t)'a',
+        (uint8_t)'l'
     };
+
     hpack_utils_find_prefix_size_fake.return_val = 4;
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     int rc = hpack_encoder_encode(preamble, max_size, index, name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer);
@@ -602,7 +608,7 @@ int main(void)
 /*
     UNIT_TEST(test_encode_then_decode_non_huffman_string);
     UNIT_TEST(test_encode_then_decode_huffman_string);
-*/
+ */
     UNIT_TEST(test_encode_literal_header_field_new_name);
     UNIT_TEST(test_encode_literal_header_field_new_name_error);
 

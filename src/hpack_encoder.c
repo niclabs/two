@@ -387,6 +387,7 @@ int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name
     int pointer = encode_integer(rc, prefix, encoded_buffer);
     return pointer;
 }
+
 /*
  * Function: hpack_encoder_encode
  * Encodes a header field

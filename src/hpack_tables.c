@@ -518,17 +518,19 @@ int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table,
  */
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
+
     //Search first in static table
-    for (int i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
+    for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         const char *table_name = hpack_static_table.name_table[i];
         const char *table_value = hpack_static_table.value_table[i];
         if ((strncmp(table_name, name, strlen(name)) == 0) &&
-            (strncmp(table_value, name, strlen(value)) == 0)) {
-            return i;
+            (strncmp(table_value, value, strlen(value)) == 0)) {
+            return i + 1;
         }
     }
     //Then search in dynamic table
     //TODO
+    (void)dynamic_table;
     return -1;
 }
 /*
