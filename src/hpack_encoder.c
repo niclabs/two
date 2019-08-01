@@ -367,6 +367,27 @@ int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_h
 }
 
 /*
+ * Function: encode_indexed_header_field
+ * Encodes an indexed indexed header field
+ * Input:
+ *      -> *dynamic_table: Dynamic table to find name and value
+ *      -> *name: Buffer containing name of the header
+ *      -> *value: Buffer containing value of the header
+ * Output:
+ *      Returns the number of octets used to encode the given name and value, or -1 if it fails.
+ */
+int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer)
+{
+    int rc = hpack_tables_find_index(dynamic_table, name, value);
+
+    if (rc < 0) {
+        return -1;
+    }
+    uint8_t prefix = hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD);
+    int pointer = encode_integer(rc, prefix, encoded_buffer);
+    return pointer;
+}
+/*
  * Function: hpack_encoder_encode
  * Encodes a header field
  * Input:
@@ -391,14 +412,17 @@ int hpack_encoder_encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t 
     else {
         uint8_t prefix = hpack_utils_find_prefix_size(preamble);
         int pointer = 0;
-        pointer += encode_integer(index, prefix, encoded_buffer + pointer);
-        encoded_buffer[0] |= preamble;                      //set first bit
         if (preamble == (uint8_t)INDEXED_HEADER_FIELD) {    /*indexed header field representation in static or dynamic table*/
-            //TODO not implemented yet
-            ERROR("Not implemented yet!");
-            return pointer;
+            int rc = encode_indexed_header_field(NULL, name_string, value_string, encoded_buffer );
+            if (rc < 0) {
+                ERROR("Error while trying to encode");
+                return -1;
+            }
+            encoded_buffer[0] |= preamble;                      //set first bits
+            return rc;
         }
         else {
+            pointer += encode_integer(index, prefix, encoded_buffer + pointer);
             if (index == (uint8_t)0) {
                 int rc = encode_literal_header_field_new_name(name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer + pointer);
                 if (rc < 0) {
@@ -415,6 +439,7 @@ int hpack_encoder_encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t 
                 }
                 pointer += rc;
             }
+            encoded_buffer[0] |= preamble;                      //set first bits
             return pointer;
         }
     }
