@@ -288,13 +288,14 @@ const hpack_static_table_t hpack_static_table = {
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  */
-int8_t hpack_tables_static_find_name_and_value(uint8_t index, char *name, char *value){
+int8_t hpack_tables_static_find_name_and_value(uint8_t index, char *name, char *value)
+{
     index--; //because static table begins at index 1
-    if(index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC){
+    if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         return -1;
     }
-    const char* table_name = hpack_static_table.name_table[index];
-    const char* table_value = hpack_static_table.value_table[index];
+    const char *table_name = hpack_static_table.name_table[index];
+    const char *table_value = hpack_static_table.value_table[index];
     strncpy(name, table_name, strlen(table_name));
     strncpy(value, table_value, strlen(table_value));
     return 0;
@@ -308,12 +309,13 @@ int8_t hpack_tables_static_find_name_and_value(uint8_t index, char *name, char *
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  */
-int8_t hpack_tables_static_find_name(uint8_t index, char *name){
+int8_t hpack_tables_static_find_name(uint8_t index, char *name)
+{
     index--;
-    if(index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC){
+    if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         return -1;
     }
-    const char* table_name = hpack_static_table.name_table[index];
+    const char *table_name = hpack_static_table.name_table[index];
     strncpy(name, table_name, strlen(table_name));
     return 0;
 }
@@ -503,6 +505,33 @@ int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table,
 }
 
 /*
+ *  Function: hpack_tables_find_index
+ *  Given a buffer containing a name and another buffer containing the value of a header
+ *  Searches both static and Dynamic tables
+ *  Input:
+ *      -> *dynamic_table: Dynamic table to search
+ *      -> *name: Buffer containing the name of a header to search
+ *      -> *value: Buffer containing the value of a header to search
+ *  Output:
+ *      Returns the index in the static or dynamic table containing both name and value if succesful,
+ *      otherwise it returns -1.
+ */
+int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+{
+    //Search first in static table
+    for (int i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
+        const char *table_name = hpack_static_table.name_table[i];
+        const char *table_value = hpack_static_table.value_table[i];
+        if ((strncmp(table_name, name, strlen(name)) == 0) &&
+            (strncmp(table_value, name, strlen(value)) == 0)) {
+            return i;
+        }
+    }
+    //Then search in dynamic table
+    //TODO
+    return -1;
+}
+/*
  * Function: find_entry_name
  * finds an entry name in either the static or dynamic table_length
  * Input:
@@ -537,8 +566,9 @@ int hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t 
 
 }
 
-uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size){
-    return (uint32_t)((dynamic_table_size/ 32) + 1);
+uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
+{
+    return (uint32_t)((dynamic_table_size / 32) + 1);
 }
 
 /*
@@ -550,7 +580,7 @@ uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size){
  * Output:
  *      //TODO
  */
-int hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t* table)
+int hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t *table)
 {
     memset(dynamic_table, 0, sizeof(hpack_dynamic_table_t));
     dynamic_table->max_size = dynamic_table_max_size;
