@@ -502,6 +502,37 @@ int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table,
     strncpy(value, table_value, strlen(table_value));
     return 0;
 
+/*
+ * Function: find_entry_name
+ * finds an entry name in either the static or dynamic table_length
+ * Input:
+ *      -> *dynamic_table: table which can be modified by server or client
+ *      -> index: table's position of the entry
+ *      -> *name: buffer where the name of the entry will be stored
+ * Output:
+ *      0 if success, -1 in case of Error
+ */
+int hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+{
+    if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
+        if (dynamic_table == NULL) {
+            ERROR("Dynamic table not initialized ");
+            return -1;
+        }
+        int rc = hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
+        if(rc < 0){
+          ERROR("The entry doesn't exist in dynamic table");
+          return -1;
+        }
+    }
+    else {
+        int8_t rc = hpack_tables_static_find_entry_name(index, name);
+        if (rc < 0) {
+            ERROR("The index was greater than the size of the static table");
+            return -1;
+        }
+    }
+    return 0;
 }
 
 /*
@@ -533,40 +564,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     (void)dynamic_table;
     return -1;
 }
-/*
- * Function: find_entry_name
- * finds an entry name in either the static or dynamic table_length
- * Input:
- *      -> *dynamic_table: table which can be modified by server or client
- *      -> index: table's position of the entry
- *      -> *name: buffer where the name of the entry will be stored
- * Output:
- *      0 if success, -1 in case of Error
- */
-int hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
-{
-    const char *table_name; //add const before char to resolve compilation warnings
 
-    if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
-        if (dynamic_table == NULL) {
-            ERROR("Dynamic table not initialized ");
-            return -1;
-        }
-        header_pair_t entry = hpack_tables_dynamic_find_entry(dynamic_table, index);
-        table_name = entry.name;
-    }
-    else {
-        int8_t rc = hpack_tables_static_find_name(index, name);
-        if (rc < 0) {
-            ERROR("The index was greater than the size of the static table");
-            return -1;
-        }
-        return 0;
-    }
-    strncpy(name, table_name, strlen(table_name));
-    return 0;
-
-}
 
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
 {
