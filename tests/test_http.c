@@ -103,6 +103,71 @@ int resource_handler(char * method, char * uri, uint8_t * response, int maxlen) 
     return 16;
 }
 
+void test_set_data_success(void)
+{
+    headers_data_lists_t hd;
+
+    int sd = set_data(&hd, (uint8_t *)"test", 4);
+
+    TEST_ASSERT_EQUAL( 0, sd);
+
+    TEST_ASSERT_EQUAL( 4, hd.data_out_size);
+    TEST_ASSERT_EQUAL( 0, memcmp(&hd.data_out, (uint8_t *)"test", 4));
+}
+
+
+void test_set_data_fail_big_data(void)
+{
+    headers_data_lists_t hd;
+
+    hd.data_out_size = 0;
+
+    int sd = set_data(&hd, (uint8_t *)"", 0);
+
+    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data too large for buffer size");
+
+    TEST_ASSERT_EQUAL( 0, hd.data_out_size);
+}
+
+
+void test_set_data_fail_data_full(void)
+{
+    headers_data_lists_t hd;
+
+    hd.data_out_size = HTTP_MAX_DATA_SIZE;
+
+    int sd = set_data(&hd, (uint8_t *)"test", 4);
+
+    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data buffer full");
+}
+
+
+
+void test_get_data_success(void){
+    headers_data_lists_t hd;
+
+    hd.data_in_size = 4;
+    memcpy(hd.data_in, (uint8_t *)"test", 4);
+
+    uint8_t buf[10];
+    int gd = get_data(&hd, buf);
+
+    TEST_ASSERT_EQUAL( 4, gd);
+
+    TEST_ASSERT_EQUAL( 0, memcmp(&buf, hd.data_in, 4));
+}
+
+
+void test_get_data_fail_no_data(void){
+    headers_data_lists_t hd;
+    hd.data_in_size = 0;
+
+    uint8_t buf[5];
+    int gd = get_data( &hd, buf);
+
+    TEST_ASSERT_EQUAL_MESSAGE( 0, gd, "Data list is empty");
+}
+
 void test_reset_http_states_success(void)
 {
     hstates_t hs;
@@ -128,6 +193,98 @@ void test_reset_http_states_success(void)
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(0, hs.keep_receiving);
     TEST_ASSERT_EQUAL(0, hs.new_headers);
+}
+
+
+void test_do_request_success(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+
+    // Register http resource
+    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
+
+    // Set send response
+    h2_send_response_fake.return_val = 0;
+
+    // Perform request
+    int res = do_request(&hs, "GET", "/index");
+
+    // Check that headers_set was called with the correct parameters
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("200", headers_set_fake.arg2_val);
+
+    // Check that send response was called
+    TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
+
+    // Return value should be 1
+    TEST_ASSERT_EQUAL(0, res);
+}
+
+
+void test_do_request_fail_h2_send_response(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+
+    // Register http resource
+    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
+
+    // Set error response from send response
+    h2_send_response_fake.return_val = -1;
+
+    // Perform request
+    int res = do_request(&hs, "GET", "/index");
+
+    // Check that headers_set was called with the correct parameters
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("200", headers_set_fake.arg2_val);
+
+    // Check that send response was called
+    TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "h2_send_response error should trigger error response from do_request");
+}
+
+
+void test_do_request_path_not_found(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+
+    // Register http resource
+    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
+
+    // Perform request
+    int res = do_request(&hs, "GET", "/bla");
+
+    // Check that headers_set was called with the correct parameters in error()
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("404", headers_set_fake.arg2_val);
+
+    // Test correct return value
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if error response is sent");
+}
+
+
+void test_do_request_no_resources(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+
+    // Register http resource
+    int res = do_request(&hs, "GET", "/index");
+
+    // Check that headers_set was called with the correct parameters in error()
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING("404", headers_set_fake.arg2_val);
+
+    // Test correct return value
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if no resources are found");
 }
 
 
@@ -751,175 +908,30 @@ void test_http_client_disconnect_fail(void)
     TEST_ASSERT_EQUAL(1, hs.connection_state);
 }
 
-void test_set_data_success(void)
-{
-    headers_data_lists_t hd;
-
-    int sd = set_data(&hd, (uint8_t *)"test", 4);
-
-    TEST_ASSERT_EQUAL( 0, sd);
-
-    TEST_ASSERT_EQUAL( 4, hd.data_out_size);
-    TEST_ASSERT_EQUAL( 0, memcmp(&hd.data_out, (uint8_t *)"test", 4));
-}
-
-
-void test_set_data_fail_big_data(void)
-{
-    headers_data_lists_t hd;
-
-    hd.data_out_size = 0;
-
-    int sd = set_data(&hd, (uint8_t *)"", 0);
-
-    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data too large for buffer size");
-
-    TEST_ASSERT_EQUAL( 0, hd.data_out_size);
-}
-
-
-void test_set_data_fail_data_full(void)
-{
-    headers_data_lists_t hd;
-
-    hd.data_out_size = HTTP_MAX_DATA_SIZE;
-
-    int sd = set_data(&hd, (uint8_t *)"test", 4);
-
-    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data buffer full");
-}
-
-
-
-void test_get_data_success(void){
-    headers_data_lists_t hd;
-
-    hd.data_in_size = 4;
-    memcpy(hd.data_in, (uint8_t *)"test", 4);
-
-    uint8_t buf[10];
-    int gd = get_data(&hd, buf);
-
-    TEST_ASSERT_EQUAL( 4, gd);
-
-    TEST_ASSERT_EQUAL( 0, memcmp(&buf, hd.data_in, 4));
-}
-
-
-void test_get_data_fail_no_data(void){
-    headers_data_lists_t hd;
-    hd.data_in_size = 0;
-
-    uint8_t buf[5];
-    int gd = get_data( &hd, buf);
-
-    TEST_ASSERT_EQUAL_MESSAGE( 0, gd, "Data list is empty");
-}
-
-
-void test_do_request_success(void)
-{
-    hstates_t hs;
-    reset_http_states(&hs);
-
-    // Register http resource
-    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
-
-    // Set send response
-    h2_send_response_fake.return_val = 0;
-
-    // Perform request
-    int res = do_request(&hs, "GET", "/index");
-
-    // Check that headers_set was called with the correct parameters
-    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING("200", headers_set_fake.arg2_val);
-
-    // Check that send response was called
-    TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
-
-    // Return value should be 1
-    TEST_ASSERT_EQUAL(0, res);
-}
-
-
-void test_do_request_fail_h2_send_response(void)
-{
-    hstates_t hs;
-    reset_http_states(&hs);
-
-    // Register http resource
-    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
-
-    // Set error response from send response
-    h2_send_response_fake.return_val = -1;
-
-    // Perform request
-    int res = do_request(&hs, "GET", "/index");
-
-    // Check that headers_set was called with the correct parameters
-    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING("200", headers_set_fake.arg2_val);
-
-    // Check that send response was called
-    TEST_ASSERT_EQUAL(1, h2_send_response_fake.call_count);
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "h2_send_response error should trigger error response from do_request");
-}
-
-
-void test_do_request_path_not_found(void)
-{
-    hstates_t hs;
-    reset_http_states(&hs);
-
-    // Register http resource
-    http_server_register_resource(&hs, "GET", "/index", &resource_handler);
-
-    // Perform request
-    int res = do_request(&hs, "GET", "/bla");
-
-    // Check that headers_set was called with the correct parameters in error()
-    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING("404", headers_set_fake.arg2_val);
-    
-    // Test correct return value
-    TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if error response is sent");
-}
-
-
-void test_do_request_no_resources(void)
-{
-    hstates_t hs;
-    reset_http_states(&hs);
-
-    // Register http resource
-    int res = do_request(&hs, "GET", "/index");
-
-    // Check that headers_set was called with the correct parameters in error()
-    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(":status", headers_set_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING("404", headers_set_fake.arg2_val);
-
-    // Test correct return value
-    TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if no resources are found");
-}
-
 
 int main(void)
 {
     UNITY_BEGIN();
 
+    UNIT_TEST(test_get_data_success);
+    UNIT_TEST(test_get_data_fail_no_data);
+
+    UNIT_TEST(test_set_data_success);
+    UNIT_TEST(test_set_data_fail_big_data);
+    UNIT_TEST(test_set_data_fail_data_full);
+
     UNIT_TEST(test_reset_http_states_success);
+
+    UNIT_TEST(test_do_request_success);
+    UNIT_TEST(test_do_request_fail_h2_send_response);
+    UNIT_TEST(test_do_request_path_not_found);
+    UNIT_TEST(test_do_request_no_resources);
 
     UNIT_TEST(test_http_server_create_success);
     UNIT_TEST(test_http_server_create_fail_sock_listen);
     UNIT_TEST(test_http_server_create_fail_sock_create);
 
-    UNIT_TEST(test_http_server_start_success);
+    //UNIT_TEST(test_http_server_start_success);
     UNIT_TEST(test_http_server_start_fail_h2_server_init_connection);
     UNIT_TEST(test_http_server_start_fail_sock_accept);
 
@@ -948,27 +960,10 @@ int main(void)
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
     UNIT_TEST(test_http_client_connect_fail_sock_connect);
     UNIT_TEST(test_http_client_connect_fail_sock_create);
-/*
-    UNIT_TEST(test_http_get_success);
-    UNIT_TEST(test_http_get_fail);
-    UNIT_TEST(test_http_get_fail_h2_send_request);
-    UNIT_TEST(test_http_get_fail_headers_list_full);
-*/
+
     UNIT_TEST(test_http_client_disconnect_success_v1);
     UNIT_TEST(test_http_client_disconnect_success_v2);
     UNIT_TEST(test_http_client_disconnect_fail);
-
-    UNIT_TEST(test_set_data_success);
-    UNIT_TEST(test_set_data_fail_big_data);
-    UNIT_TEST(test_set_data_fail_data_full);
-
-    UNIT_TEST(test_get_data_success);
-    UNIT_TEST(test_get_data_fail_no_data);
-
-    UNIT_TEST(test_do_request_success);
-    UNIT_TEST(test_do_request_fail_h2_send_response);
-    UNIT_TEST(test_do_request_path_not_found);
-    UNIT_TEST(test_do_request_no_resources);
 
     return UNITY_END();
 }
