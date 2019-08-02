@@ -355,15 +355,13 @@ int encode_literal_header_field_new_name(char *name_string, uint8_t name_huffman
  */
 int encode_literal_header_field_indexed_name(char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer)
 {
-    int pointer = 0;
-
     int rc = encode_string(value_string, encoded_buffer, value_huffman_bool);
 
     if (rc < 0) {
         ERROR("Error while trying to encode value in encode_literal_header_field_indexed_name");
         return -1;
     }
-    return pointer;
+    return rc;
 }
 
 /*

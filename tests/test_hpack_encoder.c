@@ -15,7 +15,7 @@ extern int encode_literal_header_field_new_name( char *name_string, uint8_t name
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
 extern int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer);
 
-        DEFINE_FFF_GLOBALS;
+DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
@@ -593,21 +593,49 @@ void test_hpack_encoder_encode(void)
     }
 }
 
-void test_encode_indexed_header_field(void){
-    int expected_encoding[] = {2,6,4};
-    char* names[] = {":method",":scheme",":path"};
-    char* values[] = {"GET","http","/"};
-    uint8_t encoded_buffer[] = {0,0};
-    int fake_return_seq_hpack_find_index[] = {2,6,4};
-    SET_RETURN_SEQ(hpack_tables_find_index,fake_return_seq_hpack_find_index,3);
+void test_encode_indexed_header_field(void)
+{
+    int expected_encoding[] = { 2, 6, 4 };
+    char *names[] = { ":method", ":scheme", ":path" };
+    char *values[] = { "GET", "http", "/" };
+    uint8_t encoded_buffer[] = { 0, 0 };
+    int fake_return_seq_hpack_find_index[] = { 2, 6, 4 };
+
+    SET_RETURN_SEQ(hpack_tables_find_index, fake_return_seq_hpack_find_index, 3);
     hpack_utils_find_prefix_size_fake.return_val = 7;
     hpack_utils_encoded_integer_size_fake.return_val = 1;
-    for(int i = 0; i < 3; i++){
+    for (int i = 0; i < 3; i++) {
         int rc = encode_indexed_header_field(NULL, names[i], values[i], encoded_buffer);
-        TEST_ASSERT_EQUAL(1,rc);
-        TEST_ASSERT_EQUAL(expected_encoding[i],encoded_buffer[0]);
+        TEST_ASSERT_EQUAL(1, rc);
+        TEST_ASSERT_EQUAL(expected_encoding[i], encoded_buffer[0]);
     }
 }
+void test_encode_literal_header_field_indexed_name(void)
+{
+    /*Test with no compression*/
+    uint8_t expected_encoded_buffer[] = { 0x0c, 0x2f, 0x73, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2f, 0x70, 0x61, 0x74, 0x68 };
+    int expected_len = 13;
+    uint8_t encoded_buffer[13];
+
+    memset(encoded_buffer, 0, 13);
+    char value_string[] = "/sample/path";
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    int rc = encode_literal_header_field_indexed_name(value_string, 0, encoded_buffer);
+    TEST_ASSERT_EQUAL(expected_len, 13);
+    for (int i = 0; i < expected_len; i++) {
+        TEST_ASSERT_EQUAL(expected_encoded_buffer[i], encoded_buffer[i]);
+    }
+    /*Test with compression*/
+    char value_string_huffman[] = "www.example.com";
+    memset(encoded_buffer, 0, 13);
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, strlen(value_string_huffman));
+    rc = encode_literal_header_field_indexed_name(value_string_huffman, 1, encoded_buffer);
+    TEST_ASSERT_EQUAL(13, rc);
+    for (int i = 0; i < rc; i++) {
+        TEST_ASSERT_EQUAL(encoded_wwwdotexampledotcom[i], encoded_buffer[i]);
+    }
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -628,6 +656,7 @@ int main(void)
  */
     UNIT_TEST(test_encode_literal_header_field_new_name);
     UNIT_TEST(test_encode_literal_header_field_new_name_error);
+    UNIT_TEST(test_encode_literal_header_field_indexed_name);
     UNIT_TEST(test_encode_indexed_header_field);
 
     return UNIT_TESTS_END();
