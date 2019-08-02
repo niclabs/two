@@ -329,14 +329,14 @@ void test_http_server_destroy_fail_sock_destroy(void)
 }
 
 
-void test_http_register_resource_success(void)
+void test_http_register_resource_success_v1(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
     hs.resource_list_size = 0;
 
     int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
+
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_EQUAL(1, hs.resource_list_size);
@@ -346,68 +346,70 @@ void test_http_register_resource_success(void)
 }
 
 
+void test_http_register_resource_success_v2(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+    hs.resource_list_size = 1;
+
+    strncpy(hs.resource_list[0].method, "GET", 8);
+    strncpy(hs.resource_list[0].path, "/index", HTTP_MAX_PATH_SIZE);
+
+    int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
+
+    TEST_ASSERT_EQUAL(0, res);
+
+    TEST_ASSERT_EQUAL(1, hs.resource_list_size);
+    TEST_ASSERT_EQUAL_STRING("GET", hs.resource_list[0].method);
+    TEST_ASSERT_EQUAL_STRING("/index", hs.resource_list[0].path);
+    TEST_ASSERT_EQUAL(&resource_handler, hs.resource_list[0].handler);
+}
+
+
+void test_http_register_resource_fail_invalid_input(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+    hs.resource_list_size = 0;
+
+    int res = http_server_register_resource(&hs, "GET", "/index", NULL);
+
+    TEST_ASSERT_EQUAL(-1, res);
+}
+
+
+void test_http_register_resource_fail_not_supported_method(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+    hs.resource_list_size = 0;
+
+    int res = http_server_register_resource(&hs, "POST", "/index", &resource_handler);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "Method POST not implemented yet");
+}
+
+
+void test_http_register_resource_fail_invalid_path(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+    hs.resource_list_size = 0;
+
+    int res = http_server_register_resource(&hs, "GET", "index", &resource_handler);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "Path index does not have a valid format");
+}
+
 void test_http_register_resource_fail_list_full(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
-
     hs.resource_list_size = HTTP_MAX_RESOURCES;
+
     int res = http_server_register_resource(&hs, "GET", "/index", &resource_handler);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, res, "Register resource should return an error if resource list is full");
-}
-
-
-
-void test_http_client_connect_success(void)
-{
-    hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    reset_http_states(&hs);
-
-    sock_create_fake.return_val = 0;
-    sock_connect_fake.return_val = 0;
-    h2_client_init_connection_fake.return_val = 0;
-
-    int cc = http_client_connect(&hs, "::1", 8888);
-
-    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
-    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
-    TEST_ASSERT_EQUAL(1, h2_client_init_connection_fake.call_count);
-
-    TEST_ASSERT_EQUAL(0, cc);
-
-    TEST_ASSERT_EQUAL(1, hs.socket_state);
-    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(1, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.is_server);
-}
-
-
-void test_http_client_connect_fail_h2_client_init_connection(void)
-{
-    hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    reset_http_states(&hs);
-
-    sock_create_fake.return_val = 0;
-    sock_connect_fake.return_val = 0;
-    h2_client_init_connection_fake.return_val = -1;
-
-    int cc = http_client_connect(&hs, "::1", 8888);
-
-    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
-    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
-    TEST_ASSERT_EQUAL(1, h2_client_init_connection_fake.call_count);
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Problems sending client data");
-
-    TEST_ASSERT_EQUAL(1, hs.socket_state);
-    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
-    TEST_ASSERT_EQUAL(1, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.is_server);
 }
 
 
@@ -781,7 +783,11 @@ int main(void)
     UNIT_TEST(test_http_server_destroy_fail_not_server);
     UNIT_TEST(test_http_server_destroy_fail_sock_destroy);
 
-    UNIT_TEST(test_http_register_resource_success);
+    UNIT_TEST(test_http_register_resource_success_v1);
+    UNIT_TEST(test_http_register_resource_success_v2);
+    UNIT_TEST(test_http_register_resource_fail_invalid_input);
+    UNIT_TEST(test_http_register_resource_fail_not_supported_method);
+    UNIT_TEST(test_http_register_resource_fail_invalid_path);
     UNIT_TEST(test_http_register_resource_fail_list_full);
 
     UNIT_TEST(test_http_client_connect_success);
