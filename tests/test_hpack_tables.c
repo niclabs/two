@@ -47,8 +47,8 @@ void test_hpack_tables_static_find_entry_name_and_value(void)
      memset(name, 0, sizeof(name));
      memset(value, 0, sizeof(value));
      hpack_tables_static_find_entry_name_and_value(example_index[i], name, value);
-     TEST_ASSERT_EQUAL_STRING(name, expected_name[i]);
-     TEST_ASSERT_EQUAL_STRING(value, expected_value[i]);
+     TEST_ASSERT_EQUAL_STRING(expected_name[i], name);
+     TEST_ASSERT_EQUAL_STRING(expected_value[i], value);
    }
 }
 void test_hpack_tables_static_find_entry_name(void)
@@ -61,7 +61,7 @@ void test_hpack_tables_static_find_entry_name(void)
   for(int i=0; i<5; i++){
     memset(name, 0, sizeof(name));
     hpack_tables_static_find_entry_name(example_index[i], name);
-    TEST_ASSERT_EQUAL_STRING(name, expected_name[i]);
+    TEST_ASSERT_EQUAL_STRING(expected_name[i], name);
   }
 }
 
