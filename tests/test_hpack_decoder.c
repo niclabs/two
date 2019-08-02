@@ -28,9 +28,9 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
 FAKE_VALUE_FUNC(uint32_t, hpack_tables_get_table_length, uint32_t);
 FAKE_VALUE_FUNC(int, hpack_tables_init_dynamic_table, hpack_dynamic_table_t *, uint32_t, header_pair_t * );
-FAKE_VALUE_FUNC(int, hpack_tables_dynamic_table_add_entry,hpack_dynamic_table_t *, char *, char *);
-FAKE_VALUE_FUNC(int, hpack_tables_find_entry_name_and_value,hpack_dynamic_table_t *, uint32_t , char *, char *);
-FAKE_VALUE_FUNC(int, hpack_tables_find_entry_name,hpack_dynamic_table_t *, uint32_t , char *);
+FAKE_VALUE_FUNC(int, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
+FAKE_VALUE_FUNC(int, hpack_tables_find_entry_name_and_value, hpack_dynamic_table_t *, uint32_t, char *, char *);
+FAKE_VALUE_FUNC(int, hpack_tables_find_entry_name, hpack_dynamic_table_t *, uint32_t, char *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)                     \
@@ -166,13 +166,21 @@ int hpack_tables_find_name_return_age(hpack_dynamic_table_t *dynamic_table, uint
     strncpy(name, age, strlen(age));
     return 0;
 }
-int hpack_tables_find_name_return_new_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name){
+int hpack_tables_find_name_return_new_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+{
     (void)index;
     char age[] = "new_name";
     strncpy(name, age, strlen(age));
     return 0;
 }
 
+int hpack_tables_find_entry_name_and_value_return_method_get(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
+{
+    TEST_ASSERT_EQUAL(2, index);
+    strncpy(name, ":method", 7);
+    strncpy(name, "GET", 3);
+    return 0;
+}
 
 int headers_add_check_inputs(headers_t *headers, const char *name, const char *value)
 {
@@ -598,6 +606,28 @@ void test_decode_integer(void)
     TEST_ASSERT_EQUAL(1337, rc);
 }
 
+void test_hpack_decoder_decode_indexed_header_field(void)
+{
+    char expected_name[] = ":method";
+    char expected_value[] = "GET";
+    char name[strlen(expected_name)];
+    char value[strlen(expected_name)];
+
+    memset(name, 0, strlen(expected_name));
+    memset(name, 0, strlen(expected_value));
+    uint8_t encoded_buffer[] = {0x82};
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    hpack_utils_find_prefix_size_fake.return_val = 7;
+    hpack_tables_find_entry_name_and_value_fake.custom_fake = hpack_tables_find_entry_name_and_value_return_method_get;
+    int rc = hpack_decoder_decode_indexed_header_field(NULL, encoded_buffer, name, value);
+    TEST_ASSERT_EQUAL(1, rc);
+    TEST_ASSERT_EQUAL_STRING(expected_name, name);
+    TEST_ASSERT_EQUAL_STRING(expected_value, value);
+    /*Test error*/
+    hpack_tables_find_entry_name_and_value_fake.return_val = -1;
+    rc = hpack_decoder_decode_indexed_header_field(NULL, encoded_buffer, name, value);
+    TEST_ASSERT_EQUAL(-1,rc);
+}
 int main(void)
 {
     UNIT_TESTS_BEGIN();
