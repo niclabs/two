@@ -33,9 +33,42 @@ void test_hpack_tables_find_index(void)
         TEST_ASSERT_EQUAL(expected_index[i],actual_index);
     }
 }
+
+void test_hpack_tables_static_find_entry_name_and_value(void)
+{
+   char *expected_name[] = {":authority",":method",":method","accept-encoding",":status","content-range","if-unmodified-since"};
+   char *expected_value[] = {"","POST","GET","gzip, deflate","404","",""};
+   uint32_t example_index[] = {1,3,2,16,13,30,43};
+
+   char name[30];
+   char value[20];
+
+   for(int i=0; i<7; i++){
+     memset(name, 0, sizeof(name));
+     memset(value, 0, sizeof(value));
+     hpack_tables_static_find_entry_name_and_value(example_index[i], name, value);
+     TEST_ASSERT_EQUAL_STRING(name, expected_name[i]);
+     TEST_ASSERT_EQUAL_STRING(value, expected_value[i]);
+   }
+}
+void test_hpack_tables_static_find_entry_name(void)
+{
+  char *expected_name[] = {":path","age","accept","allow","cookie"};
+  uint32_t example_index[] = {5,21,19,22,32};
+
+  char name[30];
+
+  for(int i=0; i<5; i++){
+    memset(name, 0, sizeof(name));
+    hpack_tables_static_find_entry_name(example_index[i], name);
+    TEST_ASSERT_EQUAL_STRING(name, expected_name[i]);
+  }
+}
 int main(void)
 {
     UNITY_BEGIN();
     UNIT_TEST(test_hpack_tables_find_index);
+    UNIT_TEST(test_hpack_tables_static_find_entry_name_and_value);
+    UNIT_TEST(test_hpack_tables_static_find_entry_name);
     return UNITY_END();
 }
