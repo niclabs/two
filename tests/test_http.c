@@ -254,7 +254,6 @@ void test_http_server_start_fail_sock_accept(void)
 void test_http_server_destroy_success(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
     hs.socket_state = 1;
     hs.server_socket_state = 1;
@@ -273,10 +272,21 @@ void test_http_server_destroy_success(void)
 }
 
 
+void test_http_server_destroy_fail_not_server(void)
+{
+    hstates_t hs;
+    reset_http_states(&hs);
+    hs.server_socket_state = 0;
+
+    int d = http_server_destroy(&hs);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Server not found");
+}
+
+
 void test_http_server_destroy_success_without_client(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
     hs.server_socket_state = 1;
     hs.socket_state = 1;
@@ -297,23 +307,9 @@ void test_http_server_destroy_success_without_client(void)
 }
 
 
-void test_http_server_destroy_fail_not_server(void)
-{
-    hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    reset_http_states(&hs);
-    hs.server_socket_state = 0;
-
-    int d = http_server_destroy(&hs);
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Server not found");
-}
-
-
 void test_http_server_destroy_fail_sock_destroy(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
     hs.socket_state = 1;
     hs.server_socket_state = 1;
