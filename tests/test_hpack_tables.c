@@ -4,6 +4,12 @@
 
 extern int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
 extern const hpack_static_table_t hpack_static_table;
+extern int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value);
+extern int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name);
+extern int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
+extern int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t* table);
+extern int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
+extern int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
 
 DEFINE_FFF_GLOBALS;
 
