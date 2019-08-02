@@ -25,9 +25,8 @@ typedef struct hpack_dynamic_table {
     header_pair_t *table;
 } hpack_dynamic_table_t;
 
-int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value);
-int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name);
-uint32_t hpack_tables_header_pair_size(header_pair_t header_pair);
+
+
 int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
 int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size);
