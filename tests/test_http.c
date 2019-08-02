@@ -605,12 +605,97 @@ void test_send_client_request_fail_headers_set(void)
 }
 
 
+void test_http_client_connect_success(void)
+{
+    hstates_t hs;
 
-    int hg = http_get(&hs, "index", "example.org", "text", &rr);
+    sock_create_fake.return_val = 0;
+    sock_connect_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = 0;
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, hg, "Cannot send query");
+    int cc = http_client_connect(&hs, "::1", 8888);
+
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_client_init_connection_fake.call_count);
+
+    TEST_ASSERT_EQUAL(0, cc);
+
+    TEST_ASSERT_EQUAL(0, hs.is_server);
+    TEST_ASSERT_EQUAL(1, hs.socket_state);
+    TEST_ASSERT_EQUAL(1, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, strncmp((char *)hs.host, "::1", HTTP_MAX_HOST_SIZE));
+    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
 }
-*/
+
+
+void test_http_client_connect_fail_h2_client_init_connection(void)
+{
+    hstates_t hs;
+
+    sock_create_fake.return_val = 0;
+    sock_connect_fake.return_val = 0;
+    h2_client_init_connection_fake.return_val = -1;
+
+    int cc = http_client_connect(&hs, "::1", 8888);
+
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_client_init_connection_fake.call_count);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Problems sending client data");
+
+    TEST_ASSERT_EQUAL(1, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
+    TEST_ASSERT_EQUAL(1, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.is_server);
+}
+
+
+void test_http_client_connect_fail_sock_connect(void)
+{
+    hstates_t hs;
+
+    sock_create_fake.return_val = 0;
+    sock_connect_fake.return_val = -1;
+    sock_destroy_fake.return_val = 0;
+
+    int cc = http_client_connect(&hs, "::1", 8888);
+
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
+    TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client connection");
+
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.is_server);
+}
+
+
+void test_http_client_connect_fail_sock_create(void)
+{
+    hstates_t hs;
+
+    sock_create_fake.return_val = -1;
+
+    int cc = http_client_connect(&hs, "::1", 8888);
+
+    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client creation");
+
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
+    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.is_server);
+}
+
 
 void test_http_client_disconnect_success_v1(void)
 {
