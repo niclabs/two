@@ -70,6 +70,26 @@ void test_flow_control_receive_data_error(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (length > window_available)");
   TEST_ASSERT_MESSAGE(st.h2s.incoming_window.window_used == 0, "Size of window used must be 0");
 }
+
+void test_flow_control_send_window_update(void){
+  hstates_t st;
+  st.h2s.incoming_window.window_size = 2888;
+  st.h2s.incoming_window.window_used = 30;
+  int rc = flow_control_send_window_update(&st, 10);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.incoming_window.window_used == 20, "Size of window used must be 20");
+  rc = flow_control_send_window_update(&st, 20);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(st.h2s.incoming_window.window_used == 0, "Size of window used must be 0");
+}
+
+void test_flow_control_send_window_update_error(void){
+  hstates_t st;
+  st.h2s.incoming_window.window_size = 2888;
+  st.h2s.incoming_window.window_used = 0;
+  int rc = flow_control_send_window_update(&st, 20);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1, (window_size_increment > window_used)");
+}
 int main(void)
 {
   UNIT_TESTS_BEGIN();
@@ -78,5 +98,7 @@ int main(void)
   UNIT_TEST(test_decrease_window_used);
   UNIT_TEST(test_flow_control_receive_data);
   UNIT_TEST(test_flow_control_receive_data_error);
+  UNIT_TEST(test_flow_control_send_window_update);
+  UNIT_TEST(test_flow_control_send_window_update_error);
   return UNIT_TESTS_END();
 }
