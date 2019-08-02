@@ -331,11 +331,12 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
  * Output:
  *      0 if success, -1 in case of Error
  */
-int hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char* name, char* value)
+int hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
-    if(0==1){ // TODO CASE entry doesnt exist
-      return -1;
+
+    if (0 == 1) { // TODO CASE entry doesnt exist
+        return -1;
     }
     header_pair_t result = dynamic_table->table[table_index];
     strncpy(name, result.name, strlen(result.name));
@@ -353,11 +354,12 @@ int hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynami
  * Output:
  *      0 if success, -1 in case of Error
  */
-int hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char* name)
+int hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
-    if(0==1){ // TODO CASE entry doesnt exist
-      return -1;
+
+    if (0 == 1) { // TODO CASE entry doesnt exist
+        return -1;
     }
     header_pair_t result = dynamic_table->table[table_index];
     strncpy(name, result.name, strlen(result.name));
@@ -516,9 +518,9 @@ int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table,
         }
 
         int rc = hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
-        if (rc < 0){
-          ERROR("The entry doesn't exist in dynamic table");
-          return -1;
+        if (rc < 0) {
+            ERROR("The entry doesn't exist in dynamic table");
+            return -1;
         }
     }
     else {
@@ -549,9 +551,9 @@ int hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t 
             return -1;
         }
         int rc = hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
-        if(rc < 0){
-          ERROR("The entry doesn't exist in dynamic table");
-          return -1;
+        if (rc < 0) {
+            ERROR("The entry doesn't exist in dynamic table");
+            return -1;
         }
     }
     else {
