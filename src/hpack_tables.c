@@ -581,6 +581,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
  */
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
+    //TODO Check if name and value has to match or only name!!
 
     //Search first in static table
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
