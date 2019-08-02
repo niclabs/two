@@ -288,7 +288,7 @@ const hpack_static_table_t hpack_static_table = {
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  */
-int8_t hpack_tables_static_find_name_and_value(uint8_t index, char *name, char *value)
+int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value)
 {
     index--; //because static table begins at index 1
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
@@ -309,7 +309,7 @@ int8_t hpack_tables_static_find_name_and_value(uint8_t index, char *name, char *
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  */
-int8_t hpack_tables_static_find_name(uint8_t index, char *name)
+int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
 {
     index--;
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
