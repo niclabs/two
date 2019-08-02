@@ -21,6 +21,7 @@ extern int do_request(hstates_t *hs, char * method, char * uri);
 extern void reset_http_states(hstates_t *hs);
 extern int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 extern uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
+extern int receive_server_response(hstates_t *hs);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
@@ -79,7 +80,19 @@ int headers_init_custom_fake(headers_t *headers, header_t *hlist, int maxlen)
 
 int h2_receive_frame_custom_fake(hstates_t *hs)
 {
-    hs->keep_receiving = 1;
+    if (h2_receive_frame_fake.call_count == 1) {
+        hs->keep_receiving = 1;
+    }
+    if (h2_receive_frame_fake.call_count == 2) {
+        hs->keep_receiving = 0;
+        hs->hd_lists.data_in_size = 5;
+    }
+    return 0;
+}
+
+
+int h2_receive_frame_custom_fake_connection_state(hstates_t *hs)
+{
     hs->connection_state = 0;
     return 1;
 }
@@ -413,51 +426,66 @@ void test_http_register_resource_fail_list_full(void)
 }
 
 
-void test_http_client_connect_fail_sock_connect(void)
-{
-    hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
-    reset_http_states(&hs);
+void test_receive_server_response_success(void) {
+  hstates_t hs;
+  reset_http_states(&hs);
+  hs.connection_state = 1;
 
-    sock_create_fake.return_val = 0;
-    sock_connect_fake.return_val = -1;
-    sock_destroy_fake.return_val = 0;
+  h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
 
-    int cc = http_client_connect(&hs, "::1", 8888);
+  int rsr = receive_server_response(&hs);
 
-    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
-    TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
-    TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
+  TEST_ASSERT_EQUAL(2, h2_receive_frame_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client connection");
+  TEST_ASSERT_EQUAL(0, rsr);
 
-    TEST_ASSERT_EQUAL(0, hs.socket_state);
-    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
-    TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.is_server);
+  TEST_ASSERT_EQUAL(1, hs.connection_state);
+  TEST_ASSERT_EQUAL(0, hs.keep_receiving);
+  TEST_ASSERT_EQUAL(5, hs.hd_lists.data_in_size);
 }
 
 
-void test_http_client_connect_fail_sock_create(void)
+void test_receive_server_response_fail_h2_receive_frame(void)
 {
     hstates_t hs;
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
+    hs.connection_state = 1;
+    hs.hd_lists.data_in_size = 0;
 
-    sock_create_fake.return_val = -1;
+    int returnVals[2] = { 0, -1 };
+    SET_RETURN_SEQ(h2_receive_frame, returnVals, 2);
 
-    int cc = http_client_connect(&hs, "::1", 8888);
+    int rsr = receive_server_response(&hs);
 
-    TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
+    TEST_ASSERT_EQUAL(2, h2_receive_frame_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client creation");
+    TEST_ASSERT_EQUAL(-1, rsr);
 
-    TEST_ASSERT_EQUAL(0, hs.socket_state);
-    TEST_ASSERT_EQUAL(0, hs.server_socket_state);
-    TEST_ASSERT_EQUAL(0, hs.headers_in.count);
+    TEST_ASSERT_EQUAL(1, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.keep_receiving);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
+}
+
+
+void test_receive_server_response_fail_connection_state(void)
+{
+    hstates_t hs;
+
+    reset_http_states(&hs);
+    hs.connection_state = 1;
+    hs.hd_lists.data_in_size = 0;
+
+    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake_connection_state;
+
+    int rsr = receive_server_response(&hs);
+
+    TEST_ASSERT_EQUAL(1, h2_receive_frame_fake.call_count);
+
+    TEST_ASSERT_EQUAL(-1, rsr);
+
     TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.is_server);
+    TEST_ASSERT_EQUAL(0, hs.keep_receiving);
+    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
 }
 
 /*
@@ -789,6 +817,10 @@ int main(void)
     UNIT_TEST(test_http_register_resource_fail_not_supported_method);
     UNIT_TEST(test_http_register_resource_fail_invalid_path);
     UNIT_TEST(test_http_register_resource_fail_list_full);
+
+    UNIT_TEST(test_receive_server_response_success);
+    UNIT_TEST(test_receive_server_response_fail_h2_receive_frame);
+    UNIT_TEST(test_receive_server_response_fail_connection_state);
 
     UNIT_TEST(test_http_client_connect_success);
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
