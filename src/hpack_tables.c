@@ -508,29 +508,28 @@ int hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, c
  */
 int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
-    const char *table_name; //add const before char to resolve compilation warnings
-    const char *table_value;
 
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             ERROR("Dynamic table not initialized ");
             return -1;
         }
-        header_pair_t entry = hpack_tables_dynamic_find_entry(dynamic_table, index);
-        table_name = entry.name;
-        table_value = entry.value;
+
+        int rc = hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
+        if (rc < 0){
+          ERROR("The entry doesn't exist in dynamic table");
+          return -1;
+        }
     }
     else {
-        int8_t rc = hpack_tables_static_find_name_and_value(index, name, value);
+        int8_t rc = hpack_tables_static_find_entry_name_and_value(index, name, value);
         if (rc < 0) {
             ERROR("The index was greater than the size of the static table");
             return -1;
         }
-        return 0;
     }
-    strncpy(name, table_name, strlen(table_name));
-    strncpy(value, table_value, strlen(table_value));
     return 0;
+}
 
 /*
  * Function: find_entry_name
