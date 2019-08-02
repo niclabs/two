@@ -103,6 +103,10 @@ int resource_handler(char * method, char * uri, uint8_t * response, int maxlen) 
     return 16;
 }
 
+
+/************************************
+* TESTS
+************************************/
 void test_set_data_success(void)
 {
     headers_data_lists_t hd;
