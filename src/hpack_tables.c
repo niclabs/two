@@ -380,7 +380,7 @@ uint32_t hpack_tables_header_pair_size(header_pair_t header_pair)
 /*
  * Function: hpack_tables_dynamic_table_length
  * Input:
- *      -> *dynamic_table: //TODO
+ *      -> *dynamic_table: Dynamic table to search
  * Output:
  *      returns the actual table length which is equal to the number of entries in the table_length
  */
@@ -397,7 +397,7 @@ uint32_t hpack_tables_dynamic_table_length(hpack_dynamic_table_t *dynamic_table)
 /*
  * Function: hpack_tables_dynamic_table_size
  * Input:
- *      -> *dynamic_table: //TODO
+ *      -> *dynamic_table: Dynamic table to search
  * Output:
  *      returns the size of the table, this is the sum of each header pair's size
  */
@@ -416,9 +416,9 @@ uint32_t hpack_tables_dynamic_table_size(hpack_dynamic_table_t *dynamic_table)
  * Function: hpack_tables_dynamic_table_resize
  * Makes an update of the size of the dynamic table_length
  * Input:
- *      -> *dynamic_table: //TODO
- *      -> new_max_size: //TODO
- *      -> dynamic_table_max_size: //TODO
+ *      -> *dynamic_table: Dynamic table to search
+ *      -> new_max_size: new virtual max size of the table, setted in the header of resize
+ *      -> dynamic_table_max_size: Max size in bytes of dynamic table setted in SETTINGS
  * Output:
  *      return 0 if the update is succesful, or -1 otherwise
  */
@@ -469,11 +469,11 @@ int hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint
  * Function: dynamic_table_add_entry
  * Add an header pair entry in the table
  * Input:
- *      -> *dynamic_table: //TODO
- *      -> *name: //TODO
- *      -> *value: //TODO
+ *      -> *dynamic_table: Dynamic table to search
+ *      -> *name: New entry name added
+ *      -> *value: New entry value added
  * Output:
- *      //TODO
+ *      0 if success, -1 otherwise
  */
 //header pair is a name string and a value string
 int hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
@@ -602,12 +602,12 @@ uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
 
 /*
  * Function: hpack_init_dynamic_table
- * //TODO
+ * Initialize dynamic_table for protocol uses, but it requires a previous header_pair_t table initialization
  * Input:
- *      -> *dynamic_table: //TODO
- *      -> dynamic_table_max_size: //TODO
+ *      -> *dynamic_table: Dynamic table to search
+ *      -> dynamic_table_max_size: Max size in bytes of new dynamic_table, it is set in HTTP SETTING-
  * Output:
- *      //TODO
+ *     0 if success
  */
 int hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t *table)
 {
