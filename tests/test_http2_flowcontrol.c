@@ -34,10 +34,26 @@ void test_increase_window_used(void){
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(window.window_used == 310, "Size of window used must be 310");
 }
+
+void test_decrease_window_used(void){
+  h2_window_manager_t window;
+  window.window_used = 0;
+  int rc = decrease_window_used(&window, 0);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(window.window_used == 0, "Size of window used must be 0");
+  window.window_used = 30;
+  rc = decrease_window_used(&window, 10);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(window.window_used == 20, "Size of window used must be 20");
+  rc = decrease_window_used(&window, 0);
+  TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+  TEST_ASSERT_MESSAGE(window.window_used == 20, "Size of window used must be 20");
+}
 int main(void)
 {
   UNIT_TESTS_BEGIN();
   UNIT_TEST(test_get_window_available_size);
   UNIT_TEST(test_increase_window_used);
+  UNIT_TEST(test_decrease_window_used);
   return UNIT_TESTS_END();
 }
