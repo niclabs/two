@@ -41,8 +41,8 @@ void test_hpack_tables_static_find_entry_name_and_value(void)
    char *expected_value[] = {"","POST","GET","gzip, deflate","404","",""};
    uint32_t example_index[] = {1,3,2,16,13,30,43};
 
-   char name[30];
-   char value[20];
+   char name[MAX_HEADER_NAME_LEN];
+   char value[MAX_HEADER_VALUE_LEN];
 
    for(int i=0; i<7; i++){
      memset(name, 0, sizeof(name));
@@ -57,7 +57,7 @@ void test_hpack_tables_static_find_entry_name(void)
   char *expected_name[] = {":path","age","accept","allow","cookie"};
   uint32_t example_index[] = {5,21,19,22,32};
 
-  char name[30];
+  char name[MAX_HEADER_NAME_LEN];
 
   for(int i=0; i<5; i++){
     memset(name, 0, sizeof(name));
@@ -77,8 +77,8 @@ void test_hpack_tables_dynamic_add_find_entry(void)
   char *new_names[] = {"hola","sol3","bien1"};
   char *new_values[] = {"chao","luna4","mal2"};
 
-  char name[30];
-  char value[20];
+  char name[MAX_HEADER_NAME_LEN];
+  char value[MAX_HEADER_VALUE_LEN];
 
   TEST_ASSERT_EQUAL(0,dynamic_table.first);
   TEST_ASSERT_EQUAL(0,dynamic_table.next);
@@ -150,8 +150,8 @@ void test_hpack_tables_find_entry(void)
   char *new_name = "hola";
   char *new_value = "chao";
 
-  char name[30];
-  char value[20];
+  char name[MAX_HEADER_NAME_LEN];
+  char value[MAX_HEADER_VALUE_LEN];
 
   hpack_tables_dynamic_table_add_entry(&dynamic_table, new_name, new_value);
 
