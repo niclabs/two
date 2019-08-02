@@ -33,6 +33,28 @@ void test_hpack_tables_find_index(void)
         int actual_index = hpack_tables_find_index(NULL, names[i],values[i]);
         TEST_ASSERT_EQUAL(expected_index[i],actual_index);
     }
+
+    //Now little test with dynamic table_length
+    uint32_t dynamic_table_max_size = 500;
+    header_pair_t table[hpack_tables_get_table_length(dynamic_table_max_size)];
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size, table);
+
+    char *new_names[] = {"hola","sol3","bien1"};
+    char *new_values[] = {"chao","luna4","mal2"};
+    int expected_index_dynamic[] = {64, 63, 62};
+
+    //added to dynamic table
+    for(int i = 0; i < 3; i++){
+      hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[i], new_values[i]);
+    }
+
+    for(int i = 0; i < 3; i++){
+      int actual_index = hpack_tables_find_index(&dynamic_table, new_names[i], new_values[i]);
+      TEST_ASSERT_EQUAL(expected_index_dynamic[i], actual_index);
+    }
+
 }
 
 void test_hpack_tables_static_find_entry_name_and_value(void)
