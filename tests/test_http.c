@@ -91,6 +91,20 @@ int h2_receive_frame_custom_fake(hstates_t *hs)
     return 0;
 }
 
+int h2_receive_frame_custom_fake_new_headers(hstates_t *hs)
+{
+    if (h2_receive_frame_fake.call_count == 1) {
+        hs->keep_receiving = 0;
+        hs->new_headers = 1;
+    }
+    if (h2_receive_frame_fake.call_count == 2) {
+        hs->connection_state = 0;
+        return -1;
+    }
+
+    return 0;
+}
+
 
 int h2_receive_frame_custom_fake_connection_state(hstates_t *hs)
 {
@@ -353,34 +367,37 @@ void test_http_server_create_fail_sock_create(void)
 void test_http_server_start_success(void)
 {
     hstates_t hs;
-
-    headers_init_fake.custom_fake = headers_init_custom_fake;
     reset_http_states(&hs);
-
-
     hs.server_socket_state = 1;
     hs.is_server = 1;
+    hs.resource_list_size = 0;
 
-    sock_accept_fake.return_val = 0;
+    h2_server_init_connection_fake.return_val = 0;
     sock_destroy_fake.return_val = -1;
+    headers_set_fake.return_val = 0;
+    h2_send_response_fake.return_val = 0;
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake_new_headers;
 
-    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
+    int returnVals1[2] = { 0, -1 };
+    SET_RETURN_SEQ(sock_accept, returnVals1, 2);
+    char *returnVals2[2] = { "GET", "/index" };
+    SET_RETURN_SEQ(headers_get, returnVals2, 2);
 
-    int returnVals[2] = { 0, -1 };
-    SET_RETURN_SEQ(h2_server_init_connection, returnVals, 2);
-
-    int is = http_server_start(&hs);
+    int ss = http_server_start(&hs);
 
     TEST_ASSERT_EQUAL(2, sock_accept_fake.call_count);
-    TEST_ASSERT_EQUAL(2, h2_server_init_connection_fake.call_count);
-    TEST_ASSERT_EQUAL(1, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_server_init_connection_fake.call_count);
+    TEST_ASSERT_EQUAL(2, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(3, headers_init_fake.call_count);
+    TEST_ASSERT_EQUAL(2, headers_get_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, ss, "Could not perform HTTP/2 initialization");
 
-    TEST_ASSERT_EQUAL(1, hs.keep_receiving);
+    TEST_ASSERT_EQUAL(0, hs.keep_receiving);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(1, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.new_headers);
 }
 
@@ -935,7 +952,7 @@ int main(void)
     UNIT_TEST(test_http_server_create_fail_sock_listen);
     UNIT_TEST(test_http_server_create_fail_sock_create);
 
-    //UNIT_TEST(test_http_server_start_success);
+    UNIT_TEST(test_http_server_start_success);
     UNIT_TEST(test_http_server_start_fail_h2_server_init_connection);
     UNIT_TEST(test_http_server_start_fail_sock_accept);
 
