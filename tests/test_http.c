@@ -22,6 +22,7 @@ extern void reset_http_states(hstates_t *hs);
 extern int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
 extern uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
 extern int receive_server_response(hstates_t *hs);
+extern int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
@@ -488,91 +489,122 @@ void test_receive_server_response_fail_connection_state(void)
     TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
 }
 
-/*
-void test_http_get_success()
+
+void test_send_client_request_success(void)
 {
     hstates_t hs;
-    response_received_type_t rr;
 
     reset_http_states(&hs);
     hs.connection_state = 1;
+    hs.hd_lists.data_in_size = 8;
     hs.keep_receiving = 0;
-    hs.new_headers = 1;
+    uint8_t *buf = (uint8_t *)"hola";
+    memcpy(hs.hd_lists.data_in, buf, 8);
 
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_set_fake.return_val = 0;
     h2_send_request_fake.return_val = 0;
     h2_receive_frame_fake.return_val = 0;
+    headers_get_fake.return_val = "200";
 
-    int hg = http_get(&hs, "index", "example.org", "text", &rr);
+    uint8_t *res = (uint8_t *)malloc(5);
+    size_t size_init = sizeof(res);
+    size_t size_end = sizeof(res);
 
-    TEST_ASSERT_EQUAL(0, hg);
+    int scr = send_client_request(&hs, "GET", "/index", res, &size_end);
 
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].name, ":path", strlen(":path")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].value, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].name, "host", strlen("host")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].value, "example.org", strlen("example.org")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].name, "accept", strlen("accept")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].value, "text", strlen("text")));
+    TEST_ASSERT_EQUAL(2, headers_init_fake.call_count);
+    TEST_ASSERT_EQUAL(4, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_send_request_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, headers_get_fake.call_count);
+
+    TEST_ASSERT_EQUAL(200, scr);
+
+    TEST_ASSERT_EQUAL((int)size_init, (int)size_end);
+
+    free(res);
 }
 
 
-void test_http_get_fail()
+void test_send_client_request_fail_receive_server_response(void)
 {
     hstates_t hs;
-    response_received_type_t rr;
 
     reset_http_states(&hs);
-    hs.connection_state = 1;
+    hs.connection_state = 0;
+    hs.hd_lists.data_in_size = 0;
     hs.keep_receiving = 0;
-    hs.new_headers = 1;
 
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_set_fake.return_val = 0;
     h2_send_request_fake.return_val = 0;
-    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
 
-    int hg = http_get(&hs, "index", "example.org", "text", &rr);
+    uint8_t *res = (uint8_t *)malloc(5);
+    size_t size = sizeof(res);
 
-    TEST_ASSERT_EQUAL(-1, hg);
+    int scr = send_client_request(&hs, "GET", "/index", res, &size);
 
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].name, ":path", strlen(":path")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].value, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].name, "host", strlen("host")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].value, "example.org", strlen("example.org")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].name, "accept", strlen("accept")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].value, "text", strlen("text")));
+    TEST_ASSERT_EQUAL(2, headers_init_fake.call_count);
+    TEST_ASSERT_EQUAL(4, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_send_request_fake.call_count);
+
+    TEST_ASSERT_EQUAL(-1, scr);
+
+    free(res);
 }
 
 
-void test_http_get_fail_h2_send_request()
+void test_send_client_request_fail_h2_send_request(void)
 {
     hstates_t hs;
-    response_received_type_t rr;
 
     reset_http_states(&hs);
+    hs.connection_state = 0;
+    hs.hd_lists.data_in_size = 0;
+    hs.keep_receiving = 0;
 
+    headers_set_fake.return_val = 0;
     h2_send_request_fake.return_val = -1;
 
-    int hg = http_get(&hs, "index", "example.org", "text", &rr);
+    uint8_t *res = (uint8_t *)malloc(5);
+    size_t size = sizeof(res);
 
-    TEST_ASSERT_EQUAL(-1, hg);
+    int scr = send_client_request(&hs, "GET", "/index", res, &size);
 
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].name, ":path", strlen(":path")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[2].value, "index", strlen("index")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].name, "host", strlen("host")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[3].value, "example.org", strlen("example.org")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].name, "accept", strlen("accept")));
-    TEST_ASSERT_EQUAL(0, strncmp(hs.hd_lists.header_list_out[4].value, "text", strlen("text")));
+    TEST_ASSERT_EQUAL(4, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_send_request_fake.call_count);
+
+    TEST_ASSERT_EQUAL(-1, scr);
+
+    free(res);
 }
 
 
-void test_http_get_fail_headers_list_full()
+void test_send_client_request_fail_headers_set(void)
 {
     hstates_t hs;
-    response_received_type_t rr;
 
     reset_http_states(&hs);
-    hs.hd_lists.header_list_count_in = (uint8_t)256;
-    hs.hd_lists.header_list_count_out = (uint8_t)256;
+    hs.connection_state = 0;
+    hs.hd_lists.data_in_size = 0;
+    hs.keep_receiving = 0;
 
-    h2_send_request_fake.return_val = -1;
+    headers_set_fake.return_val = -1;
+
+    uint8_t *res = (uint8_t *)malloc(5);
+    size_t size = sizeof(res);
+
+    int scr = send_client_request(&hs, "GET", "/index", res, &size);
+
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+
+    TEST_ASSERT_EQUAL(-1, scr);
+
+    free(res);
+}
+
+
 
     int hg = http_get(&hs, "index", "example.org", "text", &rr);
 
@@ -821,6 +853,11 @@ int main(void)
     UNIT_TEST(test_receive_server_response_success);
     UNIT_TEST(test_receive_server_response_fail_h2_receive_frame);
     UNIT_TEST(test_receive_server_response_fail_connection_state);
+
+    UNIT_TEST(test_send_client_request_success);
+    UNIT_TEST(test_send_client_request_fail_receive_server_response);
+    UNIT_TEST(test_send_client_request_fail_h2_send_request);
+    UNIT_TEST(test_send_client_request_fail_headers_set);
 
     UNIT_TEST(test_http_client_connect_success);
     UNIT_TEST(test_http_client_connect_fail_h2_client_init_connection);
