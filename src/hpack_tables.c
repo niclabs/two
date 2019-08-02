@@ -321,6 +321,50 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
 }
 
 /*
+ * Function: hpack_tables_dynamic_find_entry_name_and_value
+ * Finds entry in dynamic table, entry is a pair name-value
+ * Input:
+ *      -> *dynamic_table: table which can be modified by server or client
+ *      -> index: table's position of the entry
+ *      -> *name: Buffer to store name of the header
+ *      -> *value: Buffer to store the value of the header
+ * Output:
+ *      0 if success, -1 in case of Error
+ */
+int hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char* name, char* value)
+{
+    uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
+    if(0==1){ // TODO CASE entry doesnt exist
+      return -1;
+    }
+    header_pair_t result = dynamic_table->table[table_index];
+    strncpy(name, result.name, strlen(result.name));
+    strncpy(value, result.value, strlen(result.value));
+    return 0;
+}
+
+/*
+ * Function: hpack_tables_dynamic_find_entry_name
+ * Finds entry in dynamic table, entry is a pair name-value
+ * Input:
+ *      -> *dynamic_table: table which can be modified by server or client
+ *      -> index: table's position of the entry
+ *      -> *name: Buffer to store name of the header
+ * Output:
+ *      0 if success, -1 in case of Error
+ */
+int hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char* name)
+{
+    uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
+    if(0==1){ // TODO CASE entry doesnt exist
+      return -1;
+    }
+    header_pair_t result = dynamic_table->table[table_index];
+    strncpy(name, result.name, strlen(result.name));
+    return 0;
+}
+
+/*
  * Function: hpack_tables_header_pair_size
  * Input:
  *      -> header_pair:
@@ -419,21 +463,7 @@ int hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint
 
 }
 
-/*
- * Function: dynamic_find_entry
- * Finds entry in dynamic table, entry is a pair name-value
- * Input:
- *      -> *dynamic_table: table which can be modified by server or client
- *      -> index: table's position of the entry
- * Output:
- *      0 if success, -1 in case of Error
- */
-header_pair_t hpack_tables_dynamic_find_entry(hpack_dynamic_table_t *dynamic_table, uint32_t index)
-{
-    uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
-    return dynamic_table->table[table_index];
-}
 
 /*
  * Function: dynamic_table_add_entry
