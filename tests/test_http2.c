@@ -1877,6 +1877,23 @@ void test_change_stream_state_end_stream_flag(void){
 
 }
 
+void test_change_stream_state_end_stream_flag_errors(void){
+  hstates_t st;
+  st.h2s.received_goaway = 1;
+  int create_goaway_return[1] = {-1};
+  SET_RETURN_SEQ(create_goaway_frame, create_goaway_return, 1);
+  st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+  int rc = change_stream_state_end_stream_flag(&st, 1); // sending
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_CLOSED, "Stream state must be STREAM_HALF_CLOSED_REMOTE");
+
+  st.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+  rc = change_stream_state_end_stream_flag(&st, 0); // receiving
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_CLOSED, "Stream state must be STREAM_HALF_CLOSED_LOCAL");
+
+}
+
 
 int main(void)
 {
@@ -1953,6 +1970,7 @@ int main(void)
     UNIT_TEST(test_send_goaway);
     UNIT_TEST(test_send_goaway_errors);
     UNIT_TEST(test_change_stream_state_end_stream_flag);
+    UNIT_TEST(test_change_stream_state_end_stream_flag_errors);
 
     //TODO:
     // h2_receive_frame
