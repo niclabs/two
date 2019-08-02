@@ -276,8 +276,7 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
     }
     else {
         //find entry in either static or dynamic table_length
-        int rc = hpack_tables_find_entry_name(dynamic_table, index, name);
-        if (rc == -1) {
+        if (hpack_tables_find_entry_name(dynamic_table, index, name) == -1) {
             ERROR("Error en find_entry ");
             return -1;
         }
