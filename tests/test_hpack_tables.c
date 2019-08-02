@@ -134,6 +134,41 @@ void test_hpack_tables_dynamic_add_find_entry(void)
   TEST_ASSERT_EQUAL_STRING(new_values[0], value);
 }
 
+void test_hpack_tables_find_entry(void)
+{
+  uint32_t dynamic_table_max_size = 500;
+  header_pair_t table[hpack_tables_get_table_length(dynamic_table_max_size)];
+  hpack_dynamic_table_t dynamic_table;
+
+  uint32_t example_index[] = {1,2,3,62,61};
+  char *expected_name[] = {":authority",":method",":method","hola","www-authenticate"};
+  char *expected_value[] = {"","GET","POST","chao",""};
+
+  hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size, table);
+
+  char *new_name = "hola";
+  char *new_value = "chao";
+
+  char name[30];
+  char value[20];
+
+  hpack_tables_dynamic_table_add_entry(&dynamic_table, new_name, new_value);
+
+  for(int i=0; i<5; i++){
+    memset(name, 0, sizeof(name));
+    memset(value, 0, sizeof(value));
+    hpack_tables_find_entry_name_and_value(&dynamic_table, example_index[i], name, value);
+    TEST_ASSERT_EQUAL_STRING(expected_name[i], name);
+    TEST_ASSERT_EQUAL_STRING(expected_value[i], value);
+  }
+  for(int i=0; i<5; i++){
+    memset(name, 0, sizeof(name));
+    hpack_tables_find_entry_name(&dynamic_table, example_index[i], name);
+    TEST_ASSERT_EQUAL_STRING(expected_name[i], name);
+  }
+}
+
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -141,5 +176,6 @@ int main(void)
     UNIT_TEST(test_hpack_tables_static_find_entry_name_and_value);
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_dynamic_add_find_entry);
+    UNIT_TEST(test_hpack_tables_find_entry);
     return UNITY_END();
 }
