@@ -592,8 +592,16 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
         }
     }
     //Then search in dynamic table
-    //TODO
-    (void)dynamic_table;
+    char tmp_name[MAX_HEADER_NAME_LEN];
+    char tmp_value[MAX_HEADER_VALUE_LEN];
+    for (uint8_t i=0; i < hpack_tables_dynamic_table_length(dynamic_table); i++){
+        hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, i+HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name, tmp_value);
+        if ((strncmp(tmp_name, name, strlen(name)) == 0) &&
+            (strncmp(tmp_value, value, strlen(value)) == 0)) {
+            return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
+        }
+    }
+
     return -1;
 }
 
