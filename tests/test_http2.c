@@ -1864,6 +1864,16 @@ void test_change_stream_state_end_stream_flag(void){
     TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE, "Stream state must be STREAM_IDLE");
 
     // TODO branches with received_goaway = 1
+    st.h2s.received_goaway = 1;
+    st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    rc = change_stream_state_end_stream_flag(&st, 1); // sending
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_CLOSED, "Stream state must be STREAM_CLOSED");
+
+    st.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+    rc = change_stream_state_end_stream_flag(&st, 0); // receiving
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_CLOSED, "Stream state must be STREAM_CLOSED");
 
 }
 
