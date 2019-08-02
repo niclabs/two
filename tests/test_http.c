@@ -124,12 +124,13 @@ void test_http_server_create_success(void)
     sock_create_fake.return_val = 0;
     sock_listen_fake.return_val = 0;
     FFF_RESET_HISTORY();
-    int is = http_server_create(&hs, 12);
+
+    int sc = http_server_create(&hs, 12);
 
     TEST_ASSERT_EQUAL(sock_create_fake.call_count,1);
     TEST_ASSERT_EQUAL(sock_listen_fake.call_count, 1);
 
-    TEST_ASSERT_EQUAL(0, is);
+    TEST_ASSERT_EQUAL(0, sc);
 
     TEST_ASSERT_EQUAL(1, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
@@ -144,13 +145,13 @@ void test_http_server_create_fail_sock_listen(void)
     sock_listen_fake.return_val = -1;
     sock_destroy_fake.return_val = 0;
 
-    int is = http_server_create(&hs, 12);
+    int sc = http_server_create(&hs, 12);
 
     TEST_ASSERT_EQUAL(sock_create_fake.call_count, 1);
     TEST_ASSERT_EQUAL(sock_listen_fake.call_count, 1);
     TEST_ASSERT_EQUAL(sock_destroy_fake.call_count, 1);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Partial error in server creation");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, sc, "Partial error in server creation");
 
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
@@ -163,11 +164,11 @@ void test_http_server_create_fail_sock_create(void)
 
     sock_create_fake.return_val = -1;
 
-    int is = http_server_create(&hs, 12);
+    int sc = http_server_create(&hs, 12);
 
     TEST_ASSERT_EQUAL(sock_create_fake.call_count, 1);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Error in server creation");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, sc, "Error in server creation");
 
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
