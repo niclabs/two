@@ -331,7 +331,7 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
  * Output:
  *      0 if success, -1 in case of Error
  */
-int hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
+int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
@@ -354,7 +354,7 @@ int hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynami
  * Output:
  *      0 if success, -1 in case of Error
  */
-int hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
@@ -424,7 +424,7 @@ uint32_t hpack_tables_dynamic_table_size(hpack_dynamic_table_t *dynamic_table)
  * Output:
  *      return 0 if the update is succesful, or -1 otherwise
  */
-int hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
+int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
 {
     if (new_max_size > dynamic_table_max_size) {
         ERROR("Resize operation exceeds the maximum size set by the protocol ");
@@ -478,7 +478,7 @@ int hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint
  *      0 if success, -1 otherwise
  */
 //header pair is a name string and a value string
-int hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
     uint32_t entry_size = (uint32_t)(strlen(name) + strlen(value) + 32);
 
@@ -508,7 +508,7 @@ int hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, c
  * Output:
  *      0 if success, -1 in case of Error
  */
-int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
+int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
 
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
@@ -517,7 +517,7 @@ int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table,
             return -1;
         }
 
-        int rc = hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
+        int8_t rc = hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
         if (rc < 0) {
             ERROR("The entry doesn't exist in dynamic table");
             return -1;
@@ -543,14 +543,14 @@ int hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table,
  * Output:
  *      0 if success, -1 in case of Error
  */
-int hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             ERROR("Dynamic table not initialized ");
             return -1;
         }
-        int rc = hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
+        int8_t rc = hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
         if (rc < 0) {
             ERROR("The entry doesn't exist in dynamic table");
             return -1;
@@ -611,7 +611,7 @@ uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
  * Output:
  *     0 if success
  */
-int hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t *table)
+int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t *table)
 {
     memset(dynamic_table, 0, sizeof(hpack_dynamic_table_t));
     dynamic_table->max_size = dynamic_table_max_size;
