@@ -152,7 +152,7 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xff };
 
 
-int hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+int8_t hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
     char authority[] = ":authority";
@@ -160,14 +160,15 @@ int hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table
     return 0;
 }
 
-int hpack_tables_find_name_return_age(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+int8_t hpack_tables_find_name_return_age(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
     char age[] = "age";
     strncpy(name, age, strlen(age));
     return 0;
 }
-int hpack_tables_find_name_return_new_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+
+int8_t hpack_tables_find_name_return_new_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
     char age[] = "new_name";
@@ -175,7 +176,7 @@ int hpack_tables_find_name_return_new_name(hpack_dynamic_table_t *dynamic_table,
     return 0;
 }
 
-int hpack_tables_find_entry_name_and_value_return_method_get(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
+int8_t hpack_tables_find_entry_name_and_value_return_method_get(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     TEST_ASSERT_EQUAL(2, index);
     strncpy(name, ":method", 7);
