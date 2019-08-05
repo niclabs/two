@@ -134,6 +134,8 @@ FAKE_VALUE_FUNC(int, flow_control_receive_data, hstates_t*, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_send_window_update, hstates_t*, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_receive_window_update, hstates_t*, uint32_t);
 
+FAKE_VALUE_FUNC(int, prepare_new_stream, hstates_t*);
+
 
 #define FFF_FAKES_LIST(FAKE)              \
     FAKE(verify_setting)                  \
@@ -169,6 +171,7 @@ FAKE_VALUE_FUNC(int, flow_control_receive_window_update, hstates_t*, uint32_t);
     FAKE(flow_control_receive_data)   \
     FAKE(flow_control_send_window_update)   \
     FAKE(flow_control_receive_window_update)   \
+    FAKE(prepare_new_stream) \
 
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
@@ -1802,21 +1805,6 @@ void test_send_data_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (writting error)");
 }
 
-void test_prepare_new_stream(void){
-    hstates_t st;
-    st.h2s.last_open_stream_id = 333;
-    st.is_server = 1;
-    int rc = prepare_new_stream(&st);
-    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-    TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 334, "Stream id must be 334");
-    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
-    st.is_server = 0;
-    rc = prepare_new_stream(&st);
-    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-    TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 335, "Stream id must be 335");
-    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
-}
-
 void test_send_goaway(void){
     hstates_t st;
     int rc = init_variables(&st);
@@ -1857,11 +1845,11 @@ void test_change_stream_state_end_stream_flag(void){
     st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
     rc = change_stream_state_end_stream_flag(&st, 1); // sending
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE, "Stream state must be STREAM_IDLE");
+    TEST_ASSERT_EQUAL(STREAM_CLOSED, prepare_new_stream_fake.arg0_val->h2s.current_stream.state);
     st.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
     rc = change_stream_state_end_stream_flag(&st, 0); // receving
     TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE, "Stream state must be STREAM_IDLE");
+    TEST_ASSERT_EQUAL(STREAM_CLOSED, prepare_new_stream_fake.arg0_val->h2s.current_stream.state);
 
     // TODO branches with received_goaway = 1
     st.h2s.received_goaway = 1;
@@ -1966,7 +1954,6 @@ int main(void)
 
     UNIT_TEST(test_send_window_update);
 
-    UNIT_TEST(test_prepare_new_stream);
     UNIT_TEST(test_send_goaway);
     UNIT_TEST(test_send_goaway_errors);
     UNIT_TEST(test_change_stream_state_end_stream_flag);
