@@ -26,7 +26,8 @@ FAKE_VALUE_FUNC(uint16_t, bytes_to_uint16, uint8_t*);
 FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int);
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 
-FAKE_VALUE_FUNC(int, encode, hpack_preamble_t , uint32_t , uint32_t ,char*, uint8_t , char*, uint8_t , uint8_t*);
+FAKE_VALUE_FUNC(int, encode, hpack_preamble_t , uint32_t, char*, char*, uint8_t*);
+
 FAKE_VALUE_FUNC(int, decode_header_block, uint8_t*, uint8_t , headers_t*);
 
 // Headers functions
@@ -690,17 +691,14 @@ void test_frame_to_bytes_continuation(void){
     }
 }
 
-int encode_fake_custom(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool,  uint8_t *encoded_buffer) {
+int encode_fake_custom(hpack_preamble_t preamble, uint32_t max_size, char *name_string, char *value_string,  uint8_t *encoded_buffer){
     (void)preamble;
     (void)max_size;
-    (void)index;
     (void)value_string;
-    (void)value_huffman_bool;
     (void)name_string;
-    (void)name_huffman_bool;
 
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, index, "Index given to encode() should start at 0");
+    //TEST_ASSERT_EQUAL_MESSAGE(0, index, "Index given to encode() should start at 0");
     TEST_ASSERT_EQUAL_STRING_MESSAGE("hola", name_string, "Header name should be 'hola'");
     TEST_ASSERT_EQUAL_STRING_MESSAGE("val", value_string, "Header value should be 'val'");
     

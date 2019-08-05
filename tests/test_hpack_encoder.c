@@ -11,7 +11,8 @@ extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words,
 extern uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
 extern int encode_huffman_string(char *str, uint8_t *encoded_string);
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
-extern int encode_literal_header_field_new_name( char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool, uint8_t *encoded_buffer);
+extern int encode_literal_header_field_new_name( char *name_string, char *value_string, uint8_t *encoded_buffer);
+extern int encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer);
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
 extern int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer);
 
@@ -440,47 +441,9 @@ void test_encode_huffman_string(void)
 }
 void test_encode_literal_header_field_new_name(void)
 {
-    /*Test encoding a non huffman string*/
-    uint8_t expected_non_huffman_string_encoded [] = { 0x0a,
-                                                       0x63,
-                                                       0x75,
-                                                       0x73,
-                                                       0x74,
-                                                       0x6f,
-                                                       0x6d,
-                                                       0x2d,
-                                                       0x6b,
-                                                       0x65,
-                                                       0x79,
-                                                       0x0c,
-                                                       0x63,
-                                                       0x75,
-                                                       0x73,
-                                                       0x74,
-                                                       0x6f,
-                                                       0x6d,
-                                                       0x2d,
-                                                       0x76,
-                                                       0x61,
-                                                       0x6c,
-                                                       0x75,
-                                                       0x65 };
-
+    /*Test encoding a huffman string*/
     char *name_to_encode = "custom-key";
     char *value_to_encode = "custom-value";
-    uint8_t encoded_buffer[24];
-
-    memset(encoded_buffer, 0, 24);
-    hpack_utils_encoded_integer_size_fake.return_val = 1;
-
-    uint8_t name_huffman_bool = 0;
-    uint8_t value_huffman_bool = 0;
-    int rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_buffer);
-    TEST_ASSERT_EQUAL(24, rc);
-    for (int i = 0; i < rc; i++) {
-        TEST_ASSERT_EQUAL(expected_non_huffman_string_encoded[i], encoded_buffer[i]);
-    }
-    /*Test encoding a huffman string*/
     uint8_t expected_huffman_string_encoded [] = { 0x88,
                                                    0x25,
                                                    0xa8,
@@ -502,7 +465,7 @@ void test_encode_literal_header_field_new_name(void)
                                                    0xbf };
     uint8_t encoded_buffer_huffman[19];
     memset(encoded_buffer_huffman, 0, 19);
-
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
     /*Set up encoding function call*/
     int8_t(*hpack_huffman_encode_huffman_header_name_value[22])(huffman_encoded_word_t *, uint8_t);
     for (uint8_t i = 0; i < strlen(name_to_encode); i++) {
@@ -513,9 +476,7 @@ void test_encode_literal_header_field_new_name(void)
     }
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_huffman_header_name_value, strlen(name_to_encode) + strlen(value_to_encode));
 
-    name_huffman_bool = 1;
-    value_huffman_bool = 1;
-    rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_buffer_huffman);
+    int8_t rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_buffer_huffman);
     TEST_ASSERT_EQUAL(19, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_huffman_string_encoded[i], encoded_buffer_huffman[i]);
@@ -530,8 +491,7 @@ void test_encode_literal_header_field_new_name_error(void)
     uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
 
     memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
-    uint8_t name_huffman_bool = 0;
-    uint8_t value_huffman_bool = 0;
+
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2, 2, 1, 2 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 5);
 
@@ -540,21 +500,19 @@ void test_encode_literal_header_field_new_name_error(void)
         name_to_encode[i] = 'w';
         value_to_encode[i] = 'w';
     }
-    int rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
+    int rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
     char name_to_encode2[10];
     for (int i = 0; i < 10; i++) {
         name_to_encode2[i] = 'w';
     }
-    rc = encode_literal_header_field_new_name(name_to_encode2,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
-    TEST_ASSERT_EQUAL(-1, rc);
-    name_huffman_bool = 1;
-    value_huffman_bool = 1;
-
-    rc = encode_literal_header_field_new_name(name_to_encode,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
+    rc = encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
 
-    rc = encode_literal_header_field_new_name(name_to_encode2,  name_huffman_bool, value_to_encode, value_huffman_bool, encoded_string);
+    rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_string);
+    TEST_ASSERT_EQUAL(-1, rc);
+
+    rc = encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
 }
 
@@ -562,11 +520,8 @@ void test_hpack_encoder_encode(void)
 {
     hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
     uint32_t max_size = 0;
-    uint32_t index = 0;
     char value_string[] = "val";
-    uint8_t value_huffman_bool = 0;
     char name_string[] = "name";
-    uint8_t name_huffman_bool = 0;
     uint8_t encoded_buffer[64];
 
     uint8_t expected_encoded_bytes[] = {
@@ -584,7 +539,7 @@ void test_hpack_encoder_encode(void)
 
     hpack_utils_find_prefix_size_fake.return_val = 4;
     hpack_utils_encoded_integer_size_fake.return_val = 1;
-    int rc = hpack_encoder_encode(preamble, max_size, index, name_string, name_huffman_bool, value_string, value_huffman_bool, encoded_buffer);
+    int rc = hpack_encoder_encode(preamble, max_size, name_string, value_string, encoded_buffer);
 
 
     TEST_ASSERT_EQUAL(10, rc);
@@ -620,7 +575,7 @@ void test_encode_literal_header_field_indexed_name(void)
     memset(encoded_buffer, 0, 13);
     char value_string[] = "/sample/path";
     hpack_utils_encoded_integer_size_fake.return_val = 1;
-    int rc = encode_literal_header_field_indexed_name(value_string, 0, encoded_buffer);
+    int rc = encode_literal_header_field_indexed_name(value_string, encoded_buffer);
     TEST_ASSERT_EQUAL(expected_len, 13);
     for (int i = 0; i < expected_len; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_buffer[i], encoded_buffer[i]);
@@ -629,7 +584,7 @@ void test_encode_literal_header_field_indexed_name(void)
     char value_string_huffman[] = "www.example.com";
     memset(encoded_buffer, 0, 13);
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, strlen(value_string_huffman));
-    rc = encode_literal_header_field_indexed_name(value_string_huffman, 1, encoded_buffer);
+    rc = encode_literal_header_field_indexed_name(value_string_huffman, encoded_buffer);
     TEST_ASSERT_EQUAL(13, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(encoded_wwwdotexampledotcom[i], encoded_buffer[i]);
