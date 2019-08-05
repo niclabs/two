@@ -85,6 +85,21 @@ void test_read_n_bytes_error(void){
   TEST_ASSERT_MESSAGE(http_read_fake.call_count == 5, "call count must be 5");
 }
 
+void test_prepare_new_stream(void){
+    hstates_t st;
+    st.h2s.last_open_stream_id = 333;
+    st.is_server = 1;
+    int rc = prepare_new_stream(&st);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 334, "Stream id must be 334");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
+    st.is_server = 0;
+    rc = prepare_new_stream(&st);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 335, "Stream id must be 335");
+    TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
+}
+
 
 
 int main(void)
@@ -94,6 +109,6 @@ int main(void)
     UNIT_TEST(test_verify_setting_errors);
     UNIT_TEST(test_read_n_bytes);
     UNIT_TEST(test_read_n_bytes_error);
-
+    UNIT_TEST(test_prepare_new_stream);
     return UNIT_TESTS_END();
 }
