@@ -431,8 +431,8 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
         ERROR("Resize operation exceeds the maximum size set by the protocol ");
         return -1;
     }
-
-    uint32_t new_table_length = (uint32_t)(new_max_size / 32) + 1;
+    //TODO CHECK SIZE
+    uint32_t new_table_length = (uint32_t)(new_max_size / sizeof(header_pair_t)) + 1;
     header_pair_t new_table[new_table_length];
 
     uint32_t new_first = 0;
@@ -609,7 +609,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
 
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
 {
-    return (uint32_t)((dynamic_table_size / 32) + 1);
+    return (uint32_t)((dynamic_table_size / sizeof(header_pair_t)) + 1);
 }
 
 /*
