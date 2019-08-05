@@ -11,11 +11,6 @@
 #define DEFAULT_MAX_FRAME_SIZE 16384
 #define DEFAULT_MAX_HEADER_LIST_SIZE 99999
 
-
-/*Macros for table update*/
-#define LOCAL 0
-#define REMOTE 1
-
 /*Error codes*/
 typedef enum{
   HTTP2_NO_ERROR = (uint32_t) 0x0,
