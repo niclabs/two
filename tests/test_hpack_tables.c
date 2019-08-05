@@ -105,6 +105,11 @@ void test_hpack_tables_dynamic_add_find_entry(void)
   TEST_ASSERT_EQUAL(0,dynamic_table.first);
   TEST_ASSERT_EQUAL(0,dynamic_table.next);
 
+  //test error case, in the beginning there isn't any entry
+  int8_t rc_fail = hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 62, name, value); // 62 -> doesn't exist ...
+  TEST_ASSERT_EQUAL(-1, rc_fail);
+
+
   //ITERATION 1, add first entry
   hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[0], new_values[0]);
   TEST_ASSERT_EQUAL(0, dynamic_table.first);
@@ -155,6 +160,10 @@ void test_hpack_tables_dynamic_add_find_entry(void)
   hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 64, name, value); //64 -> third value of dynamic table
   TEST_ASSERT_EQUAL_STRING(new_names[0], name);
   TEST_ASSERT_EQUAL_STRING(new_values[0], value);
+
+  //now errors case tests, when entry doesn't exist
+  rc_fail = hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 65, name, value); // 65 -> doesn't exist ...
+  TEST_ASSERT_EQUAL(-1, rc_fail);
 }
 
 void test_hpack_tables_find_entry(void)
