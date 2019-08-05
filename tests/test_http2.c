@@ -135,7 +135,7 @@ FAKE_VALUE_FUNC(int, flow_control_send_window_update, hstates_t*, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_receive_window_update, hstates_t*, uint32_t);
 
 FAKE_VALUE_FUNC(int, prepare_new_stream, hstates_t*);
-
+FAKE_VALUE_FUNC(uint32_t, read_setting_from, hstates_t*, uint8_t, uint8_t);
 
 #define FFF_FAKES_LIST(FAKE)              \
     FAKE(verify_setting)                  \
@@ -172,6 +172,7 @@ FAKE_VALUE_FUNC(int, prepare_new_stream, hstates_t*);
     FAKE(flow_control_send_window_update)   \
     FAKE(flow_control_receive_window_update)   \
     FAKE(prepare_new_stream) \
+    FAKE(read_setting_from) \
 
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
@@ -550,41 +551,6 @@ void test_send_local_settings_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (http_write error)");
 }
 
-void test_read_setting_from(void){
-  hstates_t hdummy;
-  init_variables(&hdummy);
-  int i;
-  for(i = 0; i < 6; i++){
-    hdummy.h2s.remote_settings[i] = i+1;
-    hdummy.h2s.local_settings[i] = i+7;
-  }
-  uint32_t answ = read_setting_from(&hdummy, LOCAL, 0x1);
-  TEST_ASSERT_MESSAGE(answ == 7, "Answer must be 7");
-  answ = read_setting_from(&hdummy, REMOTE, 0x6);
-  TEST_ASSERT_MESSAGE(answ == 6, "Answer must be 6");
-  answ = read_setting_from(&hdummy, LOCAL, 0x0);
-  TEST_ASSERT_MESSAGE((int)answ == -1, "Answer must be -1. Error in id! (overvalue)");
-  answ = read_setting_from(&hdummy, REMOTE, 0x7);
-  TEST_ASSERT_MESSAGE((int)answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
-}
-
-void test_read_setting_from_errors(void){
-  hstates_t hdummy;
-  init_variables(&hdummy);
-  int i;
-  for(i = 0; i < 6; i++){
-    hdummy.h2s.remote_settings[i] = i+1;
-    hdummy.h2s.local_settings[i] = i+7;
-  }
-  // First error, invalid parameter
-  uint32_t rc = read_setting_from(&hdummy, LOCAL, 0x0);
-  TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid parameter");
-  rc = read_setting_from(&hdummy, 5, 0x1);
-  TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid table");
-}
-
-
-
 void test_h2_client_init_connection(void){
   /*Depends on http_write and send_local_settings*/
   hstates_t client;
@@ -882,8 +848,8 @@ void test_handle_headers_payload_full_message_header_no_end_stream(void){
   int flag_returns[2] = {0, 1};
   uint32_t headers_get_header_list_size_returns[1] = {120};
   SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
-  uint32_t get_setting_value_returns[1] = {128};
-  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
   int rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
@@ -913,8 +879,8 @@ void test_handle_headers_payload_full_message_header_end_stream(void){
   SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
   uint32_t headers_get_header_list_size_returns[1] = {120};
   SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
-  uint32_t get_setting_value_returns[1] = {128};
-  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.waiting_for_end_headers_flag == 0, "waiting end headers must be 0. Full message received");
@@ -997,8 +963,8 @@ void test_handle_continuation_payload_end_headers_flag_set(void){
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
   uint32_t headers_get_header_list_size_returns[1] = {120};
   SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
-  uint32_t get_setting_value_returns[1] = {128};
-  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rcv_returns[1] = {70};
   SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
   rc = handle_continuation_payload(&head, &cont, &st);
@@ -1029,8 +995,8 @@ void test_handle_continuation_payload_end_headers_end_stream_flag_set(void){
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
   uint32_t headers_get_header_list_size_returns[1] = {120};
   SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
-  uint32_t get_setting_value_returns[1] = {128};
-  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rcv_returns[1] = {70};
   SET_RETURN_SEQ(receive_header_block, rcv_returns, 1);
   rc = handle_continuation_payload(&head, &cont, &st);
@@ -1065,8 +1031,8 @@ void test_handle_continuation_payload_errors(void){
   // Fourth error, header list size too big
   uint32_t headers_get_header_list_size_returns[1] = {129};
   SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
-  uint32_t get_setting_value_returns[1] = {128};
-  SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   rc = handle_continuation_payload(&head, &cont, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (length error)");
   head.length = 20;
@@ -1260,11 +1226,10 @@ void test_send_headers_one_header(void){
   SET_RETURN_SEQ(create_continuation_frame, create_continuation_return, 1);
   int frame_to_bytes_return[1] = {20};
   SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
-
   int compress_return[1] = {20};
   SET_RETURN_SEQ(compress_headers, compress_return, 1);
-  uint32_t get_setting_return[1] = {20};
-  SET_RETURN_SEQ(get_setting_value, get_setting_return, 1);
+  uint32_t read_setting_from_return[1] = {20};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_return, 1);
   rc = send_headers(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "Call count must be 1, one headers frame was created");
@@ -1289,8 +1254,8 @@ void test_send_headers_with_continuation(void){
   int frame_to_bytes_return[1] = {20};
   SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
 
-  uint32_t get_setting_return[1] = {20};
-  SET_RETURN_SEQ(get_setting_value, get_setting_return, 1);
+  uint32_t read_setting_from_return[1] = {20};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_return, 1);
   // Here fits 10 max sized frames (1 header, 9 cont) and one 1 byte frame (cont)
   int compress_return[1] = {201};
   SET_RETURN_SEQ(compress_headers, compress_return, 1);
@@ -1310,7 +1275,7 @@ void test_send_headers_errors(void){
   st2.headers_out.count = 10;
   SET_RETURN_SEQ(compress_headers, compress_return, 2);
   uint32_t get_setting_return[1] = {20};
-  SET_RETURN_SEQ(get_setting_value, get_setting_return, 1);
+  SET_RETURN_SEQ(read_setting_from, get_setting_return, 1);
   hstates_t st3; // Third error, stream verification error
   init_variables(&st3);
   st3.headers_out.count = 10;
@@ -1668,7 +1633,7 @@ void test_h2_receive_frame_settings(void){
     bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
-    TEST_ASSERT_EQUAL(10,read_setting_from(&st,REMOTE,1));
+    TEST_ASSERT_EQUAL(10,st.h2s.remote_settings[0]);
 
 }
 
@@ -1899,8 +1864,6 @@ int main(void)
     UNIT_TEST(test_read_frame_errors);
     UNIT_TEST(test_send_local_settings);
     UNIT_TEST(test_send_local_settings_errors);
-    UNIT_TEST(test_read_setting_from);
-    UNIT_TEST(test_read_setting_from_errors);
     UNIT_TEST(test_h2_client_init_connection);
     UNIT_TEST(test_h2_client_init_connection_errors);
     UNIT_TEST(test_h2_server_init_connection);
