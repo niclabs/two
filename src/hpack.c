@@ -77,7 +77,8 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int encode(hpack_preamble_t preamble, uint32_t max_size, uint32_t index, char *name_string, uint8_t name_huffman_bool, char *value_string, uint8_t value_huffman_bool,  uint8_t *encoded_buffer)
+int encode(hpack_preamble_t preamble, uint32_t max_size, char *name_string, char *value_string,  uint8_t *encoded_buffer);
 {
-    return hpack_encoder_encode(preamble, max_size, index, name_string,  name_huffman_bool, value_string, value_huffman_bool, encoded_buffer);
+    return hpack_encoder_encode( preamble, max_size, name_string, value_string,  encoded_buffer);
+
 }

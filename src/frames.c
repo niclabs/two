@@ -405,7 +405,8 @@ int compress_headers(headers_t *headers_out, uint8_t *compressed_headers)
     int pointer = 0;
     for (uint8_t i = 0; i < headers_count(headers_out); i++)
     {
-        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, 0, headers_get_name_from_index(headers_out, i), 0, headers_get_value_from_index(headers_out, i), 0, compressed_headers + pointer);
+        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, headers_get_name_from_index(headers_out, i), headers_get_value_from_index(headers_out, i), compressed_headers + pointer);
+
         pointer += rc;
     }
     return pointer;
