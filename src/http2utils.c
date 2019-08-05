@@ -90,3 +90,30 @@ int prepare_new_stream(hstates_t* st){
   }
   return 0;
 }
+
+/*
+* Function: read_setting_from
+* Reads a setting parameter from local or remote table
+* Input: -> st: pointer to hstates_t struct where settings tables are stored.
+*        -> place: must be LOCAL or REMOTE. It indicates the table to read.
+*        -> param: it indicates which parameter to read from table.
+* Output: The value read from the table. -1 if nothing was read.
+*/
+
+uint32_t read_setting_from(hstates_t *st, uint8_t place, uint8_t param){
+  if(param < 1 || param > 6){
+    printf("Error: %u is not a valid setting parameter\n", param);
+    return -1;
+  }
+  else if(place == LOCAL){
+    return st->h2s.local_settings[--param];
+  }
+  else if(place == REMOTE){
+    return st->h2s.remote_settings[--param];
+  }
+  else{
+    puts("Error: not a valid table to read from");
+    return -1;
+  }
+  return -1;
+}
