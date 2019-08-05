@@ -322,6 +322,22 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
 }
 
 /*
+ * Function: hpack_tables_dynamic_table_length
+ * Input:
+ *      -> *dynamic_table: Dynamic table to search
+ * Output:
+ *      returns the actual table length which is equal to the number of entries in the table_length
+ */
+uint32_t hpack_tables_dynamic_table_length(hpack_dynamic_table_t *dynamic_table)
+{
+    uint32_t table_length_used = dynamic_table->first < dynamic_table->next ?
+                                 (dynamic_table->next - dynamic_table->first) % dynamic_table->table_length :
+                                 (dynamic_table->table_length - dynamic_table->first + dynamic_table->next) % dynamic_table->table_length;
+
+    return table_length_used;
+}
+
+/*
  * Function: hpack_tables_dynamic_find_entry_name_and_value
  * Finds entry in dynamic table, entry is a pair name-value
  * Input:
@@ -378,22 +394,6 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
 uint32_t hpack_tables_header_pair_size(header_pair_t header_pair)
 {
     return (uint32_t)(strlen(header_pair.name) + strlen(header_pair.value) + 32);
-}
-
-/*
- * Function: hpack_tables_dynamic_table_length
- * Input:
- *      -> *dynamic_table: Dynamic table to search
- * Output:
- *      returns the actual table length which is equal to the number of entries in the table_length
- */
-uint32_t hpack_tables_dynamic_table_length(hpack_dynamic_table_t *dynamic_table)
-{
-    uint32_t table_length_used = dynamic_table->first < dynamic_table->next ?
-                                 (dynamic_table->next - dynamic_table->first) % dynamic_table->table_length :
-                                 (dynamic_table->table_length - dynamic_table->first + dynamic_table->next) % dynamic_table->table_length;
-
-    return table_length_used;
 }
 
 
