@@ -100,6 +100,37 @@ void test_prepare_new_stream(void){
     TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_IDLE,"Stream state must be STREAM_IDLE");
 }
 
+void test_read_setting_from(void){
+  hstates_t hdummy;
+  int i;
+  for(i = 0; i < 6; i++){
+    hdummy.h2s.remote_settings[i] = i+1;
+    hdummy.h2s.local_settings[i] = i+7;
+  }
+  uint32_t answ = read_setting_from(&hdummy, LOCAL, 0x1);
+  TEST_ASSERT_MESSAGE(answ == 7, "Answer must be 7");
+  answ = read_setting_from(&hdummy, REMOTE, 0x6);
+  TEST_ASSERT_MESSAGE(answ == 6, "Answer must be 6");
+  answ = read_setting_from(&hdummy, LOCAL, 0x0);
+  TEST_ASSERT_MESSAGE((int)answ == -1, "Answer must be -1. Error in id! (overvalue)");
+  answ = read_setting_from(&hdummy, REMOTE, 0x7);
+  TEST_ASSERT_MESSAGE((int)answ == -1, "Answer mus be -1. Error in id! (uppervalue)");
+}
+
+void test_read_setting_from_errors(void){
+  hstates_t hdummy;
+  int i;
+  for(i = 0; i < 6; i++){
+    hdummy.h2s.remote_settings[i] = i+1;
+    hdummy.h2s.local_settings[i] = i+7;
+  }
+  // First error, invalid parameter
+  uint32_t rc = read_setting_from(&hdummy, LOCAL, 0x0);
+  TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid parameter");
+  rc = read_setting_from(&hdummy, 5, 0x1);
+  TEST_ASSERT_MESSAGE((int)rc == -1, "rc must be -1 (invalid table");
+}
+
 
 
 int main(void)
@@ -110,5 +141,7 @@ int main(void)
     UNIT_TEST(test_read_n_bytes);
     UNIT_TEST(test_read_n_bytes_error);
     UNIT_TEST(test_prepare_new_stream);
+    UNIT_TEST(test_read_setting_from);
+    UNIT_TEST(test_read_setting_from_errors);
     return UNIT_TESTS_END();
 }
