@@ -25,7 +25,6 @@ extern int send_headers_stream_verification(hstates_t *st);
 extern int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream);
 extern int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream);
 extern int send_headers(hstates_t *st, uint8_t end_stream);
-extern uint32_t get_size_data_to_send(hstates_t *st);
 extern int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st);
 extern int send_data(hstates_t *st, uint8_t end_stream);
 extern int send_window_update(hstates_t *st, uint8_t window_size_increment);
@@ -136,6 +135,7 @@ FAKE_VALUE_FUNC(int, flow_control_receive_window_update, hstates_t*, uint32_t);
 
 FAKE_VALUE_FUNC(int, prepare_new_stream, hstates_t*);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, hstates_t*, uint8_t, uint8_t);
+FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, hstates_t*);
 
 #define FFF_FAKES_LIST(FAKE)              \
     FAKE(verify_setting)                  \
@@ -173,6 +173,7 @@ FAKE_VALUE_FUNC(uint32_t, read_setting_from, hstates_t*, uint8_t, uint8_t);
     FAKE(flow_control_receive_window_update)   \
     FAKE(prepare_new_stream) \
     FAKE(read_setting_from) \
+    FAKE(get_size_data_to_send) \
 
 /*----------Value Return for FAKEs ----------*/
 int verify_return_zero(uint16_t u, uint32_t uu){
@@ -1288,38 +1289,6 @@ void test_send_headers_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream verification error)");
 }
 
-
-
-void test_get_size_data_to_send(void){
-    hstates_t st;
-    st.headers_in.count = 0;
-    st.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
-    init_variables(&st);
-    st.h2s.outgoing_window.window_size = 10;
-    st.h2s.outgoing_window.window_used = 0;
-    st.hd_lists.data_out_size = 10;
-    st.hd_lists.data_out_sent = 0;
-    uint32_t get_return[3] = {10, 5, 10};
-    SET_RETURN_SEQ(get_window_available_size, get_return, 3);
-    uint32_t rc = get_size_data_to_send(&st);
-    TEST_ASSERT_EQUAL(10,rc);
-
-    st.hd_lists.data_out_size = 5;
-    st.hd_lists.data_out_sent = 0;
-    rc = get_size_data_to_send(&st);
-    TEST_ASSERT_EQUAL(5,rc);
-
-    st.hd_lists.data_out_size = 15;
-    st.hd_lists.data_out_sent = 0;
-    rc = get_size_data_to_send(&st);
-    TEST_ASSERT_EQUAL(10,rc);
-
-
-}
 void test_handle_data_payload(void){
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1662,18 +1631,18 @@ void test_h2_receive_frame_settings_ack(void){
 
 void test_send_data(void){
   hstates_t st;
-    st.headers_in.count = 0;
-    st.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
-int rc = init_variables(&st);
+  st.headers_in.count = 0;
+  st.headers_out.count = 0;
+  st.hd_lists.data_in_size = 0;
+  st.hd_lists.data_out_size = 0;
+  st.hd_lists.data_in_received = 0;
+  st.hd_lists.data_out_sent = 0;
+  int rc = init_variables(&st);
   st.hd_lists.data_out_size = 36;
   st.h2s.outgoing_window.window_size = 30;
   st.h2s.current_stream.state = STREAM_OPEN;
   uint32_t get_return[1] = {30};
-  SET_RETURN_SEQ(get_window_available_size, get_return, 1);
+  SET_RETURN_SEQ(get_size_data_to_send, get_return, 1);
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 30, "Data out sent must be 30, full data was sent");
@@ -1682,18 +1651,18 @@ int rc = init_variables(&st);
 
 void test_send_data_full_sending(void){
   hstates_t st;
-    st.headers_in.count = 0;
-    st.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+  st.headers_in.count = 0;
+  st.headers_out.count = 0;
+  st.hd_lists.data_in_size = 0;
+  st.hd_lists.data_out_size = 0;
+  st.hd_lists.data_in_received = 0;
+  st.hd_lists.data_out_sent = 0;
   int rc = init_variables(&st);
   st.hd_lists.data_out_size = 27;
   st.h2s.outgoing_window.window_size = 50;
   st.h2s.current_stream.state = STREAM_OPEN;
   uint32_t get_return[1] = {27};
-  SET_RETURN_SEQ(get_window_available_size, get_return, 1);
+  SET_RETURN_SEQ(get_size_data_to_send, get_return, 1);
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 0, "Data out sent must be 0, full data was sent");
@@ -1895,8 +1864,6 @@ int main(void)
     UNIT_TEST(test_send_headers_errors);
 
 
-
-    UNIT_TEST(test_get_size_data_to_send);
 
     UNIT_TEST(test_handle_data_payload);
     UNIT_TEST(test_h2_receive_frame_headers);
