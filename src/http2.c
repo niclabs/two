@@ -82,25 +82,6 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 }
 
 /*
-* Function: prepare_new_stream
-* Prepares a new stream, setting its state as STREAM_IDLE.
-* Input: -> st: pointer to hstates_t struct where connection variables are stored
-* Output: 0.
-*/
-int prepare_new_stream(hstates_t* st){
-  uint32_t last = st->h2s.last_open_stream_id;
-  if(st->is_server == 1){
-    st->h2s.current_stream.stream_id = last % 2 == 0 ? last + 2 : last + 1;
-    st->h2s.current_stream.state = STREAM_IDLE;
-  }
-  else{
-    st->h2s.current_stream.stream_id = last % 2 == 0 ? last + 1 : last + 2;
-    st->h2s.current_stream.state = STREAM_IDLE;
-  }
-  return 0;
-}
-
-/*
 * Function: read_setting_from
 * Reads a setting parameter from local or remote table
 * Input: -> st: pointer to hstates_t struct where settings tables are stored.

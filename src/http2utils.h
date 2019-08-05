@@ -26,4 +26,12 @@ typedef enum SettingsParameters{
 
 int verify_setting(uint16_t id, uint32_t value);
 int read_n_bytes(uint8_t *buff_read, int n,  hstates_t *hs);
+
+/*
+* Function: prepare_new_stream
+* Prepares a new stream, setting its state as STREAM_IDLE.
+* Input: -> st: pointer to hstates_t struct where connection variables are stored
+* Output: 0.
+*/
+int prepare_new_stream(hstates_t* st);
 #endif /*HTTP2UTILS_H*/
