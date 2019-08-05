@@ -350,11 +350,12 @@ uint32_t hpack_tables_dynamic_table_length(hpack_dynamic_table_t *dynamic_table)
  */
 int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
-    uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
-
-    if (0 == 1) { // TODO CASE entry doesnt exist
+    if (hpack_tables_dynamic_table_length(dynamic_table) < index - 61) { //CASE entry doesnt exist
         return -1;
     }
+
+    uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
+
     header_pair_t result = dynamic_table->table[table_index];
     strncpy(name, result.name, strlen(result.name));
     strncpy(value, result.value, strlen(result.value));
@@ -375,7 +376,7 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
 {
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
-    if (0 == 1) { // TODO CASE entry doesnt exist
+    if (hpack_tables_dynamic_table_length(dynamic_table) < index - 61) { //CASE entry doesnt exist
         return -1;
     }
     header_pair_t result = dynamic_table->table[table_index];
