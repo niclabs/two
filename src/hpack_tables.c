@@ -577,7 +577,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
  *      -> *name: Buffer containing the name of a header to search
  *      -> *value: Buffer containing the value of a header to search
  *  Output:
- *      Returns the index in the static or dynamic table containing both name and value if succesful,
+ *      Returns the index in the static or dynamic table containing both name and value if successful,
  *      otherwise it returns -1.
  */
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
@@ -607,6 +607,39 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     return -1;
 }
 
+/*
+ *  Function: hpack_tables_find_index_name
+ *  Given a buffer containing a name a header
+ *  Searches both static and Dynamic tables
+ *  Input:
+ *      -> *dynamic_table: Dynamic table to search
+ *      -> *name: Buffer containing the name of a header to search
+ *  Output:
+ *      Returns the index in the static or dynamic table containing name if successful,
+ *      otherwise it returns -1.
+ */
+int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name)
+{
+    //TODO Check if name and value has to match or only name!!
+
+    //Search first in static table
+    for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
+        const char *table_name = hpack_static_table.name_table[i];
+        if (strncmp(table_name, name, strlen(name)) == 0) {
+            return i + 1;
+        }
+    }
+    //Then search in dynamic table
+    char tmp_name[MAX_HEADER_NAME_LEN];
+    for (uint8_t i=0; i < hpack_tables_dynamic_table_length(dynamic_table); i++){
+        hpack_tables_dynamic_find_entry_name(dynamic_table, i+HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name);
+        if (strncmp(tmp_name, name, strlen(name)) == 0) {
+            return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
+        }
+    }
+
+    return -1;
+}
 
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
 {

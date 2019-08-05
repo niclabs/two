@@ -21,12 +21,14 @@ FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t)
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int, hpack_tables_find_index, hpack_dynamic_table_t *, char *, char *);
+FAKE_VALUE_FUNC(int, hpack_tables_find_index_name, hpack_dynamic_table_t *, char *);
 
 
 #define FFF_FAKES_LIST(FAKE)                        \
     FAKE(hpack_utils_find_prefix_size)              \
     FAKE(hpack_utils_encoded_integer_size)          \
     FAKE(hpack_tables_find_index)                   \
+    FAKE(hpack_tables_find_index_name)                   \
     FAKE(hpack_huffman_encode)
 
 /*----------Value Return for FAKEs ----------*/
@@ -464,6 +466,7 @@ void test_encode_literal_header_field_new_name(void)
                                                    0xb4,
                                                    0xbf };
     uint8_t encoded_buffer_huffman[19];
+
     memset(encoded_buffer_huffman, 0, 19);
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     /*Set up encoding function call*/
@@ -520,13 +523,13 @@ void test_hpack_encoder_encode(void)
 {
     //TODO redo this test with new API
     /*
-    hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
-    uint32_t max_size = 0;
-    char value_string[] = "val";
-    char name_string[] = "name";
-    uint8_t encoded_buffer[64];
+       hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
+       uint32_t max_size = 0;
+       char value_string[] = "val";
+       char name_string[] = "name";
+       uint8_t encoded_buffer[64];
 
-    uint8_t expected_encoded_bytes[] = {
+       uint8_t expected_encoded_bytes[] = {
         0,          //LITERAL_HEADER_FIELD_WITHOUT_INDEXING, index=0
         4,          //name_length
         (uint8_t)'n',
@@ -537,17 +540,17 @@ void test_hpack_encoder_encode(void)
         (uint8_t)'v',
         (uint8_t)'a',
         (uint8_t)'l'
-    };
+       };
 
-    hpack_utils_find_prefix_size_fake.return_val = 4;
-    hpack_utils_encoded_integer_size_fake.return_val = 1;
-    int rc = hpack_encoder_encode(preamble, max_size, name_string, value_string, encoded_buffer);
+       hpack_utils_find_prefix_size_fake.return_val = 4;
+       hpack_utils_encoded_integer_size_fake.return_val = 1;
+       int rc = hpack_encoder_encode(preamble, max_size, name_string, value_string, encoded_buffer);
 
 
-    TEST_ASSERT_EQUAL(10, rc);
-    for (int i = 0; i < rc; i++) {
+       TEST_ASSERT_EQUAL(10, rc);
+       for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
-    }
+       }
      */
 }
 
@@ -598,24 +601,24 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-      UNIT_TEST(test_hpack_encoder_encode);
-      UNIT_TEST(test_encode_integer);
+    UNIT_TEST(test_hpack_encoder_encode);
+    UNIT_TEST(test_encode_integer);
 
-      UNIT_TEST(test_pack_encoded_words_to_bytes_test1);
-      UNIT_TEST(test_pack_encoded_words_to_bytes_test2);
-      UNIT_TEST(test_pack_encoded_words_to_bytes_test3);
+    UNIT_TEST(test_pack_encoded_words_to_bytes_test1);
+    UNIT_TEST(test_pack_encoded_words_to_bytes_test2);
+    UNIT_TEST(test_pack_encoded_words_to_bytes_test3);
 
-      UNIT_TEST(test_encode_huffman_word);
-      UNIT_TEST(test_encode_non_huffman_string);
-      UNIT_TEST(test_encode_huffman_string);
+    UNIT_TEST(test_encode_huffman_word);
+    UNIT_TEST(test_encode_non_huffman_string);
+    UNIT_TEST(test_encode_huffman_string);
 /*
     UNIT_TEST(test_encode_then_decode_non_huffman_string);
     UNIT_TEST(test_encode_then_decode_huffman_string);
  */
-      UNIT_TEST(test_encode_literal_header_field_new_name);
-      UNIT_TEST(test_encode_literal_header_field_new_name_error);
-      UNIT_TEST(test_encode_literal_header_field_indexed_name);
-      UNIT_TEST(test_encode_indexed_header_field);
+    UNIT_TEST(test_encode_literal_header_field_new_name);
+    UNIT_TEST(test_encode_literal_header_field_new_name_error);
+    UNIT_TEST(test_encode_literal_header_field_indexed_name);
+    UNIT_TEST(test_encode_indexed_header_field);
 
     return UNIT_TESTS_END();
 }

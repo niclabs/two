@@ -33,5 +33,6 @@ uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size);
 int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t* table);
 int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
+int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name);
 
 #endif //TWO_HPACK_TABLES_H
