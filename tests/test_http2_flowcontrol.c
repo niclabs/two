@@ -110,6 +110,32 @@ void test_flow_control_receive_window_update_error(void){
 
 }
 
+void test_get_size_data_to_send(void){
+    hstates_t st;
+    st.headers_in.count = 0;
+    st.headers_out.count = 0;
+    st.hd_lists.data_in_size = 0;
+    st.hd_lists.data_out_size = 0;
+    st.hd_lists.data_in_received = 0;
+    st.hd_lists.data_out_sent = 0;
+    st.h2s.outgoing_window.window_size = 10;
+    st.h2s.outgoing_window.window_used = 0;
+    st.hd_lists.data_out_size = 10;
+    st.hd_lists.data_out_sent = 0;
+    uint32_t rc = get_size_data_to_send(&st);
+    TEST_ASSERT_EQUAL(10,rc);
+
+    st.hd_lists.data_out_size = 5;
+    st.hd_lists.data_out_sent = 0;
+    rc = get_size_data_to_send(&st);
+    TEST_ASSERT_EQUAL(5,rc);
+
+    st.hd_lists.data_out_size = 15;
+    st.hd_lists.data_out_sent = 0;
+    rc = get_size_data_to_send(&st);
+    TEST_ASSERT_EQUAL(10,rc);
+}
+
 
 int main(void)
 {
@@ -123,5 +149,6 @@ int main(void)
   UNIT_TEST(test_flow_control_send_window_update_error);
   UNIT_TEST(test_flow_control_receive_window_update);
   UNIT_TEST(test_flow_control_receive_window_update_error);
+  UNIT_TEST(test_get_size_data_to_send);
   return UNIT_TESTS_END();
 }
