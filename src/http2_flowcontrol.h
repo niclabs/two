@@ -10,5 +10,7 @@ int flow_control_receive_data(hstates_t* st, uint32_t length);
 int flow_control_send_window_update(hstates_t* st, uint32_t window_size_increment);
 int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment);
 
+uint32_t get_size_data_to_send(hstates_t *st);
+
 
 #endif /*HTTP2_FLOWCONTROL_H*/

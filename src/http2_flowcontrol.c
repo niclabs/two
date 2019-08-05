@@ -63,3 +63,14 @@ int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_incre
     decrease_window_used(&st->h2s.outgoing_window,window_size_increment);
     return 0;
 }
+
+
+uint32_t get_size_data_to_send(hstates_t *st){
+    uint32_t available_window = get_window_available_size(st->h2s.outgoing_window);
+    if( available_window <= st->hd_lists.data_out_size - st->hd_lists.data_out_sent){
+        return available_window;
+    }
+    else{
+        return st->hd_lists.data_out_size - st->hd_lists.data_out_sent;
+    }
+}
