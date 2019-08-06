@@ -512,11 +512,7 @@ void test_encode_literal_header_field_new_name_error(void)
     rc = encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
 
-    rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-1, rc);
 
-    rc = encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-1, rc);
 }
 
 void test_hpack_encoder_encode(void)
@@ -597,6 +593,26 @@ void test_encode_literal_header_field_indexed_name(void)
     }
 }
 
+void test_encode_literal_header_field_indexed_name_error(void)
+{
+    /*Test border condition*/
+    char value_to_encode[2 * HTTP2_MAX_HBF_BUFFER];
+
+    memset(value_to_encode, 'w', 2 * HTTP2_MAX_HBF_BUFFER);
+    uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
+
+    memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
+
+    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2, 2, 1, 2 };
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 5);
+
+    hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
+
+    int rc = encode_literal_header_field_indexed_name(value_to_encode, encoded_string);
+    TEST_ASSERT_EQUAL(-1, rc);
+
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -618,6 +634,7 @@ int main(void)
     UNIT_TEST(test_encode_literal_header_field_new_name);
     UNIT_TEST(test_encode_literal_header_field_new_name_error);
     UNIT_TEST(test_encode_literal_header_field_indexed_name);
+    UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
 
     return UNIT_TESTS_END();
