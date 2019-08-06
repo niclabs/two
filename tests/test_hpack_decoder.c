@@ -23,7 +23,7 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, u
 FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer, uint16_t, uint8_t, uint8_t );
 FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
-FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_dynamic_table_t* , char*, char* ,  uint8_t*);
+FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_dynamic_table_t *, char *, char *,  uint8_t *);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
@@ -180,7 +180,7 @@ int8_t hpack_tables_find_entry_name_and_value_return_method_get(hpack_dynamic_ta
 {
     TEST_ASSERT_EQUAL(2, index);
     strncpy(name, ":method", 7);
-    strncpy(name, "GET", 3);
+    strncpy(value, "GET", 3);
     return 0;
 }
 
@@ -607,32 +607,37 @@ void test_hpack_decoder_decode_indexed_header_field(void)
     char expected_name[] = ":method";
     char expected_value[] = "GET";
     char name[strlen(expected_name)];
-    char value[strlen(expected_name)];
+    char value[strlen(expected_value)];
 
     memset(name, 0, strlen(expected_name));
-    memset(name, 0, strlen(expected_value));
-    uint8_t encoded_buffer[] = {0x82};
+    memset(value, 0, strlen(expected_value));
+    uint8_t encoded_buffer[] = { 0x82 };
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     hpack_utils_find_prefix_size_fake.return_val = 7;
     hpack_tables_find_entry_name_and_value_fake.custom_fake = hpack_tables_find_entry_name_and_value_return_method_get;
     int rc = hpack_decoder_decode_indexed_header_field(NULL, encoded_buffer, name, value);
     TEST_ASSERT_EQUAL(1, rc);
-    TEST_ASSERT_EQUAL_STRING(expected_name, name);
-    TEST_ASSERT_EQUAL_STRING(expected_value, value);
-
+    for (uint8_t i = 0; i < strlen(expected_name); i++) {
+        TEST_ASSERT_EQUAL(expected_name[i], name[i]);
+    }
+    for (uint8_t i = 0; i < strlen(expected_value); i++) {
+        TEST_ASSERT_EQUAL(expected_value[i], value[i]);
+    }
     /*Test error*/
+    setUp();
     hpack_tables_find_entry_name_and_value_fake.return_val = -1;
     rc = hpack_decoder_decode_indexed_header_field(NULL, encoded_buffer, name, value);
-    TEST_ASSERT_EQUAL(-1,rc);
+    TEST_ASSERT_EQUAL(-1, rc);
 }
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
 
     UNIT_TEST(test_decode_header_block_literal_without_indexing);
     UNIT_TEST(test_decode_header_block_literal_never_indexed);
+    UNIT_TEST(test_hpack_decoder_decode_indexed_header_field);
 
-    UNIT_TEST(test_encode);
 
     UNIT_TEST(test_decode_huffman_word);
     UNIT_TEST(test_decode_integer);
