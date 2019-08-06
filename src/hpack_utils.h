@@ -1,7 +1,7 @@
 #ifndef TWO_HPACK_UTILS_H
 #define TWO_HPACK_UTILS_H
-#include <stdint.h>
-#include "logging.h"
+
+#include <stdint.h>             /* for int8_t, uint8_t, uint32_t, uint16_t*/
 
 typedef enum {
     INDEXED_HEADER_FIELD                            = (uint8_t) 128,

@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "logging.h"
 #include "hpack.h"
+#include "table.h"
 
 /*
 * Function: frame_header_to_bytes

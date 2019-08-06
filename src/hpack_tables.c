@@ -1,5 +1,7 @@
 #include "hpack_tables.h"
-#include "headers.h"
+#include "headers.h"  /* for MAX_HEADER_NAME_LEN, MAX_HEADER_VALUE_LEN  */
+#include "logging.h" /* for ERROR*/
+#include <string.h>  /* for strlen, strncmp, memset*/
 
 const uint32_t HPACK_TABLES_FIRST_INDEX_DYNAMIC = 62; // Changed type to remove warnings
 

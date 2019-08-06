@@ -5,6 +5,7 @@
 #include "hpack.h"
 #include "hpack_huffman.h"
 #include "hpack_encoder.h"
+#include "hpack_utils.h"
 #include "table.h"
 
 extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);

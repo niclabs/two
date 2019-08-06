@@ -1,4 +1,6 @@
 #include "hpack.h"
+#include "hpack_decoder.h"
+#include "hpack_encoder.h"
 
 /*
  *

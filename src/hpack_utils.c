@@ -1,5 +1,7 @@
 #include "hpack_utils.h"
-#include <stdint.h>
+#include <stdint.h>   /* for int8_t */
+#include "logging.h"  /* for ERROR  */
+
 
 /*
  * Function: hpack_utils_read_bits_from_bytes

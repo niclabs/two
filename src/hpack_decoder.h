@@ -1,13 +1,9 @@
 #ifndef TWO_HPACK_DECODER_H
 #define TWO_HPACK_DECODER_H
 
-#include "http_bridge.h"
-#include <stdint.h>
-#include "logging.h"
-#include "headers.h"
-#include "hpack_huffman.h"
-#include "hpack_utils.h"
-#include "hpack_tables.h"
+#include <stdint.h>             /* for uint8_t */
+#include "headers.h"            /* for headers_t */
+#include "hpack_tables.h"       /* for hpack_dynamic_table_t */
 
 
 int hpack_decoder_decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers);

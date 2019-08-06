@@ -1,7 +1,7 @@
 #ifndef TWO_HPACK_TABLES_H
 #define TWO_HPACK_TABLES_H
-#include "logging.h"
-#include <stdint.h>
+#include <stdint.h>             /* for int8_t, uint32_t */
+
 #define STATIC_TABLE_SIZE (61)
 #define MAX_DYNAMIC_TABLE_SIZE (4092)
 //typedef for HeaderPair

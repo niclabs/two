@@ -6,12 +6,9 @@
 #define TWO_HPACK_H
 
 
-#include <stdint.h>
-#include "table.h"
-#include "headers.h"
-#include "hpack_encoder.h"
-#include "hpack_decoder.h"
-#include "hpack_tables.h"
+#include <stdint.h>             /* for uint8_t, uint32_t    */
+#include "headers.h"            /* for headers_t    */
+#include "hpack_tables.h"       /* for hpack_dynamic_table_t, header_pair_t */
 
 /*
    int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers);
