@@ -400,13 +400,11 @@ int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_pay
 */
 int compress_headers(headers_t *headers_out, uint8_t *compressed_headers)
 {
-    //TODO implement default compression
-    //now it is without compression
+    //TODO implement dynamic table size update
     int pointer = 0;
     for (uint8_t i = 0; i < headers_count(headers_out); i++)
     {
-        int rc = encode(LITERAL_HEADER_FIELD_WITHOUT_INDEXING, -1, headers_get_name_from_index(headers_out, i), headers_get_value_from_index(headers_out, i), compressed_headers + pointer);
-
+        int rc = encode(NULL, headers_get_name_from_index(headers_out, i), headers_get_value_from_index(headers_out, i), compressed_headers + pointer);
         pointer += rc;
     }
     return pointer;

@@ -387,60 +387,74 @@ int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name
  * Function: hpack_encoder_encode
  * Encodes a header field
  * Input:
- *      -> preamble: Indicates the type to encode
- *      -> max_size: Max size of the dynamic table
+ *      -> *dynamic_table: Dynamic table of the encoder
  *      -> *name_string: name of the header field to encode
  *      -> *value_string: value of the header field to encode
  *      -> *encoded_buffer: Buffer to store the result of the encoding process
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int hpack_encoder_encode(hpack_preamble_t preamble, uint32_t max_size, char *name_string, char *value_string,  uint8_t *encoded_buffer)
+int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_string,  uint8_t *encoded_buffer)
 {
-    if (preamble == DYNAMIC_TABLE_SIZE_UPDATE) { // dynamicTableSizeUpdate
-        int encoded_max_size_length = encode_integer(max_size, 5, encoded_buffer);
-        encoded_buffer[0] |= preamble;
-        return encoded_max_size_length;
-    }
-    else {
-        //TODO use dynamic table
-        int index = hpack_tables_find_index(NULL, name_string, value_string);
-        int pointer = 0;
-        if(index < 0) {
-            index = hpack_tables_find_index_name(NULL, name_string);
-            preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED; //TODO select indexing depending on input of func
-            uint8_t prefix = hpack_utils_find_prefix_size(preamble);
-            if(index < 0){
-                //NEW NAME
-                encoded_buffer[0] = 0; //Set up name not indexed;
-                int rc = encode_literal_header_field_new_name(name_string, value_string, encoded_buffer + pointer);
-                if (rc < 0) {
-                    ERROR("Error while trying to encode");
-                    return -1;
-                }
-                pointer += rc;
-            }else{
-                //INDEXED NAME
-                pointer += encode_integer(index, prefix, encoded_buffer + pointer);
-                int rc = encode_literal_header_field_indexed_name(value_string, encoded_buffer + pointer);
-                if (rc < 0) {
-                    ERROR("Error while trying to encode");
-                    return -1;
-                }
-                pointer += rc;
-            }
-            encoded_buffer[0] |= preamble;                      //set first bits
-            return pointer;
-        } else {
-            //INDEXED HEADER FIELD
-            preamble = INDEXED_HEADER_FIELD;
-            int rc = encode_indexed_header_field(NULL, name_string, value_string, encoded_buffer);
+    int index = hpack_tables_find_index(dynamic_table, name_string, value_string);
+    int pointer = 0;
+
+    if (index < 0) {
+        index = hpack_tables_find_index_name(dynamic_table, name_string);
+        hpack_preamble_t preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+        uint8_t prefix = hpack_utils_find_prefix_size(preamble);
+        if (index < 0) {
+            //NEW NAME
+            encoded_buffer[0] = 0;     //Set up name not indexed;
+            pointer += 1;
+            int rc = encode_literal_header_field_new_name(name_string, value_string, encoded_buffer + pointer);
             if (rc < 0) {
                 ERROR("Error while trying to encode");
                 return -1;
             }
-            encoded_buffer[0] |= preamble;                      //set first bits
-            return rc;
+            pointer += rc;
         }
+        else {
+            //INDEXED NAME
+            pointer += encode_integer(index, prefix, encoded_buffer + pointer);
+            int rc = encode_literal_header_field_indexed_name(value_string, encoded_buffer + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to encode");
+                return -1;
+            }
+            pointer += rc;
+        }
+        encoded_buffer[0] |= preamble;                          //set first bits
+        return pointer;
     }
+    else {
+        //INDEXED HEADER FIELD
+        hpack_preamble_t preamble = INDEXED_HEADER_FIELD;
+        int rc = encode_indexed_header_field(dynamic_table, name_string, value_string, encoded_buffer);
+        if (rc < 0) {
+            ERROR("Error while trying to encode");
+            return -1;
+        }
+        encoded_buffer[0] |= preamble;                          //set first bits
+        return rc;
+    }
+
+}
+
+/*
+ * Function: hpack_encoder_encode_dynamic_size_update
+ * Encodes a dynamic table size update with the new max_size as max_size
+ * Input:
+ *      -> *dynamic_table: Dynamic table of the encoder
+ *      -> max_size: New size of the dynamic table
+ *      -> *encoded_buffer: Buffer to encode the max_size
+ * Output:
+ *      Returns the size in bytes of the update.
+ */
+int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer){
+    hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
+    int encoded_max_size_length = encode_integer(max_size, 5, encoded_buffer);
+    encoded_buffer[0] |= preamble;
+    (void)dynamic_table;//TODO make a resize of the dynamic table
+    return encoded_max_size_length;
 }

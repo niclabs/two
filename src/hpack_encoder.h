@@ -14,7 +14,8 @@
 #include "hpack_tables.h"
 
 
-int hpack_encoder_encode(hpack_preamble_t preamble, uint32_t max_size, char *name_string, char *value_string,  uint8_t *encoded_buffer);
+int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_string,  uint8_t *encoded_buffer);
+int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer);
 
 
 #endif //TWO_HPACK_ENCODER_H

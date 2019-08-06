@@ -62,23 +62,31 @@ int decode_header_block(uint8_t *header_block, uint8_t header_block_size, header
 {
     return hpack_decoder_decode_header_block(header_block, header_block_size, headers);
 }
+
 /*
  * Function: encode
  * Encodes a header field
  * Input:
- *      -> preamble: Indicates the type to encode
- *      -> max_size: Max size of the dynamic table
- *      -> index: Index to encode if not equal to 0, if equal to 0 encodes a literal header field representation
+ *      -> dynamic_table: Dynamic table of the encoder
  *      -> *name_string: name of the header field to encode
- *      -> name_huffman_bool: Boolean value used to indicate if the name_string is to be compressed using Huffman Compression
  *      -> *value_string: value of the header field to encode
- *      -> value_huffman_bool: Boolean value used to indicate if the value_string is to be compressed using Huffman Compression
  *      -> *encoded_buffer: Buffer to store the result of the encoding process
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int encode(hpack_preamble_t preamble, uint32_t max_size, char *name_string, char *value_string,  uint8_t *encoded_buffer)
-{
-    return hpack_encoder_encode( preamble, max_size, name_string, value_string,  encoded_buffer);
+int encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_string,  uint8_t *encoded_buffer){
+    return hpack_encoder_encode(dynamic_table, name_string, value_string, encoded_buffer);
+}
 
+/*
+ * Function: encode_dynamic_size_update
+ * Input:
+ *      -> dynamic_table: Dynamic table of the encoder
+ *      -> max_size: Max size of the dynamic table
+ *      -> *encoded_buffer: Buffer to store the result of the encoding process
+ * Output:
+ *      Return the number of bytes written in encoded_buffer
+ */
+int encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer){
+    return hpack_encoder_encode_dynamic_size_update(dynamic_table, max_size, encoded_buffer);
 }
