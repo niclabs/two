@@ -23,7 +23,7 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, u
 FAKE_VALUE_FUNC(int8_t, hpack_utils_check_can_read_buffer, uint16_t, uint8_t, uint8_t );
 FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
-FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_preamble_t, uint32_t, char *, char *,  uint8_t *);
+FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_dynamic_table_t* , char*, char* ,  uint8_t*);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
