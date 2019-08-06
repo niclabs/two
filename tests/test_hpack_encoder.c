@@ -9,15 +9,15 @@
 #include "table.h"
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
-extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
-extern uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
-extern int encode_huffman_string(char *str, uint8_t *encoded_string);
+extern int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
+extern uint32_t hpack_encoder_encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
+extern int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string);
 #endif
-extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
-extern int encode_literal_header_field_new_name( char *name_string, char *value_string, uint8_t *encoded_buffer);
-extern int encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer);
-extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
-extern int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer);
+extern int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string);
+extern int hpack_encoder_encode_literal_header_field_new_name( char *name_string, char *value_string, uint8_t *encoded_buffer);
+extern int hpack_encoder_encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer);
+extern int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
+extern int hpack_encoder_encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer);
 
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
 typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_encode_fake when huffman_compression is not included*/
@@ -219,7 +219,7 @@ void test_encode_integer(void)
     int rc = hpack_utils_encoded_integer_size(integer, prefix);
     uint8_t encoded_integer[4];
 
-    rc = encode_integer(integer, prefix, encoded_integer);
+    rc = hpack_encoder_encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(1, rc);
     uint8_t expected_bytes1[] = {
         10        //0,0,0, 0,1,0,1,0
@@ -232,7 +232,7 @@ void test_encode_integer(void)
     prefix = 5;
     rc = hpack_utils_encoded_integer_size(integer, prefix);
 
-    rc = encode_integer(integer, prefix, encoded_integer);
+    rc = hpack_encoder_encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(1, rc);
     uint8_t expected_bytes2[] = {
         30        //0,0,0, 1,1,1,1,0
@@ -249,7 +249,7 @@ void test_encode_integer(void)
         encoded_integer[i] = 0;
     }
 
-    rc = encode_integer(integer, prefix, encoded_integer);
+    rc = hpack_encoder_encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(3, rc);
     uint8_t expected_bytes6[] = {
         31,        //0,0,0, 1,1,1,1,1
@@ -265,7 +265,7 @@ void test_encode_integer(void)
     prefix = 5;
     rc = hpack_utils_encoded_integer_size(integer, prefix);
 
-    rc = encode_integer(integer, prefix, encoded_integer);
+    rc = hpack_encoder_encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(2, rc);
     uint8_t expected_bytes3[] = {
         31,         //0,0,0, 1,1,1,1,1
@@ -280,7 +280,7 @@ void test_encode_integer(void)
     prefix = 6;
     rc = hpack_utils_encoded_integer_size(integer, prefix);
 
-    rc = encode_integer(integer, prefix, encoded_integer);
+    rc = hpack_encoder_encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(1, rc);
     uint8_t expected_bytes4[] = {
         31        //0,0, 0,1,1,1,1,1
@@ -293,7 +293,7 @@ void test_encode_integer(void)
     prefix = 5;
     rc = hpack_utils_encoded_integer_size(integer, prefix);
 
-    rc = encode_integer(integer, prefix, encoded_integer);
+    rc = hpack_encoder_encode_integer(integer, prefix, encoded_integer);
     TEST_ASSERT_EQUAL(3, rc);
     uint8_t expected_bytes5[] = {
         31,        //0,0,0, 1,1,1,1,1
@@ -330,7 +330,7 @@ void test_encode_non_huffman_string(void)
 
     hpack_utils_encoded_integer_size_fake.return_val = 1;
 
-    int rc = encode_non_huffman_string(str, encoded_string);
+    int rc = hpack_encoder_encode_non_huffman_string(str, encoded_string);
     TEST_ASSERT_EQUAL(15, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_string[i], encoded_string[i]);
@@ -361,7 +361,7 @@ void test_pack_encoded_words_to_bytes_test1(void)
     uint8_t buffer[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     uint8_t expected_result[] = { 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff };
 
-    int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 15, buffer, 12);
+    int8_t rs = hpack_encoder_pack_encoded_words_to_bytes(encoded_buffer, 15, buffer, 12);
 
     TEST_ASSERT_EQUAL(0, rs);
     for (int i = 0; i < 12; i++) {
@@ -387,7 +387,7 @@ void test_pack_encoded_words_to_bytes_test2(void)
     //a8eb 1064 9cbf
     uint8_t expected_result[] = { 0xa8, 0xeb, 0x10, 0x64, 0x9c, 0xbf };
 
-    int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 8, buffer, 6);
+    int8_t rs = hpack_encoder_pack_encoded_words_to_bytes(encoded_buffer, 8, buffer, 6);
 
     TEST_ASSERT_EQUAL(0, rs);
     for (int i = 0; i < 6; i++) {
@@ -417,7 +417,7 @@ void test_pack_encoded_words_to_bytes_test3(void)
     //25a8 49e9 5bb8 e8b4 bf
     uint8_t expected_result[] = { 0x25, 0xa8, 0x49, 0xe9, 0x5b, 0xb8, 0xe8, 0xb4, 0xbf };
 
-    int8_t rs = pack_encoded_words_to_bytes(encoded_buffer, 12, buffer, 9);
+    int8_t rs = hpack_encoder_pack_encoded_words_to_bytes(encoded_buffer, 12, buffer, 9);
 
     TEST_ASSERT_EQUAL(0, rs);
     for (int i = 0; i < 9; i++) {
@@ -435,7 +435,7 @@ void test_encode_huffman_word(void)
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
 
     huffman_encoded_word_t encoded_words[str_length];
-    uint32_t encoded_word_bit_length = encode_huffman_word(str, str_length, encoded_words);
+    uint32_t encoded_word_bit_length = hpack_encoder_encode_huffman_word(str, str_length, encoded_words);
     TEST_ASSERT_EQUAL(89, encoded_word_bit_length);
 
 }
@@ -451,7 +451,7 @@ void test_encode_huffman_string(void)
 
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
-    int rc = encode_huffman_string(str, encoded_string);
+    int rc = hpack_encoder_encode_huffman_string(str, encoded_string);
     TEST_ASSERT_EQUAL(13, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_string[i], encoded_string[i]);
@@ -529,7 +529,7 @@ void test_encode_literal_header_field_new_name(void)
     memset(encoded_buffer, 0, expected_bytes);
     hpack_utils_encoded_integer_size_fake.return_val = 1;
 
-    int8_t rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_buffer);
+    int8_t rc = hpack_encoder_encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_buffer);
     TEST_ASSERT_EQUAL(expected_bytes, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_string_encoded[i], encoded_buffer[i]);
@@ -555,13 +555,13 @@ void test_encode_literal_header_field_new_name_error(void)
         name_to_encode[i] = 'w';
         value_to_encode[i] = 'w';
     }
-    int rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_string);
+    int rc = hpack_encoder_encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
     char name_to_encode2[10];
     for (int i = 0; i < 10; i++) {
         name_to_encode2[i] = 'w';
     }
-    rc = encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
+    rc = hpack_encoder_encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
 
 
@@ -614,7 +614,7 @@ void test_encode_indexed_header_field(void)
     hpack_utils_find_prefix_size_fake.return_val = 7;
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     for (int i = 0; i < 3; i++) {
-        int rc = encode_indexed_header_field(NULL, names[i], values[i], encoded_buffer);
+        int rc = hpack_encoder_encode_indexed_header_field(NULL, names[i], values[i], encoded_buffer);
         TEST_ASSERT_EQUAL(1, rc);
         TEST_ASSERT_EQUAL(expected_encoding[i], encoded_buffer[0]);
     }
@@ -630,7 +630,7 @@ void test_encode_literal_header_field_indexed_name(void)
     memset(encoded_buffer, 0, 13);
     char value_string[] = "/sample/path";
     hpack_utils_encoded_integer_size_fake.return_val = 1;
-    int rc = encode_literal_header_field_indexed_name(value_string, encoded_buffer);
+    int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string, encoded_buffer);
     TEST_ASSERT_EQUAL(expected_len, rc);
     for (int i = 0; i < expected_len; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_buffer[i], encoded_buffer[i]);
@@ -640,7 +640,7 @@ void test_encode_literal_header_field_indexed_name(void)
     char value_string_huffman[] = "www.example.com";
     memset(encoded_buffer, 0, 13);
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, strlen(value_string_huffman));
-    rc = encode_literal_header_field_indexed_name(value_string_huffman, encoded_buffer);
+    rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string_huffman, encoded_buffer);
     TEST_ASSERT_EQUAL(13, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(encoded_wwwdotexampledotcom[i], encoded_buffer[i]);
@@ -664,7 +664,7 @@ void test_encode_literal_header_field_indexed_name_error(void)
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
     hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
 #endif
-    int rc = encode_literal_header_field_indexed_name(value_to_encode, encoded_string);
+    int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
 
 }

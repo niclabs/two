@@ -8,7 +8,7 @@
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
- * Function: pack_encoded_words_to_bytes
+ * Function: hpack_encoder_pack_encoded_words_to_bytes
  * Writes bits from 'code' (the representation in huffman)
  * from an array of huffman_encoded_word_t to a buffer
  * using exactly the sum of all lengths of encoded words bits.
@@ -19,7 +19,7 @@
  * - buffer_size: Size of the buffer
  * output: 0 if the bits are stored correctly ; -1 if it fails because the size of the buffer is less than the required to store the result
  */
-int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size)
+int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size)
 {
     int32_t sum = 0;
 
@@ -30,7 +30,7 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
     uint8_t required_bytes = sum % 8 ? (sum / 8) + 1 : sum / 8;
 
     if (required_bytes > buffer_size) {
-        ERROR("Buffer size is less than the required amount in pack_encoded_words_to_bytes");
+        ERROR("Buffer size is less than the required amount in hpack_encoder_pack_encoded_words_to_bytes");
         return -1;
     }
 
@@ -65,7 +65,7 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
 }
 #endif
 /*
- * Function: encode_integer
+ * Function: hpack_encoder_encode_integer
  * encode an integer with the given prefix
  * and save the encoded integer in "encoded_integer"
  * encoded_integer must be an array of the size calculated by encoded_integer_size
@@ -76,7 +76,7 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
  * Output:
  *      returns the encoded_integer_size
  */
-int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
+int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
     int octets_size = hpack_utils_encoded_integer_size(integer, prefix);
     uint8_t max_first_octet = (1 << prefix) - 1;
@@ -106,7 +106,7 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 }
 
 /*
- * Function: encode_non_huffman_string
+ * Function: hpack_encoder_encode_non_huffman_string
  * Encodes an Array of char without using Huffman Compression
  * Input:
  *      -> *str: Array to encode
@@ -114,10 +114,10 @@ int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
  * Output:
  *      returns the size in octets(bytes) of the encoded string
  */
-int encode_non_huffman_string(char *str, uint8_t *encoded_string)
+int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
     int str_length = strlen(str);
-    int encoded_string_length_size = encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
+    int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
 
     if (str_length + encoded_string_length_size >= HTTP2_MAX_HBF_BUFFER) {
         ERROR("String too big, does not fit on the encoded_string");
@@ -130,7 +130,7 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
 }
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
- * Function: encode_huffman_word
+ * Function: hpack_encoder_encode_huffman_word
  * Encodes an Array of char using huffman tree compression
  * and stores the result in an Array of huffman_encoded_word_t.
  * This function is meant to be used with encode_huffman_string.
@@ -141,7 +141,7 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
  * Output:
  *      Returns the sum of all bit lengths of the encoded_words
  */
-uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words)
+uint32_t hpack_encoder_encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words)
 {
     uint32_t encoded_word_bit_length = 0;
 
@@ -155,7 +155,7 @@ uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
- * Function: encode_huffman_string
+ * Function: hpack_encoder_encode_huffman_string
  * Encodes an Array of char using huffman tree compression
  * and stores the result in the given buffer.
  * Input:
@@ -164,15 +164,15 @@ uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *
  * Output:
  *      returns the size (in bytes) of the compressed array.
  */
-int encode_huffman_string(char *str, uint8_t *encoded_string)
+int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
 {
     uint32_t str_length = strlen(str); //TODO check if strlen is ok to use here
     huffman_encoded_word_t encoded_words[str_length];
 
-    uint32_t encoded_word_bit_length = encode_huffman_word(str, str_length, encoded_words);
+    uint32_t encoded_word_bit_length = hpack_encoder_encode_huffman_word(str, str_length, encoded_words);
 
     uint8_t encoded_word_byte_length = encoded_word_bit_length % 8 ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
-    int encoded_word_length_size = encode_integer(encoded_word_byte_length, 7, encoded_string);
+    int encoded_word_length_size = hpack_encoder_encode_integer(encoded_word_byte_length, 7, encoded_string);
 
     if (encoded_word_byte_length + encoded_word_length_size >= HTTP2_MAX_HBF_BUFFER) {
         ERROR("String too big, does not fit on the encoded_string");
@@ -182,7 +182,7 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
     uint8_t encoded_buffer[encoded_word_byte_length];
     memset(encoded_buffer, 0, encoded_word_byte_length);
 
-    pack_encoded_words_to_bytes(encoded_words, str_length, encoded_buffer, encoded_word_byte_length);
+    hpack_encoder_pack_encoded_words_to_bytes(encoded_words, str_length, encoded_buffer, encoded_word_byte_length);
 
     /*Set huffman bool*/
     encoded_string[0] |= 128;
@@ -196,7 +196,7 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
 #endif
 
 /*
- * Function: encode_string
+ * Function: hpack_encoder_encode_string
  * Encodes the given string with or without Huffman Compression and stores the result in encoded_string
  * The string is compressed if the string size in octets is less than the uncompressed string
  * Input:
@@ -205,130 +205,25 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
  * Output:
  *      Return the number of bytes used to store the encoded string, or if the encoding fails it returns -1
  */
-int encode_string(char *str, uint8_t *encoded_string)
+int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
 {
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
-    int rc = encode_huffman_string(str, encoded_string);
+    int rc = hpack_encoder_encode_huffman_string(str, encoded_string);
 
     if (rc < 0) {
-        return encode_non_huffman_string(str, encoded_string);
+        return hpack_encoder_encode_non_huffman_string(str, encoded_string);
     }
     if ((uint16_t)rc > strlen(str)) {
-        return encode_non_huffman_string(str, encoded_string);
+        return hpack_encoder_encode_non_huffman_string(str, encoded_string);
     }
     return rc;
 #else
-    return encode_non_huffman_string(str, encoded_string);
+    return hpack_encoder_encode_non_huffman_string(str, encoded_string);
 #endif
 }
 
-
 /*
-   int encode_literal_ḧeader_field_with_incremental_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
-    int pointer = 0;
-    int encoding_size = encode_integer(index,find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING),encoded_buffer);//returns size of encoding
-    if(encoding_size == -1){
-        ERROR("error encoding index");
-        return -1;
-    }
-    encode_buffer[0] |=  LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
-    pointer += encoding_size; //increase pointer to end of index
-    if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
-    }
-    return pointer;
-   }
-
-   int encode_literal_ḧeader_field_with_incremental_indexing_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
-    int pointer = 0;
-    encode_buffer[0] =  LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
-    pointer += 1; //increase pointer to end of index
-
-    if(name_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, name_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,name_string,encoded_buffer+pointer);
-    }
-    if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
-    }
-    return pointer;
-   }
-   int encode_literal_ḧeader_field_without_indexing_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
-    int pointer = 0;
-    int encoding_size = encode_integer(index,find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING),encoded_buffer); //returns size of encoding
-    if(encoding_size == -1){
-        ERROR("error encoding index");
-        return -1;
-    }
-    encode_buffer[0] |=  LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
-    pointer += encoding_size; //increase pointer to end of index
-    if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
-    }
-    return pointer;
-
-   }
-   int encode_literal_ḧeader_field_without_indexing_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
-    int pointer = 0;
-    encode_buffer[0] =  LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
-    pointer += 1; //increase pointer to end of index
-
-    if(name_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, name_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,name_string,encoded_buffer+pointer);
-    }
-    if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
-    }
-    return pointer;
-   }
-   int encode_literal_ḧeader_field_never_indexed_indexed_name(uint32_t index, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
-    int pointer = 0;
-    int encoding_size = encode_integer(index,find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED),encoded_buffer); //returns size of encoding
-    if(encoding_size == -1){
-        ERROR("error encoding index");
-        return -1;
-    }
-    encode_buffer[0] |=  LITERAL_HEADER_FIELD_NEVER_INDEXED;
-    pointer += encoding_size; //increase pointer to end of index
-    if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
-    }
-    return pointer;
-   }
-   int encode_literal_header_field_never_indexed_new_name(char* name_string, uint8_t name_huffman_bool, char* value_string, uint8_t value_huffman_bool,uint8_t* encoded_buffer){
-    int pointer = 0;
-    encode_buffer[0] =  LITERAL_HEADER_FIELD_NEVER_INDEXED;
-    pointer += 1; //increase pointer to end of index
-
-    if(name_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, name_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,name_string,encoded_buffer+pointer);
-    }
-    if(value_huffman_bool!=0){
-        pointer += pack_huffman_string_and_size(index, value_string,encoded_buffer+pointer);
-    }else{
-        pointer += pack_non_huffman_string_and_size(index,value_string,encoded_buffer+pointer);
-    }
-    return pointer;
-   }
- */
-
-/*
- * Function: encode_literal_header_field_new_name
+ * Function: hpack_encoder_encode_literal_header_field_new_name
  * Encodes a name and a value
  * Input:
  *      -> *name_string: name of the header field to encode
@@ -337,18 +232,18 @@ int encode_string(char *str, uint8_t *encoded_string)
  *  Output:
  *      Returns the number of bytes used to encode name and value, or -1 if an error occurs while encoding
  */
-int encode_literal_header_field_new_name(char *name_string, char *value_string, uint8_t *encoded_buffer)
+int hpack_encoder_encode_literal_header_field_new_name(char *name_string, char *value_string, uint8_t *encoded_buffer)
 {
     int pointer = 0;
 
-    int rc = encode_string(name_string, encoded_buffer + pointer);
+    int rc = hpack_encoder_encode_string(name_string, encoded_buffer + pointer);
 
     if (rc < 0) {
         ERROR("Error while trying to encode name in encode_literal_header_field_new_name");
         return -1;
     }
     pointer += rc;
-    rc = encode_string(value_string, encoded_buffer + pointer);
+    rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer);
     if (rc < 0) {
         ERROR("Error while trying to encode value in encode_literal_header_field_new_name");
         return -1;
@@ -358,7 +253,7 @@ int encode_literal_header_field_new_name(char *name_string, char *value_string, 
 }
 
 /*
- * Function: encode_literal_header_field_indexed_name
+ * Function: hpack_encoder_encode_literal_header_field_indexed_name
  * Encodes a value
  * Input:
  *      -> *value_string: value of the header field to encode
@@ -366,9 +261,9 @@ int encode_literal_header_field_new_name(char *name_string, char *value_string, 
  * Output:
  *      Returns the number of bytes used to encde the value, or -1 if an error occurs while encoding
  */
-int encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer)
+int hpack_encoder_encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer)
 {
-    int rc = encode_string(value_string, encoded_buffer);
+    int rc = hpack_encoder_encode_string(value_string, encoded_buffer);
 
     if (rc < 0) {
         ERROR("Error while trying to encode value in encode_literal_header_field_indexed_name");
@@ -378,7 +273,7 @@ int encode_literal_header_field_indexed_name(char *value_string, uint8_t *encode
 }
 
 /*
- * Function: encode_indexed_header_field
+ * Function: hpack_encoder_encode_indexed_header_field
  * Encodes an indexed indexed header field
  * Input:
  *      -> *dynamic_table: Dynamic table to find name and value
@@ -387,7 +282,7 @@ int encode_literal_header_field_indexed_name(char *value_string, uint8_t *encode
  * Output:
  *      Returns the number of octets used to encode the given name and value, or -1 if it fails.
  */
-int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer)
+int hpack_encoder_encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer)
 {
     int rc = hpack_tables_find_index(dynamic_table, name, value);
 
@@ -395,7 +290,7 @@ int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name
         return -1;
     }
     uint8_t prefix = hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD);
-    int pointer = encode_integer(rc, prefix, encoded_buffer);
+    int pointer = hpack_encoder_encode_integer(rc, prefix, encoded_buffer);
     return pointer;
 }
 
@@ -423,7 +318,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
             //NEW NAME
             encoded_buffer[0] = 0;     //Set up name not indexed;
             pointer += 1;
-            int rc = encode_literal_header_field_new_name(name_string, value_string, encoded_buffer + pointer);
+            int rc = hpack_encoder_encode_literal_header_field_new_name(name_string, value_string, encoded_buffer + pointer);
             if (rc < 0) {
                 ERROR("Error while trying to encode");
                 return -1;
@@ -432,8 +327,8 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
         }
         else {
             //INDEXED NAME
-            pointer += encode_integer(index, prefix, encoded_buffer + pointer);
-            int rc = encode_literal_header_field_indexed_name(value_string, encoded_buffer + pointer);
+            pointer += hpack_encoder_encode_integer(index, prefix, encoded_buffer + pointer);
+            int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string, encoded_buffer + pointer);
             if (rc < 0) {
                 ERROR("Error while trying to encode");
                 return -1;
@@ -446,7 +341,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
     else {
         //INDEXED HEADER FIELD
         hpack_preamble_t preamble = INDEXED_HEADER_FIELD;
-        int rc = encode_indexed_header_field(dynamic_table, name_string, value_string, encoded_buffer);
+        int rc = hpack_encoder_encode_indexed_header_field(dynamic_table, name_string, value_string, encoded_buffer);
         if (rc < 0) {
             ERROR("Error while trying to encode");
             return -1;
@@ -469,7 +364,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
  */
 int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer){
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
-    int encoded_max_size_length = encode_integer(max_size, 5, encoded_buffer);
+    int encoded_max_size_length = hpack_encoder_encode_integer(max_size, 5, encoded_buffer);
     encoded_buffer[0] |= preamble;
     (void)dynamic_table;//TODO make a resize of the dynamic table
     return encoded_max_size_length;
