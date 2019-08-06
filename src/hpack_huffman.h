@@ -10,7 +10,12 @@
 #define HUFFMAN_TABLE_SIZE (256)
 #define NUMBER_OF_CODE_LENGTHS (21)
 #define INCLUDE_HUFFMAN_LENGTH_TABLE (1)
+//#define HPACK_INCLUDE_HUFFMAN_COMPRESSION (1) //DEFAULT
+#ifdef HPACK_INCLUDE_HUFFMAN_COMPRESSION
+#define INCLUDE_HUFFMAN_COMPRESSION (HPACK_INCLUDE_HUFFMAN_COMPRESSION)
+#endif
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 typedef struct {
     uint32_t code;
     uint8_t length;
@@ -31,5 +36,5 @@ typedef struct {
 int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym);
 
 int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t* sym);
-
+#endif
 #endif //HPACK_HUFFMAN_H

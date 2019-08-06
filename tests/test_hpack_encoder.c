@@ -8,14 +8,20 @@
 #include "hpack_utils.h"
 #include "table.h"
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 extern int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
 extern uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
 extern int encode_huffman_string(char *str, uint8_t *encoded_string);
+#endif
 extern int encode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern int encode_literal_header_field_new_name( char *name_string, char *value_string, uint8_t *encoded_buffer);
 extern int encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer);
 extern int encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
 extern int encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer);
+
+#ifndef INCLUDE_HUFFMAN_COMPRESSION
+typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_encode_fake when huffman_compression is not included*/
+#endif
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
@@ -32,6 +38,7 @@ FAKE_VALUE_FUNC(int, hpack_tables_find_index_name, hpack_dynamic_table_t *, char
     FAKE(hpack_tables_find_index_name)                   \
     FAKE(hpack_huffman_encode)
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*----------Value Return for FAKEs ----------*/
 int8_t hpack_huffman_encode_return_w(huffman_encoded_word_t *h, uint8_t sym)
 {
@@ -191,7 +198,7 @@ int8_t(*hpack_huffman_encode_customvalue_arr[])(huffman_encoded_word_t *, uint8_
                                                                                        hpack_huffman_encode_return_l,
                                                                                        hpack_huffman_encode_return_u,
                                                                                        hpack_huffman_encode_return_e };
-
+#endif
 void setUp(void)
 {
     /* Register resets */
@@ -330,6 +337,8 @@ void test_encode_non_huffman_string(void)
     }
 
 }
+
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_pack_encoded_words_to_bytes_test1(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*www.example.com*/
@@ -359,8 +368,9 @@ void test_pack_encoded_words_to_bytes_test1(void)
         TEST_ASSERT_EQUAL(expected_result[i], buffer[i]);
     }
 }
+#endif
 
-
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_pack_encoded_words_to_bytes_test2(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*no-cache*/
@@ -384,7 +394,9 @@ void test_pack_encoded_words_to_bytes_test2(void)
         TEST_ASSERT_EQUAL(expected_result[i], buffer[i]);
     }
 }
+#endif
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_pack_encoded_words_to_bytes_test3(void)
 {
     huffman_encoded_word_t encoded_buffer[] = {/*custom-value*/
@@ -412,7 +424,9 @@ void test_pack_encoded_words_to_bytes_test3(void)
         TEST_ASSERT_EQUAL(expected_result[i], buffer[i]);
     }
 }
+#endif
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_encode_huffman_word(void)
 {
     uint32_t str_length = 15;
@@ -425,7 +439,9 @@ void test_encode_huffman_word(void)
     TEST_ASSERT_EQUAL(89, encoded_word_bit_length);
 
 }
+#endif
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_encode_huffman_string(void)
 {
     char *str = "www.example.com";
@@ -440,36 +456,37 @@ void test_encode_huffman_string(void)
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_string[i], encoded_string[i]);
     }
-
 }
+#endif
+
 void test_encode_literal_header_field_new_name(void)
 {
-    /*Test encoding a huffman string*/
+    /*Test encoding a string*/
     char *name_to_encode = "custom-key";
     char *value_to_encode = "custom-value";
-    uint8_t expected_huffman_string_encoded [] = { 0x88,
-                                                   0x25,
-                                                   0xa8,
-                                                   0x49,
-                                                   0xe9,
-                                                   0x5b,
-                                                   0xa9,
-                                                   0x7d,
-                                                   0x7f,
-                                                   0x89,
-                                                   0x25,
-                                                   0xa8,
-                                                   0x49,
-                                                   0xe9,
-                                                   0x5b,
-                                                   0xb8,
-                                                   0xe8,
-                                                   0xb4,
-                                                   0xbf };
-    uint8_t encoded_buffer_huffman[19];
 
-    memset(encoded_buffer_huffman, 0, 19);
-    hpack_utils_encoded_integer_size_fake.return_val = 1;
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
+    /*String huffman compressed*/
+    uint8_t expected_string_encoded [] = { 0x88,
+                                           0x25,
+                                           0xa8,
+                                           0x49,
+                                           0xe9,
+                                           0x5b,
+                                           0xa9,
+                                           0x7d,
+                                           0x7f,
+                                           0x89,
+                                           0x25,
+                                           0xa8,
+                                           0x49,
+                                           0xe9,
+                                           0x5b,
+                                           0xb8,
+                                           0xe8,
+                                           0xb4,
+                                           0xbf };
+    uint8_t expected_bytes = 19;
     /*Set up encoding function call*/
     int8_t(*hpack_huffman_encode_huffman_header_name_value[22])(huffman_encoded_word_t *, uint8_t);
     for (uint8_t i = 0; i < strlen(name_to_encode); i++) {
@@ -480,10 +497,42 @@ void test_encode_literal_header_field_new_name(void)
     }
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_huffman_header_name_value, strlen(name_to_encode) + strlen(value_to_encode));
 
-    int8_t rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_buffer_huffman);
-    TEST_ASSERT_EQUAL(19, rc);
+#else
+    uint8_t expected_string_encoded [] = { 0xa,
+                                           'c',
+                                           'u',
+                                           's',
+                                           't',
+                                           'o',
+                                           'm',
+                                           '-',
+                                           'k',
+                                           'e',
+                                           'y',
+                                           0xc,
+                                           'c',
+                                           'u',
+                                           's',
+                                           't',
+                                           'o',
+                                           'm',
+                                           '-',
+                                           'v',
+                                           'a',
+                                           'l',
+                                           'u',
+                                           'e'
+    };
+    uint8_t expected_bytes = 24;
+#endif
+    uint8_t encoded_buffer[expected_bytes];
+    memset(encoded_buffer, 0, expected_bytes);
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+
+    int8_t rc = encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_buffer);
+    TEST_ASSERT_EQUAL(expected_bytes, rc);
     for (int i = 0; i < rc; i++) {
-        TEST_ASSERT_EQUAL(expected_huffman_string_encoded[i], encoded_buffer_huffman[i]);
+        TEST_ASSERT_EQUAL(expected_string_encoded[i], encoded_buffer[i]);
     }
 }
 
@@ -499,7 +548,9 @@ void test_encode_literal_header_field_new_name_error(void)
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2, 2, 1, 2 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 5);
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
     hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
+#endif
     for (int i = 0; i < 2 * HTTP2_MAX_HBF_BUFFER; i++) {
         name_to_encode[i] = 'w';
         value_to_encode[i] = 'w';
@@ -568,6 +619,7 @@ void test_encode_indexed_header_field(void)
         TEST_ASSERT_EQUAL(expected_encoding[i], encoded_buffer[0]);
     }
 }
+
 void test_encode_literal_header_field_indexed_name(void)
 {
     /*Test with no compression*/
@@ -579,10 +631,11 @@ void test_encode_literal_header_field_indexed_name(void)
     char value_string[] = "/sample/path";
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     int rc = encode_literal_header_field_indexed_name(value_string, encoded_buffer);
-    TEST_ASSERT_EQUAL(expected_len, 13);
+    TEST_ASSERT_EQUAL(expected_len, rc);
     for (int i = 0; i < expected_len; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_buffer[i], encoded_buffer[i]);
     }
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
     /*Test with compression*/
     char value_string_huffman[] = "www.example.com";
     memset(encoded_buffer, 0, 13);
@@ -592,6 +645,7 @@ void test_encode_literal_header_field_indexed_name(void)
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(encoded_wwwdotexampledotcom[i], encoded_buffer[i]);
     }
+#endif
 }
 
 void test_encode_literal_header_field_indexed_name_error(void)
@@ -607,8 +661,9 @@ void test_encode_literal_header_field_indexed_name_error(void)
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2, 2, 1, 2 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 5);
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
     hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
-
+#endif
     int rc = encode_literal_header_field_indexed_name(value_to_encode, encoded_string);
     TEST_ASSERT_EQUAL(-1, rc);
 
@@ -621,13 +676,14 @@ int main(void)
     UNIT_TEST(test_hpack_encoder_encode);
     UNIT_TEST(test_encode_integer);
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
     UNIT_TEST(test_pack_encoded_words_to_bytes_test1);
     UNIT_TEST(test_pack_encoded_words_to_bytes_test2);
     UNIT_TEST(test_pack_encoded_words_to_bytes_test3);
-
     UNIT_TEST(test_encode_huffman_word);
-    UNIT_TEST(test_encode_non_huffman_string);
     UNIT_TEST(test_encode_huffman_string);
+#endif
+    UNIT_TEST(test_encode_non_huffman_string);
 /*
     UNIT_TEST(test_encode_then_decode_non_huffman_string);
     UNIT_TEST(test_encode_then_decode_huffman_string);

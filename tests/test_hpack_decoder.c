@@ -9,14 +9,19 @@
 #include "hpack_utils.h"
 #include "table.h"
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 extern int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string);
+extern int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
+#endif
 extern int hpack_decoder_decode_string(char *str, uint8_t *encoded_string);
 extern int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string);
 extern int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
-extern int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
 extern uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 
+#ifndef INCLUDE_HUFFMAN_COMPRESSION
+typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_decode_fake when huffman_compression is not included*/
+#endif
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
 FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
@@ -35,8 +40,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name_and_value, hpack_dynamic_ta
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, uint32_t, char *);
 
 /* List of fakes used by this unit tester */
-#define FFF_FAKES_LIST(FAKE)                     \
-    FAKE(hpack_huffman_decode)                   \
+#define FFF_FAKES_LIST(FAKE)                    \
     FAKE(hpack_utils_read_bits_from_bytes)       \
     FAKE(hpack_utils_check_can_read_buffer)      \
     FAKE(hpack_utils_get_preamble)               \
@@ -48,9 +52,11 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, u
     FAKE(hpack_tables_dynamic_table_add_entry)   \
     FAKE(hpack_tables_find_entry_name_and_value) \
     FAKE(hpack_tables_find_entry_name)           \
-    FAKE(headers_add)
+    FAKE(headers_add)                            \
+    FAKE(hpack_huffman_decode)
 
 /*Decode*/
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 int8_t hpack_huffman_decode_return_not_found(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     return -1;
@@ -151,7 +157,7 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0x90,
                                           0xf4,
                                           0xff };
-
+#endif
 
 int8_t hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
@@ -407,7 +413,7 @@ void test_encode_then_decode_non_huffman_string(void)
     //TODO
 }
 
-
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_decode_huffman_word(void)
 {
     uint8_t *encoded_string = encoded_wwwdotexampledotcom + 1; //We don't need to decode as string the first byte
@@ -431,7 +437,9 @@ void test_decode_huffman_word(void)
     }
     TEST_ASSERT_EQUAL(29, hpack_huffman_decode_fake.call_count);
 }
+#endif
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_decode_huffman_string(void)
 {
     char decoded_string[30];
@@ -450,9 +458,10 @@ void test_decode_huffman_string(void)
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
-
 }
+#endif
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_decode_huffman_string_error(void)
 {
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_bad_padding_arr, 2);
@@ -480,7 +489,9 @@ void test_decode_huffman_string_error(void)
         TEST_ASSERT_EQUAL(expected_decoded_string3[i], decoded_string3[i]);
     }
 }
+#endif
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*Test to see if decoding and encoded huffman string yields the same string*/
 void test_encode_then_decode_huffman_string(void)
 {
@@ -505,6 +516,7 @@ void test_encode_then_decode_huffman_string(void)
        }*/
     //TODO
 }
+#endif
 
 void test_decode_string(void)
 {
@@ -522,6 +534,7 @@ void test_decode_string(void)
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
+    #ifdef INCLUDE_HUFFMAN_COMPRESSION
     /*Test decode a huffman string*/
     memset(decoded_string, 0, 30);
 
@@ -534,8 +547,10 @@ void test_decode_string(void)
     for (int i = 0; i < rc2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
+    #endif
 }
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_decode_string_error(void)
 {
     uint32_t return_fake_value_read_bits_from_bytes = 3;
@@ -554,6 +569,7 @@ void test_decode_string_error(void)
     TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
 }
+#endif
 
 void test_decode_integer(void)
 {
@@ -639,18 +655,19 @@ int main(void)
     UNIT_TEST(test_decode_header_block_literal_never_indexed);
     UNIT_TEST(test_hpack_decoder_decode_indexed_header_field);
 
-
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
     UNIT_TEST(test_decode_huffman_word);
-    UNIT_TEST(test_decode_integer);
-    UNIT_TEST(test_decode_non_huffman_string);
-
     UNIT_TEST(test_decode_huffman_string);
     UNIT_TEST(test_decode_huffman_string_error);
-    UNIT_TEST(test_decode_string);
-
     UNIT_TEST(test_decode_string_error);
-    UNIT_TEST(test_encode_then_decode_non_huffman_string);
     UNIT_TEST(test_encode_then_decode_huffman_string);
+
+#endif
+
+    UNIT_TEST(test_decode_integer);
+    UNIT_TEST(test_decode_non_huffman_string);
+    UNIT_TEST(test_decode_string);
+    UNIT_TEST(test_encode_then_decode_non_huffman_string);
 
     return UNIT_TESTS_END();
 }

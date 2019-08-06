@@ -6,6 +6,7 @@
 #include "logging.h"           /* for ERROR */
 #include "table.h"             /* for HTTP2_MAX_HBF_BUFFER */
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
  * Function: pack_encoded_words_to_bytes
  * Writes bits from 'code' (the representation in huffman)
@@ -62,7 +63,7 @@ int8_t pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_
     }
     return 0;
 }
-
+#endif
 /*
  * Function: encode_integer
  * encode an integer with the given prefix
@@ -127,6 +128,7 @@ int encode_non_huffman_string(char *str, uint8_t *encoded_string)
     }
     return str_length + encoded_string_length_size;
 }
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
  * Function: encode_huffman_word
  * Encodes an Array of char using huffman tree compression
@@ -149,6 +151,9 @@ uint32_t encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *
     }
     return encoded_word_bit_length;
 }
+#endif
+
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
  * Function: encode_huffman_string
  * Encodes an Array of char using huffman tree compression
@@ -188,6 +193,7 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
 
     return encoded_word_byte_length + encoded_word_length_size;
 }
+#endif
 
 /*
  * Function: encode_string
@@ -201,6 +207,7 @@ int encode_huffman_string(char *str, uint8_t *encoded_string)
  */
 int encode_string(char *str, uint8_t *encoded_string)
 {
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
     int rc = encode_huffman_string(str, encoded_string);
 
     if (rc < 0) {
@@ -210,6 +217,9 @@ int encode_string(char *str, uint8_t *encoded_string)
         return encode_non_huffman_string(str, encoded_string);
     }
     return rc;
+#else
+    return encode_non_huffman_string(str, encoded_string);
+#endif
 }
 
 

@@ -67,6 +67,7 @@ int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string)
     return str_length + str_length_size;
 }
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
  * Function: hpack_decoder_decode_huffman_word
  * Given the bit position from where to start to read, tries to decode de bits using
@@ -112,7 +113,10 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
     }
     return -1;
 }
+#endif
 
+
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
  * Function: hpack_decoder_decode_huffman_string
  * Tries to decode encoded_string (compressed using huffman) and store the result in *str
@@ -155,6 +159,7 @@ int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
     }
     return str_length + str_length_size;
 }
+#endif
 
 /*
  * Function: hpack_decoder_decode_string
@@ -175,10 +180,15 @@ uint32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer)
     int rc = 0;
 
     if (huffman_bit) {
+        #ifdef INCLUDE_HUFFMAN_COMPRESSION
         rc = hpack_decoder_decode_huffman_string(str, encoded_buffer);
         if (rc < 0) {
             return -1;
         }
+        #else
+        ERROR("Cannot decode a huffman compressed header");
+        return -1;
+        #endif
     }
     else {
         rc = hpack_decoder_decode_non_huffman_string(str, encoded_buffer);

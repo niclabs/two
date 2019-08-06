@@ -3,6 +3,7 @@
 //
 #include "hpack_huffman.h"
 
+#ifdef INCLUDE_HUFFMAN_COMPRESSION
 static const huffman_tree_t huffman_tree = {
     .codes = {
         0x1ff8u,
@@ -911,3 +912,4 @@ int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t* sym){
     return -1;
 }
 
+#endif
