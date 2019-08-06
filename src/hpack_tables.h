@@ -3,7 +3,12 @@
 #include <stdint.h>             /* for int8_t, uint32_t */
 
 #define STATIC_TABLE_SIZE (61)
-#define MAX_DYNAMIC_TABLE_SIZE (4092)
+#ifdef HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE
+#define HPACK_MAX_DYNAMIC_TABLE_SIZE (HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE)
+#else
+#define HPACK_MAX_DYNAMIC_TABLE_SIZE (4092)
+#endif
+
 //typedef for HeaderPair
 typedef struct hpack_header_pair {
     char *name;
