@@ -649,6 +649,11 @@ int send_data(hstates_t *st, uint8_t end_stream){
 }
 
 int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
+  if(st->h2s.waiting_for_end_headers_flag){
+    //protocol error
+    ERROR("CONTINUATION or HEADERS frame was expected. PROTOCOL ERROR");
+    return -1;
+  }
     if(st->h2s.current_stream.stream_id == 0){
       ERROR("Data stream ID is 0. PROTOCOL ERROR");
       return -1;
