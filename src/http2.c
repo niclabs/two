@@ -286,18 +286,9 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
 
 }
 
-
-int send_connection_error(hstates_t *st, uint32_t error_code){
-  int rc = send_goaway(st, error_code);
-  if(rc < 0){
-    ERROR("Error sending GOAWAY frame to endpoint. INTERNAL ERROR");
-    return rc;
-  }
+void shutdown_connection(hstates_t *st){
   st->connection_state = 0;
-  //TODO: communicate error code to HTTP?
-  return 0;
 }
-
 
 /*
 * Function: send_connection_error
@@ -313,7 +304,7 @@ void send_connection_error(hstates_t *st, uint32_t error_code){
   if(rc < 0){
     WARN("Error sending GOAWAY frame to endpoint.");
   }
-  st->connection_state = 0;
+  shutdown_connection(st);
   //TODO: communicate error code to HTTP?
 }
 
@@ -335,7 +326,7 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
       return -1;
   }
   if(st->h2s.sent_goaway == 1){ // received answer to goaway
-    st->connection_state = 0;
+    shutdown_connection(st);
     INFO("Connection CLOSED");
     return 0;
   }
