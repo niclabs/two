@@ -286,6 +286,19 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
 
 }
 
+
+int send_connection_error(hstates_t *st, uint32_t error_code){
+  int rc = send_goaway(st, error_code);
+  if(rc < 0){
+    ERROR("Error sending GOAWAY frame to endpoint. INTERNAL ERROR");
+    return rc;
+  }
+  st->connection_state = 0;
+  //TODO: communicate error code to HTTP?
+  return 0;
+}
+
+
 /*
 * Function: handle_goaway_payload
 * Handles go away payload.
