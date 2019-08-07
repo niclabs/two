@@ -431,11 +431,9 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 * Client API methods
 ************************************/
 
-int receive_server_response(hstates_t *hs)
+int receive_server_response_data(hstates_t *hs)
 {
-    // TODO: receive headers (?)
-
-    // Receive data
+    hs->new_data = 0;
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
             break;
@@ -443,8 +441,8 @@ int receive_server_response(hstates_t *hs)
         if (hs->keep_receiving == 1) {
             continue;
         }
-        if (hs->data_in.size > 0) {
-            return 0;
+        if (hs->new_data > 0) {
+            return hs->new_data;
         }
     }
 
@@ -455,6 +453,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
 {
     // Initialize output header list
     header_t header_list_out[HTTP_MAX_HEADER_COUNT];
+
     headers_init(&hs->headers_out, header_list_out, HTTP_MAX_HEADER_COUNT);
 
     if (headers_set(&hs->headers_out, ":method", method) < 0 ||
@@ -475,19 +474,28 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
     header_t header_list_in[HTTP_MAX_HEADER_COUNT];
     headers_init(&hs->headers_in, header_list_in, HTTP_MAX_HEADER_COUNT);
 
-    if (receive_server_response(hs) < 0) {
-        ERROR("An error ocurred while waiting for server response");
+    if (receive_headers(hs) < 0) {
+        ERROR("An error ocurred while waiting for server response headers");
         return -1;
     }
+
+    int res_data = receive_server_response_data(hs);
+    if (res_data < 0) {
+        ERROR("An error ocurred while waiting for server response data");
+        return -1;
+    }
+    if (res_data == 1) {
+        // Get response data (TODO: should we just copy the pointer?)
+        *size = get_data(&hs->data_in, response, *size);
+    }
+
 
     int status = atoi(headers_get(&hs->headers_in, ":status"));
     DEBUG("Server replied with status %d", status);
 
-    // Get response data (TODO: should we just copy the pointer?)
-    *size = get_data(&hs->data_in, response, *size);
-
     return status;
 }
+
 
 int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 {
