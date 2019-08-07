@@ -212,6 +212,8 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
     header_pair_t result = dynamic_table->table[table_index];
+    memset(name,0,strlen(name));
+    memset(value,0,strlen(value));
     strncpy(name, result.name, strlen(result.name));
     strncpy(value, result.value, strlen(result.value));
     return 0;
@@ -235,6 +237,7 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
         return -1;
     }
     header_pair_t result = dynamic_table->table[table_index];
+    memset(name, 0, strlen(name));
     strncpy(name, result.name, strlen(result.name));
     return 0;
 }
@@ -454,8 +457,8 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         const char *table_name = hpack_static_table.name_table[i];
         const char *table_value = hpack_static_table.value_table[i];
-        if ((strncmp(table_name, name, strlen(name)) == 0) &&
-            (strncmp(table_value, value, strlen(value)) == 0)) {
+        if ((strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) &&
+            ((strlen(value) == strlen(table_value) && strncmp(table_value, value, strlen(value)) == 0))) {
             return i + 1;
         }
     }
@@ -470,8 +473,10 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     char tmp_value[MAX_HEADER_VALUE_LEN];
     for (uint8_t i = 0; i < hpack_tables_dynamic_table_length(dynamic_table); i++) {
         hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name, tmp_value);
-        if ((strncmp(tmp_name, name, strlen(name)) == 0) &&
-            (strncmp(tmp_value, value, strlen(value)) == 0)) {
+        if ((strlen(tmp_name) == strlen(name) &&
+             (strncmp(tmp_name, name, strlen(name)) == 0)) &&
+                (strlen(tmp_value) == strlen(value) &&
+                (strncmp(tmp_value, value, strlen(value)) == 0))) {
             return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
         }
     }
@@ -496,7 +501,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     //Search first in static table
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         const char *table_name = hpack_static_table.name_table[i];
-        if (strncmp(table_name, name, strlen(name)) == 0) {
+        if (strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) {
             return i + 1;
         }
     }
@@ -510,7 +515,8 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     char tmp_name[MAX_HEADER_NAME_LEN];
     for (uint8_t i = 0; i < hpack_tables_dynamic_table_length(dynamic_table); i++) {
         hpack_tables_dynamic_find_entry_name(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name);
-        if (strncmp(tmp_name, name, strlen(name)) == 0) {
+        //TODO CHECK length of tmp_name and name
+        if (strlen(name) == strlen(tmp_name) && strncmp(tmp_name, name, strlen(name)) == 0) {
             return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
         }
     }
