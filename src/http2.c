@@ -413,10 +413,12 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
   if(st->h2s.waiting_for_end_headers_flag){
     //protocol error
     ERROR("CONTINUATION frame was expected. PROTOCOL ERROR");
+    send_connection_error(st, HTTP2_PROTOCOL_ERROR);
     return -1;
   }
   if(header->stream_id == 0){
     ERROR("Invalid stream id: 0. PROTOCOL ERROR");
+    send_connection_error(st, HTTP2_PROTOCOL_ERROR);
     return -1;
   }
   if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
@@ -426,11 +428,13 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
   if(st->h2s.current_stream.state == STREAM_IDLE){
       if(header->stream_id < st->h2s.last_open_stream_id){
         ERROR("Invalid stream id: not bigger than last open. PROTOCOL ERROR");
+        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
         return -1;
       }
       if(header->stream_id%2 != st->is_server){
         INFO("Incoming stream id: %u", header->stream_id);
         ERROR("Invalid stream id parity. PROTOCOL ERROR");
+        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
         return -1;
       }
       else{ // Open a new stream, update last_open and last_peer stream
@@ -449,6 +453,7 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
   else if(header->stream_id != st->h2s.current_stream.stream_id){
       //protocol error
       ERROR("Stream ids do not match. PROTOCOL ERROR");
+      send_connection_error(st, HTTP2_PROTOCOL_ERROR);
       return -1;
   }
   else{
