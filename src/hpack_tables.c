@@ -287,37 +287,48 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
         ERROR("Resize operation exceeds the maximum size set by the protocol ");
         return -1;
     }
-    //TODO CHECK SIZE
-    uint32_t new_table_length = (uint32_t)(new_max_size / sizeof(header_pair_t)) + 1;
-    header_pair_t new_table[new_table_length];
 
-    uint32_t new_first = 0;
-    uint32_t new_next = 0;
-    uint32_t new_size = 0;
+    uint32_t new_table_length = (uint32_t)((new_max_size / 32) + 1);
 
-    uint32_t i = dynamic_table->first;
-    uint32_t j = 0;
-
-    uint32_t table_length_used = hpack_tables_dynamic_table_length(dynamic_table);
-
-    while (j < table_length_used && (new_size + hpack_tables_header_pair_size(dynamic_table->table[i])) <= new_max_size) {
-        new_table[j] = dynamic_table->table[i];
-        i = (i + 1) % dynamic_table->table_length;
-        j++;
-        new_next = (new_next + 1) % new_table_length;
-        new_size += hpack_tables_header_pair_size(dynamic_table->table[i]);
+    //TODO check case new max size different but length same
+    //Case same size as before
+    if(new_max_size == dynamic_table->max_size){
+        return 0;
     }
-
-    //clean last table_length
-    memset(&dynamic_table->table, 0, sizeof(dynamic_table->table));
-
-    dynamic_table->max_size = new_max_size;
-    dynamic_table->table_length = new_table_length;
-    dynamic_table->next = new_next;
-    dynamic_table->first = new_first;
-    dynamic_table->table = new_table;
-
-
+    //Case table grows
+    if(new_table_length > dynamic_table->table_length){
+      //if next is after first
+      if(dynamic_table->first < dynamic_table->next){
+        dynamic_table->max_size = new_max_size;
+        dynamic_table->table_length = new_table_length;
+      }
+      //if next is before first
+      else{
+        if(dynamic_table->next < new_table_length - dynamic_table->table_length){
+          for(uint32_t i=0; i < dynamic_table->next; i++){
+            dynamic_table->table[dynamic_table->table_length+i].name = dynamic_table->table[i].name;
+            dynamic_table->table[dynamic_table->table_length+i].value = dynamic_table->table[i].value;
+          }
+          dynamic_table->next = dynamic_table->table_length + dynamic_table->next;
+        }
+        else{
+          for(uint32_t i=0; i < new_table_length - dynamic_table->table_length; i++){
+            dynamic_table->table[dynamic_table->table_length+i].name = dynamic_table->table[i].name;
+            dynamic_table->table[dynamic_table->table_length+i].value = dynamic_table->table[i].value;
+          }
+          for(uint32_t i=0; i < dynamic_table->next - (new_table_length - dynamic_table->table_length); i++){
+            dynamic_table->table[i].name = dynamic_table->table[new_table_length-dynamic_table->table_length + i].name;
+            dynamic_table->table[i].value = dynamic_table->table[new_table_length-dynamic_table->table_length + i].value;
+          }
+          dynamic_table->next = new_table_length - dynamic_table->table_length;
+        }
+      }
+      return 0;
+    }
+    //Case table shrinks
+    //else{
+      //TODO
+    //}
     return 0;
 
 }
