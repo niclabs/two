@@ -141,9 +141,12 @@ typedef struct HTTP_STATES {
     http_resource_t resource_list[HTTP_MAX_RESOURCES];
     uint8_t resource_list_size;
 
-    uint8_t new_headers;    //boolean. Notifies HTTP if new headers were written
-    uint8_t new_data;       //boolean. Notifies HTTP if new data were written or will not be written
-    uint8_t keep_receiving; //boolean. 0 = END STREAM, 1 = keep_receiving, 2 = GO AWAY
+    //boolean. Notifies HTTP if new headers were written
+    uint8_t new_headers;
+    //boolean. 0 = no new data 1 = new data were written, 2 = will not be written data
+    uint8_t new_data;
+    //boolean. 0 = END STREAM, 1 = keep_receiving, 2 = GO AWAY
+    uint8_t keep_receiving;
 } hstates_t;
 
 /*--------------------------------------------------------------------------*/
