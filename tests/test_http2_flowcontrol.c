@@ -114,24 +114,24 @@ void test_get_size_data_to_send(void){
     hstates_t st;
     st.headers_in.count = 0;
     st.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+    st.data_in.size = 0;
+    st.data_out.size = 0;
+    st.data_in.processed = 0;
+    st.data_out.processed = 0;
     st.h2s.outgoing_window.window_size = 10;
     st.h2s.outgoing_window.window_used = 0;
-    st.hd_lists.data_out_size = 10;
-    st.hd_lists.data_out_sent = 0;
+    st.data_out.size = 10;
+    st.data_out.processed = 0;
     uint32_t rc = get_size_data_to_send(&st);
     TEST_ASSERT_EQUAL(10,rc);
 
-    st.hd_lists.data_out_size = 5;
-    st.hd_lists.data_out_sent = 0;
+    st.data_out.size = 5;
+    st.data_out.processed = 0;
     rc = get_size_data_to_send(&st);
     TEST_ASSERT_EQUAL(5,rc);
 
-    st.hd_lists.data_out_size = 15;
-    st.hd_lists.data_out_sent = 0;
+    st.data_out.size = 15;
+    st.data_out.processed = 0;
     rc = get_size_data_to_send(&st);
     TEST_ASSERT_EQUAL(10,rc);
 }

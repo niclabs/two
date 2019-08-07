@@ -593,8 +593,8 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
 /*
 * Function: send_data
 * Sends a data frame with the current data written in the given hstates_t struct.
-* The data is expected to be written in the hd_lists.data_out buffer, and its
-* corresponding size indicated in the hd_lists.data_out_size variable.
+* The data is expected to be written in the http_data_t.data_out.buf, and its
+* corresponding size indicated in the http_data_t.data_out.size variable.
 * Input: ->st: hstates_t struct where connection variables are stored
          ->end_stream: indicates if the data frame to be sent must have the
                       END_STREAM_FLAG set.
@@ -602,7 +602,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
 *
 */
 int send_data(hstates_t *st, uint8_t end_stream){
-    if(st->hd_lists.data_out_size<=0){
+    if(st->data_out.size<=0){
         ERROR("no data to be send");
         return -1;
     }
@@ -617,7 +617,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
     frame_header_t frame_header;
     data_payload_t data_payload;
     uint8_t data[count_data_to_send];
-    int rc = create_data_frame(&frame_header, &data_payload, data, st->hd_lists.data_out + st->hd_lists.data_out_sent, count_data_to_send, stream_id);
+    int rc = create_data_frame(&frame_header, &data_payload, data, st->data_out.buf + st->data_out.processed, count_data_to_send, stream_id);
     if(rc<0){
         ERROR("error creating data frame");
         return -1;
@@ -640,10 +640,10 @@ int send_data(hstates_t *st, uint8_t end_stream){
     if(end_stream){
       change_stream_state_end_stream_flag(st, 1); // 1 is for sending
     }
-    st->hd_lists.data_out_sent += count_data_to_send;
-    if(st->hd_lists.data_out_size == st->hd_lists.data_out_sent) {
-        st->hd_lists.data_out_size = 0;
-        st->hd_lists.data_out_sent = 0;
+    st->data_out.processed += count_data_to_send;
+    if(st->data_out.size == st->data_out.processed) {
+        st->data_out.size = 0;
+        st->data_out.processed = 0;
     }
 
     //TODO update window size
@@ -683,8 +683,8 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
         ERROR("flow control error");
         return -1;
     }
-    buffer_copy(st->hd_lists.data_in + st->hd_lists.data_in_size, data_payload->data, data_length);
-    st->hd_lists.data_in_size += data_length;
+    buffer_copy(st->data_in.buf + st->data_in.size, data_payload->data, data_length);
+    st->data_in.size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
         st->h2s.received_end_stream = 1;
     }
@@ -1195,7 +1195,7 @@ int h2_send_response(hstates_t *st){
     ERROR("There were no headers to write");
     return -1;
   }
-  if(st->hd_lists.data_out_size > 0){
+  if(st->data_out.size > 0){
     int rc = send_headers(st, 0);
     if(rc < 0){
       ERROR("Error was found sending headers on response");

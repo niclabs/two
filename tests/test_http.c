@@ -19,8 +19,8 @@
 /*Import of functions not declared in http.h */
 extern int do_request(hstates_t *hs, char * method, char * uri);
 extern void reset_http_states(hstates_t *hs);
-extern int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size);
-extern uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer);
+extern int set_data(http_data_t *data_out, uint8_t *data, int data_size);
+extern uint32_t get_data(http_data_t *data_in, uint8_t *data_buffer);
 extern int receive_server_response(hstates_t *hs);
 extern int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size);
 
@@ -86,7 +86,7 @@ int h2_receive_frame_custom_fake(hstates_t *hs)
     }
     if (h2_receive_frame_fake.call_count == 2) {
         hs->keep_receiving = 0;
-        hs->hd_lists.data_in_size = 5;
+        hs->data_in.size = 5;
     }
     return 0;
 }
@@ -123,65 +123,68 @@ int resource_handler(char * method, char * uri, uint8_t * response, int maxlen) 
 ************************************/
 void test_set_data_success(void)
 {
-    headers_data_lists_t hd;
+    http_data_t dout;
 
-    int sd = set_data(&hd, (uint8_t *)"test", 4);
+    int sd = set_data(&dout, (uint8_t *)"test", 4);
 
     TEST_ASSERT_EQUAL( 0, sd);
 
-    TEST_ASSERT_EQUAL( 4, hd.data_out_size);
-    TEST_ASSERT_EQUAL( 0, memcmp(&hd.data_out, (uint8_t *)"test", 4));
+    TEST_ASSERT_EQUAL( 4, dout.size);
+    TEST_ASSERT_EQUAL( 0, memcmp(&dout.buf, (uint8_t *)"test", 4));
 }
 
 
 void test_set_data_fail_big_data(void)
 {
-    headers_data_lists_t hd;
+    http_data_t dout;
 
-    hd.data_out_size = 0;
+    dout.size = 0;
 
-    int sd = set_data(&hd, (uint8_t *)"", 0);
+    int sd = set_data(&dout, (uint8_t *)"", 0);
 
     TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data too large for buffer size");
 
-    TEST_ASSERT_EQUAL( 0, hd.data_out_size);
+    TEST_ASSERT_EQUAL( 0, dout.size);
 }
 
 
 void test_set_data_fail_data_full(void)
 {
-    headers_data_lists_t hd;
+    http_data_t dout;
 
-    hd.data_out_size = HTTP_MAX_DATA_SIZE;
+    dout.size = HTTP_MAX_DATA_SIZE;
 
-    int sd = set_data(&hd, (uint8_t *)"test", 4);
+    int sd = set_data(&dout, (uint8_t *)"test", 4);
 
     TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data buffer full");
 }
 
 
 
-void test_get_data_success(void){
-    headers_data_lists_t hd;
+void test_get_data_success(void)
+{
+    http_data_t din;
 
-    hd.data_in_size = 4;
-    memcpy(hd.data_in, (uint8_t *)"test", 4);
+    din.size = 4;
+    memcpy(din.buf, (uint8_t *)"test", 4);
 
     uint8_t buf[10];
-    int gd = get_data(&hd, buf);
+    int gd = get_data(&din, buf);
 
     TEST_ASSERT_EQUAL( 4, gd);
 
-    TEST_ASSERT_EQUAL( 0, memcmp(&buf, hd.data_in, 4));
+    TEST_ASSERT_EQUAL( 0, memcmp(&buf, din.buf, 4));
 }
 
 
-void test_get_data_fail_no_data(void){
-    headers_data_lists_t hd;
-    hd.data_in_size = 0;
+void test_get_data_fail_no_data(void)
+{
+    http_data_t din;
+
+    din.size = 0;
 
     uint8_t buf[5];
-    int gd = get_data( &hd, buf);
+    int gd = get_data( &din, buf);
 
     TEST_ASSERT_EQUAL_MESSAGE( 0, gd, "Data list is empty");
 }
@@ -193,8 +196,8 @@ void test_reset_http_states_success(void)
     hs.socket_state = 1;
     hs.headers_in.count = 1;
     hs.headers_out.count = 1;
-    hs.hd_lists.data_in_size = 1;
-    hs.hd_lists.data_out_size = 1;
+    hs.data_in.size = 1;
+    hs.data_out.size = 1;
     hs.connection_state = 1;
     hs.server_socket_state = 1;
     hs.keep_receiving = 1;
@@ -205,8 +208,8 @@ void test_reset_http_states_success(void)
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.headers_in.count);
     TEST_ASSERT_EQUAL(0, hs.headers_out.count);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_out_size);
+    TEST_ASSERT_EQUAL(0, hs.data_in.size);
+    TEST_ASSERT_EQUAL(0, hs.data_out.size);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(0, hs.keep_receiving);
@@ -620,7 +623,7 @@ void test_receive_server_response_success(void) {
 
   TEST_ASSERT_EQUAL(1, hs.connection_state);
   TEST_ASSERT_EQUAL(0, hs.keep_receiving);
-  TEST_ASSERT_EQUAL(5, hs.hd_lists.data_in_size);
+  TEST_ASSERT_EQUAL(5, hs.data_in.size);
 }
 
 
@@ -629,7 +632,7 @@ void test_receive_server_response_fail_h2_receive_frame(void)
     hstates_t hs;
     reset_http_states(&hs);
     hs.connection_state = 1;
-    hs.hd_lists.data_in_size = 0;
+    hs.data_in.size = 0;
 
     int returnVals[2] = { 0, -1 };
     SET_RETURN_SEQ(h2_receive_frame, returnVals, 2);
@@ -642,7 +645,7 @@ void test_receive_server_response_fail_h2_receive_frame(void)
 
     TEST_ASSERT_EQUAL(1, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.keep_receiving);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
+    TEST_ASSERT_EQUAL(0, hs.data_in.size);
 }
 
 
@@ -652,7 +655,7 @@ void test_receive_server_response_fail_connection_state(void)
 
     reset_http_states(&hs);
     hs.connection_state = 1;
-    hs.hd_lists.data_in_size = 0;
+    hs.data_in.size = 0;
 
     h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake_connection_state;
 
@@ -664,7 +667,7 @@ void test_receive_server_response_fail_connection_state(void)
 
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.keep_receiving);
-    TEST_ASSERT_EQUAL(0, hs.hd_lists.data_in_size);
+    TEST_ASSERT_EQUAL(0, hs.data_in.size);
 }
 
 
@@ -674,10 +677,10 @@ void test_send_client_request_success(void)
 
     reset_http_states(&hs);
     hs.connection_state = 1;
-    hs.hd_lists.data_in_size = 8;
+    hs.data_in.size = 8;
     hs.keep_receiving = 0;
     uint8_t *buf = (uint8_t *)"hola";
-    memcpy(hs.hd_lists.data_in, buf, 8);
+    memcpy(hs.data_in.buf, buf, 8);
 
     headers_init_fake.custom_fake = headers_init_custom_fake;
     headers_set_fake.return_val = 0;
@@ -711,7 +714,7 @@ void test_send_client_request_fail_receive_server_response(void)
 
     reset_http_states(&hs);
     hs.connection_state = 0;
-    hs.hd_lists.data_in_size = 0;
+    hs.data_in.size = 0;
     hs.keep_receiving = 0;
 
     headers_init_fake.custom_fake = headers_init_custom_fake;
@@ -739,7 +742,7 @@ void test_send_client_request_fail_h2_send_request(void)
 
     reset_http_states(&hs);
     hs.connection_state = 0;
-    hs.hd_lists.data_in_size = 0;
+    hs.data_in.size = 0;
     hs.keep_receiving = 0;
 
     headers_set_fake.return_val = 0;
@@ -765,7 +768,7 @@ void test_send_client_request_fail_headers_set(void)
 
     reset_http_states(&hs);
     hs.connection_state = 0;
-    hs.hd_lists.data_in_size = 0;
+    hs.data_in.size = 0;
     hs.keep_receiving = 0;
 
     headers_set_fake.return_val = -1;

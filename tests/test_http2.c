@@ -1241,10 +1241,10 @@ void test_send_headers_with_continuation(void){
   st.is_server = 0;
   st.headers_in.count = 0;
   st.headers_out.count = 0;
-  st.hd_lists.data_in_size = 0;
-  st.hd_lists.data_out_size = 0;
-  st.hd_lists.data_in_received = 0;
-  st.hd_lists.data_out_sent = 0;
+  st.data_in.size = 0;
+  st.data_out.size = 0;
+  st.data_in.processed = 0;
+  st.data_out.processed = 0;
   int rc = init_variables(&st);
   st.h2s.local_settings[4] = 20;
   st.headers_out.count = 10;
@@ -1311,16 +1311,16 @@ void test_handle_data_payload(void){
     hstates_t st;
     st.headers_in.count = 0;
     st.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+    st.data_in.size = 0;
+    st.data_out.size = 0;
+    st.data_in.processed = 0;
+    st.data_out.processed = 0;
     int rc = init_variables(&st);
     rc = handle_data_payload(&frame_header, &data_payload, &st);
     TEST_ASSERT_EQUAL(0,rc);
-    TEST_ASSERT_EQUAL(data_size,st.hd_lists.data_in_size);
+    TEST_ASSERT_EQUAL(data_size,st.data_in.size);
     for(int i =0; i< data_size; i++){
-        TEST_ASSERT_EQUAL(data_in_payload[i], st.hd_lists.data_in[i]);
+        TEST_ASSERT_EQUAL(data_in_payload[i], st.data_in.buf[i]);
     }
 }
 
@@ -1417,10 +1417,10 @@ void test_h2_receive_frame_data_stream_closed(void){
     hstates_t st;
     st.headers_in.count = 0;
     st.headers_out.count = 0;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+    st.data_in.size = 0;
+    st.data_out.size = 0;
+    st.data_in.processed = 0;
+    st.data_out.processed = 0;
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1449,10 +1449,10 @@ void test_h2_receive_frame_data_ok(void){
     headers_init_custom_fake(&headers_out, hlist_out, maxlen);
     st.headers_in = headers_in;
     st.headers_out = headers_out;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+    st.data_in.size = 0;
+    st.data_out.size = 0;
+    st.data_in.processed = 0;
+    st.data_out.processed = 0;
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1473,9 +1473,9 @@ void test_h2_receive_frame_data_ok(void){
     read_data_payload_fake.custom_fake = read_data_payload_fake_custom;
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
-    TEST_ASSERT_EQUAL(10,st.hd_lists.data_in_size);
+    TEST_ASSERT_EQUAL(10,st.data_in.size);
     for(int i = 0; i< 10;i++) {
-        TEST_ASSERT_EQUAL(bytes2[i + 9], st.hd_lists.data_in[i]);
+        TEST_ASSERT_EQUAL(bytes2[i + 9], st.data_in.buf[i]);
     }
 
     TEST_ASSERT_EQUAL(10,flow_control_receive_data_fake.arg1_val);
@@ -1501,10 +1501,10 @@ void test_h2_receive_frame_continuation(void){
     headers_init_custom_fake(&headers_out, hlist_out, maxlen);
     st.headers_in = headers_in;
     st.headers_out = headers_out;
-    st.hd_lists.data_in_size = 0;
-    st.hd_lists.data_out_size = 0;
-    st.hd_lists.data_in_received = 0;
-    st.hd_lists.data_out_sent = 0;
+    st.data_in.size = 0;
+    st.data_out.size = 0;
+    st.data_in.processed = 0;
+    st.data_out.processed = 0;
     int rc = init_variables(&st);
     st.is_server = 1;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
@@ -1633,40 +1633,40 @@ void test_send_data(void){
   hstates_t st;
   st.headers_in.count = 0;
   st.headers_out.count = 0;
-  st.hd_lists.data_in_size = 0;
-  st.hd_lists.data_out_size = 0;
-  st.hd_lists.data_in_received = 0;
-  st.hd_lists.data_out_sent = 0;
+  st.data_in.size = 0;
+  st.data_out.size = 0;
+  st.data_in.processed = 0;
+  st.data_out.processed = 0;
   int rc = init_variables(&st);
-  st.hd_lists.data_out_size = 36;
+  st.data_out.size = 36;
   st.h2s.outgoing_window.window_size = 30;
   st.h2s.current_stream.state = STREAM_OPEN;
   uint32_t get_return[1] = {30};
   SET_RETURN_SEQ(get_size_data_to_send, get_return, 1);
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 30, "Data out sent must be 30, full data was sent");
-  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_size == 36, "Data out size must be 0, full data was sent");
+  TEST_ASSERT_MESSAGE(st.data_out.processed == 30, "Data out sent must be 30, full data was sent");
+  TEST_ASSERT_MESSAGE(st.data_out.size == 36, "Data out size must be 0, full data was sent");
 }
 
 void test_send_data_full_sending(void){
   hstates_t st;
   st.headers_in.count = 0;
   st.headers_out.count = 0;
-  st.hd_lists.data_in_size = 0;
-  st.hd_lists.data_out_size = 0;
-  st.hd_lists.data_in_received = 0;
-  st.hd_lists.data_out_sent = 0;
+  st.data_in.size = 0;
+  st.data_out.size = 0;
+  st.data_in.processed = 0;
+  st.data_out.processed = 0;
   int rc = init_variables(&st);
-  st.hd_lists.data_out_size = 27;
+  st.data_out.size = 27;
   st.h2s.outgoing_window.window_size = 50;
   st.h2s.current_stream.state = STREAM_OPEN;
   uint32_t get_return[1] = {27};
   SET_RETURN_SEQ(get_size_data_to_send, get_return, 1);
   rc = send_data(&st, 1);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
-  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_sent == 0, "Data out sent must be 0, full data was sent");
-  TEST_ASSERT_MESSAGE(st.hd_lists.data_out_size == 0, "Data out size must be 0, full data was sent");
+  TEST_ASSERT_MESSAGE(st.data_out.processed == 0, "Data out sent must be 0, full data was sent");
+  TEST_ASSERT_MESSAGE(st.data_out.size == 0, "Data out size must be 0, full data was sent");
 }
 
 
@@ -1689,24 +1689,24 @@ void test_send_data_errors(void){
   hstates_t st1; //First error, no data to sned
     st1.headers_in.count = 0;
     st1.headers_out.count = 0;
-    st1.hd_lists.data_in_size = 0;
-    st1.hd_lists.data_out_size = 0;
-    st1.hd_lists.data_in_received = 0;
-    st1.hd_lists.data_out_sent = 0;
+    st1.data_in.size = 0;
+    st1.data_out.size = 0;
+    st1.data_in.processed = 0;
+    st1.data_out.processed = 0;
   int rc = init_variables(&st1);
-  st1.hd_lists.data_out_size = 0;
+  st1.data_out.size = 0;
   rc = send_data(&st1, 1);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (no data out)");
   hstates_t st2; //Second error, wrong state stream
     st2.headers_in.count = 0;
     st2.headers_out.count = 0;
-    st2.hd_lists.data_in_size = 0;
-    st2.hd_lists.data_out_size = 0;
-    st2.hd_lists.data_in_received = 0;
-    st2.hd_lists.data_out_sent = 0;
+    st2.data_in.size = 0;
+    st2.data_out.size = 0;
+    st2.data_in.processed = 0;
+    st2.data_out.processed = 0;
   rc = init_variables(&st2);
-  st2.hd_lists.data_out_size = 27;
-  st2.hd_lists.data_out_sent = 0;
+  st2.data_out.size = 27;
+  st2.data_out.processed = 0;
   st2.h2s.outgoing_window.window_size = 50;
   st2.h2s.outgoing_window.window_used = 0;
   st2.h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
@@ -1715,13 +1715,13 @@ void test_send_data_errors(void){
   hstates_t st3; //Third error, create_data_frame error
     st3.headers_in.count = 0;
     st3.headers_out.count = 0;
-    st3.hd_lists.data_in_size = 0;
-    st3.hd_lists.data_out_size = 0;
-    st3.hd_lists.data_in_received = 0;
-    st3.hd_lists.data_out_sent = 0;
+    st3.data_in.size = 0;
+    st3.data_out.size = 0;
+    st3.data_in.processed = 0;
+    st3.data_out.processed = 0;
   rc = init_variables(&st3);
-  st3.hd_lists.data_out_size = 27;
-  st3.hd_lists.data_out_sent = 0;
+  st3.data_out.size = 27;
+  st3.data_out.processed = 0;
   st3.h2s.outgoing_window.window_size = 50;
   st3.h2s.outgoing_window.window_used = 0;
   st3.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
@@ -1729,8 +1729,8 @@ void test_send_data_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (create_data_frame error)");
   hstates_t st4; // Fourth error, writting error
   rc = init_variables(&st4);
-  st4.hd_lists.data_out_size = 27;
-  st4.hd_lists.data_out_sent = 0;
+  st4.data_out.size = 27;
+  st4.data_out.processed = 0;
   st4.h2s.outgoing_window.window_size = 50;
   st4.h2s.outgoing_window.window_used = 0;
   st4.h2s.current_stream.state = STREAM_OPEN;

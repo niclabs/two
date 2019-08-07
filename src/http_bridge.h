@@ -96,15 +96,15 @@ typedef struct HTTP2_STATES {
  *
  * the following params are given to the handler
  *
- * @param method    HTTP method that triggered the request. There is not need to check for 
- *                  method support, the server only will call the method on reception of a 
+ * @param method    HTTP method that triggered the request. There is not need to check for
+ *                  method support, the server only will call the method on reception of a
  *                  matching method and path as registered with http_register_resource_handler()
  * @param uri       HTTP uri including path and query params that triggered the request
  * @param response  pointer to an uint8 array to store the response
  * @param maxlen    maximum length of the response
  *
  * the handler must return the number of bytes written or -1 if an error ocurred
- */ 
+ */
 typedef int (* http_resource_handler_t) (char * method, char * uri, uint8_t * response, int maxlen);
 
 typedef struct {
@@ -129,13 +129,14 @@ typedef struct HTTP_STATES {
     sock_t server_socket;
     uint8_t is_server; // boolean flag to know if current hstates if server or client
     h2states_t h2s;
-    headers_data_lists_t hd_lists;
+    http_data_t data_in;
+    http_data_t data_out;
 
     // Http headers storage
     // TODO: deprecate and pass directly to http2 functions
     headers_t headers_in;
     headers_t headers_out;
-    
+
     // Resource handler list
     http_resource_t resource_list[HTTP_MAX_RESOURCES];
     uint8_t resource_list_size;

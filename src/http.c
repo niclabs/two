@@ -74,32 +74,32 @@ int has_method_support(char *method)
 /**
  * Get received data
  *
- * @param    hd_lists         Struct with data information
+ * @param    data_in         Struct with data information
  * @param    data_buffer      Buffer for data received
  *
  * @return                    Data lengt
  */
-uint32_t get_data(headers_data_lists_t *hd_lists, uint8_t *data_buffer, size_t size)
+uint32_t get_data(http_data_t *data_in, uint8_t *data_buffer, size_t size)
 {
-    int copysize = MIN(hd_lists->data_in_size, size);
+    int copysize = MIN(data_in->size, size);
 
-    memcpy(data_buffer, hd_lists->data_in, copysize);
+    memcpy(data_buffer, data_in->buf, copysize);
     return copysize;
 }
 
 /*
  * Add data to be sent to data lists
  *
- * @param    hd_lists   Struct with data information
+ * @param    data_out   Struct with data information
  * @param    data       Data
  * @param    data_size  Size of data
  *
  * @return   0          Successfully added data
  * @return   -1         There was an error in the process
  */
-int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
+int set_data(http_data_t *data_out, uint8_t *data, int data_size)
 {
-    if (HTTP_MAX_DATA_SIZE == hd_lists->data_out_size) {
+    if (HTTP_MAX_DATA_SIZE == data_out->size) {
         ERROR("Data buffer full");
         return -1;
     }
@@ -107,8 +107,8 @@ int set_data(headers_data_lists_t *hd_lists, uint8_t *data, int data_size)
         ERROR("Data too large for buffer size");
         return -1;
     }
-    hd_lists->data_out_size = data_size;
-    memcpy(hd_lists->data_out, data, data_size);
+    data_out->size = data_size;
+    memcpy(data_out->buf, data, data_size);
     return 0;
 }
 
@@ -171,7 +171,7 @@ int error(hstates_t *hs, int code, char *msg)
 
     // Set error message
     if (msg != NULL) {
-        set_data(&hs->hd_lists, (uint8_t *)msg, strlen(msg));
+        set_data(&hs->data_out, (uint8_t *)msg, strlen(msg));
     }
 
     // Send response
@@ -223,7 +223,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
         // 404
         return error(hs, 404, "Not Found");
     }
-    
+
     // Prepare response for callback
     // TODO: response pointer should be pointer to hs->data_out
     uint8_t response[HTTP_MAX_RESPONSE_SIZE];
@@ -233,7 +233,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
         return error(hs, 500, "Server Error");
     }
     else if (len > 0) {
-        set_data(&hs->hd_lists, response, len);
+        set_data(&hs->data_out, response, len);
     }
 
     // Initialize header list
@@ -443,7 +443,7 @@ int receive_server_response(hstates_t *hs)
         if (hs->keep_receiving == 1) {
             continue;
         }
-        if (hs->hd_lists.data_in_size > 0) {
+        if (hs->data_in.size > 0) {
             return 0;
         }
     }
@@ -470,7 +470,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
         ERROR("Failed to send request %s %s", method, uri);
         return -1;
     }
-    
+
     // Initialize input header list
     header_t header_list_in[HTTP_MAX_HEADER_COUNT];
     headers_init(&hs->headers_in, header_list_in, HTTP_MAX_HEADER_COUNT);
@@ -484,7 +484,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
     DEBUG("Server replied with status %d", status);
 
     // Get response data (TODO: should we just copy the pointer?)
-    *size = get_data(&hs->hd_lists, response, *size);
+    *size = get_data(&hs->data_in, response, *size);
 
     return status;
 }
