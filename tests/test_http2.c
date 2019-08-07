@@ -652,11 +652,14 @@ void test_h2_server_init_connection_errors(void){
 void test_check_incoming_headers_condition(void){
   frame_header_t head;
   head.stream_id = 2440;
+  head.length = 128;
   hstates_t st;
   st.is_server = 0;
   st.h2s.waiting_for_end_headers_flag = 0;
   st.h2s.current_stream.stream_id = 2440;
   st.h2s.current_stream.state = STREAM_OPEN;
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = check_incoming_headers_condition(&head, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
@@ -704,11 +707,14 @@ void test_check_incoming_headers_condition_error(void){
 void test_check_incoming_headers_condition_creation_of_stream(void){
   frame_header_t head;
   head.stream_id = 2440;
+  head.length = 128;
   hstates_t st;
   st.is_server = 0;
   st.h2s.waiting_for_end_headers_flag = 0;
   st.h2s.current_stream.stream_id = 0;
   st.h2s.current_stream.state = 0;
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = check_incoming_headers_condition(&head, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
@@ -1360,6 +1366,8 @@ void test_h2_receive_frame_headers_wait_end_headers(void){
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_headers_payload_fake.custom_fake = read_headers_payload_fake_custom;
     receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
+    uint32_t read_setting_from_returns[1] = {128};
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(1, st.h2s.waiting_for_end_headers_flag);
@@ -1388,7 +1396,8 @@ void test_h2_receive_frame_headers(void){
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_headers_payload_fake.custom_fake = read_headers_payload_fake_custom;
     receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
-
+    uint32_t read_setting_from_returns[1] = {128};
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(0, st.h2s.waiting_for_end_headers_flag);
@@ -1449,6 +1458,8 @@ void test_h2_receive_frame_data_ok(void){
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_headers_payload_fake.custom_fake = read_headers_payload_fake_custom;
     is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
+    uint32_t read_setting_from_returns[1] = {128};
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
 
@@ -1456,8 +1467,6 @@ void test_h2_receive_frame_data_ok(void){
     http_write(&st,bytes2,19);
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_data_payload_fake.custom_fake = read_data_payload_fake_custom;
-    uint32_t read_setting_from_returns[1] = {128};
-    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(10,st.data_in.size);
@@ -1503,6 +1512,8 @@ void test_h2_receive_frame_continuation(void){
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_headers_payload_fake.custom_fake = read_headers_payload_fake_custom;
     is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
+    uint32_t read_setting_from_returns[1] = {128};
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(1, st.h2s.waiting_for_end_headers_flag);
