@@ -14,7 +14,7 @@ extern uint32_t read_setting_from(hstates_t *st, uint8_t place, uint8_t param);
 extern int send_local_settings(hstates_t *st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
 extern int send_settings_ack(hstates_t *st);
-extern int check_for_settings_ack(frame_header_t *header, hstates_t *st);
+extern int check_incoming_settings_condition(frame_header_t *header, hstates_t *st);
 extern int handle_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st);
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
 extern int check_incoming_headers_condition(frame_header_t *header, hstates_t *st);
@@ -360,7 +360,7 @@ void test_send_settings_ack_errors(void){
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in settings write)");
 }
 
-void test_check_for_settings_ack(void){
+void test_check_incoming_settings_condition(void){
   hstates_t hdummy;
   init_variables(&hdummy);
   int i;
@@ -373,19 +373,19 @@ void test_check_for_settings_ack(void){
   frame_header_t header_not_ack = {24, 0x4, 0x0, 0x0, 0};
   int flag_returns[3] = {0, 1, 1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 3);
-  int rc = check_for_settings_ack(&header_not_ack, &hdummy);
+  int rc = check_incoming_settings_condition(&header_not_ack, &hdummy);
   TEST_ASSERT_MESSAGE(is_flag_set_fake.call_count == 1, "is flag set must be called once");
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0. ACK flag is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 1, "wait must remain in 1");
-  rc = check_for_settings_ack(&header_ack, &hdummy);
+  rc = check_incoming_settings_condition(&header_ack, &hdummy);
   TEST_ASSERT_MESSAGE(is_flag_set_fake.call_count == 2, "is flag set must be called for second time");
   TEST_ASSERT_MESSAGE(rc == 1, "RC must be 1. ACK flag was setted and payload size was 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 0, "wait must be changed to 0");
-  rc = check_for_settings_ack(&header_ack, &hdummy);
+  rc = check_incoming_settings_condition(&header_ack, &hdummy);
   TEST_ASSERT_MESSAGE(rc == 1, "RC must be 1. ACK flag was setted, but not wait ack flag asigned");
 }
 
-void test_check_for_settings_ack_errors(void){
+void test_check_incoming_settings_condition_errors(void){
   hstates_t hdummy;
   init_variables(&hdummy);
   int i;
@@ -394,8 +394,6 @@ void test_check_for_settings_ack_errors(void){
       hdummy.h2s.remote_settings[i] = 1;
   }
   hdummy.h2s.wait_setting_ack = 1;
-  // first error, wrong type
-  frame_header_t header_ack_wrong_type = {0, 0x5, 0x0|0x1, 0x0, 0};
   // second error, wrong stream_id
   frame_header_t header_ack_wrong_stream = {0, 0x4, 0x0|0x1, 0x1, 0};
   header_ack_wrong_stream.stream_id = 1;
@@ -403,11 +401,9 @@ void test_check_for_settings_ack_errors(void){
   frame_header_t header_ack_wrong_size = {24, 0x4, 0x0|0x1, 0x0, 0};
   int flag_returns[1] = {1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
-  int rc = check_for_settings_ack(&header_ack_wrong_type, &hdummy);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (wrong type)");
-  rc = check_for_settings_ack(&header_ack_wrong_stream, &hdummy);
+  int rc = check_incoming_settings_condition(&header_ack_wrong_stream, &hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (wrong stream)");
-  rc = check_for_settings_ack(&header_ack_wrong_size, &hdummy);
+  rc = check_incoming_settings_condition(&header_ack_wrong_size, &hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (wrong size)");
 }
 
@@ -1825,8 +1821,8 @@ int main(void)
     UNIT_TEST(test_update_settings_table_errors);
     UNIT_TEST(test_send_settings_ack);
     UNIT_TEST(test_send_settings_ack_errors);
-    UNIT_TEST(test_check_for_settings_ack);
-    UNIT_TEST(test_check_for_settings_ack_errors);
+    UNIT_TEST(test_check_incoming_settings_condition);
+    UNIT_TEST(test_check_incoming_settings_condition_errors);
     UNIT_TEST(test_handle_settings_payload);
     UNIT_TEST(test_handle_settings_payload_errors);
     UNIT_TEST(test_read_frame);

@@ -186,25 +186,21 @@ int send_settings_ack(hstates_t * st){
 }
 
 /*
-* Function: check_for_settings_ack
+* Function: check_incoming_settings_condition
 * Verifies the correctness of header and checks if frame settings is an ACK.
 * Input: -> header: pointer to settings frame header to read
 *        -> st: pointer to hstates struct where connection variables are stored
 * Output: 0 if ACK was not setted. 1 if it was. -1 if error was found.
 */
-int check_for_settings_ack(frame_header_t *header, hstates_t *st){
-    if(header->type != 0x4){
-        ERROR("Read settings payload error, header type is not SETTINGS");
+int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
+    if(header->stream_id != 0){
+        ERROR("Settings frame stream id is not zero. PROTOCOL ERROR");
         return -1;
     }
-    else if(header->stream_id != 0){
-        ERROR("Protocol Error: stream id on SETTINGS FRAME is not zero");
-        return -1;
-    }
-        /*Check if ACK is set*/
-    else if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
+    /*Check if ACK is set*/
+    if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
         if(header->length != 0){
-            ERROR("Frame Size Error: ACK flag is set, but payload size is not zero");
+            ERROR("Settings payload size is not zero. PROTOCOL ERROR");
             return -1;
         }
         else{
@@ -221,7 +217,6 @@ int check_for_settings_ack(frame_header_t *header, hstates_t *st){
     else{
         return 0;
     }
-    return 0;
 }
 
 /*
@@ -1063,7 +1058,7 @@ int h2_receive_frame(hstates_t *st){
             WARN("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
         case SETTINGS_TYPE:{//Settings
-            rc = check_for_settings_ack(&header, st);
+            rc = check_incoming_settings_condition(&header, st);
             if(rc < 0){
                 ERROR("Error was found in SETTINGS Header");
                 return -1;
