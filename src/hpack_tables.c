@@ -508,7 +508,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
 
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
 {
-    return (uint32_t)((dynamic_table_size / sizeof(header_pair_t)) + 1);
+    return (uint32_t)((dynamic_table_size / 32) + 1);
 }
 
 /*
