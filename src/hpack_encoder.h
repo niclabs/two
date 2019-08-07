@@ -7,6 +7,7 @@
 
 #include <stdint.h>             /* for uint8_t, uint32_t    */
 #include "hpack_tables.h"       /* for hpack_dynamic_table_t    */
+#include "http_bridge.h"
 
 
 int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_string,  uint8_t *encoded_buffer);

@@ -9,10 +9,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "sock.h"
-#include "table.h"
 #include "headers.h"
 
 
+
+#define HTTP2_MAX_HBF_BUFFER 128
 
 typedef enum {
     STREAM_IDLE,
@@ -88,6 +89,12 @@ typedef struct HTTP2_STATES {
 #define HTTP_MAX_HEADER_COUNT (HTTP_CONF_MAX_HEADER_COUNT)
 #else
 #define HTTP_MAX_HEADER_COUNT (16)
+#endif
+
+#ifdef HTTP_CONF_MAX_DATA_SIZE
+#define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
+#else
+#define HTTP_MAX_DATA_SIZE (128)
 #endif
 
 /**

@@ -4,7 +4,6 @@
 #include "hpack_huffman.h"     /* for huffman_encoded_word_t, hpack_huffman_...*/
 #include "hpack_utils.h"       /* for hpack_utils_find_prefix_size, hpack_pr...*/
 #include "logging.h"           /* for ERROR */
-#include "table.h"             /* for HTTP2_MAX_HBF_BUFFER */
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*

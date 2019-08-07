@@ -7,8 +7,7 @@
 #include "utils.h"
 #include "logging.h"
 #include "hpack.h"
-#include "table.h"
-
+#include "http_bridge.h"
 /*
 * Function: frame_header_to_bytes
 * Pass a frame header to an array of bytes
@@ -755,4 +754,3 @@ int read_goaway_payload(uint8_t* buff_read, frame_header_t* frame_header, goaway
     }
     return frame_header->length;
 }
-
