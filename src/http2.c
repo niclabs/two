@@ -650,6 +650,29 @@ int send_data(hstates_t *st, uint8_t end_stream){
     return 0;
 }
 
+int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
+    if(st->h2s.current_stream.stream_id == 0){
+      ERROR("Data stream ID is 0. PROTOCOL ERROR");
+      return -1;
+    }
+    else if(header->stream_id > st->h2s.current_stream.stream_id){
+      ERROR("Stream ID is invalid. PROTOCOL ERROR");
+      return -1;
+    }
+    else if(header->stream_id < st->h2s.current_stream.stream_id){
+      ERROR("Stream closed. STREAM CLOSED ERROR");
+      return -1;
+    }
+    if(st->h2s.current_stream.state == STREAM_IDLE){
+      ERROR("Stream was in IDLE state. PROTOCOL ERROR");
+      return -1;
+    }
+    else if(st->h2s.current_stream.state != STREAM_OPEN && st->h2s.current_stream.state != STREAM_HALF_CLOSED_REMOTE){
+      ERROR("Stream was not in a valid state for data. STREAM CLOSED ERROR");
+      return -1;
+    }
+    return 0;
+}
 
 int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
     uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
@@ -991,10 +1014,10 @@ int h2_receive_frame(hstates_t *st){
         case DATA_TYPE: {//Data
             /*check stream state*/
             INFO("h2_receive_frame: DATA");
-            h2_stream_state_t stream_state = st->h2s.current_stream.state;
-            if(stream_state!=STREAM_OPEN && stream_state!=STREAM_HALF_CLOSED_LOCAL){
-                ERROR("STREAM CLOSED ERROR was found");
-                return -1;
+            rc = check_incoming_data_condition(&header, st);
+            if(rc < 0){
+              ERROR("Error was found during data receiving");
+              return rc;
             }
             data_payload_t data_payload;
             uint8_t data[header.length];
