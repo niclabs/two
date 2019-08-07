@@ -142,7 +142,7 @@ header_t *get_header_from_index(headers_t *headers, int index)
 {
     // Assertions for debugging
     assert(headers != NULL);
-    assert(index > 0);
+    assert(index >= 0);
     assert(index < headers->maxlen);
 
     return &headers->headers[index];
