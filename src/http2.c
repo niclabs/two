@@ -197,6 +197,10 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
         ERROR("Settings frame stream id is not zero. PROTOCOL ERROR");
         return -1;
     }
+    else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
+      ERROR("Settings payload bigger than allower. MAX_FRAME_SIZE ERROR");
+      return -1;
+    }
     /*Check if ACK is set*/
     if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
         if(header->length != 0){
@@ -645,6 +649,10 @@ int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
       ERROR("Data stream ID is 0. PROTOCOL ERROR");
       return -1;
     }
+    else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
+      ERROR("Data payload bigger than allower. MAX_FRAME_SIZE error");
+      return -1;
+    }
     else if(header->stream_id > st->h2s.current_stream.stream_id){
       ERROR("Stream ID is invalid. PROTOCOL ERROR");
       return -1;
@@ -653,7 +661,7 @@ int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
       ERROR("Stream closed. STREAM CLOSED ERROR");
       return -1;
     }
-    if(st->h2s.current_stream.state == STREAM_IDLE){
+    else if(st->h2s.current_stream.state == STREAM_IDLE){
       ERROR("Stream was in IDLE state. PROTOCOL ERROR");
       return -1;
     }
@@ -1090,7 +1098,11 @@ int h2_receive_frame(hstates_t *st){
               return -1;
             }
             uint16_t max_frame_size = read_setting_from(st, LOCAL, MAX_FRAME_SIZE);
-            uint8_t debug_data[max_frame_size];
+            if(header.length > max_frame_size){
+              ERROR("GOAWAY payload bigger than allowed. MAX_FRAME_SIZE ERROR");
+              return -1;
+            }
+            uint8_t debug_data[max_frame_size - 8];
             goaway_payload_t goaway_pl;
             rc = read_goaway_payload(buff_read, &header, &goaway_pl, debug_data);
             if(rc < 0){
