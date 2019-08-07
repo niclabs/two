@@ -300,6 +300,25 @@ int send_connection_error(hstates_t *st, uint32_t error_code){
 
 
 /*
+* Function: send_connection_error
+* Send a connection error to endpoint with a specified error code. It implements
+* the behaviour suggested in RFC 7540, secion 5.4.1
+* Input: -> st: hstates_t pointer where connetion variables are stored
+*        -> error_code: error code that will be used to shutdown the connection
+* Output: void
+*/
+
+void send_connection_error(hstates_t *st, uint32_t error_code){
+  int rc = send_goaway(st, error_code);
+  if(rc < 0){
+    WARN("Error sending GOAWAY frame to endpoint.");
+  }
+  st->connection_state = 0;
+  //TODO: communicate error code to HTTP?
+}
+
+
+/*
 * Function: handle_goaway_payload
 * Handles go away payload.
 * Input: ->goaway_pl: goaway_payload_t pointer to goaway frame payload
