@@ -7,7 +7,6 @@
 #include "hpack_tables.h"
 #include "hpack_decoder.h"
 #include "hpack_utils.h"
-#include "table.h"
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 extern int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string);

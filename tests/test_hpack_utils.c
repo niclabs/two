@@ -2,7 +2,6 @@
 #include "fff.h"
 #include "logging.h"
 #include "hpack_utils.h"
-#include "table.h"
 
 extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer);
 extern int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t buffer_size);
