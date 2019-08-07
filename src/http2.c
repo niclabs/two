@@ -82,15 +82,14 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 }
 
 /*
-* Function: update_remote_settings
-* Updates the table where remote settings are stored
-* Input: -> sframe: it must be a SETTINGS frame
+* Function: update_settings_table
+* Updates the specified table of settings with a given settings payload.
+* Input: -> spl: settings_payload_t pointer where settings values are stored
 *        -> place: must be LOCAL or REMOTE. It indicates which table to update.
          -> st: pointer to hstates_t struct where settings table are stored.
 * Output: 0 if update was successfull, -1 if not
 */
 int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st){
-    /*spl is for setttings payload*/
     uint8_t i;
     uint16_t id;
     int rc = 0;
@@ -189,7 +188,7 @@ int send_settings_ack(hstates_t * st){
 /*
 * Function: check_for_settings_ack
 * Verifies the correctness of header and checks if frame settings is an ACK.
-* Input: -> header: settings frame's header to read
+* Input: -> header: pointer to settings frame header to read
 *        -> st: pointer to hstates struct where connection variables are stored
 * Output: 0 if ACK was not setted. 1 if it was. -1 if error was found.
 */
@@ -898,6 +897,8 @@ int send_headers(hstates_t *st, uint8_t end_stream){
       return rc;
   }
 }
+
+/*----- API Methods ------*/
 
 /*
 * Function: h2_client_init_connection
