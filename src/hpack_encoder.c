@@ -312,6 +312,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
     if (index < 0) {
         index = hpack_tables_find_index_name(dynamic_table, name_string);
         hpack_preamble_t preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+        DEBUG("Encoding a literal header field never indexed");
         uint8_t prefix = hpack_utils_find_prefix_size(preamble);
         if (index < 0) {
             //NEW NAME
@@ -339,6 +340,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
     }
     else {
         //INDEXED HEADER FIELD
+        DEBUG("Encoding an indexed header field");
         hpack_preamble_t preamble = INDEXED_HEADER_FIELD;
         int rc = hpack_encoder_encode_indexed_header_field(dynamic_table, name_string, value_string, encoded_buffer);
         if (rc < 0) {
@@ -362,6 +364,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
  *      Returns the size in bytes of the update.
  */
 int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer){
+    DEBUG("Encoding a dynamic table size update");
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
     int encoded_max_size_length = hpack_encoder_encode_integer(max_size, 5, encoded_buffer);
     encoded_buffer[0] |= preamble;

@@ -332,6 +332,7 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
 int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *bytes, hpack_preamble_t preamble, char *name, char *value)
 {
     if (preamble == INDEXED_HEADER_FIELD) {
+        DEBUG("Decoding an indexed header field");
         int rc = hpack_decoder_decode_indexed_header_field(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in hpack_decoder_decode_indexed_header_field ");
@@ -339,6 +340,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         return rc;
     }
     else if (preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING) {
+        DEBUG("Decoding a literal header field without indexing");
         int rc = hpack_decoder_decode_literal_header_field_without_indexing(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in hpack_decoder_decode_literal_header_field_without_indexing ");
@@ -346,6 +348,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         return rc;
     }
     else if (preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED) {
+        DEBUG("Decoding a literal header field never indexed");
         int rc = hpack_decoder_decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
             ERROR("Error in hpack_decoder_decode_literal_header_field_never_indexed ");
@@ -353,6 +356,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         return rc;
     }
     else if (preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+        DEBUG("Decoding a literal header with incremental indexing");
         //TODO replace this function with the correct one
         int rc = hpack_decoder_decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
@@ -361,6 +365,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         return rc;
     }
     else if (preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
+        DEBUG("Decoding a dynamic table size update");
         //TODO add function to decode dynamic_table_size
         ERROR("Dynamic_table_size_update not implemented yet");
         return -1;
