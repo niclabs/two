@@ -15,7 +15,7 @@ extern int send_local_settings(hstates_t *st);
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
 extern int send_settings_ack(hstates_t *st);
 extern int check_incoming_settings_condition(frame_header_t *header, hstates_t *st);
-extern int handle_settings_payload(uint8_t *bf, frame_header_t *h, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st);
+extern int handle_settings_payload(settings_payload_t *spl, hstates_t *st);
 extern int read_frame(uint8_t *buff_read, frame_header_t *header);
 extern int check_incoming_headers_condition(frame_header_t *header, hstates_t *st);
 extern int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstates_t *st);
@@ -414,7 +414,6 @@ void test_handle_settings_payload(void){
   settings_pair_t pair4 = {0x6, 12345};
   settings_pair_t pairs[4] = {pair1,pair2,pair3,pair4};
   settings_payload_t payload = {pairs, 4};
-  frame_header_t header_sett = {24, 0x4, 0x0|0x1, 0x0, 0};
   hstates_t hdummy;
   init_variables(&hdummy);
   int i;
@@ -426,7 +425,7 @@ void test_handle_settings_payload(void){
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
   verify_setting_fake.custom_fake = verify_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_9;
-  int rc = handle_settings_payload(buffer, &header_sett, &payload, pairs, &hdummy);
+  int rc = handle_settings_payload(&payload, &hdummy);
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 0, "ACK wait must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[2] == 12345, "Remote settings were not updates!");
@@ -443,7 +442,6 @@ void test_handle_settings_payload_errors(void){
   settings_pair_t pair4 = {0x6, 12345};
   settings_pair_t pairs[4] = {pair1,pair2,pair3,pair4};
   settings_payload_t payload = {pairs, 4};
-  frame_header_t header_sett = {24, 0x4, 0x0|0x1, 0x0, 0};
   hstates_t hdummy;
   init_variables(&hdummy);
   int i;
@@ -451,16 +449,11 @@ void test_handle_settings_payload_errors(void){
       hdummy.h2s.local_settings[i] = 1;
       hdummy.h2s.remote_settings[i] = 1;
   }
-  // First error, bytes to settings payload fail
-  int bytes_return[2] = {-1, 24};
-  SET_RETURN_SEQ(bytes_to_settings_payload, bytes_return, 2);
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
   int verify_return[1] = {-1};
   SET_RETURN_SEQ(verify_setting, verify_return, 2);
   frame_to_bytes_fake.custom_fake = frame_bytes_return_9;
-  int rc = handle_settings_payload(buffer, &header_sett, &payload, pairs, &hdummy);
-  TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in bytes to settings payload)");
-  rc = handle_settings_payload(buffer, &header_sett, &payload, pairs, &hdummy);
+  int rc = handle_settings_payload(&payload, &hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in update settings table)");
 }
 

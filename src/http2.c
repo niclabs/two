@@ -229,12 +229,7 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
         -> st: pointer to hstates_t struct where connection variables are stored
 * Output: 0 if operations are done successfully, -1 if not.
 */
-int handle_settings_payload(uint8_t *buff_read, frame_header_t *header, settings_payload_t *spl, settings_pair_t *pairs, hstates_t *st){
-    int size = bytes_to_settings_payload(buff_read, header->length, spl, pairs);
-    if(size != header->length){
-        ERROR("Error in byte to settings payload coding. INTERNAL ERROR");
-        return -1;
-    }
+int handle_settings_payload(settings_payload_t *spl, hstates_t *st){
     if(!update_settings_table(spl, REMOTE, st)){
         send_settings_ack(st);
         return 0;
@@ -1064,12 +1059,17 @@ int h2_receive_frame(hstates_t *st){
                 return -1;
             }
             else if(rc){ /*Frame was an ACK*/
-                INFO("received settings ACK");
+                INFO("Received settings ACK");
                 return 0;
             }
             settings_payload_t spl;
             settings_pair_t pairs[header.length/6];
-            rc = handle_settings_payload(buff_read, &header, &spl, pairs, st);
+            rc = bytes_to_settings_payload(buff_read, header.length, &spl, pairs);
+            if(rc < 0){
+              ERROR("Error reading settings payload");
+              return rc;
+            }
+            rc = handle_settings_payload(&spl, st);
             if(rc == -1){
                 ERROR("Error in settings payload handling");
                 return -1;
@@ -1108,7 +1108,7 @@ int h2_receive_frame(hstates_t *st){
         case WINDOW_UPDATE_TYPE: {//Window update
             window_update_payload_t window_update_payload;
             int rc = read_window_update_payload(buff_read, &header, &window_update_payload);
-            if (rc < 1) {
+            if (rc < 0) {
                 ERROR("Error in reading window_update_payload ");
                 return -1;
             }
