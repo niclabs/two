@@ -198,7 +198,7 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
         return -1;
     }
     else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
-      ERROR("Settings payload bigger than allower. MAX_FRAME_SIZE ERROR");
+      ERROR("Settings payload bigger than allowed. MAX_FRAME_SIZE ERROR");
       return -1;
     }
     /*Check if ACK is set*/

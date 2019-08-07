@@ -363,18 +363,14 @@ void test_send_settings_ack_errors(void){
 void test_check_incoming_settings_condition(void){
   hstates_t hdummy;
   init_variables(&hdummy);
-  int i;
-  for(i = 0; i < 6; i++){
-      hdummy.h2s.local_settings[i] = 1;
-      hdummy.h2s.remote_settings[i] = 1;
-  }
   hdummy.h2s.wait_setting_ack = 1;
   frame_header_t header_ack = {0, 0x4, 0x0|0x1, 0x0, 0};
   frame_header_t header_not_ack = {24, 0x4, 0x0, 0x0, 0};
   int flag_returns[3] = {0, 1, 1};
   SET_RETURN_SEQ(is_flag_set, flag_returns, 3);
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = check_incoming_settings_condition(&header_not_ack, &hdummy);
-  TEST_ASSERT_MESSAGE(is_flag_set_fake.call_count == 1, "is flag set must be called once");
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0. ACK flag is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 1, "wait must remain in 1");
   rc = check_incoming_settings_condition(&header_ack, &hdummy);
@@ -1460,6 +1456,8 @@ void test_h2_receive_frame_data_ok(void){
     http_write(&st,bytes2,19);
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_data_payload_fake.custom_fake = read_data_payload_fake_custom;
+    uint32_t read_setting_from_returns[1] = {128};
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(10,st.data_in.size);
@@ -1589,6 +1587,8 @@ void test_h2_receive_frame_settings(void){
     is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
     verify_setting_fake.custom_fake = verify_return_zero;
     bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
+    uint32_t read_setting_from_returns[1] = {128};
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
     TEST_ASSERT_EQUAL(10,st.h2s.remote_settings[0]);
