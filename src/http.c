@@ -65,7 +65,8 @@ int parse_uri(char *uri, char *path, char *query_params)
  */
 int has_method_support(char *method)
 {
-    if (strncmp("GET", method, 8) != 0) {
+    if ((strncmp("GET", method, 8) != 0) &&
+    (strncmp("HEAD", method, 8) != 0)){
         return 0;
     }
     return 1;
@@ -220,20 +221,22 @@ int do_request(hstates_t *hs, char *method, char *uri)
     // find callback for resource
     http_resource_handler_t handle_uri;
     if ((handle_uri = get_resource_handler(hs, method, path)) == NULL) {
-        // 404
         return error(hs, 404, "Not Found");
     }
 
-    // Prepare response for callback
-    // TODO: response pointer should be pointer to hs->data_out
-    uint8_t response[HTTP_MAX_RESPONSE_SIZE];
-    int len;
-    if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
-        // if the handler returns
-        return error(hs, 500, "Server Error");
-    }
-    else if (len > 0) {
-        set_data(&hs->data_out, response, len);
+    // If it is GET method Prepare response for callback
+    if (strncmp("GET", method, 8) != 0){
+
+        // TODO: response pointer should be pointer to hs->data_out
+        uint8_t response[HTTP_MAX_RESPONSE_SIZE];
+        int len;
+        if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
+            // if the handler returns
+            return error(hs, 500, "Server Error");
+        }
+        else if (len > 0) {
+            set_data(&hs->data_out, response, len);
+        }
     }
 
     // Initialize header list
@@ -479,16 +482,21 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
         return -1;
     }
 
-    int res_data = receive_server_response_data(hs);
-    if (res_data < 0) {
-        ERROR("An error ocurred while waiting for server response data");
-        return -1;
-    }
-    if (res_data == 1) {
-        // Get response data (TODO: should we just copy the pointer?)
-        *size = get_data(&hs->data_in, response, *size);
-    }
+    //If it is a GET request, wait for the server response data
+    if (strncmp("GET", method, 8) == 0){
+      int res_data = receive_server_response_data(hs);
 
+      if (res_data < 0) {
+          ERROR("An error ocurred while waiting for server response data");
+          return -1;
+      }
+      else if (res_data == 1) {
+          // Get response data (TODO: should we just copy the pointer?)
+          *size = get_data(&hs->data_in, response, *size);
+      } else {
+        DEBUG("Server response hasn't data")
+      }
+    }
 
     int status = atoi(headers_get(&hs->headers_in, ":status"));
     DEBUG("Server replied with status %d", status);
@@ -536,6 +544,11 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 {
     return send_client_request(hs, "GET", uri, response, size);
+}
+
+int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
+{
+    return send_client_request(hs, "HEAD", uri, response, size);
 }
 
 int http_client_disconnect(hstates_t *hs)
