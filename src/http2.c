@@ -544,15 +544,19 @@ int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st)
   // First verify stream state
   if(header->stream_id == 0x0 ||
     header->stream_id != st->h2s.current_stream.stream_id){
-    ERROR("Continuation received on invalid stream.");
+    ERROR("Continuation received on invalid stream. PROTOCOL ERROR");
+    return -1;
+  }
+  else if(st->h2s.current_stream.state == STREAM_IDLE){
+    ERROR("Continuation received on idle stream. PROTOCOL ERROR");
     return -1;
   }
   else if(st->h2s.current_stream.state != STREAM_OPEN){
-    ERROR("Continuation received on closed stream.");
+    ERROR("Continuation received on closed stream. STREAM CLOSED");
     return -2;
   }
   if(!st->h2s.waiting_for_end_headers_flag){
-    ERROR("Continuation must be preceded by a HEADERS frame.");
+    ERROR("Continuation must be preceded by a HEADERS frame. PROTOCOL ERROR");
     return -1;
   }
   return 0;
