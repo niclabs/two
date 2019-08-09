@@ -88,8 +88,8 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
         uint8_t b0 = (1 << prefix) - 1;
         integer = integer - b0;
         encoded_integer[0] = b0;
-
         int i = 1;
+
         while (integer >= 128) {
             uint32_t encoded = integer % 128;
             encoded += 128;
@@ -98,6 +98,7 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
             i++;
             integer = integer / 128;
         }
+
         uint8_t bi = (uint8_t)integer & 0xff;
         encoded_integer[i] = bi;
     }

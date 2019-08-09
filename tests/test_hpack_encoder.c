@@ -17,6 +17,7 @@ extern int hpack_encoder_encode_literal_header_field_new_name( char *name_string
 extern int hpack_encoder_encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer);
 extern int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
 extern int hpack_encoder_encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer);
+extern int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t *encoded_buffer);
 
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
 typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_encode_fake when huffman_compression is not included*/
@@ -198,6 +199,7 @@ int8_t(*hpack_huffman_encode_customvalue_arr[])(huffman_encoded_word_t *, uint8_
                                                                                        hpack_huffman_encode_return_u,
                                                                                        hpack_huffman_encode_return_e };
 #endif
+
 void setUp(void)
 {
     /* Register resets */
@@ -520,8 +522,7 @@ void test_encode_literal_header_field_new_name(void)
                                            'a',
                                            'l',
                                            'u',
-                                           'e'
-    };
+                                           'e' };
     uint8_t expected_bytes = 24;
 #endif
     uint8_t encoded_buffer[expected_bytes];
@@ -668,6 +669,21 @@ void test_encode_literal_header_field_indexed_name_error(void)
 
 }
 
+void test_hpack_encoder_encode_dynamic_size_update(void)
+{
+    uint8_t expected_encoded[] = { 0x3f, 0x8f, 0x2 };
+    uint8_t encoded_buffer[3];
+
+    memset(encoded_buffer, 0, 3);
+    uint32_t new_max_size = 302;
+    hpack_utils_encoded_integer_size_fake.return_val = 3;
+    int rc = hpack_encoder_encode_dynamic_size_update(NULL, new_max_size, encoded_buffer);
+    TEST_ASSERT_EQUAL(3, rc);
+    for (int i = 0; i < rc; i++) {
+        TEST_ASSERT_EQUAL(expected_encoded[i], encoded_buffer[i]);
+    }
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -692,6 +708,6 @@ int main(void)
     UNIT_TEST(test_encode_literal_header_field_indexed_name);
     UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
-
+    UNIT_TEST(test_hpack_encoder_encode_dynamic_size_update);
     return UNIT_TESTS_END();
 }
