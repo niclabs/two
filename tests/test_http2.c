@@ -796,6 +796,12 @@ void test_check_incoming_continuation_condition_errors(void){
   st.h2s.current_stream.state = STREAM_OPEN;
   rc = check_incoming_continuation_condition(&head, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (not previous headers)");
+  st.h2s.current_stream.state = STREAM_IDLE;
+  TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (stream in idle)");
+  head.length = 290;
+  rc = check_incoming_continuation_condition(&head, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (header length bigger than max)");
+
 }
 
 void test_handle_headers_payload_no_flags(void){
