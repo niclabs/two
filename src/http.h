@@ -49,19 +49,19 @@ int http_server_start(hstates_t *hs);
 int http_server_destroy(hstates_t *hs);
 
 /**
- * Set callback to handle an http resource 
+ * Set callback to handle an http resource
  *
  * A resource is composed by a method and a path
  *
  * A path consists of a sequence of path segments separated by a slash
  * ("/") character.  A path is always defined for a URI, though the
- * defined path may be empty (zero length) 
+ * defined path may be empty (zero length)
  * (More info in https://tools.ietf.org/html/rfc3986#section-3.3)
  *
- * For this function, the path must start with a '/'. 
+ * For this function, the path must start with a '/'.
  *
  * Attempting to define a malformed path, or a path for an unsupported method
- * will result in an error return 
+ * will result in an error return
  *
  * @return 0 if ok, -1 if error
  */
@@ -95,6 +95,18 @@ int http_client_connect(hstates_t *hs, char *address, uint16_t port);
  * @return http status or -1 if an unexpected error ocurred
  */
 int http_get(hstates_t *hs, char *uri, uint8_t * response, size_t * size);
+
+
+/*
+ * Send a HEAD request to server and wait for a reply
+ *
+ * @param    hs                         Struct with client information
+ * @param    uri                        Request URI
+ * @param    response                   Pointer to a char array where to store the server response
+ * @param    size                       Pointer to size_t storing the maximum response size expected, the value will be updated upon server response
+ * @return http status or -1 if an unexpected error ocurred
+ */
+int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size);
 
 
 /*
