@@ -423,6 +423,7 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
   }
   if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
     ERROR("Frame exceeds the MAX_FRAME_SIZE. FRAME SIZE ERROR");
+    send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
     return -1;
   }
   if(st->h2s.current_stream.state == STREAM_IDLE){
