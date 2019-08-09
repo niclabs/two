@@ -72,67 +72,67 @@ const hpack_static_table_t hpack_static_table = {
         "www-authenticate",
     },
     .value_table = {
-            "",
-            "GET",
-            "POST",
-            "/",
-            "/index.html",
-            "http",
-            "https",
-            "200",
-            "204",
-            "206",
-            "304",
-            "400",
-            "404",
-            "500",
-            "",
-            "gzip, deflate",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
+        "",
+        "GET",
+        "POST",
+        "/",
+        "/index.html",
+        "http",
+        "https",
+        "200",
+        "204",
+        "206",
+        "304",
+        "400",
+        "404",
+        "500",
+        "",
+        "gzip, deflate",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
     }
 };
 
@@ -212,8 +212,8 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
     uint32_t table_index = (dynamic_table->next + dynamic_table->table_length - (index - 61)) % dynamic_table->table_length;
 
     header_pair_t result = dynamic_table->table[table_index];
-    memset(name,0,strlen(name));
-    memset(value,0,strlen(value));
+    memset(name, 0, strlen(name));
+    memset(value, 0, strlen(value));
     strncpy(name, result.name, strlen(result.name));
     strncpy(value, result.value, strlen(result.value));
     return 0;
@@ -295,42 +295,42 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
 
     //TODO check case new max size different but length same
     //Case same size as before
-    if(new_max_size == dynamic_table->max_size){
+    if (new_max_size == dynamic_table->max_size) {
         return 0;
     }
     //Case table grows
-    if(new_table_length > dynamic_table->table_length){
-      //if next is after first
-      if(dynamic_table->first < dynamic_table->next){
-        dynamic_table->max_size = new_max_size;
-        dynamic_table->table_length = new_table_length;
-      }
-      //if next is before first
-      else{
-        if(dynamic_table->next < new_table_length - dynamic_table->table_length){
-          for(uint32_t i=0; i < dynamic_table->next; i++){
-            dynamic_table->table[dynamic_table->table_length+i].name = dynamic_table->table[i].name;
-            dynamic_table->table[dynamic_table->table_length+i].value = dynamic_table->table[i].value;
-          }
-          dynamic_table->next = dynamic_table->table_length + dynamic_table->next;
+    if (new_table_length > dynamic_table->table_length) {
+        //if next is after first
+        if (dynamic_table->first < dynamic_table->next) {
+            dynamic_table->max_size = new_max_size;
+            dynamic_table->table_length = new_table_length;
         }
-        else{
-          for(uint32_t i=0; i < new_table_length - dynamic_table->table_length; i++){
-            dynamic_table->table[dynamic_table->table_length+i].name = dynamic_table->table[i].name;
-            dynamic_table->table[dynamic_table->table_length+i].value = dynamic_table->table[i].value;
-          }
-          for(uint32_t i=0; i < dynamic_table->next - (new_table_length - dynamic_table->table_length); i++){
-            dynamic_table->table[i].name = dynamic_table->table[new_table_length-dynamic_table->table_length + i].name;
-            dynamic_table->table[i].value = dynamic_table->table[new_table_length-dynamic_table->table_length + i].value;
-          }
-          dynamic_table->next = new_table_length - dynamic_table->table_length;
+        //if next is before first
+        else {
+            if (dynamic_table->next < new_table_length - dynamic_table->table_length) {
+                for (uint32_t i = 0; i < dynamic_table->next; i++) {
+                    dynamic_table->table[dynamic_table->table_length + i].name = dynamic_table->table[i].name;
+                    dynamic_table->table[dynamic_table->table_length + i].value = dynamic_table->table[i].value;
+                }
+                dynamic_table->next = dynamic_table->table_length + dynamic_table->next;
+            }
+            else {
+                for (uint32_t i = 0; i < new_table_length - dynamic_table->table_length; i++) {
+                    dynamic_table->table[dynamic_table->table_length + i].name = dynamic_table->table[i].name;
+                    dynamic_table->table[dynamic_table->table_length + i].value = dynamic_table->table[i].value;
+                }
+                for (uint32_t i = 0; i < dynamic_table->next - (new_table_length - dynamic_table->table_length); i++) {
+                    dynamic_table->table[i].name = dynamic_table->table[new_table_length - dynamic_table->table_length + i].name;
+                    dynamic_table->table[i].value = dynamic_table->table[new_table_length - dynamic_table->table_length + i].value;
+                }
+                dynamic_table->next = new_table_length - dynamic_table->table_length;
+            }
         }
-      }
-      return 0;
+        return 0;
     }
     //Case table shrinks
     //else{
-      //TODO
+    //TODO
     //}
     return 0;
 
@@ -464,7 +464,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     }
 
     //TODO replace this with macro
-    if(dynamic_table==NULL){
+    if (dynamic_table == NULL) {
         return -1;
     }
 
@@ -475,8 +475,8 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
         hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name, tmp_value);
         if ((strlen(tmp_name) == strlen(name) &&
              (strncmp(tmp_name, name, strlen(name)) == 0)) &&
-                (strlen(tmp_value) == strlen(value) &&
-                (strncmp(tmp_value, value, strlen(value)) == 0))) {
+            (strlen(tmp_value) == strlen(value) &&
+             (strncmp(tmp_value, value, strlen(value)) == 0))) {
             return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
         }
     }
@@ -507,10 +507,10 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     }
 
     //TODO replace this with macro
-    if(dynamic_table==NULL){
+    if (dynamic_table == NULL) {
         return -1;
     }
-    
+
     //Then search in dynamic table
     char tmp_name[MAX_HEADER_NAME_LEN];
     for (uint8_t i = 0; i < hpack_tables_dynamic_table_length(dynamic_table); i++) {
