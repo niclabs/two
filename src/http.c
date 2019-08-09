@@ -384,7 +384,7 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 {
     if (hs == NULL || method == NULL || path == NULL || handler == NULL) {
         errno = EINVAL;
-        ERROR("ERROR found %d",errno );
+        ERROR("ERROR found %d", errno );
         return -1;
     }
 
@@ -406,29 +406,34 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
         return -1;
     }
 
+    // Checks if the path and method already exist
     http_resource_t *res;
     for (int i = 0; i < hs->resource_list_size; i++) {
         res = &hs->resource_list[i];
+        //If it does, replaces the resource
         if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
             res->handler = handler;
             return 0;
         }
     }
 
+    // Checks if the list is full
     if (hs->resource_list_size >= HTTP_MAX_RESOURCES) {
         ERROR("HTTP resource limit (%d) reached. Try changing value for HTTP_CONF_MAX_RESOURCES", HTTP_MAX_RESOURCES);
         return -1;
     }
 
+    // Adds the resource to the list
     res = &hs->resource_list[hs->resource_list_size++];
 
-    // Set values
+    // Sets values
     strncpy(res->method, method, 8);
     strncpy(res->path, path, HTTP_MAX_PATH_SIZE);
     res->handler = handler;
 
     return 0;
 }
+
 
 /************************************
 * Client API methods
@@ -494,7 +499,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
           // Get response data (TODO: should we just copy the pointer?)
           *size = get_data(&hs->data_in, response, *size);
       } else {
-        DEBUG("Server response hasn't data")
+        DEBUG("Server response didn't contain any data")
       }
     }
 
@@ -532,6 +537,7 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
     // Initialize http/2 connection
     if (h2_client_init_connection(hs) < 0) {
         ERROR("Failed to perform HTTP/2 initialization");
+        //TODO: should we destroy client socket?
         return -1;
     }
 
