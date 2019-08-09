@@ -499,7 +499,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
           // Get response data (TODO: should we just copy the pointer?)
           *size = get_data(&hs->data_in, response, *size);
       } else {
-        DEBUG("Server response didn't contain any data")
+        DEBUG("Server response hasn't data");
       }
     }
 
