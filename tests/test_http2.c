@@ -680,18 +680,27 @@ void test_check_incoming_headers_condition_error(void){
   st_last.h2s.waiting_for_end_headers_flag = 0;
   st_last.h2s.last_open_stream_id = 124;
   head_ngt.stream_id = 123;
+  head_ngt.length = 100;
   hstates_t st_parity;
   frame_header_t head_parity;
   st_parity.is_server = 1;
   st_parity.h2s.waiting_for_end_headers_flag = 0;
   st_parity.h2s.last_open_stream_id = 2;
   head_parity.stream_id = 120;
+  head_parity.length = 100;
   hstates_t st_parity_c;
   frame_header_t head_parity_c;
   st_parity.is_server = 0;
   st_parity.h2s.waiting_for_end_headers_flag = 0;
   st_parity.h2s.last_open_stream_id = 3;
   head_parity.stream_id = 17;
+  hstates_t st_fs;
+  frame_header_t head_fs;
+  st_fs.h2s.waiting_for_end_headers_flag = 0;
+  head_fs.stream_id = 12;
+  head_fs.length = 200;
+  uint32_t read_setting_from_returns[1] = {128};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = check_incoming_headers_condition(&head, &st_end_flag);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (waiting for end headers flag set)");
   rc = check_incoming_headers_condition(&head_invalid, &st_valid);
@@ -702,6 +711,8 @@ void test_check_incoming_headers_condition_error(void){
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id parity is wrong)");
   rc = check_incoming_headers_condition(&head_parity_c, &st_parity_c);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id parity is wrong)");
+  rc = check_incoming_headers_condition(&head_fs, &st_fs);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (frame size bigger than expected)");
 }
 
 void test_check_incoming_headers_condition_creation_of_stream(void){
@@ -731,6 +742,9 @@ void test_check_incoming_headers_condition_creation_of_stream(void){
 void test_check_incoming_headers_condition_mismatch(void){
   frame_header_t head;
   head.stream_id = 2440;
+  head.length = 256;
+  uint32_t read_setting_from_returns[1] = {280};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   hstates_t st;
   st.h2s.waiting_for_end_headers_flag = 0;
   st.h2s.current_stream.stream_id = 2438;
@@ -1058,6 +1072,7 @@ void test_send_headers_stream_verification_response_not_init(void){
 
 void test_send_headers_stream_verification_server(void){
   hstates_t hst_not_stream;
+  memset(&hst_not_stream, 0, sizeof(hst_not_stream));
   hst_not_stream.is_server = 1;
   hst_not_stream.h2s.current_stream.stream_id = 2;
   hst_not_stream.h2s.current_stream.state = STREAM_IDLE;
