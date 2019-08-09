@@ -427,7 +427,7 @@ void test_http_server_start_fail_h2_server_init_connection(void)
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
 
     TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(1, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
 }
 
 

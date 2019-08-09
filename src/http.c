@@ -303,9 +303,9 @@ int http_server_start(hstates_t *hs)
             ERROR("Could not perform HTTP/2 initialization");
 
             // TODO: terminate client and continue
-            //sock_destroy(&hs->socket);
+            sock_destroy(&hs->socket);
             hs->connection_state = 0;
-            //hs->socket_state = 0;
+            hs->socket_state = 0;
             return -1;
         }
 
