@@ -763,9 +763,12 @@ void test_check_incoming_continuation_condition(void){
   frame_header_t head;
   hstates_t st;
   head.stream_id = 440;
+  head.length = 120;
   st.h2s.current_stream.stream_id = 440;
   st.h2s.current_stream.state = STREAM_OPEN;
   st.h2s.waiting_for_end_headers_flag = 1;
+  uint32_t read_setting_from_returns[1] = {280};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = check_incoming_continuation_condition(&head, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "return code must be 0");
 }
@@ -774,9 +777,12 @@ void test_check_incoming_continuation_condition_errors(void){
   frame_header_t head;
   hstates_t st;
   head.stream_id = 0;
+  head.length = 120;
   st.h2s.current_stream.stream_id = 440;
   st.h2s.current_stream.state = STREAM_OPEN;
   st.h2s.waiting_for_end_headers_flag = 1;
+  uint32_t read_setting_from_returns[1] = {280};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = check_incoming_continuation_condition(&head, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (incoming id equals 0)");
   head.stream_id = 442;
