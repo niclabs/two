@@ -8,6 +8,8 @@
 #include "logging.h"
 #include "hpack.h"
 #include "http_bridge.h"
+
+hpack_dynamic_table_t dynamic_table;
 /*
 * Function: frame_header_to_bytes
 * Pass a frame header to an array of bytes

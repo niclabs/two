@@ -176,6 +176,7 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
     return 0;
 }
 
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_dynamic_table_length
  * Input:
@@ -191,7 +192,9 @@ uint32_t hpack_tables_dynamic_table_length(hpack_dynamic_table_t *dynamic_table)
 
     return table_length_used;
 }
+#endif
 
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_dynamic_find_entry_name_and_value
  * Finds entry in dynamic table, entry is a pair name-value
@@ -218,7 +221,21 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
     strncpy(value, result.value, strlen(result.value));
     return 0;
 }
+#endif
+/*
+ * Function: hpack_tables_header_pair_size
+ * Input:
+ *      -> header_pair:
+ * Output:
+ *      return the size of a header HeaderPair, the size is
+ *      the sum of octets used for its encoding and 32
+ */
+uint32_t hpack_tables_header_pair_size(header_pair_t header_pair)
+{
+    return (uint32_t)(strlen(header_pair.name) + strlen(header_pair.value) + 32);
+}
 
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_dynamic_find_entry_name
  * Finds entry in dynamic table, entry is a pair name-value
@@ -241,21 +258,9 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
     strncpy(name, result.name, strlen(result.name));
     return 0;
 }
+#endif
 
-/*
- * Function: hpack_tables_header_pair_size
- * Input:
- *      -> header_pair:
- * Output:
- *      return the size of a header HeaderPair, the size is
- *      the sum of octets used for its encoding and 32
- */
-uint32_t hpack_tables_header_pair_size(header_pair_t header_pair)
-{
-    return (uint32_t)(strlen(header_pair.name) + strlen(header_pair.value) + 32);
-}
-
-
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_dynamic_table_size
  * Input:
@@ -274,6 +279,9 @@ uint32_t hpack_tables_dynamic_table_size(hpack_dynamic_table_t *dynamic_table)
     return total_size;
 }
 
+#endif
+
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /* TODO
  * Function: hpack_tables_dynamic_table_resize
  * Makes an update of the size of the dynamic table_length
@@ -335,9 +343,9 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
     return 0;
 
 }
+#endif
 
-
-
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: dynamic_table_add_entry
  * Add an header pair entry in the table
@@ -367,7 +375,7 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
     dynamic_table->next = (dynamic_table->next + 1) % dynamic_table->table_length;
     return 0;
 }
-
+#endif
 /*
  * Function: find_entry_name_and_value
  * finds an entry (pair name-value) in either the static or dynamic table_length
@@ -381,7 +389,7 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
  */
 int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
-
+    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             ERROR("Dynamic table not initialized ");
@@ -401,6 +409,13 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
             return -1;
         }
     }
+    #else
+    int8_t rc = hpack_tables_static_find_entry_name_and_value(index, name, value);
+        if (rc < 0) {
+            ERROR("The index was greater than the size of the static table");
+            return -1;
+        }
+    #endif
     return 0;
 }
 
@@ -416,6 +431,7 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
  */
 int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
+    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             ERROR("Dynamic table not initialized ");
@@ -434,6 +450,13 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
             return -1;
         }
     }
+    #else
+    int8_t rc = hpack_tables_static_find_entry_name(index, name);
+        if (rc < 0) {
+            ERROR("The index was greater than the size of the static table");
+            return -1;
+        }
+    #endif
     return 0;
 }
 
@@ -451,8 +474,6 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
  */
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
-    //TODO Check if name and value has to match or only name!!
-
     //Search first in static table
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         const char *table_name = hpack_static_table.name_table[i];
@@ -464,10 +485,10 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     }
 
     //TODO replace this with macro
-    if (dynamic_table == NULL) {
+    if(dynamic_table==NULL){
         return -1;
     }
-
+    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     //Then search in dynamic table
     char tmp_name[MAX_HEADER_NAME_LEN];
     char tmp_value[MAX_HEADER_VALUE_LEN];
@@ -480,7 +501,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
             return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
         }
     }
-
+    #endif
     return -1;
 }
 
@@ -511,24 +532,28 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
         return -1;
     }
 
+    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     //Then search in dynamic table
     char tmp_name[MAX_HEADER_NAME_LEN];
     for (uint8_t i = 0; i < hpack_tables_dynamic_table_length(dynamic_table); i++) {
         hpack_tables_dynamic_find_entry_name(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name);
-        //TODO CHECK length of tmp_name and name
+
         if (strlen(name) == strlen(tmp_name) && strncmp(tmp_name, name, strlen(name)) == 0) {
             return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
         }
     }
-
+    #endif
     return -1;
 }
 
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
 {
     return (uint32_t)((dynamic_table_size / 32) + 1);
 }
+#endif
 
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_init_dynamic_table
  * Initialize dynamic_table for protocol uses, but it requires a previous header_pair_t table initialization
@@ -548,3 +573,4 @@ int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uin
     dynamic_table->table = table;
     return 0;
 }
+#endif

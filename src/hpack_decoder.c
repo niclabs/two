@@ -212,6 +212,7 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
     return pointer;
 }
 
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
@@ -240,10 +241,16 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
         return -1;
     }
     pointer += rc;
-    //TODO add to dynamic table
+    /*Here we add it to the dynamic table*/
+    int res = hpack_tables_dynamic_table_add_entry(dynamic_table, name, value);
+    if(res < 0){
+        DEBUG("Couldn't add to dynamic table");
+        return -1;
+    }
+
     return pointer;
 }
-
+#endif
 int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
@@ -357,10 +364,13 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
     }
     else if (preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
         DEBUG("Decoding a literal header with incremental indexing");
-        //TODO replace this function with the correct one
+        #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+        int rc = hpack_decoder_decode_literal_header_field_with_incremental_indexing(dynamic_table, bytes, name, value);
+        #else
         int rc = hpack_decoder_decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
+        #endif
         if (rc < 0) {
-            ERROR("Error in hpack_decoder_decode_literal_header_field_never_indexed ");
+            ERROR("Error in hpack_decoder_decode_literal_header_field_with_incremental_indexing ");
         }
         return rc;
     }

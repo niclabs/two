@@ -4,7 +4,7 @@
 #include "hpack_huffman.h"
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
-static const huffman_tree_t huffman_tree = {
+static const hpack_huffman_tree_t huffman_tree = {
     .codes = {
         0x1ff8u,
         0x7fffd8u,

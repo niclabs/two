@@ -312,8 +312,23 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
 
     if (index < 0) {
         index = hpack_tables_find_index_name(dynamic_table, name_string);
+        #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+        //TODO uncomment the following section when dynamic table works
+        /*hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
+        DEBUG("Encoding a literal header field with incremental indexing");
+        int res = hpack_tables_dynamic_table_add_entry(dynamic_table, name, value);
+        if(res < 0){
+            DEBUG("Couldn't add to dynamic table");
+            preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+            DEBUG("Encoding a literal header field never indexed");
+        }
+         */
         hpack_preamble_t preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
         DEBUG("Encoding a literal header field never indexed");
+        #else
+        hpack_preamble_t preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+        DEBUG("Encoding a literal header field never indexed");
+        #endif
         uint8_t prefix = hpack_utils_find_prefix_size(preamble);
         if (index < 0) {
             //NEW NAME

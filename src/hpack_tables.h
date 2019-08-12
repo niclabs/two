@@ -2,11 +2,17 @@
 #define TWO_HPACK_TABLES_H
 #include <stdint.h>             /* for int8_t, uint32_t */
 
+//TODO add macros to conf file
+#define HPACK_CONF_INCLUDE_DYNAMIC_TABLE (1)
+
 #define STATIC_TABLE_SIZE (61)
 #ifdef HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE)
 #else
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (4092)
+#endif
+#ifdef HPACK_CONF_INCLUDE_DYNAMIC_TABLE
+#define HPACK_INCLUDE_DYNAMIC_TABLE (HPACK_CONF_INCLUDE_DYNAMIC_TABLE)
 #endif
 
 //typedef for HeaderPair
@@ -34,10 +40,12 @@ typedef struct hpack_dynamic_table {
 
 int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
 int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
+int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
+int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name);
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size);
 int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t* table);
 int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
-int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
-int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name);
+#endif //HPACK_INCLUDE_DYNAMIC_TABLE
 
 #endif //TWO_HPACK_TABLES_H

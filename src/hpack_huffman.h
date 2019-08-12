@@ -38,7 +38,7 @@ typedef struct {
 #endif
     const uint8_t sR[NUMBER_OF_CODE_LENGTHS];
     const uint8_t code_length[NUMBER_OF_CODE_LENGTHS];
-} huffman_tree_t;
+} hpack_huffman_tree_t;
 
 
 

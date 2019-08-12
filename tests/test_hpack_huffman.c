@@ -7,7 +7,7 @@
 #include "hpack_huffman.h"
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
-extern const huffman_tree_t huffman_tree;
+extern const hpack_huffman_tree_t huffman_tree;
 #endif
 DEFINE_FFF_GLOBALS;
 
