@@ -441,7 +441,6 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 
 int receive_server_response_data(hstates_t *hs)
 {
-    hs->end_message = 0;
     while (hs->connection_state == 1) {
         if (hs->end_message > 0) {
             return hs->end_message;
@@ -479,6 +478,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
     header_t header_list_in[HTTP_MAX_HEADER_COUNT];
     headers_init(&hs->headers_in, header_list_in, HTTP_MAX_HEADER_COUNT);
 
+    hs->end_message = 0;
     if (receive_headers(hs) < 0) {
         ERROR("An error ocurred while waiting for server response headers");
         return -1;
