@@ -87,19 +87,15 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
     huffman_encoded_word_t encoded_word;
 
     for (uint8_t i = 5; i < 31; i++) { //search through all lengths possible
-        if (bit_position + i > 8 * encoded_string_size) {
-            return -1;
-        }
+
         int8_t can_read_bits = hpack_utils_check_can_read_buffer(bit_position, i, encoded_string_size);
         if (can_read_bits < 0) {
-            return -1;
-        }
-        uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
-        /*int8_t rc = read_bits_from_bytes(bit_position, i, encoded_string, encoded_string_size, &result);
-           if (rc < 0) {
             ERROR("Error while trying to read bits from encoded_string in hpack_decoder_decode_huffman_word");
             return -1;
-           }*/
+        }
+
+        uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
+
         encoded_word.code = result;
         encoded_word.length = i;
         uint8_t decoded_sym = 0;
@@ -111,6 +107,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
             return i;
         }
     }
+    ERROR("Couldn't read bits in hpack_decoder_decode_huffman_word");
     return -1;
 }
 #endif
