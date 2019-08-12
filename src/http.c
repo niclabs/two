@@ -443,14 +443,11 @@ int receive_server_response_data(hstates_t *hs)
 {
     hs->end_message = 0;
     while (hs->connection_state == 1) {
-        if (h2_receive_frame(hs) < 0) {
-            break;
-        }
-        if (hs->keep_receiving == 1) {
-            continue;
-        }
         if (hs->end_message > 0) {
             return hs->end_message;
+        }
+        if (h2_receive_frame(hs) < 0) {
+            break;
         }
     }
 
@@ -489,13 +486,11 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
 
     //If it is a GET request, wait for the server response data
     if (strncmp("GET", method, 8) == 0){
-      int res_data = receive_server_response_data(hs);
-
-      if (res_data < 0) {
+      if (receive_server_response_data(hs) < 0) {
           ERROR("An error ocurred while waiting for server response data");
           return -1;
       }
-      else if (res_data == 1) {
+      else if (hs->data_in.size > 0) {
           // Get response data (TODO: should we just copy the pointer?)
           *size = get_data(&hs->data_in, response, *size);
       } else {
