@@ -717,7 +717,7 @@ int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
       ERROR("Stream was in IDLE state. PROTOCOL ERROR");
       return -1;
     }
-    else if(st->h2s.current_stream.state != STREAM_OPEN && st->h2s.current_stream.state != STREAM_HALF_CLOSED_REMOTE){
+    else if(st->h2s.current_stream.state != STREAM_OPEN && st->h2s.current_stream.state != STREAM_HALF_CLOSED_LOCAL){
       ERROR("Stream was not in a valid state for data. STREAM CLOSED ERROR");
       return -1;
     }
