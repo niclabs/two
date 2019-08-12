@@ -225,8 +225,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
     }
 
     // If it is GET method Prepare response for callback
-    if (strncmp("GET", method, 8) != 0){
-
+    if (strncmp("GET", method, 8) == 0){
         // TODO: response pointer should be pointer to hs->data_out
         uint8_t response[HTTP_MAX_RESPONSE_SIZE];
         int len;
