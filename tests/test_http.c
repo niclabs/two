@@ -146,7 +146,7 @@ void test_set_data_fail_big_data(void)
 
     int sd = set_data(&dout, (uint8_t *)"", 0);
 
-    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data too large for buffer size");
+    TEST_ASSERT_EQUAL( -1, sd);
 
     TEST_ASSERT_EQUAL( 0, dout.size);
 }
@@ -160,7 +160,7 @@ void test_set_data_fail_data_full(void)
 
     int sd = set_data(&dout, (uint8_t *)"test", 4);
 
-    TEST_ASSERT_EQUAL_MESSAGE( -1, sd, "Data buffer full");
+    TEST_ASSERT_EQUAL( -1, sd);
 }
 
 
@@ -347,7 +347,7 @@ void test_http_server_create_fail_sock_listen(void)
     TEST_ASSERT_EQUAL(sock_listen_fake.call_count, 1);
     TEST_ASSERT_EQUAL(sock_destroy_fake.call_count, 1);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, sc, "Partial error in server creation");
+    TEST_ASSERT_EQUAL(-1, sc);
 
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
@@ -364,7 +364,7 @@ void test_http_server_create_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL(sock_create_fake.call_count, 1);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, sc, "Error in server creation");
+    TEST_ASSERT_EQUAL(-1, sc);
 
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(1, hs.is_server);
@@ -400,7 +400,7 @@ void test_http_server_start_success(void)
     TEST_ASSERT_EQUAL(2, headers_get_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, ss, "Could not perform HTTP/2 initialization");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, ss, "Error message must come from http2 layer");
 
     TEST_ASSERT_EQUAL(0, hs.keep_receiving);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
@@ -424,7 +424,7 @@ void test_http_server_start_fail_h2_server_init_connection(void)
     TEST_ASSERT_EQUAL(1, sock_accept_fake.call_count);
     TEST_ASSERT_EQUAL(1, h2_server_init_connection_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Problems sending server data");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Error message must come from http2 layer");
 
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
@@ -443,7 +443,7 @@ void test_http_server_start_fail_sock_accept(void)
 
     TEST_ASSERT_EQUAL(1, sock_accept_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Not client found");
+    TEST_ASSERT_EQUAL(-1, is);
 
     TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.socket_state);
@@ -479,7 +479,7 @@ void test_http_server_destroy_fail_not_server(void)
 
     int d = http_server_destroy(&hs);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Server not found");
+    TEST_ASSERT_EQUAL(-1, d);
 }
 
 
@@ -520,7 +520,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
 
     TEST_ASSERT_EQUAL(2, sock_destroy_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Error in server disconnection");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Error message must come from sock layer");
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
@@ -585,7 +585,7 @@ void test_http_register_resource_fail_not_supported_method(void)
 
     int res = http_server_register_resource(&hs, "POST", "/index", &resource_handler);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "Method POST not implemented yet");
+    TEST_ASSERT_EQUAL(-1, res);
 }
 
 
@@ -597,7 +597,7 @@ void test_http_register_resource_fail_invalid_path(void)
 
     int res = http_server_register_resource(&hs, "GET", "index", &resource_handler);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "Path index does not have a valid format");
+    TEST_ASSERT_EQUAL(-1, res);
 }
 
 void test_http_register_resource_fail_list_full(void)
@@ -827,7 +827,7 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
     TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
     TEST_ASSERT_EQUAL(1, h2_client_init_connection_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Problems sending client data");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error message must come from http2 layer");
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -851,7 +851,7 @@ void test_http_client_connect_fail_sock_connect(void)
     TEST_ASSERT_EQUAL(1, sock_connect_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client connection");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error message must come from sock layer");
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -871,7 +871,7 @@ void test_http_client_connect_fail_sock_create(void)
 
     TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error on client creation");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error message must come from sock layer");
 
     TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
@@ -929,7 +929,7 @@ void test_http_client_disconnect_fail(void)
 
     TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[0]);
 
-    TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Client could not be disconnected");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Error message must come from sock layer");
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
