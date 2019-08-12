@@ -177,7 +177,7 @@ int error(hstates_t *hs, int code, char *msg)
 
     // Send response
     if (h2_send_response(hs) < 0) {
-        ERROR("Could not send data");
+        DEBUG("Could not send data");
         return -1;
     }
     return 0;
@@ -249,7 +249,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
     // Send response
     if (h2_send_response(hs) < 0) {
         // TODO: get error code from HTTP/2
-        ERROR("HTTP/2 error ocurred. Could not send data");
+        DEBUG("HTTP/2 error ocurred. Could not send data");
         return -1;
     }
 
@@ -267,14 +267,14 @@ int http_server_create(hstates_t *hs, uint16_t port)
     hs->is_server = 1;
 
     if (sock_create(&hs->server_socket) < 0) {
-        ERROR("Error in server creation");
+        DEBUG("Error in server creation");
         return -1;
     }
 
     hs->server_socket_state = 1;
 
     if (sock_listen(&hs->server_socket, port) < 0) {
-        ERROR("Partial error in server creation");
+        DEBUG("Partial error in server creation");
         if (sock_destroy(&hs->server_socket) == 0) {
             hs->server_socket_state = 0;
         }
@@ -300,7 +300,7 @@ int http_server_start(hstates_t *hs)
 
         // Initialize http2 connection (send headers)
         if (h2_server_init_connection(hs) < 0) {
-            ERROR("Could not perform HTTP/2 initialization");
+            DEBUG("Could not perform HTTP/2 initialization");
 
             // TODO: terminate client and continue
             sock_destroy(&hs->socket);
@@ -340,7 +340,7 @@ int http_server_start(hstates_t *hs)
         }
 
         if (sock_destroy(&hs->socket) == -1) {
-            WARN("Could not destroy client socket");
+            DEBUG("Could not destroy client socket");
         }
         hs->connection_state = 0;
         hs->socket_state = 0;
@@ -369,7 +369,7 @@ int http_server_destroy(hstates_t *hs)
     hs->connection_state = 0;
 
     if (sock_destroy(&hs->server_socket) < 0) {
-        ERROR("Error in server disconnection");
+        DEBUG("Error in server disconnection");
         return -1;
     }
 
@@ -464,13 +464,13 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
         headers_set(&hs->headers_out, ":scheme", "http") < 0 ||
         headers_set(&hs->headers_out, ":path", uri) < 0 ||
         headers_set(&hs->headers_out, "Host", hs->host) < 0) {
-        ERROR("Failed to set headers for request");
+        DEBUG("Failed to set headers for request");
         return -1;
     }
 
     // Try to send request
     if (h2_send_request(hs) < 0) {
-        ERROR("Failed to send request %s %s", method, uri);
+        DEBUG("Failed to send request %s %s", method, uri);
         return -1;
     }
 
@@ -512,14 +512,14 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
     hs->is_server = 0;
 
     if (sock_create(&(hs->socket)) < 0) {
-        ERROR("Failed to create socket for client connection");
+        DEBUG("Failed to create socket for client connection");
         return -1;
     }
 
     hs->socket_state = 1;
 
     if (sock_connect(&hs->socket, addr, port) < 0) {
-        ERROR("Connection to remote address %s failed", addr);
+        DEBUG("Connection to remote address %s failed", addr);
         http_client_disconnect(hs);
         return -1;
     }
@@ -531,7 +531,7 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 
     // Initialize http/2 connection
     if (h2_client_init_connection(hs) < 0) {
-        ERROR("Failed to perform HTTP/2 initialization");
+        DEBUG("Failed to perform HTTP/2 initialization");
         //TODO: should we destroy client socket?
         return -1;
     }
@@ -556,7 +556,7 @@ int http_client_disconnect(hstates_t *hs)
 {
     if (hs->socket_state == 1) {
         if (sock_destroy(&hs->socket) < 0) {
-            ERROR("Error in client disconnection");
+            DEBUG("Error in client disconnection");
             return -1;
         }
 
