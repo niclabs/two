@@ -475,6 +475,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   int rc;
   st->h2s.waiting_for_end_headers_flag = 1;
   st->keep_receiving = 1;
+  st->end_message = 0;
   int hbf_size = get_header_block_fragment_size(header, hpl);
   // We are reading a new header frame, so previous fragments are useless
   if(st->h2s.header_block_fragments_pointer != 0){
@@ -495,6 +496,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
   if(is_flag_set(header->flags,HEADERS_END_STREAM_FLAG)){
       st->h2s.received_end_stream = 1;
+      st->end_message = 1;
   }
   //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
   if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
@@ -735,6 +737,7 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     st->data_in.size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
         st->h2s.received_end_stream = 1;
+        st->end_message = 1;
     }
     // Stream state handling for end stream flag
     if(st->h2s.received_end_stream == 1){

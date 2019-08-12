@@ -150,8 +150,8 @@ typedef struct HTTP_STATES {
 
     //boolean. Notifies HTTP if new headers were written
     uint8_t new_headers;
-    //boolean. 0 = no new data 1 = new data were written, 2 = will not be written data
-    uint8_t new_data;
+    //boolean. 0 = full message not yet received 1 = full message received
+    uint8_t end_message;
     //boolean. 0 = END STREAM, 1 = keep_receiving, 2 = GO AWAY
     uint8_t keep_receiving;
 } hstates_t;

@@ -91,7 +91,7 @@ int h2_receive_frame_custom_fake(hstates_t *hs)
     if (h2_receive_frame_fake.call_count == 3) {
         hs->keep_receiving = 0;
         hs->data_in.size = 5;
-        hs->new_data = 1;
+        hs->end_message = 1;
     }
     return 0;
 }

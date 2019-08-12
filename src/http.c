@@ -441,7 +441,7 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 
 int receive_server_response_data(hstates_t *hs)
 {
-    hs->new_data = 0;
+    hs->end_message = 0;
     while (hs->connection_state == 1) {
         if (h2_receive_frame(hs) < 0) {
             break;
@@ -449,8 +449,8 @@ int receive_server_response_data(hstates_t *hs)
         if (hs->keep_receiving == 1) {
             continue;
         }
-        if (hs->new_data > 0) {
-            return hs->new_data;
+        if (hs->end_message > 0) {
+            return hs->end_message;
         }
     }
 
