@@ -1114,6 +1114,7 @@ int h2_receive_frame(hstates_t *st){
             WARN("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
         case SETTINGS_TYPE:{//Settings
+            INFO("h2_receive_frame: SETTINGS");
             rc = check_incoming_settings_condition(&header, st);
             if(rc < 0){
                 ERROR("Error was found in SETTINGS Header");
@@ -1171,6 +1172,7 @@ int h2_receive_frame(hstates_t *st){
             return rc;
         }
         case WINDOW_UPDATE_TYPE: {//Window update
+            INFO("h2_receive_frame: WINDOW UPDATE");
             window_update_payload_t window_update_payload;
             int rc = read_window_update_payload(buff_read, &header, &window_update_payload);
             if (rc < 0) {
@@ -1187,6 +1189,7 @@ int h2_receive_frame(hstates_t *st){
         }
         case CONTINUATION_TYPE:{//Continuation
             //returns -1 if protocol error, -2 if stream closed, 0 if no errors
+            INFO("h2_receive_frame: CONTINUATION");
             rc = check_incoming_continuation_condition(&header, st);
             if(rc == -1){
               ERROR("PROTOCOL ERROR was found");
