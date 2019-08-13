@@ -648,7 +648,7 @@ void test_hpack_decoder_decode_indexed_header_field(void)
 
     memset(name, 0, strlen(expected_name));
     memset(value, 0, strlen(expected_value));
-    
+
     uint8_t encoded_buffer[] = { 0x82 };
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     hpack_utils_find_prefix_size_fake.return_val = 7;
