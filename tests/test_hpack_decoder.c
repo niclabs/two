@@ -41,11 +41,11 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, u
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)                    \
     FAKE(hpack_utils_read_bits_from_bytes)       \
-    FAKE(hpack_utils_check_can_read_buffer)      \
     FAKE(hpack_utils_get_preamble)               \
     FAKE(hpack_utils_find_prefix_size)           \
     FAKE(hpack_encoder_encode)                   \
     FAKE(hpack_utils_encoded_integer_size)       \
+    FAKE(hpack_utils_check_can_read_buffer)      \
     FAKE(hpack_tables_get_table_length)          \
     FAKE(hpack_tables_init_dynamic_table)        \
     FAKE(hpack_tables_dynamic_table_add_entry)   \
@@ -157,7 +157,17 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xf4,
                                           0xff };
 #endif
-
+/*
+int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t buffer_size)
+{
+    if (current_bit_pointer + number_of_bits_to_read > 8 * buffer_size) {
+        printf("%d\n", -1);
+        return -1;
+    }
+    printf("%d\n", 0);
+    return 0;
+}
+*/
 int8_t hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
@@ -420,7 +430,7 @@ void test_decode_huffman_word(void)
     uint8_t expected_word_length[] = { 7, 7, 7, 6, 5, 7, 5, 6, 6, 6, 5, 6, 5, 5, 6 };
     uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41 };
 
-
+    hpack_utils_check_can_read_buffer_fake.return_val = 0;
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 29);
 
@@ -442,6 +452,7 @@ void test_decode_huffman_word(void)
 void test_decode_huffman_string(void)
 {
     char decoded_string[30];
+    int8_t return_fake_values_check_can_read_buffer[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1 };
     uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
 
     memset(decoded_string, 0, 30);
@@ -451,6 +462,7 @@ void test_decode_huffman_string(void)
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
+    SET_RETURN_SEQ(hpack_utils_check_can_read_buffer, return_fake_values_check_can_read_buffer, 33);
     int rc = hpack_decoder_decode_huffman_string(decoded_string, encoded_string);
     TEST_ASSERT_EQUAL(13, rc);
     TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
@@ -463,8 +475,12 @@ void test_decode_huffman_string(void)
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_decode_huffman_string_error(void)
 {
+    int8_t return_fake_values_check_can_read_buffer[] = { 0, -1, 0, 0, 0, 0, -1 };
+
+    SET_RETURN_SEQ(hpack_utils_check_can_read_buffer, return_fake_values_check_can_read_buffer, 7);
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_bad_padding_arr, 2);
     hpack_utils_encoded_integer_size_fake.return_val = 1;
+
     /*Test border condition*/
     /*Padding wrong*/
     uint8_t encoded_string2[] = { 0x81, 0x1b };
@@ -521,9 +537,12 @@ void test_decode_string(void)
 {
     uint8_t encoded_string[] = { 0x0f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d };
     uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
+    int8_t return_fake_values_check_can_read_buffer[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1 };
     char decoded_string[30];
 
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
+    SET_RETURN_SEQ(hpack_utils_check_can_read_buffer, return_fake_values_check_can_read_buffer, 33);
+
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     /*Test decode a non huffman string*/
     memset(decoded_string, 0, 30);
@@ -553,7 +572,9 @@ void test_decode_string(void)
 void test_decode_string_error(void)
 {
     uint32_t return_fake_value_read_bits_from_bytes = 3;
+    int8_t return_fake_values_check_can_read_buffer[] = { 0, -1 };
 
+    SET_RETURN_SEQ(hpack_utils_check_can_read_buffer, return_fake_values_check_can_read_buffer, 2);
     hpack_utils_read_bits_from_bytes_fake.return_val = return_fake_value_read_bits_from_bytes;
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_bad_padding_arr, 2);
@@ -627,11 +648,13 @@ void test_hpack_decoder_decode_indexed_header_field(void)
 
     memset(name, 0, strlen(expected_name));
     memset(value, 0, strlen(expected_value));
+    
     uint8_t encoded_buffer[] = { 0x82 };
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     hpack_utils_find_prefix_size_fake.return_val = 7;
     hpack_tables_find_entry_name_and_value_fake.custom_fake = hpack_tables_find_entry_name_and_value_return_method_get;
     int rc = hpack_decoder_decode_indexed_header_field(NULL, encoded_buffer, name, value);
+
     TEST_ASSERT_EQUAL(1, rc);
     for (uint8_t i = 0; i < strlen(expected_name); i++) {
         TEST_ASSERT_EQUAL(expected_name[i], name[i]);

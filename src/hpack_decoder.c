@@ -90,7 +90,6 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
         int8_t can_read_bits = hpack_utils_check_can_read_buffer(bit_position, i, encoded_string_size);
         if (can_read_bits < 0) {
-            ERROR("Error while trying to read bits from encoded_string in hpack_decoder_decode_huffman_word");
             return -1;
         }
 
