@@ -200,6 +200,12 @@ int8_t(*hpack_huffman_encode_customvalue_arr[])(huffman_encoded_word_t *, uint8_
                                                                                        hpack_huffman_encode_return_e };
 #endif
 
+int hpack_tables_find_index_fake_method_get(hpack_dynamic_table_t *dynamic_table, char *name, char *value){
+    TEST_ASSERT_EQUAL_STRING(":method",name);
+    TEST_ASSERT_EQUAL_STRING("GET",value);
+    return 2;
+}
+
 void setUp(void)
 {
     /* Register resets */
@@ -567,39 +573,76 @@ void test_encode_literal_header_field_new_name_error(void)
 
 }
 
-void test_hpack_encoder_encode(void)
-{
-    //TODO redo this test with new API
-    /*
-       hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITHOUT_INDEXING;
-       uint32_t max_size = 0;
-       char value_string[] = "val";
-       char name_string[] = "name";
-       uint8_t encoded_buffer[64];
+void test_hpack_encoder_encode_test1(void) {
+    /*Test indexed header field*/
+    int expected_encoding[] = {0x82};
+    char name[] = ":method";
+    char value[] = "GET";
+    uint8_t encoded_buffer[] = {0};
+    hpack_tables_find_index_fake.custom_fake = hpack_tables_find_index_fake_method_get;
+    hpack_utils_find_prefix_size_fake.return_val = 7;
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
 
-       uint8_t expected_encoded_bytes[] = {
-        0,          //LITERAL_HEADER_FIELD_WITHOUT_INDEXING, index=0
-        4,          //name_length
-        (uint8_t)'n',
-        (uint8_t)'a',
-        (uint8_t)'m',
-        (uint8_t)'e',
-        3,        //value_length
-        (uint8_t)'v',
-        (uint8_t)'a',
-        (uint8_t)'l'
-       };
+    int rc = hpack_encoder_encode(NULL, name, value, encoded_buffer);
+    TEST_ASSERT_EQUAL(1, rc);
+    TEST_ASSERT_EQUAL(expected_encoding[0], encoded_buffer[0]);
+}
 
-       hpack_utils_find_prefix_size_fake.return_val = 4;
-       hpack_utils_encoded_integer_size_fake.return_val = 1;
-       int rc = hpack_encoder_encode(preamble, max_size, name_string, value_string, encoded_buffer);
+void test_hpack_encoder_encode_test2(void) {
+    /*Test new name*/
+    char value_string[] = "val";
+    char name_string[] = "name";
+    uint8_t encoded_buffer[64];
+    //TODO change preamble with LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING when dynamic table works
+    uint8_t expected_encoded_bytes[] = {
+            16,          //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=0
+            4,          //name_length
+            (uint8_t)'n',
+            (uint8_t)'a',
+            (uint8_t)'m',
+            (uint8_t)'e',
+            3,        //value_length
+            (uint8_t)'v',
+            (uint8_t)'a',
+            (uint8_t)'l'
+    };
 
+    hpack_utils_find_prefix_size_fake.return_val = 4;
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    hpack_tables_find_index_fake.return_val = -1;
+    hpack_tables_find_index_name_fake.return_val = -1;
+    int rc = hpack_encoder_encode(NULL, name_string, value_string, encoded_buffer);
 
-       TEST_ASSERT_EQUAL(10, rc);
-       for (int i = 0; i < rc; i++) {
+    TEST_ASSERT_EQUAL(10, rc);
+    for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
-       }
-     */
+    }
+}
+
+void test_hpack_encoder_encode_test3(void) {
+    /*Test new name*/
+    char value_string[] = "val";
+    char name_string[] = ":authority";
+    uint8_t encoded_buffer[64];
+    //TODO change preamble with LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING when dynamic table works
+    uint8_t expected_encoded_bytes[] = {
+            17,          //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=1
+            3,        //value_length
+            (uint8_t)'v',
+            (uint8_t)'a',
+            (uint8_t)'l'
+    };
+
+    hpack_utils_find_prefix_size_fake.return_val = 4;
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    hpack_tables_find_index_fake.return_val = -1;
+    hpack_tables_find_index_name_fake.return_val = 1;
+    int rc = hpack_encoder_encode(NULL, name_string, value_string, encoded_buffer);
+
+    TEST_ASSERT_EQUAL(5, rc);
+    for (int i = 0; i < rc; i++) {
+        TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
+    }
 }
 
 void test_encode_indexed_header_field(void)
@@ -688,7 +731,9 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-    UNIT_TEST(test_hpack_encoder_encode);
+    UNIT_TEST(test_hpack_encoder_encode_test1);
+    UNIT_TEST(test_hpack_encoder_encode_test2);
+    UNIT_TEST(test_hpack_encoder_encode_test3);
     UNIT_TEST(test_encode_integer);
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
