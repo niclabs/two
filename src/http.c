@@ -553,7 +553,13 @@ int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 
 int http_client_disconnect(hstates_t *hs)
 {
-    if (hs->socket_state == 1) {
+    if (hs->connection_state) {
+        if (h2_graceful_connection_shutdown(&hs) < 0) {
+            WARN("Client will disconnect without a successful goaway");
+        }
+    }
+
+    if (hs->socket_state) {
         if (sock_destroy(&hs->socket) < 0) {
             DEBUG("Error in client disconnection");
             return -1;
