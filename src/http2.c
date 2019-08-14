@@ -245,14 +245,12 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
 * Output: 0 if operations are done successfully, -1 if not.
 */
 int handle_settings_payload(settings_payload_t *spl, hstates_t *st){
-    /*Verify the values of settings*/
+    // update_settings_table checks for possible errors in the incoming settings
     if(!update_settings_table(spl, REMOTE, st)){
         send_settings_ack(st);
         return 0;
     }
     else{
-        /*TODO: send protocol error*/
-        ERROR("PROTOCOL ERROR: there was an error in settings payload");
         return -1;
     }
 }
