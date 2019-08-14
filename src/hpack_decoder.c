@@ -143,8 +143,8 @@ int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
                     return str_length + str_length_size;
                 }
                 else {
-                    ERROR("Error while trying to decode padding in hpack_decoder_decode_huffman_string");
-                    return -2;
+                    ERROR("Decoding error: The compressed header padding contains a value different from the EOS symbol");
+                    return -1;
                 }
             }
             else {
