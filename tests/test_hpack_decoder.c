@@ -275,7 +275,7 @@ void test_decode_header_block_literal_never_indexed(void)
 
     hpack_dynamic_table_t dynamic_table;
 
-    header_pair_t table[hpack_tables_get_table_length(max_dynamic_table_size)];
+    char table[hpack_tables_get_table_length(max_dynamic_table_size)];
 
     hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_new_name;

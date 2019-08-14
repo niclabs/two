@@ -200,10 +200,12 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
     int pointer = 0;
     uint32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
 
-    if (hpack_tables_find_entry_name_and_value(dynamic_table, index, name, value) == -1) {
-        ERROR("Error en find_entry");
-        return -1;
+    int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, index, name, value);
+    if (rc < 0 ) {
+        DEBUG("Error en find_entry ");
+        return rc;
     }
+
     pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
     return pointer;
 }
@@ -225,9 +227,10 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
     }
     else {
         //find entry in either static or dynamic table_length
-        if (hpack_tables_find_entry_name(dynamic_table, index, name) == -1) {
-            ERROR("Error en find_entry");
-            return -1;
+        int8_t rc = hpack_tables_find_entry_name(dynamic_table, index, name);
+        if (rc < 0 ) {
+            DEBUG("Error en find_entry ");
+            return rc;
         }
         pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));
     }
@@ -263,9 +266,10 @@ int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_tab
     }
     else {
         //find entry in either static or dynamic table_length
-        if (hpack_tables_find_entry_name(dynamic_table, index, name) == -1) {
-            ERROR("Error en find_entry ");
-            return -1;
+        int8_t rc = hpack_tables_find_entry_name(dynamic_table, index, name);
+        if (rc < 0 ) {
+            DEBUG("Error en find_entry ");
+            return rc;
         }
         pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));
     }
@@ -295,16 +299,17 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
     }
     else {
         //find entry in either static or dynamic table_length
-        if (hpack_tables_find_entry_name(dynamic_table, index, name) == -1) {
-            ERROR("Error en find_entry ");
-            return -1;
+        int8_t rc = hpack_tables_find_entry_name(dynamic_table, index, name);
+        if (rc < 0 ) {
+            DEBUG("Error en find_entry ");
+            return rc;
         }
         pointer += hpack_utils_encoded_integer_size(index, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));
     }
     int32_t rc = hpack_decoder_decode_string(value, header_block + pointer);
     if (rc < 0) {
-        ERROR("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
-        return -1;
+        DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
+        return rc;
     }
     pointer += rc;
     return pointer;
@@ -426,14 +431,14 @@ int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_
         headers_add(headers, tmp_name, tmp_value);
 
         if (rc < 0) {
-            ERROR("Error in hpack_decoder_decode_header ");
-            return -1;
+            DEBUG("Error in hpack_decoder_decode_header ");
+            return rc;
         }
 
         pointer += rc;
     }
     if (pointer > header_block_size) {
-        ERROR("Error decoding header block ... ");
+        DEBUG("Error decoding header block ... ");
         return -1;
     }
     return pointer;

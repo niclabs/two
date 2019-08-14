@@ -194,10 +194,10 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
     if(!dynamic_table->buffer[(dynamic_table->next - i) % dynamic_table->max_size]){ // If char is 0, ENDSTR
       counter0++;
     }
-    if(counter0 % 2 == 0 && counter0 != 0){ // name and value founded
+    if(counter0 % 2 == 0 && counter0 != 0){ // name and value found
       entries_counter ++;
     }
-    if(entries_counter == index - 61){ // index founded!
+    if(entries_counter == index - 61){ // index found!
       return i;
     }
   }
@@ -309,27 +309,27 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table){
 int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     if (dynamic_table->n_entries < index - 61) { //CASE entry doesnt exist
-        ERROR("Entry index doesn't exist in table");
+        ERROR("Decoding error: %d index is greater than the number of entries",index);
         return -1;
     }
 
     int16_t initial_position = hpack_tables_dynamic_pos_of_index(dynamic_table, index);
     if(initial_position < 0){
       ERROR("Error at finding position in buffer");
-      return -1;
+      return -2;
     }
 
     //first copy name
     initial_position = hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name);
     if(initial_position < 0){
       ERROR("Error while copying name into external buffer");
-      return -1;
+      return -2;
     }
 
     //then copy value
     if(hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, value) < 0){
       ERROR("Error while copying value into external buffer");
-      return -1;
+      return -2;
     }
 
     return 0;
@@ -362,20 +362,20 @@ uint32_t hpack_tables_header_pair_size(header_pair_t header_pair)
 int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
   if (dynamic_table->n_entries < index - 61) { //CASE entry doesnt exist
-      ERROR("Entry index doesn't exist in table");
+      ERROR("Decoding error: %d index is greater than the number of entries",index);
       return -1;
   }
 
   int16_t initial_position = hpack_tables_dynamic_pos_of_index(dynamic_table, index);
   if(initial_position < 0){
     ERROR("Error at finding position in buffer");
-    return -1;
+    return -2;
   }
 
   //only copy name
   if(hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name) < 0){
     ERROR("Error while copying name into external buffer");
-    return -1;
+    return -2;
   }
 
     return 0;
@@ -470,15 +470,15 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
 
         int8_t rc = hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
         if (rc < 0) {
-            ERROR("The entry doesn't exist in dynamic table");
-            return -1;
+            DEBUG("The entry doesn't exist in dynamic table");
+            return -2;
         }
     }
     else {
         int8_t rc = hpack_tables_static_find_entry_name_and_value(index, name, value);
         if (rc < 0) {
-            ERROR("The index was greater than the size of the static table");
-            return -1;
+            DEBUG("The index was greater than the size of the static table");
+            return -2;
         }
     }
     #else
@@ -511,15 +511,15 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
         }
         int8_t rc = hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
         if (rc < 0) {
-            ERROR("The entry doesn't exist in dynamic table");
-            return -1;
+            DEBUG("The entry doesn't exist in dynamic table");
+            return -2;
         }
     }
     else {
         int8_t rc = hpack_tables_static_find_entry_name(index, name);
         if (rc < 0) {
-            ERROR("The index was greater than the size of the static table");
-            return -1;
+            DEBUG("The index was greater than the size of the static table");
+            return -2;
         }
     }
     #else
