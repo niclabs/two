@@ -92,35 +92,46 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
 int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st){
     uint8_t i;
     uint16_t id;
-    int rc = 0;
-    /*Verify the values of settings*/
+    uint32_t value;
     for(i = 0; i < spl->count; i++){
-        rc += verify_setting(spl->pairs[i].identifier, spl->pairs[i].value);
-    }
-    if(rc != 0){
-        ERROR("Error: invalid setting found");
-        return -1;
-    }
-    if(place == REMOTE){
-        /*Update remote table*/
-        for(i = 0; i < spl->count; i++){
-            id = spl->pairs[i].identifier;
-            st->h2s.remote_settings[--id] = spl->pairs[i].value;
+        id = spl->pairs[i].identifier;
+        value = spl->pairs[i].value;
+        if(id < 1 || id > 6){
+          continue;
         }
-        return 0;
-    }
-    else if(place == LOCAL){
-        /*Update local table*/
-        for(i = 0; i < spl->count; i++){
-            id = spl->pairs[i].identifier;
-            st->h2s.local_settings[--id] = spl->pairs[i].value;
+        switch(id){
+          case ENABLE_PUSH:
+              if(value != 0 && value != 1){
+                send_connection_error(HTTP2_PROTOCOL_ERROR);
+                return -1;
+              }
+              break;
+          case INITIAL_WINDOW_SIZE:
+              if(value > 2147483647){
+                send_connection_error(HTTP2_FLOW_CONTROL_ERROR);
+                return -1;
+              }
+              break;
+          case MAX_FRAME_SIZE:
+              if(value > 16777215 || value < 16384){
+                send_connection_error(HTTP2_PROTOCOL_ERROR);
+                return -1;
+              }
+              break;
+          default:
+              break;
         }
-        return 0;
+        if(place == REMOTE){
+          st->h2s.remote_settings[--id] = spl->pairs[i].value;
+        }
+        else if(place == LOCAL){
+          st->h2s.local_settings[--id] = spl->pairs[i].value;
+        }
+        else{
+          WARN("Invalid table");
+        }
     }
-    else{
-        ERROR("Error: Not a valid table to update");
-        return -1;
-    }
+    return 0;
 }
 
 /*
@@ -234,6 +245,7 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
 * Output: 0 if operations are done successfully, -1 if not.
 */
 int handle_settings_payload(settings_payload_t *spl, hstates_t *st){
+    /*Verify the values of settings*/
     if(!update_settings_table(spl, REMOTE, st)){
         send_settings_ack(st);
         return 0;
