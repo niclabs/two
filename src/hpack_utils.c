@@ -38,25 +38,6 @@ uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t 
 }
 
 /*
- * Function: hpack_utils_check_if_can_read_buffer
- * Checks if the number of bits to read from the buffer from the current_bit_pointer doesn't exceed the size of the buffer
- * This function is meant to be used to check if hpack_utils_read_bits_from_bytes can read succesfully from the buffer
- * Input:
- *      -> current_bit_pointer: Bit number from where to start reading in the buffer(this is not a byte pointer!)
- *      -> number_of_bits_to_read: Number of bits to read from the buffer starting from the current_bit_pointer (inclusive)
- *      -> buffer_size: Size of the buffer to read in bytes.
- * Output:
- *      Returns 0 if the required amount of bits can be read from the buffer, or -1 otherwise
- */
-int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t buffer_size)
-{
-    if (current_bit_pointer + number_of_bits_to_read > 8 * buffer_size) {
-        return -1;
-    }
-    return 0;
-}
-
-/*
  * Function: hpack_utils_log128
  * Compute the log128 of the input
  * Input:

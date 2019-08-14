@@ -88,8 +88,8 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
     for (uint8_t i = 5; i < 31; i++) { //search through all lengths possible
 
-        int8_t can_read_bits = hpack_utils_check_can_read_buffer(bit_position, i, encoded_string_size);
-        if (can_read_bits < 0) {
+        /*Check if can read buffer*/
+        if (bit_position + i > 8 * encoded_string_size) {
             return -1;
         }
 

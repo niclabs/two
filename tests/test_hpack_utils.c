@@ -4,7 +4,6 @@
 #include "hpack_utils.h"
 
 extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer);
-extern int8_t hpack_utils_check_can_read_buffer(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t buffer_size);
 extern int hpack_utils_log128(uint32_t x);
 extern hpack_preamble_t hpack_utils_get_preamble(uint8_t preamble);
 extern uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix);
@@ -25,17 +24,6 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-void test_hpack_utils_check_can_read_buffer(void)
-{
-    int8_t expected_value[] = { 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1 };
-    uint8_t number_of_bits_to_read[] = { 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 10, 11, 12, 13, 14, 15 };
-    uint8_t current_bit_pointer[] = { 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-    uint8_t buffer_size = 1;
-
-    for (int i = 0; i < 16; i++) {
-        TEST_ASSERT_EQUAL(expected_value[i], hpack_utils_check_can_read_buffer(current_bit_pointer[i], number_of_bits_to_read[i], buffer_size));
-    }
-}
 
 void test_hpack_utils_read_bits_from_bytes(void)
 {
@@ -163,7 +151,6 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_hpack_utils_read_bits_from_bytes);
-    UNIT_TEST(test_hpack_utils_check_can_read_buffer);
     UNIT_TEST(test_hpack_utils_log128);
     UNIT_TEST(test_hpack_utils_get_preamble);
     UNIT_TEST(test_hpack_utils_find_prefix_size);
