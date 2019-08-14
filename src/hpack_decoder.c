@@ -198,7 +198,10 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
 {
     int pointer = 0;
     uint32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
-
+    if(index == 0){
+        ERROR("Decoding Error: Cannot retrieve a 0 index from hpack tables");
+        return -1;
+    }
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, index, name, value);
     if (rc < 0 ) {
         DEBUG("Error en find_entry ");
