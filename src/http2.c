@@ -146,7 +146,7 @@ void send_connection_error(hstates_t *st, uint32_t error_code){
         break;
     case HTTP2_FRAME_SIZE_ERROR:
         INFO("Connection error: frame size error");
-        break
+        break;
     default:
         break;
   }

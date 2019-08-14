@@ -320,7 +320,7 @@ void test_update_settings_table_errors(void){
   int rc = update_settings_table(&payload, LOCAL, &hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1, invalid setting inserted");
   rc = update_settings_table(&payload, 5, &hdummy);
-  TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1, not valid table");
+  TEST_ASSERT_MESSAGE(rc == 0, "rc must be 0, not valid table");
 }
 
 void test_send_settings_ack(void){
