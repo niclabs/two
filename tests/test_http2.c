@@ -94,7 +94,6 @@ int headers_init_custom_fake(headers_t *headers, header_t *hlist, int maxlen)
 
 
 DEFINE_FFF_GLOBALS;
-FAKE_VALUE_FUNC(int, verify_setting, uint16_t, uint32_t);
 FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t*);
 FAKE_VALUE_FUNC(int, frame_to_bytes, frame_t*, uint8_t*);
 FAKE_VALUE_FUNC(int, is_flag_set, uint8_t, uint8_t);
@@ -138,7 +137,6 @@ FAKE_VALUE_FUNC(uint32_t, read_setting_from, hstates_t*, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, hstates_t*);
 
 #define FFF_FAKES_LIST(FAKE)              \
-    FAKE(verify_setting)                  \
     FAKE(create_settings_ack_frame)       \
     FAKE(frame_to_bytes)                  \
     FAKE(is_flag_set)                     \
@@ -176,9 +174,6 @@ FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, hstates_t*);
     FAKE(get_size_data_to_send) \
 
 /*----------Value Return for FAKEs ----------*/
-int verify_return_zero(uint16_t u, uint32_t uu){
-  return 0;
-}
 int create_ack_return_zero(frame_t * f, frame_header_t* fh){
   return 0;
 }
@@ -264,7 +259,7 @@ void test_update_settings_table(void){
   settings_pair_t pair2 = {0x2, 0};
   settings_pair_t pair3 = {0x3, 12345};
   settings_pair_t pair4 = {0x4, 12345};
-  settings_pair_t pair5 = {0x5, 12345};
+  settings_pair_t pair5 = {0x5, 17345};
   settings_pair_t pair6 = {0x6, 12345};
   settings_pair_t pairs[6] = {pair1,pair2,pair3,pair4,pair5,pair6};
   settings_payload_t payload = {pairs, 6};
@@ -275,14 +270,13 @@ void test_update_settings_table(void){
       hdummy.h2s.local_settings[i] = 1;
       hdummy.h2s.remote_settings[i] = 1;
   }
-  verify_setting_fake.custom_fake = verify_return_zero;
   int rc = update_settings_table(&payload, LOCAL, &hdummy);
-  TEST_ASSERT_MESSAGE(verify_setting_fake.call_count == 6, "Call count of verify_setting must be 6");
+  TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[0] == 12345, "HTS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[1] == 0, "EP in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[2] == 12345, "MCS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[3] == 12345, "IWS in local settings is not setted");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[4] == 12345, "MFS in local settings is not setted");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[4] == 17345, "MFS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[5] == 12345, "MHLS in local settings is not setted");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[0] == 1, "Remote settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[1] == 1, "Remote settings were not modified!");
@@ -290,22 +284,20 @@ void test_update_settings_table(void){
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[3] == 1, "Remote settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[4] == 1, "Remote settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[5] == 1, "Remote settings were not modified!");
-  TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
   rc = update_settings_table(&payload, REMOTE, &hdummy);
-  TEST_ASSERT_MESSAGE(verify_setting_fake.call_count == 12, "Call count of verify_setting must be 12");
+  TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[0] == 12345, "Local settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[1] == 0, "Local settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[2] == 12345, "Local settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[3] == 12345, "Local settings were not modified!");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[4] == 12345, "Local settings were not modified!");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[4] == 17345, "Local settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.local_settings[5] == 12345, "Local settings were not modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[0] == 12345, "HTS in remote settings must be modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[1] == 0, "EP in remote settings must be modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[2] == 12345, "MCS in remote settings must be modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[3] == 12345, "IWS in remote settings must be modified!");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[4] == 12345, "MFS in remote settings must be modified!");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[4] == 17345, "MFS in remote settings must be modified!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[5] == 12345, "MHLS in remote settings must be modified!");
-  TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
 
 }
 
@@ -325,11 +317,6 @@ void test_update_settings_table_errors(void){
       hdummy.h2s.local_settings[i] = 1;
       hdummy.h2s.remote_settings[i] = 1;
   }
-  int verify_return[12];
-  memset(verify_return, 0, sizeof(verify_return));
-  // First error, one verification fails
-  verify_return[3] = -1;
-  SET_RETURN_SEQ(verify_setting, verify_return, 12);
   int rc = update_settings_table(&payload, LOCAL, &hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1, invalid setting inserted");
   rc = update_settings_table(&payload, 5, &hdummy);
@@ -406,7 +393,7 @@ void test_check_incoming_settings_condition_errors(void){
 void test_handle_settings_payload(void){
   settings_pair_t pair1 = {0x3, 12345};
   settings_pair_t pair2 = {0x4, 12345};
-  settings_pair_t pair3 = {0x5, 12345};
+  settings_pair_t pair3 = {0x5, 17345};
   settings_pair_t pair4 = {0x6, 12345};
   settings_pair_t pairs[4] = {pair1,pair2,pair3,pair4};
   settings_payload_t payload = {pairs, 4};
@@ -419,14 +406,13 @@ void test_handle_settings_payload(void){
   }
   bytes_to_settings_payload_fake.custom_fake = bytes_settings_payload_return_24;
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
-  verify_setting_fake.custom_fake = verify_return_zero;
   frame_to_bytes_fake.custom_fake = frame_bytes_return_9;
   int rc = handle_settings_payload(&payload, &hdummy);
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.wait_setting_ack == 0, "ACK wait must be 0");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[2] == 12345, "Remote settings were not updates!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[3] == 12345, "Remote settings were not updates!");
-  TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[4] == 12345, "Remote settings were not updates!");
+  TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[4] == 17345, "Remote settings were not updates!");
   TEST_ASSERT_MESSAGE(hdummy.h2s.remote_settings[5] == 12345, "Remote settings were not updates!");
   TEST_ASSERT_MESSAGE(size == 9, "Expected 9 bytes on buffer");
 }
@@ -446,8 +432,6 @@ void test_handle_settings_payload_errors(void){
       hdummy.h2s.remote_settings[i] = 1;
   }
   create_settings_ack_frame_fake.custom_fake = create_ack_return_zero;
-  int verify_return[1] = {-1};
-  SET_RETURN_SEQ(verify_setting, verify_return, 2);
   frame_to_bytes_fake.custom_fake = frame_bytes_return_9;
   int rc = handle_settings_payload(&payload, &hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in update settings table)");
@@ -1623,7 +1607,6 @@ void test_h2_receive_frame_settings(void){
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     //read_settings_payload_fake.custom_fake = read_settings_payload_fake_custom;
     is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
-    verify_setting_fake.custom_fake = verify_return_zero;
     bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
     uint32_t read_setting_from_returns[1] = {128};
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
@@ -1648,7 +1631,6 @@ void test_h2_receive_frame_settings_ack(void){
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     //read_settings_payload_fake.custom_fake = read_settings_payload_fake_custom;
     is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
-    verify_setting_fake.custom_fake = verify_return_zero;
     bytes_to_settings_payload_fake.custom_fake = bytes_to_settings_payload_fake_custom;
     rc = h2_receive_frame(&st);
     TEST_ASSERT_EQUAL(0,rc);
