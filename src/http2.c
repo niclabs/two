@@ -137,6 +137,19 @@ void shutdown_connection(hstates_t *st){
 */
 
 void send_connection_error(hstates_t *st, uint32_t error_code){
+  switch(error_code){
+    case HTTP2_PROTOCOL_ERROR:
+        INFO("Connection error: protocol error");
+        break;
+    case HTTP2_INTERNAL_ERROR:
+        INFO("Connection error: internal error");
+        break;
+    case HTTP2_FRAME_SIZE_ERROR:
+        INFO("Connection error: frame size error");
+        break
+    default:
+        break;
+  }
   int rc = send_goaway(st, error_code);
   if(rc < 0){
     WARN("Error sending GOAWAY frame to endpoint.");
