@@ -338,11 +338,7 @@ int http_server_start(hstates_t *hs)
             do_request(hs, method, uri);
         }
 
-        if (sock_destroy(&hs->socket) == -1) {
-            DEBUG("Could not destroy client socket");
-        }
-        hs->connection_state = 0;
-        hs->socket_state = 0;
+        http_client_disconnect(hs);
     }
 
     ERROR("Not client found");
@@ -358,14 +354,7 @@ int http_server_destroy(hstates_t *hs)
         return -1;
     }
 
-    if (hs->socket_state == 1) {
-        if (sock_destroy(&hs->socket) < 0) {
-            WARN("Client still connected");
-        }
-    }
-
-    hs->socket_state = 0;
-    hs->connection_state = 0;
+    http_client_disconnect(hs);
 
     if (sock_destroy(&hs->server_socket) < 0) {
         DEBUG("Error in server disconnection");
@@ -378,6 +367,7 @@ int http_server_destroy(hstates_t *hs)
 
     return 0;
 }
+
 
 int http_server_register_resource(hstates_t *hs, char *method, char *path, http_resource_handler_t handler)
 {
@@ -554,7 +544,7 @@ int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 int http_client_disconnect(hstates_t *hs)
 {
     if (hs->connection_state) {
-        if (h2_graceful_connection_shutdown(&hs) < 0) {
+        if (h2_graceful_connection_shutdown(hs) < 0) {
             WARN("Client will disconnect without a successful goaway");
         }
     }
