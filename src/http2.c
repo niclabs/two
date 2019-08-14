@@ -206,6 +206,7 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st)
         }
         else{
           WARN("Invalid table");
+          break;
         }
     }
     return 0;
@@ -1151,7 +1152,8 @@ int h2_receive_frame(hstates_t *st){
             settings_pair_t pairs[header.length/6];
             rc = bytes_to_settings_payload(buff_read, header.length, &spl, pairs);
             if(rc < 0){
-              ERROR("Error reading settings payload");
+              // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
+              send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
               return rc;
             }
             rc = handle_settings_payload(&spl, st);
