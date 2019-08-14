@@ -137,19 +137,6 @@ void shutdown_connection(hstates_t *st){
 */
 
 void send_connection_error(hstates_t *st, uint32_t error_code){
-  switch(error_code){
-    case HTTP2_PROTOCOL_ERROR:
-        INFO("Connection error: protocol error");
-        break;
-    case HTTP2_INTERNAL_ERROR:
-        INFO("Connection error: internal error");
-        break;
-    case HTTP2_FRAME_SIZE_ERROR:
-        INFO("Connection error: frame size error");
-        break;
-    default:
-        break;
-  }
   int rc = send_goaway(st, error_code);
   if(rc < 0){
     WARN("Error sending GOAWAY frame to endpoint.");
@@ -179,18 +166,21 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st)
         switch(id){
           case ENABLE_PUSH:
               if(value != 0 && value != 1){
+                ERROR("Invalid value in ENABLE_PUSH settings. Protocol Error");
                 send_connection_error(st, HTTP2_PROTOCOL_ERROR);
                 return -1;
               }
               break;
           case INITIAL_WINDOW_SIZE:
               if(value > 2147483647){
+                ERROR("Invalid value in INITIAL_WINDOW_SIZE settings. Protocol Error");
                 send_connection_error(st, HTTP2_FLOW_CONTROL_ERROR);
                 return -1;
               }
               break;
           case MAX_FRAME_SIZE:
               if(value > 16777215 || value < 16384){
+                ERROR("Invalid value in MAX_FRAME_SIZE settings. Protocol Error");
                 send_connection_error(st, HTTP2_PROTOCOL_ERROR);
                 return -1;
               }
@@ -284,6 +274,7 @@ int send_settings_ack(hstates_t * st){
 int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
     if(header->stream_id != 0){
         ERROR("Settings frame stream id is not zero. PROTOCOL ERROR");
+        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
         return -1;
     }
     else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
@@ -294,6 +285,7 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
     if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
         if(header->length != 0){
             ERROR("Settings payload size is not zero. PROTOCOL ERROR");
+            send_connection_error(st, HTTP2_PROTOCOL_ERROR);
             return -1;
         }
         else{
