@@ -34,8 +34,9 @@ FAKE_VALUE_FUNC(int, h2_client_init_connection, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_server_init_connection, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_receive_frame, hstates_t *);
 FAKE_VALUE_FUNC(int, h2_send_response, hstates_t *);
-FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 FAKE_VALUE_FUNC(int, h2_send_request, hstates_t *);
+FAKE_VALUE_FUNC(int, h2_graceful_connection_shutdown, hstates_t *);
+FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
 FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
 FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
@@ -53,6 +54,8 @@ FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
     FAKE(h2_receive_frame)                \
     FAKE(h2_send_response)                \
     FAKE(h2_send_request)                 \
+    FAKE(h2_graceful_connection_shutdown) \
+    FAKE(http_clear_header_list)          \
     FAKE(headers_init)                    \
     FAKE(headers_set)                     \
     FAKE(headers_get)
@@ -381,6 +384,7 @@ void test_http_server_start_success(void)
 
     h2_server_init_connection_fake.return_val = 0;
     sock_destroy_fake.return_val = -1;
+    h2_graceful_connection_shutdown_fake.return_val = 0;
     headers_set_fake.return_val = 0;
     h2_send_response_fake.return_val = 0;
     headers_init_fake.custom_fake = headers_init_custom_fake;
@@ -404,7 +408,7 @@ void test_http_server_start_success(void)
 
     TEST_ASSERT_EQUAL(0, hs.keep_receiving);
     TEST_ASSERT_EQUAL(0, hs.connection_state);
-    TEST_ASSERT_EQUAL(0, hs.socket_state);
+    TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.new_headers);
 }
 
@@ -456,11 +460,14 @@ void test_http_server_destroy_success(void)
     reset_http_states(&hs);
     hs.socket_state = 1;
     hs.server_socket_state = 1;
+    hs.connection_state = 1;
 
+    h2_graceful_connection_shutdown_fake.return_val = 0;
     sock_destroy_fake.return_val = 0;
 
     int d = http_server_destroy(&hs);
 
+    TEST_ASSERT_EQUAL(1, h2_graceful_connection_shutdown_fake.call_count);
     TEST_ASSERT_EQUAL(2, sock_destroy_fake.call_count);
 
     TEST_ASSERT_EQUAL(0, d);
@@ -488,15 +495,14 @@ void test_http_server_destroy_success_without_client(void)
     hstates_t hs;
     reset_http_states(&hs);
     hs.server_socket_state = 1;
-    hs.socket_state = 1;
+    hs.socket_state = 0;
+    hs.connection_state = 0;
 
-    int returnVals[2] = { -1, 0 };
-    SET_RETURN_SEQ(sock_destroy, returnVals, 2);
+    sock_destroy_fake.return_val = 0;
 
     int d = http_server_destroy(&hs);
 
-    TEST_ASSERT_EQUAL(2, sock_destroy_fake.call_count);
-
+    TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
 
     TEST_ASSERT_EQUAL(0, d);
 
@@ -513,6 +519,7 @@ void test_http_server_destroy_fail_sock_destroy(void)
     hs.socket_state = 1;
     hs.server_socket_state = 1;
 
+    h2_graceful_connection_shutdown_fake.return_val = -1;
     int returnVals[2] = { 0, -1 };
     SET_RETURN_SEQ(sock_destroy, returnVals, 2);
 
@@ -886,6 +893,7 @@ void test_http_client_disconnect_success_v1(void)
     hstates_t hs;
 
     hs.socket_state = 0;
+    hs.connection_state = 0;
 
     int d = http_client_disconnect(&hs);
 
@@ -901,12 +909,15 @@ void test_http_client_disconnect_success_v2(void)
     hstates_t hs;
 
     hs.socket_state = 1;
+    hs.connection_state = 1;
 
     sock_destroy_fake.return_val = 0;
+    h2_graceful_connection_shutdown_fake.return_val = 0;
 
     int d = http_client_disconnect(&hs);
 
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)h2_graceful_connection_shutdown, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[1]);
 
     TEST_ASSERT_EQUAL(0, d);
 
@@ -915,7 +926,7 @@ void test_http_client_disconnect_success_v2(void)
 }
 
 
-void test_http_client_disconnect_fail(void)
+void test_http_client_disconnect_fail_sock_destroy(void)
 {
     hstates_t hs;
 
@@ -923,16 +934,41 @@ void test_http_client_disconnect_fail(void)
     hs.connection_state = 1;
 
     sock_destroy_fake.return_val = -1;
+    h2_graceful_connection_shutdown_fake.return_val = 0;
 
     int d = http_client_disconnect(&hs);
 
 
-    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)h2_graceful_connection_shutdown, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[1]);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, d, "Error message must come from sock layer");
 
     TEST_ASSERT_EQUAL(1, hs.socket_state);
     TEST_ASSERT_EQUAL(1, hs.connection_state);
+}
+
+
+void test_http_client_disconnect_fail_h2_graceful_connection_shutdown(void)
+{
+    hstates_t hs;
+
+    hs.socket_state = 1;
+    hs.connection_state = 1;
+
+    sock_destroy_fake.return_val = 0;
+    h2_graceful_connection_shutdown_fake.return_val = -1;
+
+    int d = http_client_disconnect(&hs);
+
+
+    TEST_ASSERT_EQUAL((void *)h2_graceful_connection_shutdown, fff.call_history[0]);
+    TEST_ASSERT_EQUAL((void *)sock_destroy, fff.call_history[1]);
+
+    TEST_ASSERT_EQUAL_MESSAGE(0, d, "Error message must come from http2 layer");
+
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
 }
 
 
@@ -990,7 +1026,8 @@ int main(void)
 
     UNIT_TEST(test_http_client_disconnect_success_v1);
     UNIT_TEST(test_http_client_disconnect_success_v2);
-    UNIT_TEST(test_http_client_disconnect_fail);
+    UNIT_TEST(test_http_client_disconnect_fail_sock_destroy);
+    UNIT_TEST(test_http_client_disconnect_fail_h2_graceful_connection_shutdown);
 
     return UNITY_END();
 }
