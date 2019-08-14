@@ -472,7 +472,7 @@ void test_decode_huffman_string_error(void)
     char decoded_string2[] = { 0, 0 };
 
     int rc = hpack_decoder_decode_huffman_string(decoded_string2, encoded_string2);
-    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(-2, rc);
     TEST_ASSERT_EQUAL(1, hpack_huffman_decode_fake.call_count);
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
 
@@ -481,7 +481,7 @@ void test_decode_huffman_string_error(void)
     char decoded_string3[] = { 0, 0 };
     char expected_decoded_string3[] = { 0, 0 };
     rc = hpack_decoder_decode_huffman_string(decoded_string3, encoded_string3);
-    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(-2, rc);
     for (int i = 0; i < 2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string3[i], decoded_string3[i]);
     }
@@ -563,7 +563,7 @@ void test_decode_string_error(void)
     char decoded_string2[] = { 0, 0 };
 
     int rc = hpack_decoder_decode_string(decoded_string2, encoded_string2);
-    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(-2, rc);
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
 }
 #endif

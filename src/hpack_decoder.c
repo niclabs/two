@@ -90,7 +90,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
         /*Check if can read buffer*/
         if (bit_position + i > 8 * encoded_string_size) {
-            return -1;
+            return -2;
         }
 
         uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
@@ -107,7 +107,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
         }
     }
     ERROR("Couldn't read bits in hpack_decoder_decode_huffman_word");
-    return -1;
+    return -2;
 }
 #endif
 
@@ -134,21 +134,28 @@ int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
     for (i = 0; (bit_position - 1) / 8 < (int32_t)str_length; i++) {
         int32_t word_length = hpack_decoder_decode_huffman_word(str + i, encoded_buffer, str_length, bit_position);
         if (word_length < 0) {
-            if (8 * str_length - bit_position < 8) {
-                uint8_t bits_left = 8 * str_length - bit_position;
+            uint8_t bits_left = 8 * str_length - bit_position;
+            uint8_t last_byte = encoded_buffer[str_length - 1];
+
+            if (bits_left < 8) {
                 uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
-                uint8_t last_byte = encoded_buffer[str_length - 1];
                 if ((last_byte & mask) == mask) {
                     return str_length + str_length_size;
                 }
                 else {
                     ERROR("Error while trying to decode padding in hpack_decoder_decode_huffman_string");
-                    return -1;
+                    return -2;
                 }
             }
             else {
-                ERROR("Couldn't decode string in hpack_decoder_decode_huffman_string");
-                return -1;
+                /*Check if it has a padding greater than 7 bits*/
+                uint8_t mask = 255u;
+                if (last_byte == mask) {
+                    ERROR("Decoding error: The compressed header has a padding greater than 7 bits");
+                    return -1;
+                }
+                DEBUG("Couldn't decode string in hpack_decoder_decode_huffman_string");
+                return -2;
             }
         }
         bit_position += word_length;
@@ -173,26 +180,18 @@ uint32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer)
     //decode huffman name
     //decode name length
     uint8_t huffman_bit = 128u & *(encoded_buffer);
-    int rc = 0;
 
     if (huffman_bit) {
         #ifdef INCLUDE_HUFFMAN_COMPRESSION
-        rc = hpack_decoder_decode_huffman_string(str, encoded_buffer);
-        if (rc < 0) {
-            return -1;
-        }
+        return hpack_decoder_decode_huffman_string(str, encoded_buffer);
         #else
-        ERROR("Cannot decode a huffman compressed header");
+        ERROR("Not implemented: Cannot decode a huffman compressed header");
         return -1;
         #endif
     }
     else {
-        rc = hpack_decoder_decode_non_huffman_string(str, encoded_buffer);
-        if (rc < 0) {
-            return -1;
-        }
+        return hpack_decoder_decode_non_huffman_string(str, encoded_buffer);
     }
-    return rc;
 }
 
 int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
@@ -220,8 +219,8 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
         pointer += 1;
         int32_t rc = hpack_decoder_decode_string(name, header_block + pointer);
         if (rc < 0) {
-            ERROR("Error while trying to decode string in hpack_decoder_decode_literal_header_field_with_incremental_indexing");
-            return -1;
+            DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_with_incremental_indexing");
+            return rc;
         }
         pointer += rc;
     }
@@ -236,15 +235,15 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
     }
     int32_t rc = hpack_decoder_decode_string(value, header_block + pointer);
     if (rc < 0) {
-        ERROR("Error while trying to decode string in hpack_decoder_decode_literal_header_field_with_incremental_indexing");
-        return -1;
+        DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_with_incremental_indexing");
+        return rc;
     }
     pointer += rc;
     /*Here we add it to the dynamic table*/
     int res = hpack_tables_dynamic_table_add_entry(dynamic_table, name, value);
     if(res < 0){
         DEBUG("Couldn't add to dynamic table");
-        return -1;
+        return res;
     }
 
     return pointer;
@@ -259,8 +258,8 @@ int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_tab
         pointer += 1;
         int32_t rc = hpack_decoder_decode_string(name, header_block + pointer);
         if (rc < 0) {
-            ERROR("Error while trying to decode string in hpack_decoder_decode_literal_header_field_without_indexing");
-            return -1;
+            DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_without_indexing");
+            return rc;
         }
         pointer += rc;
     }
@@ -275,8 +274,8 @@ int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_tab
     }
     int32_t rc = hpack_decoder_decode_string(value, header_block + pointer);
     if (rc < 0) {
-        ERROR("Error while trying to decode string in hpack_decoder_decode_literal_header_field_without_indexing");
-        return -1;
+        DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_without_indexing");
+        return rc;
     }
     pointer += rc;
     return pointer;
@@ -292,8 +291,8 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
         pointer += 1;
         int32_t rc = hpack_decoder_decode_string(name, header_block + pointer);
         if (rc < 0) {
-            ERROR("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
-            return -1;
+            DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
+            return rc;
         }
         pointer += rc;
     }
