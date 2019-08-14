@@ -26,7 +26,6 @@ typedef enum SettingsParameters{
 /*Definition of max buffer size*/
 #define HTTP2_MAX_BUFFER_SIZE 256
 
-int verify_setting(uint16_t id, uint32_t value);
 int read_n_bytes(uint8_t *buff_read, int n,  hstates_t *hs);
 
 /*
