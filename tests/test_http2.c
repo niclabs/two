@@ -775,7 +775,7 @@ void test_check_incoming_continuation_condition_errors(void){
   head.stream_id = 440;
   st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
   rc = check_incoming_continuation_condition(&head, &st);
-  TEST_ASSERT_MESSAGE(rc == -2, "return code must be -1 (strean not open)");
+  TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (strean not open)");
   st.h2s.waiting_for_end_headers_flag = 0;
   st.h2s.current_stream.state = STREAM_OPEN;
   rc = check_incoming_continuation_condition(&head, &st);

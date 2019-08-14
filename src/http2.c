@@ -279,6 +279,7 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
     }
     else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
       ERROR("Settings payload bigger than allowed. MAX_FRAME_SIZE ERROR");
+      send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
       return -1;
     }
     /*Check if ACK is set*/
@@ -465,6 +466,7 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
           st->h2s.current_stream.state != STREAM_HALF_CLOSED_LOCAL){
         //stream closed error
         ERROR("Current stream is not open. STREAM CLOSED ERROR");
+        // TODO: Send STREAM_CLOSED_ERROR to endpoint
         return -1;
   }
   else if(header->stream_id != st->h2s.current_stream.stream_id){
@@ -556,8 +558,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
 * verify if there was a HEADERS FRAME before the current CONTINUATION FRAME.
 * Input : -> header: header of the incoming frame
 *         -> st: hstates_t struct where stream variables are stored
-* Ouput: 0 if no errors were found, -1 if protocol error was found, -2 if
-* stream closed error was found.
+* Ouput: 0 if no errors were found, -1 if not
 */
 int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st){
   // First verify stream state
@@ -583,8 +584,9 @@ int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st)
     return -1;
   }
   else if(st->h2s.current_stream.state != STREAM_OPEN){
-    ERROR("Continuation received on closed stream. STREAM CLOSED"); //stream error
-    return -2;
+    ERROR("Continuation received on closed stream. STREAM CLOSED");
+    // TODO: send STREAM_CLOSED_ERROR to endpoint.
+    return -1;
   }
   return 0;
 }
@@ -1208,13 +1210,8 @@ int h2_receive_frame(hstates_t *st){
             //returns -1 if protocol error, -2 if stream closed, 0 if no errors
             INFO("h2_receive_frame: CONTINUATION");
             rc = check_incoming_continuation_condition(&header, st);
-            if(rc == -1){
-              ERROR("PROTOCOL ERROR was found");
-              return -1;
-            }
-            else if(rc == -2){
-              ERROR("STREAM CLOSED ERROR was found");
-              return -1;
+            if(rc < 0){
+              return rc;
             }
             continuation_payload_t contpl;
             uint8_t continuation_block_fragment[64];
