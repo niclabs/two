@@ -11,6 +11,15 @@
 * and two methods to use this TCP connection that are http_read and http_write
 */
 
+/*----------------- Internal methods headers ------------*/
+
+int send_settings_ack(hstates_t * st);
+int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st);
+void shutdown_connection(hstates_t *st);
+void send_connection_error(hstates_t *st, uint32_t error_code);
+int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending);
+
+
 /*--------------Internal methods-----------------------*/
 
 /*
@@ -81,341 +90,127 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
     return 0;
 }
 
+/*------------------DATA FRAME-------------------------*/
 
-/*
-* Function: send_goaway
-* Given an hstates_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
-* If additional debug data (opaque data) is included it must be written on the
-* given hstates_t.h2s.debug_data_buffer buffer with its corresponding size on the
-* hstates_t.h2s.debug_size variable.
-* IMPORTANT: RFC 7540 section 6.8 indicates that a gracefully shutdown should have
-* an 2^31-1 value on the last_stream_id field and wait at least one RTT before sending
-* a goaway frame with the last stream id. This implementation doesn't.
-* Input: ->st: pointer to hstates_t struct where connection variables are stored
-*        ->error_code: error code for GOAWAY FRAME (RFC 7540 section 7)
-* Output: 0 if no errors were found, -1 if not
-*/
-int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff, uint8_t debug_size){
-  int rc;
-  frame_t frame;
-  frame_header_t header;
-  goaway_payload_t goaway_pl;
-  uint8_t additional_debug_data[st->h2s.debug_size];
-  rc = create_goaway_frame(&header, &goaway_pl, additional_debug_data, st->h2s.last_open_stream_id, error_code, st->h2s.debug_data_buffer, st->h2s.debug_size);
-  if(rc < 0){
-    ERROR("Error creating GOAWAY frame");
+int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
+  if(st->h2s.waiting_for_end_headers_flag){
+    //protocol error
+    ERROR("CONTINUATION or HEADERS frame was expected. PROTOCOL ERROR");
     return -1;
   }
-  frame.frame_header = &header;
-  frame.payload = (void*)&goaway_pl;
-
-  uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
-  int bytes_size = frame_to_bytes(&frame, buff_bytes);
-  rc = http_write(st,buff_bytes,bytes_size);
-  INFO("Sending GOAWAY");
-
-  if(rc != bytes_size){
-    ERROR("Error writting goaway frame. INTERNAL ERROR");
-    return -1;
-  }
-  st->h2s.sent_goaway = 1;
-  return 0;
-
-}
-
-void shutdown_connection(hstates_t *st){
-  st->connection_state = 0;
-}
-
-/*
-* Function: send_connection_error
-* Send a connection error to endpoint with a specified error code. It implements
-* the behaviour suggested in RFC 7540, secion 5.4.1
-* Input: -> st: hstates_t pointer where connetion variables are stored
-*        -> error_code: error code that will be used to shutdown the connection
-* Output: void
-*/
-
-void send_connection_error(hstates_t *st, uint32_t error_code){
-  int rc = send_goaway(st, error_code);
-  if(rc < 0){
-    WARN("Error sending GOAWAY frame to endpoint.");
-  }
-  shutdown_connection(st);
-  //TODO: communicate error code to HTTP?
-}
-
-/*
-* Function: update_settings_table
-* Updates the specified table of settings with a given settings payload.
-* Input: -> spl: settings_payload_t pointer where settings values are stored
-*        -> place: must be LOCAL or REMOTE. It indicates which table to update.
-         -> st: pointer to hstates_t struct where settings table are stored.
-* Output: 0 if update was successfull, -1 if not
-*/
-int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st){
-    uint8_t i;
-    uint16_t id;
-    uint32_t value;
-    for(i = 0; i < spl->count; i++){
-        id = spl->pairs[i].identifier;
-        value = spl->pairs[i].value;
-        if(id < 1 || id > 6){
-          continue;
-        }
-        switch(id){
-          case ENABLE_PUSH:
-              if(value != 0 && value != 1){
-                ERROR("Invalid value in ENABLE_PUSH settings. Protocol Error");
-                send_connection_error(st, HTTP2_PROTOCOL_ERROR);
-                return -1;
-              }
-              break;
-          case INITIAL_WINDOW_SIZE:
-              if(value > 2147483647){
-                ERROR("Invalid value in INITIAL_WINDOW_SIZE settings. Protocol Error");
-                send_connection_error(st, HTTP2_FLOW_CONTROL_ERROR);
-                return -1;
-              }
-              break;
-          case MAX_FRAME_SIZE:
-              if(value > 16777215 || value < 16384){
-                ERROR("Invalid value in MAX_FRAME_SIZE settings. Protocol Error");
-                send_connection_error(st, HTTP2_PROTOCOL_ERROR);
-                return -1;
-              }
-              break;
-          default:
-              break;
-        }
-        if(place == REMOTE){
-          st->h2s.remote_settings[--id] = spl->pairs[i].value;
-        }
-        else if(place == LOCAL){
-          st->h2s.local_settings[--id] = spl->pairs[i].value;
-        }
-        else{
-          WARN("Invalid table");
-          break;
-        }
-    }
-    return 0;
-}
-
-/*
-* Function: send_local_settings
-* Sends local settings to endpoint.
-* Input: -> st: pointer to hstates_t struct where local settings are stored
-* Output: 0 if settings were sent. -1 if not.
-*/
-int send_local_settings(hstates_t *st){
-    int rc;
-    uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
-    frame_t mysettingframe;
-    frame_header_t mysettingframeheader;
-    settings_payload_t mysettings;
-    settings_pair_t mypairs[6];
-    /*rc must be 0*/
-    rc = create_settings_frame(ids, st->h2s.local_settings, 6, &mysettingframe,
-                               &mysettingframeheader, &mysettings, mypairs);
-    if(rc){
-        ERROR("Error in Settings Frame creation");
-        return -1;
-    }
-    uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
-    int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
-    /*Assuming that http_write returns the number of bytes written*/
-    rc = http_write(st, byte_mysettings, size_byte_mysettings);
-    INFO("Sending settings");
-    if(rc != size_byte_mysettings){
-        ERROR("Error in local settings writing");
-        return -1;
-    }
-    /*Settings were sent, so we expect an ack*/
-    st->h2s.wait_setting_ack = 1;
-    return 0;
-}
-
-
-/*
-* Function: send_settings_ack
-* Sends an ACK settings frame to endpoint
-* Input: -> st: pointer to hstates struct where http and http2 connection info is
-* stored
-* Output: 0 if sent was successfully made, -1 if not.
-*/
-int send_settings_ack(hstates_t * st){
-    frame_t ack_frame;
-    frame_header_t ack_frame_header;
-    int rc;
-    rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
-    if(rc < 0){
-        ERROR("Error in Settings ACK creation!");
-        return -1;
-    }
-    uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
-    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
-    rc = http_write(st, byte_ack, size_byte_ack);
-    INFO("Sending settings ACK");
-    if(rc != size_byte_ack){
-        ERROR("Error in Settings ACK sending");
-        return -1;
-    }
-    return 0;
-}
-
-/*
-* Function: check_incoming_settings_condition
-* Verifies the correctness of header and checks if frame settings is an ACK.
-* Input: -> header: pointer to settings frame header to read
-*        -> st: pointer to hstates struct where connection variables are stored
-* Output: 0 if ACK was not setted. 1 if it was. -1 if error was found.
-*/
-int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
-    if(header->stream_id != 0){
-        ERROR("Settings frame stream id is not zero. PROTOCOL ERROR");
-        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
-        return -1;
+    if(st->h2s.current_stream.stream_id == 0){
+      ERROR("Data stream ID is 0. PROTOCOL ERROR");
+      return -1;
     }
     else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
-      ERROR("Settings payload bigger than allowed. MAX_FRAME_SIZE ERROR");
-      send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
+      ERROR("Data payload bigger than allower. MAX_FRAME_SIZE error");
       return -1;
     }
-    /*Check if ACK is set*/
-    if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
-        if(header->length != 0){
-            ERROR("Settings payload size is not zero. PROTOCOL ERROR");
-            send_connection_error(st, HTTP2_PROTOCOL_ERROR);
-            return -1;
-        }
-        else{
-            if(st->h2s.wait_setting_ack){
-                st->h2s.wait_setting_ack = 0;
-                return 1;
-            }
-            else{
-                WARN("ACK received but not expected");
-                return 1;
-            }
-        }
+    else if(header->stream_id > st->h2s.current_stream.stream_id){
+      ERROR("Stream ID is invalid. PROTOCOL ERROR");
+      return -1;
     }
-    else{
-        return 0;
+    else if(header->stream_id < st->h2s.current_stream.stream_id){
+      ERROR("Stream closed. STREAM CLOSED ERROR");
+      return -1;
     }
+    else if(st->h2s.current_stream.state == STREAM_IDLE){
+      ERROR("Stream was in IDLE state. PROTOCOL ERROR");
+      return -1;
+    }
+    else if(st->h2s.current_stream.state != STREAM_OPEN && st->h2s.current_stream.state != STREAM_HALF_CLOSED_LOCAL){
+      ERROR("Stream was not in a valid state for data. STREAM CLOSED ERROR");
+      return -1;
+    }
+    return 0;
 }
 
-/*
-* Function: handle_settings_payload
-* Reads a settings payload from buffer and works with it.
-* Input: -> buff_read: buffer where payload's data is written
-        -> header: pointer to a frameheader_t structure already built with frame info
-        -> spl: pointer to settings_payload_t struct where data is gonna be written
-        -> pairs: pointer to settings_pair_t array where data is gonna be written
-        -> st: pointer to hstates_t struct where connection variables are stored
-* Output: 0 if operations are done successfully, -1 if not.
-*/
-int handle_settings_payload(settings_payload_t *spl, hstates_t *st){
-    // update_settings_table checks for possible errors in the incoming settings
-    if(!update_settings_table(spl, REMOTE, st)){
-        send_settings_ack(st);
-        return 0;
-    }
-    else{
+int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
+    uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
+    /*check flow control*/
+    //TODO flow control
+    int rc = flow_control_receive_data(st, data_length);
+    if(rc < 0){
+        ERROR("flow control error");
         return -1;
     }
-}
-
-/*
-* Function: handle_goaway_payload
-* Handles go away payload.
-* Input: ->goaway_pl: goaway_payload_t pointer to goaway frame payload
-*        ->st: pointer hstates_t struct where connection variables are stored
-* IMPORTANT: this implementation doesn't check the correctness of the last stream
-* id sent by the endpoint. That is, if a previous GOAWAY was received with an n
-* last_stream_id, it assumes that the next value received is going to be the same.
-* Output: 0 if no error were found during the handling, 1 if not
-*/
-int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
-  if(goaway_pl->error_code != HTTP2_NO_ERROR){
-      INFO("Received GOAWAY with ERROR");
-      // i guess that is closed on the other side, are you?
-      return -1;
-  }
-  if(st->h2s.sent_goaway == 1){ // received answer to goaway
-    shutdown_connection(st);
-    INFO("Connection CLOSED");
+    buffer_copy(st->data_in.buf + st->data_in.size, data_payload->data, data_length);
+    st->data_in.size += data_length;
+    if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
+        st->h2s.received_end_stream = 1;
+        st->end_message = 1;
+    }
+    // Stream state handling for end stream flag
+    if(st->h2s.received_end_stream == 1){
+        change_stream_state_end_stream_flag(st, 0); // 0 is for receiving
+        st->h2s.received_end_stream = 0;
+    }
     return 0;
-  }
-  if(st->h2s.received_goaway == 1){
-    INFO("Another GOAWAY has been received before");
-  }
-  else { // never has been seen a goaway before in this connection life
-    st->h2s.received_goaway = 1; // receiver must not open additional streams
-  }
-  if(st->h2s.current_stream.stream_id > goaway_pl->last_stream_id){
-    if(st->h2s.current_stream.state != STREAM_IDLE){
-      st->h2s.current_stream.state = STREAM_CLOSED;
-      INFO("Current stream closed");
-    }
-    int rc = send_goaway(st, HTTP2_NO_ERROR); // We send a goaway to close the connection
-    if(rc < 0){
-      ERROR("Error sending GOAWAY FRAMES");
-      return rc;
-    }
-  }
-  return 0;
 }
 
+
 /*
-* Function: change_stream_state_end_stream_flag
-* Given an hstates_t struct and a boolean, change the state of the current stream
-* when a END_STREAM_FLAG is sent or received.
-* Input: ->st: pointer to hstates_t struct where connection variables are stored
-*        ->sending: boolean like uint8_t that indicates if current flag is sent or received
-* Output: 0 if no errors were found, -1 if not
+* Function: send_data
+* Sends a data frame with the current data written in the given hstates_t struct.
+* The data is expected to be written in the http_data_t.data_out.buf, and its
+* corresponding size indicated in the http_data_t.data_out.size variable.
+* Input: ->st: hstates_t struct where connection variables are stored
+         ->end_stream: indicates if the data frame to be sent must have the
+                      END_STREAM_FLAG set.
+* Output: 0 if no error were found in the process, -1 if not
+*
 */
-int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
-  int rc = 0;
-  if(sending){ // Change stream status if end stream flag is sending
-    if(st->h2s.current_stream.state == STREAM_OPEN){
-      st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+int send_data(hstates_t *st, uint8_t end_stream){
+    if(st->data_out.size<=0){
+        ERROR("no data to be send");
+        return -1;
     }
-    else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
-      st->h2s.current_stream.state = STREAM_CLOSED;
-      if(st->h2s.received_goaway){
-        rc = send_goaway(st, HTTP2_NO_ERROR);
-        if(rc < 0){
-          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
-          return rc;
-        }
-      }
-      else{
-        rc = prepare_new_stream(st);
-      }
+    h2_stream_state_t state = st->h2s.current_stream.state;
+    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
+        ERROR("Wrong state for sending DATA");
+        return -1;
     }
-    return rc;
-  }
-  else{ // Change stream status if send stream flag is received
-    if(st->h2s.current_stream.state == STREAM_OPEN){
-      st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
+    uint8_t count_data_to_send = get_size_data_to_send(st);
+    frame_t frame;
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    uint8_t data[count_data_to_send];
+    int rc = create_data_frame(&frame_header, &data_payload, data, st->data_out.buf + st->data_out.processed, count_data_to_send, stream_id);
+    if(rc<0){
+        ERROR("error creating data frame");
+        return -1;
     }
-    else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
-      st->h2s.current_stream.state = STREAM_CLOSED;
-      if(st->h2s.received_goaway){
-        rc = send_goaway(st, HTTP2_NO_ERROR);
-        if(rc < 0){
-          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
-          return rc;
-        }
-      }
-      else{
-        rc = prepare_new_stream(st);
-      }
+    if(end_stream) {
+        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
     }
-    return rc;
-  }
+
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&data_payload;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    rc = http_write(st,buff_bytes,bytes_size);
+    INFO("Sending DATA");
+
+    if(rc != bytes_size){
+        ERROR("Error writting data frame. INTERNAL ERROR");
+        return rc;
+    }
+    if(end_stream){
+      change_stream_state_end_stream_flag(st, 1); // 1 is for sending
+    }
+    st->data_out.processed += count_data_to_send;
+    if(st->data_out.size == st->data_out.processed) {
+        st->data_out.size = 0;
+        st->data_out.processed = 0;
+    }
+
+    //TODO update window size
+    return 0;
 }
+
+
+/*------------------- HEADERS FRAME ----------------*/
 
 /*
 * Function: check_incoming_headers_condition
@@ -553,6 +348,333 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
 }
 
 /*
+* Function: send_headers_stream_verification
+* Given an hstates struct, checks the current stream state and uses it, creates
+* a new one or reports an error. The stream that will be used is stored in
+* st->h2s.current_stream.stream_id .
+* Input: ->st: hstates_t struct where current stream is stored
+* Output: 0 if no errors were found, -1 if not
+*/
+int send_headers_stream_verification(hstates_t *st){
+  if(st->h2s.current_stream.state == STREAM_CLOSED ||
+      st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+      ERROR("Current stream was closed! Send request error. STREAM CLOSED ERROR");
+      return -1;
+  }
+  else if(st->h2s.current_stream.state == STREAM_IDLE){
+    if(st->is_server){ // server must use even numbers
+        st->h2s.last_open_stream_id += st->h2s.last_open_stream_id%2 ? 1 : 2;
+    }
+    else{ //stream is closed and id is not zero
+        st->h2s.last_open_stream_id += st->h2s.last_open_stream_id%2 ? 2 : 1;
+    }
+    st->h2s.current_stream.state = STREAM_OPEN;
+    st->h2s.current_stream.stream_id = st->h2s.last_open_stream_id;
+  }
+  return 0;
+}
+
+
+/*
+* Function: send_headers_frame
+* Send a single headers frame to endpoint. It read the data from the buff_read
+* buffer given as parameter.
+* Input: ->st: hstates_t struct where connection variables are stored
+*        ->buff_read: buffer where headers frame payload is stored
+*        ->size: number of bytes to read from buff_read and to store in payload
+*        ->stream_id: stream id to write on headers frame header
+*        ->end_headers: boolean that indicates if END_HEADERS_FLAG must be set
+*        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
+* Output: 0 if no errors were found during frame creation/sending, -1 if not
+*/
+
+int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream){
+  int rc;
+  frame_t frame;
+  frame_header_t frame_header;
+  headers_payload_t headers_payload;
+  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
+  // We create the headers frame
+  rc = create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+  if(rc < 0){
+    ERROR("Error creating headers frame. INTERNAL ERROR");
+    return rc;
+  }
+  if(end_headers){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+  }
+  if(end_stream){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
+  }
+  frame.frame_header = &frame_header;
+  frame.payload = (void*)&headers_payload;
+  int bytes_size = frame_to_bytes(&frame, buff_read);
+  rc = http_write(st,buff_read,bytes_size);
+  INFO("Sending headers");
+
+  if(rc != bytes_size){
+    ERROR("Error writting headers frame. INTERNAL ERROR");
+    return rc;
+  }
+  return 0;
+}
+
+/*------------------- SETTINGS FRAME ------------------*/
+
+/*
+* Function: check_incoming_settings_condition
+* Verifies the correctness of header and checks if frame settings is an ACK.
+* Input: -> header: pointer to settings frame header to read
+*        -> st: pointer to hstates struct where connection variables are stored
+* Output: 0 if ACK was not setted. 1 if it was. -1 if error was found.
+*/
+int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
+    if(header->stream_id != 0){
+        ERROR("Settings frame stream id is not zero. PROTOCOL ERROR");
+        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+        return -1;
+    }
+    else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
+      ERROR("Settings payload bigger than allowed. MAX_FRAME_SIZE ERROR");
+      send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
+      return -1;
+    }
+    /*Check if ACK is set*/
+    if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
+        if(header->length != 0){
+            ERROR("Settings payload size is not zero. PROTOCOL ERROR");
+            send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+            return -1;
+        }
+        else{
+            if(st->h2s.wait_setting_ack){
+                st->h2s.wait_setting_ack = 0;
+                return 1;
+            }
+            else{
+                WARN("ACK received but not expected");
+                return 1;
+            }
+        }
+    }
+    else{
+        return 0;
+    }
+}
+
+/*
+* Function: handle_settings_payload
+* Reads a settings payload from buffer and works with it.
+* Input: -> buff_read: buffer where payload's data is written
+        -> header: pointer to a frameheader_t structure already built with frame info
+        -> spl: pointer to settings_payload_t struct where data is gonna be written
+        -> pairs: pointer to settings_pair_t array where data is gonna be written
+        -> st: pointer to hstates_t struct where connection variables are stored
+* Output: 0 if operations are done successfully, -1 if not.
+*/
+int handle_settings_payload(settings_payload_t *spl, hstates_t *st){
+    // update_settings_table checks for possible errors in the incoming settings
+    if(!update_settings_table(spl, REMOTE, st)){
+        send_settings_ack(st);
+        return 0;
+    }
+    else{
+        return -1;
+    }
+}
+
+/*
+* Function: send_local_settings
+* Sends local settings to endpoint.
+* Input: -> st: pointer to hstates_t struct where local settings are stored
+* Output: 0 if settings were sent. -1 if not.
+*/
+int send_local_settings(hstates_t *st){
+    int rc;
+    uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
+    frame_t mysettingframe;
+    frame_header_t mysettingframeheader;
+    settings_payload_t mysettings;
+    settings_pair_t mypairs[6];
+    /*rc must be 0*/
+    rc = create_settings_frame(ids, st->h2s.local_settings, 6, &mysettingframe,
+                               &mysettingframeheader, &mysettings, mypairs);
+    if(rc){
+        ERROR("Error in Settings Frame creation");
+        return -1;
+    }
+    uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
+    int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
+    /*Assuming that http_write returns the number of bytes written*/
+    rc = http_write(st, byte_mysettings, size_byte_mysettings);
+    INFO("Sending settings");
+    if(rc != size_byte_mysettings){
+        ERROR("Error in local settings writing");
+        return -1;
+    }
+    /*Settings were sent, so we expect an ack*/
+    st->h2s.wait_setting_ack = 1;
+    return 0;
+}
+
+
+/*
+* Function: send_settings_ack
+* Sends an ACK settings frame to endpoint
+* Input: -> st: pointer to hstates struct where http and http2 connection info is
+* stored
+* Output: 0 if sent was successfully made, -1 if not.
+*/
+int send_settings_ack(hstates_t * st){
+    frame_t ack_frame;
+    frame_header_t ack_frame_header;
+    int rc;
+    rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
+    if(rc < 0){
+        ERROR("Error in Settings ACK creation!");
+        return -1;
+    }
+    uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
+    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
+    rc = http_write(st, byte_ack, size_byte_ack);
+    INFO("Sending settings ACK");
+    if(rc != size_byte_ack){
+        ERROR("Error in Settings ACK sending");
+        return -1;
+    }
+    return 0;
+}
+
+/*------------------- GOAWAY FRAME ------------------*/
+
+/*
+* Function: send_goaway
+* Given an hstates_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
+* If additional debug data (opaque data) is included it must be written on the
+* given hstates_t.h2s.debug_data_buffer buffer with its corresponding size on the
+* hstates_t.h2s.debug_size variable.
+* IMPORTANT: RFC 7540 section 6.8 indicates that a gracefully shutdown should have
+* an 2^31-1 value on the last_stream_id field and wait at least one RTT before sending
+* a goaway frame with the last stream id. This implementation doesn't.
+* Input: ->st: pointer to hstates_t struct where connection variables are stored
+*        ->error_code: error code for GOAWAY FRAME (RFC 7540 section 7)
+* Output: 0 if no errors were found, -1 if not
+*/
+int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff, uint8_t debug_size){
+  int rc;
+  frame_t frame;
+  frame_header_t header;
+  goaway_payload_t goaway_pl;
+  uint8_t additional_debug_data[st->h2s.debug_size];
+  rc = create_goaway_frame(&header, &goaway_pl, additional_debug_data, st->h2s.last_open_stream_id, error_code, st->h2s.debug_data_buffer, st->h2s.debug_size);
+  if(rc < 0){
+    ERROR("Error creating GOAWAY frame");
+    return -1;
+  }
+  frame.frame_header = &header;
+  frame.payload = (void*)&goaway_pl;
+
+  uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+  int bytes_size = frame_to_bytes(&frame, buff_bytes);
+  rc = http_write(st,buff_bytes,bytes_size);
+  INFO("Sending GOAWAY");
+
+  if(rc != bytes_size){
+    ERROR("Error writting goaway frame. INTERNAL ERROR");
+    return -1;
+  }
+  st->h2s.sent_goaway = 1;
+  return 0;
+
+}
+
+
+/*
+* Function: handle_goaway_payload
+* Handles go away payload.
+* Input: ->goaway_pl: goaway_payload_t pointer to goaway frame payload
+*        ->st: pointer hstates_t struct where connection variables are stored
+* IMPORTANT: this implementation doesn't check the correctness of the last stream
+* id sent by the endpoint. That is, if a previous GOAWAY was received with an n
+* last_stream_id, it assumes that the next value received is going to be the same.
+* Output: 0 if no error were found during the handling, 1 if not
+*/
+int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
+  if(goaway_pl->error_code != HTTP2_NO_ERROR){
+      INFO("Received GOAWAY with ERROR");
+      // i guess that is closed on the other side, are you?
+      return -1;
+  }
+  if(st->h2s.sent_goaway == 1){ // received answer to goaway
+    shutdown_connection(st);
+    INFO("Connection CLOSED");
+    return 0;
+  }
+  if(st->h2s.received_goaway == 1){
+    INFO("Another GOAWAY has been received before");
+  }
+  else { // never has been seen a goaway before in this connection life
+    st->h2s.received_goaway = 1; // receiver must not open additional streams
+  }
+  if(st->h2s.current_stream.stream_id > goaway_pl->last_stream_id){
+    if(st->h2s.current_stream.state != STREAM_IDLE){
+      st->h2s.current_stream.state = STREAM_CLOSED;
+      INFO("Current stream closed");
+    }
+    int rc = send_goaway(st, HTTP2_NO_ERROR); // We send a goaway to close the connection
+    if(rc < 0){
+      ERROR("Error sending GOAWAY FRAMES");
+      return rc;
+    }
+  }
+  return 0;
+}
+
+
+/*-------------------- WINDOW UPDATE FRAME --------------*/
+
+int send_window_update(hstates_t *st, uint8_t window_size_increment){
+    h2_stream_state_t state = st->h2s.current_stream.state;
+    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
+        ERROR("Wrong state. ");
+        return -1;
+    }
+    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
+
+    frame_t frame;
+    frame_header_t frame_header;
+    window_update_payload_t window_update_payload;
+    int rc = create_window_update_frame(&frame_header, &window_update_payload,window_size_increment,stream_id);
+    if(rc<0){
+        ERROR("error creating window_update frame");
+        return -1;
+    }
+    if(window_size_increment > st->h2s.incoming_window.window_used){
+        ERROR("Trying to send window increment greater than used");
+        return -1;
+    }
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&window_update_payload;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    rc = http_write(st,buff_bytes,bytes_size);
+    INFO("Sending WINDOW UPDATE");
+
+    if(rc != bytes_size){
+        ERROR("Error writting window_update frame. INTERNAL ERROR");
+        return rc;
+    }
+    rc = flow_control_send_window_update(st, window_size_increment);
+    if(rc!=0){
+        ERROR("ERROR in flow control when sending WU");
+        return -1;
+    }
+    return 0;
+}
+
+/*-------------------- CONTINUATION FRAME --------------*/
+
+/*
 * Function: check_incoming_continuation_condition
 * Checks the incoming frame stream_id and the current stream stream_id. Also,
 * verify if there was a HEADERS FRAME before the current CONTINUATION FRAME.
@@ -650,234 +772,6 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
 }
 
 /*
-* Function: send_data
-* Sends a data frame with the current data written in the given hstates_t struct.
-* The data is expected to be written in the http_data_t.data_out.buf, and its
-* corresponding size indicated in the http_data_t.data_out.size variable.
-* Input: ->st: hstates_t struct where connection variables are stored
-         ->end_stream: indicates if the data frame to be sent must have the
-                      END_STREAM_FLAG set.
-* Output: 0 if no error were found in the process, -1 if not
-*
-*/
-int send_data(hstates_t *st, uint8_t end_stream){
-    if(st->data_out.size<=0){
-        ERROR("no data to be send");
-        return -1;
-    }
-    h2_stream_state_t state = st->h2s.current_stream.state;
-    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
-        ERROR("Wrong state for sending DATA");
-        return -1;
-    }
-    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
-    uint8_t count_data_to_send = get_size_data_to_send(st);
-    frame_t frame;
-    frame_header_t frame_header;
-    data_payload_t data_payload;
-    uint8_t data[count_data_to_send];
-    int rc = create_data_frame(&frame_header, &data_payload, data, st->data_out.buf + st->data_out.processed, count_data_to_send, stream_id);
-    if(rc<0){
-        ERROR("error creating data frame");
-        return -1;
-    }
-    if(end_stream) {
-        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
-    }
-
-    frame.frame_header = &frame_header;
-    frame.payload = (void*)&data_payload;
-    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
-    int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = http_write(st,buff_bytes,bytes_size);
-    INFO("Sending DATA");
-
-    if(rc != bytes_size){
-        ERROR("Error writting data frame. INTERNAL ERROR");
-        return rc;
-    }
-    if(end_stream){
-      change_stream_state_end_stream_flag(st, 1); // 1 is for sending
-    }
-    st->data_out.processed += count_data_to_send;
-    if(st->data_out.size == st->data_out.processed) {
-        st->data_out.size = 0;
-        st->data_out.processed = 0;
-    }
-
-    //TODO update window size
-    return 0;
-}
-
-int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
-  if(st->h2s.waiting_for_end_headers_flag){
-    //protocol error
-    ERROR("CONTINUATION or HEADERS frame was expected. PROTOCOL ERROR");
-    return -1;
-  }
-    if(st->h2s.current_stream.stream_id == 0){
-      ERROR("Data stream ID is 0. PROTOCOL ERROR");
-      return -1;
-    }
-    else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
-      ERROR("Data payload bigger than allower. MAX_FRAME_SIZE error");
-      return -1;
-    }
-    else if(header->stream_id > st->h2s.current_stream.stream_id){
-      ERROR("Stream ID is invalid. PROTOCOL ERROR");
-      return -1;
-    }
-    else if(header->stream_id < st->h2s.current_stream.stream_id){
-      ERROR("Stream closed. STREAM CLOSED ERROR");
-      return -1;
-    }
-    else if(st->h2s.current_stream.state == STREAM_IDLE){
-      ERROR("Stream was in IDLE state. PROTOCOL ERROR");
-      return -1;
-    }
-    else if(st->h2s.current_stream.state != STREAM_OPEN && st->h2s.current_stream.state != STREAM_HALF_CLOSED_LOCAL){
-      ERROR("Stream was not in a valid state for data. STREAM CLOSED ERROR");
-      return -1;
-    }
-    return 0;
-}
-
-int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
-    uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
-    /*check flow control*/
-    //TODO flow control
-    int rc = flow_control_receive_data(st, data_length);
-    if(rc < 0){
-        ERROR("flow control error");
-        return -1;
-    }
-    buffer_copy(st->data_in.buf + st->data_in.size, data_payload->data, data_length);
-    st->data_in.size += data_length;
-    if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
-        st->h2s.received_end_stream = 1;
-        st->end_message = 1;
-    }
-    // Stream state handling for end stream flag
-    if(st->h2s.received_end_stream == 1){
-        change_stream_state_end_stream_flag(st, 0); // 0 is for receiving
-        st->h2s.received_end_stream = 0;
-    }
-    return 0;
-}
-
-/*
-* Function: send_headers_stream_verification
-* Given an hstates struct, checks the current stream state and uses it, creates
-* a new one or reports an error. The stream that will be used is stored in
-* st->h2s.current_stream.stream_id .
-* Input: ->st: hstates_t struct where current stream is stored
-* Output: 0 if no errors were found, -1 if not
-*/
-int send_headers_stream_verification(hstates_t *st){
-  if(st->h2s.current_stream.state == STREAM_CLOSED ||
-      st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
-      ERROR("Current stream was closed! Send request error. STREAM CLOSED ERROR");
-      return -1;
-  }
-  else if(st->h2s.current_stream.state == STREAM_IDLE){
-    if(st->is_server){ // server must use even numbers
-        st->h2s.last_open_stream_id += st->h2s.last_open_stream_id%2 ? 1 : 2;
-    }
-    else{ //stream is closed and id is not zero
-        st->h2s.last_open_stream_id += st->h2s.last_open_stream_id%2 ? 2 : 1;
-    }
-    st->h2s.current_stream.state = STREAM_OPEN;
-    st->h2s.current_stream.stream_id = st->h2s.last_open_stream_id;
-  }
-  return 0;
-}
-
-int send_window_update(hstates_t *st, uint8_t window_size_increment){
-    h2_stream_state_t state = st->h2s.current_stream.state;
-    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
-        ERROR("Wrong state. ");
-        return -1;
-    }
-    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
-
-    frame_t frame;
-    frame_header_t frame_header;
-    window_update_payload_t window_update_payload;
-    int rc = create_window_update_frame(&frame_header, &window_update_payload,window_size_increment,stream_id);
-    if(rc<0){
-        ERROR("error creating window_update frame");
-        return -1;
-    }
-    if(window_size_increment > st->h2s.incoming_window.window_used){
-        ERROR("Trying to send window increment greater than used");
-        return -1;
-    }
-    frame.frame_header = &frame_header;
-    frame.payload = (void*)&window_update_payload;
-    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
-    int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = http_write(st,buff_bytes,bytes_size);
-    INFO("Sending WINDOW UPDATE");
-
-    if(rc != bytes_size){
-        ERROR("Error writting window_update frame. INTERNAL ERROR");
-        return rc;
-    }
-    rc = flow_control_send_window_update(st, window_size_increment);
-    if(rc!=0){
-        ERROR("ERROR in flow control when sending WU");
-        return -1;
-    }
-    return 0;
-
-
-}
-
-/*
-* Function: send_headers_frame
-* Send a single headers frame to endpoint. It read the data from the buff_read
-* buffer given as parameter.
-* Input: ->st: hstates_t struct where connection variables are stored
-*        ->buff_read: buffer where headers frame payload is stored
-*        ->size: number of bytes to read from buff_read and to store in payload
-*        ->stream_id: stream id to write on headers frame header
-*        ->end_headers: boolean that indicates if END_HEADERS_FLAG must be set
-*        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
-* Output: 0 if no errors were found during frame creation/sending, -1 if not
-*/
-
-int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream){
-  int rc;
-  frame_t frame;
-  frame_header_t frame_header;
-  headers_payload_t headers_payload;
-  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
-  // We create the headers frame
-  rc = create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
-  if(rc < 0){
-    ERROR("Error creating headers frame. INTERNAL ERROR");
-    return rc;
-  }
-  if(end_headers){
-    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
-  }
-  if(end_stream){
-    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
-  }
-  frame.frame_header = &frame_header;
-  frame.payload = (void*)&headers_payload;
-  int bytes_size = frame_to_bytes(&frame, buff_read);
-  rc = http_write(st,buff_read,bytes_size);
-  INFO("Sending headers");
-
-  if(rc != bytes_size){
-    ERROR("Error writting headers frame. INTERNAL ERROR");
-    return rc;
-  }
-  return 0;
-}
-
-/*
 * Function: send_continuation_frame
 * Sends a single continuation frame to endpoint. It reads the data from the
 * buff_read buffer given as parameter.
@@ -914,6 +808,7 @@ int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_
   }
   return 0;
 }
+
 
 /*
 * Function: send_headers
@@ -986,6 +881,138 @@ int send_headers(hstates_t *st, uint8_t end_stream){
         change_stream_state_end_stream_flag(st, 1); // 1 is for sending
       }
       return rc;
+  }
+}
+
+
+/*------------------ CONNECTION AND STREAM HANDLING ---------------------*/
+
+/*
+* Function: update_settings_table
+* Updates the specified table of settings with a given settings payload.
+* Input: -> spl: settings_payload_t pointer where settings values are stored
+*        -> place: must be LOCAL or REMOTE. It indicates which table to update.
+-> st: pointer to hstates_t struct where settings table are stored.
+* Output: 0 if update was successfull, -1 if not
+*/
+int update_settings_table(settings_payload_t *spl, uint8_t place, hstates_t *st){
+  uint8_t i;
+  uint16_t id;
+  uint32_t value;
+  for(i = 0; i < spl->count; i++){
+    id = spl->pairs[i].identifier;
+    value = spl->pairs[i].value;
+    if(id < 1 || id > 6){
+      continue;
+    }
+    switch(id){
+      case ENABLE_PUSH:
+      if(value != 0 && value != 1){
+        ERROR("Invalid value in ENABLE_PUSH settings. Protocol Error");
+        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+        return -1;
+      }
+      break;
+      case INITIAL_WINDOW_SIZE:
+      if(value > 2147483647){
+        ERROR("Invalid value in INITIAL_WINDOW_SIZE settings. Protocol Error");
+        send_connection_error(st, HTTP2_FLOW_CONTROL_ERROR);
+        return -1;
+      }
+      break;
+      case MAX_FRAME_SIZE:
+      if(value > 16777215 || value < 16384){
+        ERROR("Invalid value in MAX_FRAME_SIZE settings. Protocol Error");
+        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+        return -1;
+      }
+      break;
+      default:
+      break;
+    }
+    if(place == REMOTE){
+      st->h2s.remote_settings[--id] = spl->pairs[i].value;
+    }
+    else if(place == LOCAL){
+      st->h2s.local_settings[--id] = spl->pairs[i].value;
+    }
+    else{
+      WARN("Invalid table");
+      break;
+    }
+  }
+  return 0;
+}
+
+void shutdown_connection(hstates_t *st){
+  st->connection_state = 0;
+}
+
+/*
+* Function: send_connection_error
+* Send a connection error to endpoint with a specified error code. It implements
+* the behaviour suggested in RFC 7540, secion 5.4.1
+* Input: -> st: hstates_t pointer where connetion variables are stored
+*        -> error_code: error code that will be used to shutdown the connection
+* Output: void
+*/
+
+void send_connection_error(hstates_t *st, uint32_t error_code){
+  int rc = send_goaway(st, error_code);
+  if(rc < 0){
+    WARN("Error sending GOAWAY frame to endpoint.");
+  }
+  shutdown_connection(st);
+  //TODO: communicate error code to HTTP?
+}
+
+/*
+* Function: change_stream_state_end_stream_flag
+* Given an hstates_t struct and a boolean, change the state of the current stream
+* when a END_STREAM_FLAG is sent or received.
+* Input: ->st: pointer to hstates_t struct where connection variables are stored
+*        ->sending: boolean like uint8_t that indicates if current flag is sent or received
+* Output: 0 if no errors were found, -1 if not
+*/
+int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
+  int rc = 0;
+  if(sending){ // Change stream status if end stream flag is sending
+    if(st->h2s.current_stream.state == STREAM_OPEN){
+      st->h2s.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+    }
+    else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_REMOTE){
+      st->h2s.current_stream.state = STREAM_CLOSED;
+      if(st->h2s.received_goaway){
+        rc = send_goaway(st, HTTP2_NO_ERROR);
+        if(rc < 0){
+          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          return rc;
+        }
+      }
+      else{
+        rc = prepare_new_stream(st);
+      }
+    }
+    return rc;
+  }
+  else{ // Change stream status if send stream flag is received
+    if(st->h2s.current_stream.state == STREAM_OPEN){
+      st->h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    }
+    else if(st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+      st->h2s.current_stream.state = STREAM_CLOSED;
+      if(st->h2s.received_goaway){
+        rc = send_goaway(st, HTTP2_NO_ERROR);
+        if(rc < 0){
+          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          return rc;
+        }
+      }
+      else{
+        rc = prepare_new_stream(st);
+      }
+    }
+    return rc;
   }
 }
 
