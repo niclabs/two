@@ -229,12 +229,12 @@ void test_hpack_tables_find_entry(void)
 int main(void)
 {
     UNITY_BEGIN();
-    //UNIT_TEST(test_hpack_tables_find_index); TODO
+    UNIT_TEST(test_hpack_tables_find_index); 
     UNIT_TEST(test_hpack_tables_static_find_entry_name_and_value);
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_find_entry);
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-    //UNIT_TEST(test_hpack_tables_dynamic_add_find_entry); TODO
+    UNIT_TEST(test_hpack_tables_dynamic_add_find_entry); 
 #endif
     return UNITY_END();
 }
