@@ -193,9 +193,9 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
   for(uint16_t i=1; i< dynamic_table->max_size; i++){
     if(!dynamic_table->buffer[(dynamic_table->next - i) % dynamic_table->max_size]){ // If char is 0, ENDSTR
       counter0++;
-    }
-    if(counter0 % 2 == 0 && counter0 != 0){ // name and value found
+      if(counter0 % 2 == 0 ){ // name and value found
       entries_counter ++;
+    }
     }
     if(entries_counter == index - 61){ // index found!
       return i;
@@ -216,7 +216,7 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
  */
 int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer){
 
-  memset(ext_buffer, 0, strlen(ext_buffer));
+
 
   for(uint16_t i=1; i < dynamic_table->max_size; i++){
     if(!dynamic_table->buffer[(dynamic_table->next - initial_position + i) % dynamic_table->max_size]) { //If char is 0, ENDSTR
