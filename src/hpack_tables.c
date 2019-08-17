@@ -191,7 +191,7 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
   uint16_t entries_counter = 0;
   uint16_t counter0 = 0;
   for(uint16_t i=1; i< dynamic_table->max_size; i++){
-    if(!dynamic_table->buffer[(dynamic_table->next - i) % dynamic_table->max_size]){ // If char is 0, ENDSTR
+    if(!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]){ // If char is 0, ENDSTR
       counter0++;
       if(counter0 % 2 == 0 ){ // name and value found
       entries_counter ++;
@@ -219,12 +219,12 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
 
 
   for(uint16_t i=1; i < dynamic_table->max_size; i++){
-    if(!dynamic_table->buffer[(dynamic_table->next - initial_position + i) % dynamic_table->max_size]) { //If char is 0, ENDSTR
+    if(!dynamic_table->buffer[(dynamic_table->next - initial_position + i + dynamic_table->max_size) % dynamic_table->max_size]) { //If char is 0, ENDSTR
       ext_buffer[i-1] = 0;
       return initial_position - i;
     }
     //else copy
-    ext_buffer[i-1] = dynamic_table->buffer[(dynamic_table->next - initial_position + i) % dynamic_table->max_size];
+    ext_buffer[i-1] = dynamic_table->buffer[(dynamic_table->next - initial_position + i + dynamic_table->max_size) % dynamic_table->max_size];
 
   }
   //if copy failed
@@ -244,16 +244,16 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
  */
 int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer){
 
-  dynamic_table->buffer[dynamic_table->next + initial_position]=0; //set initial
+  dynamic_table->buffer[(dynamic_table->next + initial_position + dynamic_table->max_size) % dynamic_table->max_size]=0; //set initial
 
   for(uint16_t i=1; i < dynamic_table->max_size; i++){
 
     if(!ext_buffer[i-1]) { //If char is 0, ENDSTR
-      dynamic_table->buffer[(dynamic_table->next + initial_position + i) % dynamic_table->max_size] = 0;
+      dynamic_table->buffer[(dynamic_table->next + initial_position + i + dynamic_table->max_size) % dynamic_table->max_size] = 0;
       return initial_position +i;
     }
     //else copy
-    dynamic_table->buffer[(dynamic_table->next + initial_position + i) % dynamic_table->max_size] = ext_buffer[i-1];
+    dynamic_table->buffer[(dynamic_table->next + initial_position + i + dynamic_table->max_size) % dynamic_table->max_size] = ext_buffer[i-1];
   }
   //if copy failed
   return -1;
@@ -274,12 +274,12 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table){
     uint8_t counter0 = 0;
 
     for(uint16_t i=1; i < dynamic_table->max_size ; i++){
-      if(!dynamic_table->buffer[(dynamic_table->first + i) % dynamic_table->max_size]){ // if 0, ENDSTR
+      if(!dynamic_table->buffer[(dynamic_table->first + i + dynamic_table->max_size) % dynamic_table->max_size]){ // if 0, ENDSTR
 
             counter0++;
 
             if(counter0 == 2){ //END
-                dynamic_table->first = dynamic_table->first + i;
+                dynamic_table->first = (dynamic_table->first + i + dynamic_table->max_size) % dynamic_table->max_size;
                 dynamic_table->actual_size = dynamic_table->actual_size - (entry_length + 32);
                 dynamic_table->n_entries = dynamic_table->n_entries - 1;
                 return 0;
@@ -443,7 +443,7 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
 
     dynamic_table->n_entries = dynamic_table->n_entries + 1;
     dynamic_table->actual_size = dynamic_table->actual_size + entry_size;
-    dynamic_table->next = dynamic_table->next + continue_pos;
+    dynamic_table->next = (dynamic_table->next + continue_pos + dynamic_table->max_size) % dynamic_table->max_size;
 
     return 0;
 }
