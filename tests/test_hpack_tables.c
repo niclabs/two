@@ -225,6 +225,41 @@ void test_hpack_tables_dynamic_pop_old_entry(void)
 
     
 }
+
+void test_hpack_tables_dynamic_circular_test(void)
+{
+    uint16_t dynamic_table_max_size = 32 + 100; //aprox size of one standard entry -> 1*(32 + 100chars)
+    char buffer[dynamic_table_max_size];
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size, buffer);
+
+    char *new_names[] = { "Dias antes de la devastacion paso algo terrible, los piratas se llevaron a Ellie, quien lo diria", 
+                            "No se que ocurrio, pero todo indicaba que las cosas no iban a mejorar"};
+    char *new_values[] = { "!",
+                             "..."};
+
+    char name[100]; //example buffers, in reality they are not so big
+    char value[100];
+
+    TEST_ASSERT_EQUAL(0, dynamic_table.first);
+    TEST_ASSERT_EQUAL(0, dynamic_table.next);
+
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[0], new_values[0]);
+    TEST_ASSERT_EQUAL(1, dynamic_table.n_entries);
+
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[1], new_values[1]);
+    TEST_ASSERT_EQUAL(1, dynamic_table.n_entries);
+
+    memset(name, 0, sizeof(name));
+    memset(value, 0, sizeof(value));
+    hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 62, name, value);
+    TEST_ASSERT_EQUAL_STRING(new_names[1], name);
+    TEST_ASSERT_EQUAL_STRING(new_values[1], value);
+
+
+}
+}
 #endif
 
 void test_hpack_tables_find_entry(void)
