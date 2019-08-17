@@ -281,7 +281,7 @@ void test_hpack_tables_dynamic_resize_not_circular(void)
 
     for(int i=0; i<3; i++){
         hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[i], new_values[i]);
-}
+    }
     
     // so if a resize is made to size 100, the old entry must be deleted and everything should work normal
     hpack_tables_dynamic_table_resize(&dynamic_table, 100, dynamic_table_max_size);
