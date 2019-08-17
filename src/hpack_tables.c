@@ -383,8 +383,7 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
 #endif
 
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-/* TODO
- * Function: hpack_tables_dynamic_table_resize
+/* Function: hpack_tables_dynamic_table_resize
  * Makes an update of the size of the dynamic table_length
  * Input:
  *      -> *dynamic_table: Dynamic table to search
@@ -394,17 +393,85 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
  *      return 0 if the update is succesful, or -1 otherwise
  */
 
-//int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
-//{
-//    if (new_max_size > dynamic_table_max_size) {
-//        ERROR("Resize operation exceeds the maximum size set by the protocol ");
-//        return -1;
-//    }
+int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
+{
+    if (new_max_size > dynamic_table_max_size) {
+        ERROR("Resize operation exceeds the maximum size set by the protocol ");
+        return -1;
+    }
+    //delete old entries to fit in new size
+    while(dynamic_table->actual_size > new_max_size){
+        hpack_tables_dynamic_pop(dynamic_table);
+    }
+    //now reorganize table  
+    if(dynamic_table->next <= dynamic_table->first){
+        if(dynamic_table->n_entries == 0){
+            dynamic_table->first = 0;
+            dynamic_table->next = 0;
+        }
+        else{
+            //two cases: [0, next] > [first, max_size] or else
+            //always choose the smaller one
+            if(dynamic_table->next <= (dynamic_table->max_size - dynamic_table->first)){
+                char aux_buffer[dynamic_table->next+1];  //+1 for the zero -> end string
+                //copy into aux
+                for(uint16_t i=0 ; i<=dynamic_table->next ; i++){
+                    aux_buffer[i] = dynamic_table->buffer[i];
+                }
+                //shift
+                uint16_t shift = dynamic_table->first;
+                for(uint16_t i=0; i< dynamic_table->max_size - dynamic_table->first; i++){
+                    dynamic_table->buffer[i] = dynamic_table->buffer[i+shift];
+                }
+                //now copy aux at the end
+                uint16_t next_pos = dynamic_table->max_size - dynamic_table->first;
+                for(uint16_t i=0; i<=dynamic_table->next ; i++){
+                    dynamic_table->buffer[i+next_pos] = aux_buffer[i];
+                }
+                dynamic_table->first = dynamic_table->first - shift;
+                dynamic_table->next = next_pos + dynamic_table->next;
+                dynamic_table->max_size = new_max_size;
 
-    //TODO
-//    return 0;
+            }
+            else{
+                char aux_buffer[dynamic_table->max_size - dynamic_table->first];
+                //copy into aux
+                for(uint16_t i=0 ; i<dynamic_table->max_size - dynamic_table->first; i++){
+                    aux_buffer[i] = dynamic_table->buffer[dynamic_table->first + i];
+                }
+                //shift
+                uint16_t shift = dynamic_table->max_size - dynamic_table->first;
+                for(uint16_t i=0; i <= dynamic_table->next; i++){ 
+                    //se copia de izquierda a derecha, para evitar sobreescribir al escribir a la derecha
+                    dynamic_table->buffer[(dynamic_table->next - i) + shift] = dynamic_table->buffer[(dynamic_table->next - i)];
+                }
+                //now copy aux at the beginning
+                for(uint16_t i=0; i<dynamic_table->max_size - dynamic_table->first;i++){
+                    dynamic_table->buffer[i] = aux_buffer[i];
+                }
+                dynamic_table->first = 0;
+                dynamic_table->next = shift + dynamic_table->next;
 
-//}
+            }
+
+        }
+    }
+    else{
+        //SIMPLE SHIFT
+        uint16_t shift = dynamic_table->first;
+        //now shift in order
+        for(uint16_t i = 0; i <= dynamic_table->next - dynamic_table->first; i++){
+            dynamic_table->buffer[i] = dynamic_table->buffer[shift+i]; //shifting...
+        }
+        dynamic_table->first = dynamic_table->first - shift;
+        dynamic_table->next = dynamic_table->next - shift;
+
+    }
+
+    dynamic_table->max_size = new_max_size;
+    return 0;
+
+}
 #endif
 
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
