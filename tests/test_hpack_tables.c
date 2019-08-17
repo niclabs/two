@@ -259,6 +259,58 @@ void test_hpack_tables_dynamic_circular_test(void)
 
 
 }
+
+void test_hpack_tables_dynamic_resize_not_circular(void)
+{
+    //this is the simple case of resize, first pointer before next pointer
+    uint16_t dynamic_table_max_size = 500;
+    char buffer[dynamic_table_max_size];
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size, buffer);
+
+    char *new_names[] = { "hola", "sol3", "bien1" };
+    char *new_values[] = { "chao", "luna4", "mal2" };
+    //SIZE of entries:
+    /*
+    * hola, chao = 8 + 32
+    * sol3, luna4 = 9 + 32
+    * bien1, mal2 = 9 + 32
+    * TOTAL SIZE = 122
+    */
+
+    for(int i=0; i<3; i++){
+        hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[i], new_values[i]);
+}
+    
+    // so if a resize is made to size 100, the old entry must be deleted and everything should work normal
+    hpack_tables_dynamic_table_resize(&dynamic_table, 100, dynamic_table_max_size);
+    TEST_ASSERT_EQUAL(2, dynamic_table.n_entries);
+    TEST_ASSERT_EQUAL(100, dynamic_table.max_size);
+    TEST_ASSERT_EQUAL(82, dynamic_table.actual_size);
+    TEST_ASSERT_EQUAL(0, dynamic_table.first);
+    TEST_ASSERT_EQUAL(22, dynamic_table.next);
+
+    char name[MAX_HEADER_NAME_LEN];
+    char value[MAX_HEADER_VALUE_LEN];
+
+    memset(name, 0, sizeof(name));
+    memset(value, 0, sizeof(value));
+    hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 62, name, value);
+    TEST_ASSERT_EQUAL_STRING(new_names[2], name);
+    TEST_ASSERT_EQUAL_STRING(new_values[2], value);
+
+    memset(name, 0, sizeof(name));
+    memset(value, 0, sizeof(value));
+    hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 63, name, value);
+    TEST_ASSERT_EQUAL_STRING(new_names[1], name);
+    TEST_ASSERT_EQUAL_STRING(new_values[1], value);
+
+    memset(name, 0, sizeof(name));
+    memset(value, 0, sizeof(value));
+    int8_t rc = hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 64, name, value);
+    TEST_ASSERT_EQUAL(-1 , rc); // cause entry doesnt exist
+
 }
 #endif
 
