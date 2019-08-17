@@ -11,6 +11,7 @@ extern int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynami
 extern int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, char *buffer);
 extern int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
 extern int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
+extern int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size);
 
 DEFINE_FFF_GLOBALS;
 
@@ -90,7 +91,7 @@ void test_hpack_tables_static_find_entry_name(void)
 }
 
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-void test_hpack_tables_dynamic_add_find_entry(void)
+void test_hpack_tables_dynamic_add_find_entry_and_reset_table(void)
 {
     uint16_t dynamic_table_max_size = 500;
     char buffer[dynamic_table_max_size];
@@ -166,6 +167,22 @@ void test_hpack_tables_dynamic_add_find_entry(void)
     //now errors case tests, when entry doesn't exist
     rc_fail = hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 65, name, value); // 65 -> doesn't exist ...
     TEST_ASSERT_EQUAL(-1, rc_fail);
+
+    //Now try reset the table, resizing to 0 and then back to normal
+    hpack_tables_dynamic_table_resize(&dynamic_table, 0, dynamic_table_max_size);
+    TEST_ASSERT_EQUAL(0, dynamic_table.n_entries);
+    TEST_ASSERT_EQUAL(0, dynamic_table.max_size);
+    TEST_ASSERT_EQUAL(0, dynamic_table.actual_size);
+    TEST_ASSERT_EQUAL(0, dynamic_table.first);
+    TEST_ASSERT_EQUAL(0, dynamic_table.next);
+    hpack_tables_dynamic_table_resize(&dynamic_table, dynamic_table_max_size, dynamic_table_max_size);
+    TEST_ASSERT_EQUAL(0, dynamic_table.n_entries);
+    TEST_ASSERT_EQUAL(dynamic_table_max_size, dynamic_table.max_size);
+    TEST_ASSERT_EQUAL(0, dynamic_table.actual_size);
+    TEST_ASSERT_EQUAL(0, dynamic_table.first);
+    TEST_ASSERT_EQUAL(0, dynamic_table.next);
+
+}
 }
 #endif
 
@@ -234,7 +251,7 @@ int main(void)
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_find_entry);
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-    UNIT_TEST(test_hpack_tables_dynamic_add_find_entry); 
+    UNIT_TEST(test_hpack_tables_dynamic_add_find_entry_and_reset_table); 
 #endif
     return UNITY_END();
 }
