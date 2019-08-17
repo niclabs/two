@@ -183,6 +183,47 @@ void test_hpack_tables_dynamic_add_find_entry_and_reset_table(void)
     TEST_ASSERT_EQUAL(0, dynamic_table.next);
 
 }
+
+void test_hpack_tables_dynamic_pop_old_entry(void)
+{
+    uint16_t dynamic_table_max_size = 64 + 20; //aprox size of two standard entries -> 2*(32 + 10chars)
+    char buffer[dynamic_table_max_size];
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size, buffer);
+
+    char *new_names[] = { "hola1", "sol2", "bota3" };
+    char *new_values[] = { "chao1", "luna2", "pato3" };
+
+    char name[MAX_HEADER_NAME_LEN];
+    char value[MAX_HEADER_VALUE_LEN];
+
+    TEST_ASSERT_EQUAL(0, dynamic_table.first);
+    TEST_ASSERT_EQUAL(0, dynamic_table.next);
+
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[0], new_values[0]);
+    TEST_ASSERT_EQUAL(1, dynamic_table.n_entries);
+
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[1], new_values[1]);
+    TEST_ASSERT_EQUAL(2, dynamic_table.n_entries);
+
+    //now it has to delete the old entry
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[2], new_values[2]);
+    TEST_ASSERT_EQUAL(2, dynamic_table.n_entries);
+
+    memset(name, 0, sizeof(name));
+    memset(value, 0, sizeof(value));
+    hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 63, name, value);
+    TEST_ASSERT_EQUAL_STRING(new_names[1], name);
+    TEST_ASSERT_EQUAL_STRING(new_values[1], value);
+
+    memset(name, 0, sizeof(name));
+    memset(value, 0, sizeof(value));
+    hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 62, name, value);
+    TEST_ASSERT_EQUAL_STRING(new_names[2], name);
+    TEST_ASSERT_EQUAL_STRING(new_values[2], value);
+
+    
 }
 #endif
 
