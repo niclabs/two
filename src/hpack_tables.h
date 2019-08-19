@@ -47,6 +47,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size);
 int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, char *buffer);
 int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
-#endif //HPACK_INCLUDE_DYNAMIC_TABLE
+int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size);
+#endif  //HPACK_INCLUDE_DYNAMIC_TABLE
 
-#endif //TWO_HPACK_TABLES_H
+#endif  //TWO_HPACK_TABLES_H

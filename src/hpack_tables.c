@@ -397,15 +397,14 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
  * Input:
  *      -> *dynamic_table: Dynamic table to search
  *      -> new_max_size: new virtual max size of the table, setted in the header of resize
- *      -> dynamic_table_max_size: Max size in bytes of dynamic table setted in SETTINGS
  * Output:
  *      return 0 if the update is succesful, or -1 otherwise
  */
 
-int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size, uint32_t dynamic_table_max_size)
+int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size)
 {
-    if (new_max_size > dynamic_table_max_size) {
-        ERROR("Resize operation exceeds the maximum size set by the protocol ");
+    if (new_max_size > HPACK_MAX_DYNAMIC_TABLE_SIZE) {
+        ERROR("Decoding Error: Resize operation exceeds the maximum size set by the protocol ");
         return -1;
     }
     //delete old entries to fit in new size

@@ -63,6 +63,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
     return 0;
 }
 #endif
+
 /*
  * Function: hpack_encoder_encode_integer
  * encode an integer with the given prefix
@@ -376,14 +377,18 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
  *      -> max_size: New size of the dynamic table
  *      -> *encoded_buffer: Buffer to encode the max_size
  * Output:
- *      Returns the size in bytes of the update.
+ *      Returns the size in bytes of the update, or an int < 0 if an error occurs.
  */
 int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t *encoded_buffer)
 {
     DEBUG("Encoding a dynamic table size update");
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
+    int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, max_size);
+    if (rc < 0) {
+        return rc;
+    }
     int encoded_max_size_length = hpack_encoder_encode_integer(max_size, 5, encoded_buffer);
     encoded_buffer[0] |= preamble;
-    (void)dynamic_table;//TODO make a resize of the dynamic table
+
     return encoded_max_size_length;
 }

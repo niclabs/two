@@ -34,6 +34,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
 FAKE_VALUE_FUNC(uint32_t, hpack_tables_get_table_length, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_init_dynamic_table, hpack_dynamic_table_t *, uint32_t, char * );
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
+FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name_and_value, hpack_dynamic_table_t *, uint32_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, uint32_t, char *);
 
@@ -49,6 +50,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, u
     FAKE(hpack_tables_dynamic_table_add_entry)   \
     FAKE(hpack_tables_find_entry_name_and_value) \
     FAKE(hpack_tables_find_entry_name)           \
+    FAKE(hpack_tables_dynamic_table_resize)      \
     FAKE(headers_add)                            \
     FAKE(hpack_huffman_decode)
 

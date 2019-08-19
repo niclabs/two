@@ -30,6 +30,7 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int, hpack_tables_find_index, hpack_dynamic_table_t *, char *, char *);
 FAKE_VALUE_FUNC(int, hpack_tables_find_index_name, hpack_dynamic_table_t *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
+FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t);
 
 
 #define FFF_FAKES_LIST(FAKE)                        \
@@ -38,6 +39,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_tabl
     FAKE(hpack_tables_find_index)                   \
     FAKE(hpack_tables_find_index_name)              \
     FAKE(hpack_tables_dynamic_table_add_entry)      \
+    FAKE(hpack_tables_dynamic_table_resize)      \
     FAKE(hpack_huffman_encode)
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
@@ -611,6 +613,7 @@ void test_hpack_encoder_encode_test2(void)
     };
 
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 2 * HTTP2_MAX_HBF_BUFFER, 1 };
+
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 2);
     //TODO ADD check to input of hpack_tables_dynamic_add_entry
     hpack_utils_find_prefix_size_fake.return_val = 4;
@@ -639,7 +642,7 @@ void test_hpack_encoder_encode_test3(void)
     };
 
     hpack_utils_find_prefix_size_fake.return_val = 4;
-    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = {1, 2 * HTTP2_MAX_HBF_BUFFER, 1 };
+    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2 * HTTP2_MAX_HBF_BUFFER, 1 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 3);
     //TODO ADD check to input of hpack_tables_dynamic_add_entry
     hpack_tables_find_index_fake.return_val = -1;
