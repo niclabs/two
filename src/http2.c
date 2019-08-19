@@ -577,13 +577,16 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
   uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
   int bytes_size = frame_to_bytes(&frame, buff_bytes);
   rc = http_write(st,buff_bytes,bytes_size);
-  INFO("Sending GOAWAY");
+  INFO("Sending GOAWAY, error code: %u", error_code);
 
   if(rc != bytes_size){
     ERROR("Error writting goaway frame. INTERNAL ERROR");
     return -1;
   }
   st->h2s.sent_goaway = 1;
+  if(st->h2s.received_goaway){
+    shutdown_connection(st);
+  }
   return 0;
 
 }
@@ -1215,7 +1218,6 @@ int h2_receive_frame(hstates_t *st){
               ERROR("Error during goaway handling");
               return -1;
             }
-            INFO("Received goaway frame");
             return rc;
         }
         case WINDOW_UPDATE_TYPE: {//Window update
