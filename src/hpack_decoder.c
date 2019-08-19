@@ -92,9 +92,12 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
         if (bit_position + i > 8 * encoded_string_size) {
             return -2;
         }
-
         uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
-
+        /*Check if it's the EOS Symbol*/
+        if(i == 30 && result == 0x3fffffff){
+            ERROR("Decoding error: The compressed header contains the EOS Symbol");
+            return -1;
+        }
         encoded_word.code = result;
         encoded_word.length = i;
         uint8_t decoded_sym = 0;
@@ -134,6 +137,9 @@ int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
     for (i = 0; (bit_position - 1) / 8 < (int32_t)str_length; i++) {
         int32_t word_length = hpack_decoder_decode_huffman_word(str + i, encoded_buffer, str_length, bit_position);
         if (word_length < 0) {
+            if(word_length == -1){ /*Compression Error: It's the EOS Symbol*/
+                return -1;
+            }
             uint8_t bits_left = 8 * str_length - bit_position;
             uint8_t last_byte = encoded_buffer[str_length - 1];
 
