@@ -601,9 +601,10 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
 */
 int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
   if(goaway_pl->error_code != HTTP2_NO_ERROR){
-      INFO("Received GOAWAY with ERROR");
-      // i guess that is closed on the other side, are you?
-      return -1;
+    shutdown_connection(st);
+    INFO("Received GOAWAY with ERROR");
+    // i guess that is closed on the other side, are you?
+    return -1;
   }
   if(st->h2s.sent_goaway == 1){ // received answer to goaway
     shutdown_connection(st);
