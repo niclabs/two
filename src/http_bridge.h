@@ -154,6 +154,8 @@ typedef struct HTTP_STATES {
     uint8_t end_message;
     //boolean. 0 = END STREAM, 1 = keep_receiving, 2 = GO AWAY
     uint8_t keep_receiving;
+    //boolean. 0 = received goaway without error, 1 = received goaway with error
+    uint8_t evil_goodbye;
 } hstates_t;
 
 /*--------------------------------------------------------------------------*/
