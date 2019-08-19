@@ -205,6 +205,9 @@ int receive_headers(hstates_t *hs)
             return 0;
         }
     }
+    if (hs->evil_goodbye == 0 && hs->connection_state == 0){
+        return 0;
+    }
     return -1;
 }
 
@@ -317,6 +320,10 @@ int http_server_start(hstates_t *hs)
             // read headers
             if (receive_headers(hs) < 0) {
                 ERROR("An error ocurred while receiving headers");
+                break;
+            }
+
+            if (hs->connection_state == 0){
                 break;
             }
 
