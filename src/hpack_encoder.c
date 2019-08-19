@@ -1,9 +1,9 @@
 #include "hpack_encoder.h"
 #include <stdint.h>             /*for int8_t, int32_t  */
-#include <string.h>            /* for strlen, memset    */
-#include "hpack_huffman.h"     /* for huffman_encoded_word_t, hpack_huffman_...*/
-#include "hpack_utils.h"       /* for hpack_utils_find_prefix_size, hpack_pr...*/
-#include "logging.h"           /* for ERROR */
+#include <string.h>             /* for strlen, memset    */
+#include "hpack_huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
+#include "hpack_utils.h"        /* for hpack_utils_find_prefix_size, hpack_pr...*/
+#include "logging.h"            /* for ERROR */
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
@@ -120,14 +120,15 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
     int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
 
     if (str_length + encoded_string_length_size >= HTTP2_MAX_HBF_BUFFER) {
-        ERROR("String too big, does not fit on the encoded_string");
-        return -1;
+        DEBUG("String too big, does not fit on the encoded_string");
+        return -2;
     }
     for (int i = 0; i < str_length; i++) {                                          //TODO check if strlen is ok to use here
         encoded_string[i + encoded_string_length_size] = str[i];
     }
     return str_length + encoded_string_length_size;
 }
+
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
  * Function: hpack_encoder_encode_huffman_word
@@ -175,8 +176,8 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
     int encoded_word_length_size = hpack_encoder_encode_integer(encoded_word_byte_length, 7, encoded_string);
 
     if (encoded_word_byte_length + encoded_word_length_size >= HTTP2_MAX_HBF_BUFFER) {
-        ERROR("String too big, does not fit on the encoded_string");
-        return -1;
+        DEBUG("String too big, does not fit on the encoded_string");
+        return -2;
     }
 
     uint8_t encoded_buffer[encoded_word_byte_length];
@@ -240,13 +241,13 @@ int hpack_encoder_encode_literal_header_field_new_name(char *name_string, char *
 
     if (rc < 0) {
         ERROR("Error while trying to encode name in encode_literal_header_field_new_name");
-        return -1;
+        return rc;
     }
     pointer += rc;
     rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer);
     if (rc < 0) {
         ERROR("Error while trying to encode value in encode_literal_header_field_new_name");
-        return -1;
+        return rc;
     }
     pointer += rc;
     return pointer;
@@ -267,7 +268,7 @@ int hpack_encoder_encode_literal_header_field_indexed_name(char *value_string, u
 
     if (rc < 0) {
         ERROR("Error while trying to encode value in encode_literal_header_field_indexed_name");
-        return -1;
+        return rc;
     }
     return rc;
 }
@@ -287,7 +288,7 @@ int hpack_encoder_encode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
     int rc = hpack_tables_find_index(dynamic_table, name, value);
 
     if (rc < 0) {
-        return -1;
+        return rc;
     }
     uint8_t prefix = hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD);
     int pointer = hpack_encoder_encode_integer(rc, prefix, encoded_buffer);
@@ -314,17 +315,15 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
         index = hpack_tables_find_index_name(dynamic_table, name_string);
         #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
         //TODO uncomment the following section when dynamic table works
-        /*hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
+        hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
         DEBUG("Encoding a literal header field with incremental indexing");
-        int res = hpack_tables_dynamic_table_add_entry(dynamic_table, name, value);
-        if(res < 0){
+        int8_t res = hpack_tables_dynamic_table_add_entry(dynamic_table, name_string, value_string);
+
+        if (res < 0) {
             DEBUG("Couldn't add to dynamic table");
             preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
             DEBUG("Encoding a literal header field never indexed");
         }
-         */
-        hpack_preamble_t preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
-        DEBUG("Encoding a literal header field never indexed");
         #else
         hpack_preamble_t preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
         DEBUG("Encoding a literal header field never indexed");
@@ -337,7 +336,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
             int rc = hpack_encoder_encode_literal_header_field_new_name(name_string, value_string, encoded_buffer + pointer);
             if (rc < 0) {
                 ERROR("Error while trying to encode");
-                return -1;
+                return rc;
             }
             pointer += rc;
         }
@@ -347,7 +346,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
             int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string, encoded_buffer + pointer);
             if (rc < 0) {
                 ERROR("Error while trying to encode");
-                return -1;
+                return rc;
             }
             pointer += rc;
         }
@@ -361,7 +360,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
         int rc = hpack_encoder_encode_indexed_header_field(dynamic_table, name_string, value_string, encoded_buffer);
         if (rc < 0) {
             ERROR("Error while trying to encode");
-            return -1;
+            return rc;
         }
         encoded_buffer[0] |= preamble;                          //set first bits
         return rc;
@@ -379,7 +378,8 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
  * Output:
  *      Returns the size in bytes of the update.
  */
-int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer){
+int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t *encoded_buffer)
+{
     DEBUG("Encoding a dynamic table size update");
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
     int encoded_max_size_length = hpack_encoder_encode_integer(max_size, 5, encoded_buffer);

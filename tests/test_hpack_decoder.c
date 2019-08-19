@@ -466,7 +466,7 @@ void test_decode_huffman_string_error(void)
     /*Test border condition*/
     /*Padding wrong*/
     uint8_t encoded_string2[] = { 0x81, 0x1b };
-    uint32_t return_fake_values_read_bits_from_bytes[] = { 3, 13, 27, 55, 111, 0x3fffffff};
+    uint32_t return_fake_values_read_bits_from_bytes[] = { 3, 13, 27, 55, 111, 0x3fffffff };
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 6);
     char expected_decoded_string2[] = "a";
     char decoded_string2[] = { 0, 0 };
@@ -485,9 +485,10 @@ void test_decode_huffman_string_error(void)
     for (int i = 0; i < 2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string3[i], decoded_string3[i]);
     }
-    /*Encoding the eos symbol*/
+
+    /*Encoding the EOS symbol*/
     uint8_t encoded_string4[] = { 0x7f, 0xff, 0xff, 0xff };
-    char decoded_string4[] = {0,0,0,0};
+    char decoded_string4[] = { 0, 0, 0, 0 };
     rc = hpack_decoder_decode_huffman_string(decoded_string4, encoded_string4);
     TEST_ASSERT_EQUAL(-1, rc);
 }

@@ -44,7 +44,7 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
             depth = depth + 7;
         }
     }
-    return -1;
+    return -2;
 }
 
 /*
@@ -258,6 +258,7 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
     return pointer;
 }
 #endif
+
 int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
@@ -387,11 +388,11 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         DEBUG("Decoding a dynamic table size update");
         //TODO add function to decode dynamic_table_size
         ERROR("Dynamic_table_size_update not implemented yet");
-        return -1;
+        return -2;
     }
     else {
         ERROR("Error unknown preamble value: %d", preamble);
-        return -1;
+        return -2;
     }
 }
 

@@ -29,13 +29,15 @@ FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int, hpack_tables_find_index, hpack_dynamic_table_t *, char *, char *);
 FAKE_VALUE_FUNC(int, hpack_tables_find_index_name, hpack_dynamic_table_t *, char *);
+FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
 
 
 #define FFF_FAKES_LIST(FAKE)                        \
     FAKE(hpack_utils_find_prefix_size)              \
     FAKE(hpack_utils_encoded_integer_size)          \
     FAKE(hpack_tables_find_index)                   \
-    FAKE(hpack_tables_find_index_name)                   \
+    FAKE(hpack_tables_find_index_name)              \
+    FAKE(hpack_tables_dynamic_table_add_entry)      \
     FAKE(hpack_huffman_encode)
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
@@ -597,9 +599,8 @@ void test_hpack_encoder_encode_test2(void)
     char value_string[] = "val";
     char name_string[] = "name";
     uint8_t encoded_buffer[64];
-    //TODO change preamble with LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING when dynamic table works
     uint8_t expected_encoded_bytes[] = {
-        16,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=0
+        64,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=0
         4,              //name_length
         (uint8_t)'n',
         (uint8_t)'a',
@@ -613,7 +614,7 @@ void test_hpack_encoder_encode_test2(void)
 
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 2 * HTTP2_MAX_HBF_BUFFER, 1 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 2);
-
+    //TODO ADD check to input of hpack_tables_dynamic_add_entry
     hpack_utils_find_prefix_size_fake.return_val = 4;
     hpack_tables_find_index_fake.return_val = -1;
     hpack_tables_find_index_name_fake.return_val = -1;
@@ -631,9 +632,8 @@ void test_hpack_encoder_encode_test3(void)
     char value_string[] = "val";
     char name_string[] = ":authority";
     uint8_t encoded_buffer[64];
-    //TODO change preamble with LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING when dynamic table works
     uint8_t expected_encoded_bytes[] = {
-        17,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=1
+        65,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=1
         3,              //value_length
         (uint8_t)'v',
         (uint8_t)'a',
@@ -643,6 +643,7 @@ void test_hpack_encoder_encode_test3(void)
     hpack_utils_find_prefix_size_fake.return_val = 4;
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = {1, 2 * HTTP2_MAX_HBF_BUFFER, 1 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 3);
+    //TODO ADD check to input of hpack_tables_dynamic_add_entry
     hpack_tables_find_index_fake.return_val = -1;
     hpack_tables_find_index_name_fake.return_val = 1;
     int rc = hpack_encoder_encode(NULL, name_string, value_string, encoded_buffer);
