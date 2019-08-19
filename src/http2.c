@@ -604,6 +604,7 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
 */
 int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
   if(goaway_pl->error_code != HTTP2_NO_ERROR){
+    st->evil_goodbye = 1;
     shutdown_connection(st);
     INFO("Received GOAWAY with ERROR");
     // i guess that is closed on the other side, are you?
@@ -966,6 +967,7 @@ void send_connection_error(hstates_t *st, uint32_t error_code){
   if(rc < 0){
     WARN("Error sending GOAWAY frame to endpoint.");
   }
+  st->evil_goodbye = 1;
   shutdown_connection(st);
   //TODO: communicate error code to HTTP?
 }
