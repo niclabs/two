@@ -17,7 +17,8 @@ extern int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_s
 extern int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
 extern uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
-extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t* dynamic_table, uint8_t *header_block);
+extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
+extern int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
 
 
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
@@ -206,6 +207,66 @@ void setUp(void)
 
     /* reset common FFF internal structures */
     FFF_RESET_HISTORY();
+}
+
+
+void test_decode_header_block_literal_with_incremental_indexing(void)
+{
+    //Literal Header Field Representation
+    //Never indexed
+    //No huffman encoding - Header name as string literal
+    uint8_t header_block_size = 26;
+    uint8_t header_block_name_literal[] = { 0x40,
+                                            0x0a,
+                                            0x63,
+                                            0x75,
+                                            0x73,
+                                            0x74,
+                                            0x6f,
+                                            0x6d,
+                                            0x2d,
+                                            0x6b,
+                                            0x65,
+                                            0x79,
+                                            0x0d,
+                                            0x63,
+                                            0x75,
+                                            0x73,
+                                            0x74,
+                                            0x6f,
+                                            0x6d,
+                                            0x2d,
+                                            0x68,
+                                            0x65,
+                                            0x61,
+                                            0x64,
+                                            0x65,
+                                            0x72 };
+    char *expected_name = "custom-key";
+    char *expected_value = "custom-header";
+
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    //uint32_t hpack_encoded_integer_size_fake_seq[] = { 1, 1, 1, 1, 2, 1 };
+    //SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 6);
+
+    hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)64;
+    hpack_utils_find_prefix_size_fake.return_val = 6;
+
+    uint32_t max_dynamic_table_size = 3000;
+    hpack_dynamic_table_t dynamic_table;
+    char table[hpack_tables_get_table_length(max_dynamic_table_size)];
+    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
+    char name[10];
+    char value[13];
+    memset(name, 0, 10);
+    memset(value, 0, 13);
+
+    int rc = hpack_decoder_decode_literal_header_field_with_incremental_indexing(&dynamic_table, header_block_name_literal, name, value);
+
+    TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
+    TEST_ASSERT_EQUAL_STRING(expected_name, name);
+    TEST_ASSERT_EQUAL_STRING(expected_value, value);
+
 }
 
 void test_decode_header_block_literal_never_indexed(void)
@@ -616,6 +677,7 @@ int main(void)
 
     UNIT_TEST(test_decode_header_block_literal_without_indexing);
     UNIT_TEST(test_decode_header_block_literal_never_indexed);
+    //UNIT_TEST(test_decode_header_block_literal_with_incremental_indexing);
     UNIT_TEST(test_hpack_decoder_decode_indexed_header_field);
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION

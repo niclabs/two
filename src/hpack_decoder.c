@@ -325,8 +325,16 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
     return pointer;
 }
 
-
-int decode_dynamic_table_size(uint8_t *header_block, hpack_dynamic_table_t* dynamic_table)
+/*
+ * Function: hpack_decode_dynamic_table_size_update
+ * Decodes a header that represents a dynamic table size update
+ * Input:
+ *      -> *header_block: Header block to decode
+ *      -> *dynamic_table: dynamic table to resize
+ * Output:
+ *      Returns the number of bytes decoded if successful or a value < 0 if an error occurs.
+ */
+int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t* dynamic_table, uint8_t *header_block)
 {
     uint32_t new_table_size = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
 
@@ -355,7 +363,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         DEBUG("Decoding an indexed header field");
         int rc = hpack_decoder_decode_indexed_header_field(dynamic_table, bytes, name, value);
         if (rc < 0) {
-            ERROR("Error in hpack_decoder_decode_indexed_header_field ");
+            DEBUG("Error in hpack_decoder_decode_indexed_header_field ");
         }
         return rc;
     }
@@ -363,7 +371,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         DEBUG("Decoding a literal header field without indexing");
         int rc = hpack_decoder_decode_literal_header_field_without_indexing(dynamic_table, bytes, name, value);
         if (rc < 0) {
-            ERROR("Error in hpack_decoder_decode_literal_header_field_without_indexing ");
+            DEBUG("Error in hpack_decoder_decode_literal_header_field_without_indexing ");
         }
         return rc;
     }
@@ -371,7 +379,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         DEBUG("Decoding a literal header field never indexed");
         int rc = hpack_decoder_decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         if (rc < 0) {
-            ERROR("Error in hpack_decoder_decode_literal_header_field_never_indexed ");
+            DEBUG("Error in hpack_decoder_decode_literal_header_field_never_indexed ");
         }
         return rc;
     }
@@ -383,15 +391,17 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         int rc = hpack_decoder_decode_literal_header_field_never_indexed(dynamic_table, bytes, name, value);
         #endif
         if (rc < 0) {
-            ERROR("Error in hpack_decoder_decode_literal_header_field_with_incremental_indexing ");
+            DEBUG("Error in hpack_decoder_decode_literal_header_field_with_incremental_indexing ");
         }
         return rc;
     }
     else if (preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
         DEBUG("Decoding a dynamic table size update");
-        //TODO add function to decode dynamic_table_size
-        ERROR("Dynamic_table_size_update not implemented yet");
-        return -2;
+        int rc = hpack_decoder_decode_dynamic_table_size_update(dynamic_table, bytes);
+        if (rc < 0) {
+            DEBUG("Error in hpack_decoder_decode_literal_header_field_with_incremental_indexing ");
+        }
+        return rc;
     }
     else {
         ERROR("Error unknown preamble value: %d", preamble);
@@ -428,7 +438,7 @@ int hpack_decoder_decode_header_block(uint8_t *header_block, uint8_t header_bloc
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
+int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)
 {
     int pointer = 0;
 
@@ -451,7 +461,7 @@ int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_
     }
     if (pointer > header_block_size) {
         DEBUG("Error decoding header block ... ");
-        return -1;
+        return -2;
     }
     return pointer;
 }

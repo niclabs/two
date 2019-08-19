@@ -309,6 +309,8 @@ int hpack_encoder_encode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
  */
 int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_string,  uint8_t *encoded_buffer)
 {
+    //PATCH
+
     int index = hpack_tables_find_index(dynamic_table, name_string, value_string);
     int pointer = 0;
 
