@@ -17,6 +17,8 @@ extern int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_s
 extern int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
 extern uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
+extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t* dynamic_table, uint8_t *header_block);
+
 
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
 typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_decode_fake when huffman_compression is not included*/
@@ -392,26 +394,6 @@ void test_decode_non_huffman_string(void)
     }
 }
 
-/*Test to see if decoding and encoded non huffman string yields the same string*/
-void test_encode_then_decode_non_huffman_string(void)
-{
-    /*
-       char str[] = "www.example.com";
-       uint8_t encoded_string[30];
-       char result[30];
-
-       memset(encoded_string, 0, 30);
-       memset(result, 0, 30);
-
-       int rc = encode_non_huffman_string(str, encoded_string);
-       int rc2 = decode_non_huffman_string(result, encoded_string);
-       TEST_ASSERT_EQUAL(rc, rc2);
-       for (int i = 0; i < rc; i++) {
-        TEST_ASSERT_EQUAL(str[i], result[i]);
-       }*/
-    //TODO
-}
-
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_decode_huffman_word(void)
 {
@@ -493,33 +475,6 @@ void test_decode_huffman_string_error(void)
     char decoded_string4[] = { 0, 0, 0, 0 };
     rc = hpack_decoder_decode_huffman_string(decoded_string4, encoded_string4);
     TEST_ASSERT_EQUAL(-1, rc);
-}
-#endif
-
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
-/*Test to see if decoding and encoded huffman string yields the same string*/
-void test_encode_then_decode_huffman_string(void)
-{
-    /*
-       char str[] = "www.example.com";
-       uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41, 31, 63, 127 };
-       uint8_t encoded_string[30];
-       char result[30];
-
-       memset(encoded_string, 0, 30);
-       memset(result, 0, 30);
-
-       SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
-       SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
-
-       SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, 15);
-       int rc = encode_huffman_string(str, encoded_string);
-       (void)rc;
-       int rc2 = decode_huffman_string(result, encoded_string);
-       for (int i = 0; i < rc2; i++) {
-        TEST_ASSERT_EQUAL(str[i], result[i]);
-       }*/
-    //TODO
 }
 #endif
 
@@ -668,14 +623,11 @@ int main(void)
     UNIT_TEST(test_decode_huffman_string);
     UNIT_TEST(test_decode_huffman_string_error);
     UNIT_TEST(test_decode_string_error);
-    UNIT_TEST(test_encode_then_decode_huffman_string);
-
 #endif
 
     UNIT_TEST(test_decode_integer);
     UNIT_TEST(test_decode_non_huffman_string);
     UNIT_TEST(test_decode_string);
-    UNIT_TEST(test_encode_then_decode_non_huffman_string);
 
     return UNIT_TESTS_END();
 }
