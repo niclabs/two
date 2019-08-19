@@ -565,15 +565,13 @@ void test_encode_literal_header_field_new_name_error(void)
         value_to_encode[i] = 'w';
     }
     int rc = hpack_encoder_encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(-2, rc);
     char name_to_encode2[10];
     for (int i = 0; i < 10; i++) {
         name_to_encode2[i] = 'w';
     }
     rc = hpack_encoder_encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-1, rc);
-
-
+    TEST_ASSERT_EQUAL(-2, rc);
 }
 
 void test_hpack_encoder_encode_test1(void)
@@ -717,7 +715,7 @@ void test_encode_literal_header_field_indexed_name_error(void)
     hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
 #endif
     int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(-2, rc);
 
 }
 
