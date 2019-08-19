@@ -296,6 +296,7 @@ int http_server_start(hstates_t *hs)
         // Update http_state
         hs->socket_state = 1;
         hs->connection_state = 1;
+        hs->evil_goodbye = 0;
 
         // Initialize http2 connection (send headers)
         if (h2_server_init_connection(hs) < 0) {
@@ -517,6 +518,7 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 
     // Connected
     hs->connection_state = 1;
+    hs->evil_goodbye = 0;
 
     // Initialize http/2 connection
     if (h2_client_init_connection(hs) < 0) {
