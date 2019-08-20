@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include "sock.h"
 #include "headers.h"
+#include "hpack.h"
 
 
 
@@ -53,6 +54,8 @@ typedef struct HTTP2_STATES {
     uint8_t received_goaway; // bool
     uint8_t debug_data_buffer[0]; // TODO not implemented yet
     uint8_t debug_size; // TODO not implemented yet
+    //Hpack dynamic table
+    hpack_dynamic_table_t dynamic_table;
 } h2states_t;
 
 
@@ -156,6 +159,7 @@ typedef struct HTTP_STATES {
     uint8_t keep_receiving;
     //boolean. 0 = received goaway without error, 1 = received goaway with error
     uint8_t evil_goodbye;
+
 } hstates_t;
 
 /*--------------------------------------------------------------------------*/

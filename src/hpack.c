@@ -92,3 +92,15 @@ int encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_
 int encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer){
     return hpack_encoder_encode_dynamic_size_update(dynamic_table, max_size, encoded_buffer);
 }
+
+/*
+ * Function: hpack_init_dynamic_table
+ * Initialize the given dynamic table
+ * Input:
+ *      -> *dynamic_table: Dynamic table to initialize
+ * Output:
+ *      returns 0 if successful
+ */
+int8_t hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table){
+    return hpack_tables_init_dynamic_table(dynamic_table, HPACK_MAX_DYNAMIC_TABLE_SIZE);
+}

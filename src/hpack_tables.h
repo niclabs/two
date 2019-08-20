@@ -34,7 +34,7 @@ typedef struct hpack_dynamic_table {
     uint16_t next;
     uint16_t actual_size;
     uint16_t n_entries;
-    char *buffer;
+    char buffer[HPACK_MAX_DYNAMIC_TABLE_SIZE];
 } hpack_dynamic_table_t;
 
 
@@ -45,7 +45,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
 int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name);
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size);
-int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, char *buffer);
+int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size);
 int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
 int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size);
 #endif  //HPACK_INCLUDE_DYNAMIC_TABLE

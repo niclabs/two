@@ -136,6 +136,8 @@ FAKE_VALUE_FUNC(int, prepare_new_stream, hstates_t*);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, hstates_t*, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, hstates_t*);
 
+FAKE_VALUE_FUNC(int8_t, hpack_init_dynamic_table, hpack_dynamic_table_t *);
+
 #define FFF_FAKES_LIST(FAKE)              \
     FAKE(create_settings_ack_frame)       \
     FAKE(frame_to_bytes)                  \
@@ -172,6 +174,7 @@ FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, hstates_t*);
     FAKE(prepare_new_stream) \
     FAKE(read_setting_from) \
     FAKE(get_size_data_to_send) \
+    FAKE(hpack_init_dynamic_table)  \
 
 /*----------Value Return for FAKEs ----------*/
 int create_ack_return_zero(frame_t * f, frame_header_t* fh){

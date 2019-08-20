@@ -54,7 +54,8 @@ int init_variables(hstates_t * st){
     st->h2s.sent_goaway = 0;
     st->h2s.received_goaway = 0;
     st->h2s.debug_size = 0;
-
+    //TODO change this
+    hpack_init_dynamic_table(&st->h2s.dynamic_table);
     return 0;
 }
 

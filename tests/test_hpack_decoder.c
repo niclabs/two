@@ -35,7 +35,7 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
 FAKE_VALUE_FUNC(uint32_t, hpack_tables_get_table_length, uint32_t);
-FAKE_VALUE_FUNC(int8_t, hpack_tables_init_dynamic_table, hpack_dynamic_table_t *, uint32_t, char * );
+FAKE_VALUE_FUNC(int8_t, hpack_tables_init_dynamic_table, hpack_dynamic_table_t *, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name_and_value, hpack_dynamic_table_t *, uint32_t, char *, char *);
@@ -254,8 +254,7 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
 
     uint32_t max_dynamic_table_size = 3000;
     hpack_dynamic_table_t dynamic_table;
-    char table[hpack_tables_get_table_length(max_dynamic_table_size)];
-    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
+    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size);
     char name[10];
     char value[13];
     memset(name, 0, 10);
@@ -340,9 +339,8 @@ void test_decode_header_block_literal_never_indexed(void)
 
     hpack_dynamic_table_t dynamic_table;
 
-    char table[hpack_tables_get_table_length(max_dynamic_table_size)];
 
-    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size, table);
+    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size);
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_new_name;
 
     char *new_name = "new_name";

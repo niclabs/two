@@ -24,8 +24,7 @@ int encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_
 
 int encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer);
 
-int hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size, header_pair_t* table);
+int8_t hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table);
 
-uint32_t hpack_get_table_length(uint32_t dynamic_table_size);
 
 #endif //TWO_HPACK_H
