@@ -90,6 +90,10 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
         /*Check if can read buffer*/
         if (bit_position + i > 8 * encoded_string_size) {
+            /*DEBUG("Can't read more bits i:%d ; bit_position: %d ; encoded_string_size: %d",i,bit_position,encoded_string_size);
+            for(uint8_t j = 0 ; j <= encoded_string_size; j++){
+                DEBUG("Byte %d is: %d",j,encoded_string[j]);
+            }*/
             return -2;
         }
         uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
@@ -149,6 +153,7 @@ int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
                     return str_length + str_length_size;
                 }
                 else {
+                    DEBUG("Last byte is %d", last_byte);
                     ERROR("Decoding error: The compressed header padding contains a value different from the EOS symbol");
                     return -1;
                 }
@@ -227,6 +232,7 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
 
     if (index == 0) {
         pointer += 1;
+        DEBUG("Decoding a new name compressed header");
         int32_t rc = hpack_decoder_decode_string(name, header_block + pointer);
         if (rc < 0) {
             DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_with_incremental_indexing");
@@ -236,6 +242,7 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
     }
     else {
         //find entry in either static or dynamic table_length
+        DEBUG("Decoding an indexed name compressed header");
         int8_t rc = hpack_tables_find_entry_name(dynamic_table, index, name);
         if (rc < 0) {
             DEBUG("Error en find_entry ");
@@ -267,6 +274,7 @@ int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_tab
 
     if (index == 0) {
         pointer += 1;
+        DEBUG("Decoding a new name compressed header");
         int32_t rc = hpack_decoder_decode_string(name, header_block + pointer);
         if (rc < 0) {
             DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_without_indexing");
@@ -276,6 +284,7 @@ int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_tab
     }
     else {
         //find entry in either static or dynamic table_length
+        DEBUG("Decoding an indexed name compressed header");
         int8_t rc = hpack_tables_find_entry_name(dynamic_table, index, name);
         if (rc < 0) {
             DEBUG("Error en find_entry ");
@@ -300,6 +309,7 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
 
     if (index == 0) {
         pointer += 1;
+        DEBUG("Decoding a new name compressed header");
         int32_t rc = hpack_decoder_decode_string(name, header_block + pointer);
         if (rc < 0) {
             DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
@@ -309,6 +319,7 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
     }
     else {
         //find entry in either static or dynamic table_length
+        DEBUG("Decoding an indexed name compressed header");
         int8_t rc = hpack_tables_find_entry_name(dynamic_table, index, name);
         if (rc < 0) {
             DEBUG("Error en find_entry ");
@@ -337,13 +348,14 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
 int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t* dynamic_table, uint8_t *header_block)
 {
     uint32_t new_table_size = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
-
+    DEBUG("New table size is %d",new_table_size);
     int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, new_table_size);
     if (rc < 0) {
+        DEBUG("Dynamic table failed to resize");
         return rc;
     }
 
-    return hpack_utils_encoded_integer_size(new_table_size, DYNAMIC_TABLE_SIZE_UPDATE);
+    return hpack_utils_encoded_integer_size(new_table_size, hpack_utils_find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));
 }
 
 /* Function: hpack_decoder_decode_header
@@ -399,7 +411,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
         DEBUG("Decoding a dynamic table size update");
         int rc = hpack_decoder_decode_dynamic_table_size_update(dynamic_table, bytes);
         if (rc < 0) {
-            DEBUG("Error in hpack_decoder_decode_literal_header_field_with_incremental_indexing ");
+            DEBUG("Error in hpack_decoder_decode_dynamic_table_size_update ");
         }
         return rc;
     }
@@ -451,17 +463,17 @@ int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_
         memset(tmp_value, 0, 32);
         hpack_preamble_t preamble = hpack_utils_get_preamble(header_block[pointer]);
         int rc = hpack_decoder_decode_header(dynamic_table, header_block + pointer, preamble, tmp_name, tmp_value);
-        headers_add(headers, tmp_name, tmp_value);
-
         if (rc < 0) {
             DEBUG("Error in hpack_decoder_decode_header ");
             return rc;
         }
-
+        if(tmp_name[0]!=0 && tmp_value!=0){
+            headers_add(headers, tmp_name, tmp_value);
+        }
         pointer += rc;
     }
-    if (pointer > header_block_size) {
-        DEBUG("Error decoding header block ... ");
+    if (pointer - 1 > header_block_size) {
+        DEBUG("Error decoding header block, read %d bytes and header_block_size is %d",pointer,header_block_size);
         return -2;
     }
     return pointer;

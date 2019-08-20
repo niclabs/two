@@ -321,7 +321,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
         return -1;
       }
       if(rc!= st->h2s.header_block_fragments_pointer){
-          ERROR("ERROR still exists fragments to receive.");
+          ERROR("ERROR still exists fragments to receive. Read %d bytes of %d bytes", rc, st->h2s.header_block_fragments_pointer);
           return -1;
       }
       else{//all fragments already received.
