@@ -60,9 +60,9 @@ int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
+int decode_header_block(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
-    return hpack_decoder_decode_header_block(header_block, header_block_size, headers);
+    return hpack_decoder_decode_header_block(dynamic_table, header_block, header_block_size, headers);
 }
 
 /*

@@ -9,7 +9,6 @@
 #include "hpack.h"
 #include "http_bridge.h"
 
-hpack_dynamic_table_t dynamic_table;
 /*
 * Function: frame_header_to_bytes
 * Pass a frame header to an array of bytes
@@ -397,16 +396,16 @@ int continuation_payload_to_bytes(frame_header_t* frame_header, continuation_pay
 /*
 * Function: compress_headers
 * given a set of headers, it comprisses them and save them in a bytes array
-* Input: table of headers, size of the table, array to save the bytes
+* Input: table of headers, size of the table, array to save the bytes and dynamic_table
 * Output: compressed headers size or -1 if error
 */
-int compress_headers(headers_t *headers_out, uint8_t *compressed_headers)
+int compress_headers(headers_t *headers_out, uint8_t *compressed_headers, hpack_dynamic_table_t* dynamic_table)
 {
     //TODO implement dynamic table size update
     int pointer = 0;
     for (uint8_t i = 0; i < headers_count(headers_out); i++)
     {
-        int rc = encode(NULL, headers_get_name_from_index(headers_out, i), headers_get_value_from_index(headers_out, i), compressed_headers + pointer);
+        int rc = encode(dynamic_table, headers_get_name_from_index(headers_out, i), headers_get_value_from_index(headers_out, i), compressed_headers + pointer);
         pointer += rc;
     }
     return pointer;
@@ -532,8 +531,8 @@ uint32_t get_header_block_fragment_size(frame_header_t* frame_header, headers_pa
 * Input: header_block, header_block_size, header_data_list
 * Output: block_size or -1 if error
 */
-int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_t* headers){//return size of header_list (header_count)
-    int rc = decode_header_block(header_block_fragments, header_block_fragments_pointer, headers);
+int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, headers_t* headers, hpack_dynamic_table_t *dynamic_table){//return size of header_list (header_count)
+    int rc = decode_header_block(dynamic_table, header_block_fragments, header_block_fragments_pointer, headers);
     return rc;
 }
 

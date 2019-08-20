@@ -415,15 +415,16 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, uint8_t *b
  * as it decodes one, the pointer of the headers moves forward
  * also has updates the decoded header lists, this is a wrapper function
  * Input:
+ *      -> *dynamic_table: Pointer to dynamic table to store headers
  *      -> *header_block: Pointer to a sequence of octets (bytes)
  *      -> header_block_size: Size in bytes of the header block that will be decoded
  *      -> headers: struct that allocates a list of headers (pair name and value)
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int hpack_decoder_decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
+int hpack_decoder_decode_header_block(hpack_dynamic_table_t* dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
-    return hpack_decoder_decode_header_block_from_table(NULL, header_block, header_block_size, headers);
+    return hpack_decoder_decode_header_block_from_table(dynamic_table, header_block, header_block_size, headers);
 }
 
 /*

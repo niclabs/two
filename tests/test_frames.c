@@ -27,7 +27,7 @@ FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t*, uint8_t*, uint8_t*, int, int)
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 
 FAKE_VALUE_FUNC(int, encode, hpack_dynamic_table_t* , char*, char* ,  uint8_t*);
-FAKE_VALUE_FUNC(int, decode_header_block, uint8_t*, uint8_t , headers_t*);
+FAKE_VALUE_FUNC(int, decode_header_block, hpack_dynamic_table_t*, uint8_t*, uint8_t , headers_t*);
 
 // Headers functions
 FAKE_VALUE_FUNC(int, headers_count, headers_t *);
@@ -731,7 +731,7 @@ void test_compress_headers(void)
     headers_get_name_from_index_fake.return_val = "hola";
     headers_get_value_from_index_fake.return_val = "val";
 
-    int rc = compress_headers(&headers, compressed_headers);
+    int rc = compress_headers(&headers, compressed_headers, NULL);
 
     TEST_ASSERT_EQUAL(10, rc);
     uint8_t expected_compressed_headers[] = {

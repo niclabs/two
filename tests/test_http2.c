@@ -102,14 +102,14 @@ FAKE_VALUE_FUNC(int, bytes_to_frame_header, uint8_t*, int , frame_header_t*);
 FAKE_VALUE_FUNC(int, create_settings_frame ,uint16_t*, uint32_t*, int, frame_t*, frame_header_t*, settings_payload_t*, settings_pair_t*);
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t*, uint8_t*, int);
 FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size,frame_header_t*, headers_payload_t*);
-FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_t*);
+FAKE_VALUE_FUNC(int, receive_header_block,uint8_t*, int, headers_t*, hpack_dynamic_table_t*);
 FAKE_VALUE_FUNC(int, read_headers_payload, uint8_t*, frame_header_t*, headers_payload_t*, uint8_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(int, read_continuation_payload, uint8_t*, frame_header_t*, continuation_payload_t*, uint8_t*);//TODO fix this
 FAKE_VALUE_FUNC(uint32_t, get_setting_value, uint32_t*, sett_param_t);
 FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, headers_t*);
 
 
-FAKE_VALUE_FUNC( int, compress_headers, headers_t* , uint8_t* );
+FAKE_VALUE_FUNC( int, compress_headers, headers_t* , uint8_t*, hpack_dynamic_table_t*);
 FAKE_VALUE_FUNC( int, create_headers_frame, uint8_t * , int , uint32_t , frame_header_t* , headers_payload_t* ,uint8_t*);
 FAKE_VALUE_FUNC( int, headers_payload_to_bytes, frame_header_t* , headers_payload_t* , uint8_t* );
 FAKE_VALUE_FUNC( int, create_continuation_frame, uint8_t * , int , uint32_t , frame_header_t* , continuation_payload_t* , uint8_t*);
@@ -1360,10 +1360,11 @@ int is_flag_set_fake_custom(uint8_t flags, uint8_t queried_flag){
     return 0;
 }
 
-int receive_header_block_fake_custom(uint8_t*header_block, int size, headers_t* headers){
+int receive_header_block_fake_custom(uint8_t* header_block, int size, headers_t* headers, hpack_dynamic_table_t* dynamic_table){
     strncpy(headers->headers[headers->count].name, (char*)"name", 4);
     strncpy(headers->headers[headers->count].value, (char*)"value",5);
     headers->count += 1;
+    (void)dynamic_table;
     return size;
 }
 

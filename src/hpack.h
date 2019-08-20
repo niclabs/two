@@ -16,7 +16,7 @@
    int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers);
  */
 
-int decode_header_block(uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
+int decode_header_block(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
 int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
