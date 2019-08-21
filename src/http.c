@@ -211,6 +211,7 @@ int receive_headers(hstates_t *hs)
     return -1;
 }
 
+
 /**
  * Perform request for the given method and uri
  */
@@ -227,18 +228,16 @@ int do_request(hstates_t *hs, char *method, char *uri)
         return error(hs, 404, "Not Found");
     }
 
+    // TODO: response pointer should be pointer to hs->data_out
+    uint8_t response[HTTP_MAX_RESPONSE_SIZE];
+    int len;
+    if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
+        // if the handler returns
+        return error(hs, 500, "Server Error");
+    }
     // If it is GET method Prepare response for callback
-    if (strncmp("GET", method, 8) == 0){
-        // TODO: response pointer should be pointer to hs->data_out
-        uint8_t response[HTTP_MAX_RESPONSE_SIZE];
-        int len;
-        if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
-            // if the handler returns
-            return error(hs, 500, "Server Error");
-        }
-        else if (len > 0) {
-            set_data(&hs->data_out, response, len);
-        }
+    else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
+        set_data(&hs->data_out, response, len);
     }
 
     // Initialize header list
