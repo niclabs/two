@@ -54,6 +54,10 @@ int flow_control_receive_data(hstates_t* st, uint32_t length){
 }
 
 int flow_control_send_window_update(hstates_t* st, uint32_t window_size_increment){
+    if(window_size_increment>st->h2s.incoming_window.window_used){
+        ERROR("Increment to big. protocol_error");
+        return -1;
+    }
     decrease_window_used(&st->h2s.incoming_window,window_size_increment);
     return 0;
 }
