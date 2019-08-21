@@ -639,18 +639,18 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
 
 /*-------------------- WINDOW UPDATE FRAME --------------*/
 
+/*
+* Function: send_window_update
+* Sends connection window update to endpoint.
+* Input: -> st: hstates_t struct pointer where connection variables are stored
+*        -> window_size_increment: increment to put on window_update frame
+* Output: 0 if no errors were found, -1 if not.
+*/
 int send_window_update(hstates_t *st, uint8_t window_size_increment){
-    h2_stream_state_t state = st->h2s.current_stream.state;
-    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
-        ERROR("Wrong state. ");
-        return -1;
-    }
-    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
-
     frame_t frame;
     frame_header_t frame_header;
     window_update_payload_t window_update_payload;
-    int rc = create_window_update_frame(&frame_header, &window_update_payload,window_size_increment,stream_id);
+    int rc = create_window_update_frame(&frame_header, &window_update_payload,window_size_increment,0);
     if(rc<0){
         ERROR("error creating window_update frame");
         return -1;
@@ -1342,4 +1342,16 @@ int h2_graceful_connection_shutdown(hstates_t *st){
     ERROR("Error sending GOAWAY FRAME to endpoint.");
   }
   return rc;
+}
+
+/*
+* Function: h2_notify_free_data_buffer
+* When application frees space for data processing, notifies endpoint by sending
+* a WINDOW_UPDATE with the space freed.
+*
+*
+*/
+int h2_notify_free_data_buffer(hstates_t *st, int data_len){
+  (void) st;
+  (void) data_len;
 }
