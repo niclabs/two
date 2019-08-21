@@ -472,7 +472,7 @@ int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_
         }
         pointer += rc;
     }
-    if (pointer - 1 > header_block_size) {
+    if (pointer > header_block_size) {
         DEBUG("Error decoding header block, read %d bytes and header_block_size is %d",pointer,header_block_size);
         return -2;
     }

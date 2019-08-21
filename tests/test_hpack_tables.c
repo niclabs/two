@@ -447,11 +447,11 @@ int main(void)
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_find_entry);
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-    /*UNIT_TEST(test_hpack_tables_dynamic_add_find_entry_and_reset_table);
+    UNIT_TEST(test_hpack_tables_dynamic_add_find_entry_and_reset_table);
     UNIT_TEST(test_hpack_tables_dynamic_pop_old_entry);
     UNIT_TEST(test_hpack_tables_dynamic_circular_test);
-    /*UNIT_TEST(test_hpack_tables_dynamic_resize_not_circular);
-    UNIT_TEST(test_hpack_tables_dynamic_resize_circular);*/
+    UNIT_TEST(test_hpack_tables_dynamic_resize_not_circular);
+    UNIT_TEST(test_hpack_tables_dynamic_resize_circular);
 #endif
     return UNITY_END();
 }

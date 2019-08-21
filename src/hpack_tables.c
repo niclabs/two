@@ -723,6 +723,7 @@ int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uin
 {
     memset(dynamic_table->buffer, 0, dynamic_table_max_size);
     dynamic_table->max_size = dynamic_table_max_size;
+    dynamic_table->actual_size = 0;
     dynamic_table->n_entries = 0;
     dynamic_table->first = 0;
     dynamic_table->next = 0;
