@@ -516,8 +516,8 @@ void test_send_local_settings_errors(void){
   int create_return[2] = {-1, 0};
   SET_RETURN_SEQ(create_settings_frame, create_return, 2);
   // Second error, http_write error
-  int frame_return[2] = {1000, 12};
-  SET_RETURN_SEQ(frame_to_bytes, frame_return, 2);
+  int frame_return[3] = {1000, 1000, 12};
+  SET_RETURN_SEQ(frame_to_bytes, frame_return, 3);
   int rc = send_local_settings(&hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (create_settings_frame error)");
   rc = send_local_settings(&hdummy);
@@ -1815,8 +1815,9 @@ void test_change_stream_state_end_stream_flag(void){
 void test_change_stream_state_end_stream_flag_errors(void){
   hstates_t st;
   st.h2s.received_goaway = 1;
-  int create_goaway_return[1] = {-1};
+  int create_goaway_return[1] = {1};
   SET_RETURN_SEQ(create_goaway_frame, create_goaway_return, 1);
+  size = HTTP2_MAX_BUFFER_SIZE + 1;
   st.h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
   int rc = change_stream_state_end_stream_flag(&st, 1); // sending
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1");
