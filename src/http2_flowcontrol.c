@@ -15,7 +15,7 @@ uint32_t get_window_available_size(h2_window_manager_t window_manager){
 /*
 * Function: increase_window_used
 * Increases the window_used value on a given window manager.
-* Input: ->window_manager: h2h2_window_manager_t struct where window info is stored
+* Input: ->window_manager: h2_window_manager_t struct pointer where window info is stored
 *        ->data_size: the corresponding increment on the window used
 * Output: 0
 */
@@ -36,10 +36,17 @@ int decrease_window_used(h2_window_manager_t* window_manager, uint32_t window_si
     return 0;
 }
 
+/*
+* Function: flow_control_receive_data
+* Checks if the incoming data fits on the available window.
+* Input: -> st: hstates_t struct pointer where connection windows are stored
+*        -> length: the size of the incoming data received
+* Output: 0 if data can be processed. -1 if not
+*/
 int flow_control_receive_data(hstates_t* st, uint32_t length){
     uint32_t window_available = get_window_available_size(st->h2s.incoming_window);
     if(length > window_available){
-        ERROR("FLOW_CONTROL_ERROR found");
+        ERROR("Available window is smaller than data received. FLOW_CONTROL_ERROR");
         return -1;
     }
     increase_window_used(&st->h2s.incoming_window, length);
