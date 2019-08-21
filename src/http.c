@@ -322,24 +322,25 @@ int http_server_start(hstates_t *hs)
                 break;
             }
 
-            if (hs->connection_state == 0){
+            if (hs->connection_state == 0) {
                 break;
             }
 
             // Get the method from headers
-            char * method = headers_get(&hs->headers_in, ":method");
+            char *method = headers_get(&hs->headers_in, ":method");
             DEBUG("Received %s request", method);
             if (!has_method_support(method)) {
                 error(hs, 501, "Not Implemented");
-
-                // TODO: what else to do here?
+                if (hs->data_in.size > 0) {
+                    hs->data_in.size = 0;
+                }
                 continue;
             }
 
             // TODO: read data (if POST)
 
             // Get uri
-            char * uri = headers_get(&hs->headers_in, ":path");
+            char *uri = headers_get(&hs->headers_in, ":path");
 
             // Process the http request
             do_request(hs, method, uri);
