@@ -97,30 +97,37 @@ int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
   if(st->h2s.waiting_for_end_headers_flag){
     //protocol error
     ERROR("CONTINUATION or HEADERS frame was expected. PROTOCOL ERROR");
+    send_connection_error(st, HTTP2_PROTOCOL_ERROR);
     return -1;
   }
     if(st->h2s.current_stream.stream_id == 0){
       ERROR("Data stream ID is 0. PROTOCOL ERROR");
+      send_connection_error(st, HTTP2_PROTOCOL_ERROR);
       return -1;
     }
     else if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
       ERROR("Data payload bigger than allower. MAX_FRAME_SIZE error");
+      send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
       return -1;
     }
     else if(header->stream_id > st->h2s.current_stream.stream_id){
       ERROR("Stream ID is invalid. PROTOCOL ERROR");
+      send_connection_error(st, HTTP2_PROTOCOL_ERROR);
       return -1;
     }
     else if(header->stream_id < st->h2s.current_stream.stream_id){
       ERROR("Stream closed. STREAM CLOSED ERROR");
+      send_connection_error(st, HTTP2_STREAM_CLOSED);
       return -1;
     }
     else if(st->h2s.current_stream.state == STREAM_IDLE){
       ERROR("Stream was in IDLE state. PROTOCOL ERROR");
+      send_connection_error(st, HTTP2_PROTOCOL_ERROR);
       return -1;
     }
     else if(st->h2s.current_stream.state != STREAM_OPEN && st->h2s.current_stream.state != STREAM_HALF_CLOSED_LOCAL){
       ERROR("Stream was not in a valid state for data. STREAM CLOSED ERROR");
+      send_connection_error(st, HTTP2_STREAM_CLOSED);
       return -1;
     }
     return 0;
@@ -133,6 +140,7 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
     int rc = flow_control_receive_data(st, data_length);
     if(rc < 0){
         ERROR("flow control error");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     buffer_copy(st->data_in.buf + st->data_in.size, data_payload->data, data_length);
@@ -164,6 +172,7 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
 int send_data(hstates_t *st, uint8_t end_stream){
     if(st->data_out.size<=0){
         ERROR("no data to be send");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     h2_stream_state_t state = st->h2s.current_stream.state;
@@ -180,6 +189,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
     int rc = create_data_frame(&frame_header, &data_payload, data, st->data_out.buf + st->data_out.processed, count_data_to_send, stream_id);
     if(rc<0){
         ERROR("error creating data frame");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     if(end_stream) {
@@ -195,6 +205,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
 
     if(rc != bytes_size){
         ERROR("Error writting data frame. INTERNAL ERROR");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return rc;
     }
     if(end_stream){
