@@ -273,6 +273,7 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
           st->h2s.current_stream.state != STREAM_HALF_CLOSED_LOCAL){
         //stream closed error
         ERROR("Current stream is not open. STREAM CLOSED ERROR");
+        send_connection_error(st, HTTP2_STREAM_CLOSED);
         // TODO: Send STREAM_CLOSED_ERROR to endpoint
         return -1;
   }
@@ -309,12 +310,14 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   // We check if hbf fits on buffer
   if(hbf_size >= HTTP2_MAX_HBF_BUFFER){
     ERROR("Header block fragments too big (not enough space allocated). INTERNAL_ERROR");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return -1;
   }
   //first we receive fragments, so we save those on the st->h2s.header_block_fragments buffer
   rc = buffer_copy(st->h2s.header_block_fragments + st->h2s.header_block_fragments_pointer, hpl->header_block_fragment, hbf_size);
   if(rc < 1){
     ERROR("Headers' header block fragment were not written or paylaod was empty. rc = %d",rc);
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return -1;
   }
   st->h2s.header_block_fragments_pointer += rc;
@@ -329,10 +332,12 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in, &st->h2s.dynamic_table);
       if(rc < 0){
         ERROR("Error was found receiving header_block");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
       }
       if(rc!= st->h2s.header_block_fragments_pointer){
           ERROR("ERROR still exists fragments to receive. Read %d bytes of %d bytes", rc, st->h2s.header_block_fragments_pointer);
+          send_connection_error(st, HTTP2_INTERNAL_ERROR);
           return -1;
       }
       else{//all fragments already received.
@@ -371,6 +376,7 @@ int send_headers_stream_verification(hstates_t *st){
   if(st->h2s.current_stream.state == STREAM_CLOSED ||
       st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
       ERROR("Current stream was closed! Send request error. STREAM CLOSED ERROR");
+      send_connection_error(st, HTTP2_STREAM_CLOSED);
       return -1;
   }
   else if(st->h2s.current_stream.state == STREAM_IDLE){
@@ -410,6 +416,7 @@ int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t str
   rc = create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
   if(rc < 0){
     ERROR("Error creating headers frame. INTERNAL ERROR");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return rc;
   }
   if(end_headers){
@@ -426,6 +433,7 @@ int send_headers_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_t str
 
   if(rc != bytes_size){
     ERROR("Error writting headers frame. INTERNAL ERROR");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return rc;
   }
   return 0;
@@ -1365,4 +1373,5 @@ int h2_graceful_connection_shutdown(hstates_t *st){
 int h2_notify_free_data_buffer(hstates_t *st, int data_len){
   (void) st;
   (void) data_len;
+  return 0;
 }
