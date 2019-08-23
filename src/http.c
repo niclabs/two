@@ -257,6 +257,24 @@ int do_request(hstates_t *hs, char *method, char *uri)
     return 0;
 }
 
+int ignore_unsupported_data_frames(hstates_t *hs)
+{
+    while (hs->connection_state == 1) {
+        if (hs->end_message > 0) {
+            return 0;
+        }
+        if (h2_receive_frame(hs) < 0) {
+            break;
+        }
+    }
+
+    if (hs->data_in.size > 0) {
+        hs->data_in.size = 0;
+    }
+
+    return -1;
+}
+
 /************************************
 * Server API methods
 ************************************/
@@ -330,10 +348,11 @@ int http_server_start(hstates_t *hs)
             char *method = headers_get(&hs->headers_in, ":method");
             DEBUG("Received %s request", method);
             if (!has_method_support(method)) {
-                error(hs, 501, "Not Implemented");
-                if (hs->data_in.size > 0) {
-                    hs->data_in.size = 0;
+                DEBUG("Ignoring unsupported request's DATA frames");
+                if (ignore_unsupported_data_frames(hs) < 0) {
+                    ERROR("An error occurred while ignoring unsupported dataframes");
                 }
+                error(hs, 501, "Not Implemented");
                 continue;
             }
 
