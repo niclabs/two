@@ -462,8 +462,8 @@ int check_incoming_settings_condition(frame_header_t *header, hstates_t *st){
     /*Check if ACK is set*/
     if(is_flag_set(header->flags, SETTINGS_ACK_FLAG)){
         if(header->length != 0){
-            ERROR("Settings payload size is not zero. PROTOCOL ERROR");
-            send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+            ERROR("Settings payload size is not zero. FRAME SIZE ERROR");
+            send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
             return -1;
         }
         else{
@@ -679,6 +679,7 @@ int send_window_update(hstates_t *st, uint8_t window_size_increment){
     int rc = create_window_update_frame(&frame_header, &window_update_payload,window_size_increment,0);
     if(rc<0){
         ERROR("error creating window_update frame");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     if(window_size_increment > st->h2s.incoming_window.window_used){
@@ -873,7 +874,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     return -1;
   }
   if(send_headers_stream_verification(st) < 0){
-    ERROR("Stream error during the headers sending. INTERNAL ERROR");
+    ERROR("Stream error during the headers sending. INTERNAL ERROR"); // error already handled
     return -1;
   }
   uint32_t stream_id = st->h2s.current_stream.stream_id;
@@ -1026,6 +1027,7 @@ int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
         rc = send_goaway(st, HTTP2_NO_ERROR);
         if(rc < 0){
           ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          // TODO shotdown connection
           return rc;
         }
       }
@@ -1045,6 +1047,7 @@ int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
         rc = send_goaway(st, HTTP2_NO_ERROR);
         if(rc < 0){
           ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          // TODO shotdown connection
           return rc;
         }
       }
@@ -1235,11 +1238,13 @@ int h2_receive_frame(hstates_t *st){
             INFO("h2_receive_frame: GOAWAY");
             if(header.stream_id != 0x0){
               ERROR("GOAWAY doesnt have STREAM ID 0. PROTOCOL ERROR");
+              send_connection_error(st, HTTP2_PROTOCOL_ERROR);
               return -1;
             }
             uint16_t max_frame_size = read_setting_from(st, LOCAL, MAX_FRAME_SIZE);
             if(header.length > max_frame_size){
               ERROR("GOAWAY payload bigger than allowed. MAX_FRAME_SIZE ERROR");
+              send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
               return -1;
             }
             uint8_t debug_data[max_frame_size - 8];
@@ -1261,13 +1266,20 @@ int h2_receive_frame(hstates_t *st){
             window_update_payload_t window_update_payload;
             int rc = read_window_update_payload(buff_read, &header, &window_update_payload);
             if (rc < 0) {
-                ERROR("Error in reading window_update_payload ");
+                ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
+                send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
                 return -1;
             }
             uint32_t window_size_increment = window_update_payload.window_size_increment;
+            if(window_size_increment == 0){
+              ERROR("Error flow-control window icrement of 0. stream error PROTOCOL_ERROR");
+              send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+              return -1;
+            }
             rc = flow_control_receive_window_update(st, window_size_increment);
                 if(rc < 0){
                     ERROR("ERROR in flow control, receiving window update");
+                    send_connection_error(st, HTTP2_INTERNAL_ERROR);
                     return -1;
                 }
             return 0;
