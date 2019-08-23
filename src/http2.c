@@ -594,6 +594,7 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
   rc = create_goaway_frame(&header, &goaway_pl, additional_debug_data, st->h2s.last_open_stream_id, error_code, st->h2s.debug_data_buffer, st->h2s.debug_size);
   if(rc < 0){
     ERROR("Error creating GOAWAY frame");
+    //TODO shutdown connection
     return -1;
   }
   frame.frame_header = &header;
@@ -606,6 +607,7 @@ int send_goaway(hstates_t *st, uint32_t error_code){//, uint8_t *debug_data_buff
 
   if(rc != bytes_size){
     ERROR("Error writting goaway frame. INTERNAL ERROR");
+    //TODO shutdown connection
     return -1;
   }
   st->h2s.sent_goaway = 1;
@@ -653,7 +655,7 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, hstates_t *st){
     }
     int rc = send_goaway(st, HTTP2_NO_ERROR); // We send a goaway to close the connection
     if(rc < 0){
-      ERROR("Error sending GOAWAY FRAMES");
+      ERROR("Error sending GOAWAY FRAMES"); // TODO shutdown_connection
       return rc;
     }
   }
@@ -737,6 +739,7 @@ int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st)
   }
   else if(st->h2s.current_stream.state != STREAM_OPEN){
     ERROR("Continuation received on closed stream. STREAM CLOSED");
+    send_connection_error(st, HTTP2_STREAM_CLOSED);
     // TODO: send STREAM_CLOSED_ERROR to endpoint.
     return -1;
   }
@@ -756,12 +759,14 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   //We check if payload fits on buffer
   if(header->length >= HTTP2_MAX_HBF_BUFFER - st->h2s.header_block_fragments_pointer){
     ERROR("Continuation Header block fragments doesnt fit on buffer (not enough space allocated). INTERNAL ERROR");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return -1;
   }
   //receive fragments and save those on the st->h2s.header_block_fragments buffer
   rc = buffer_copy(st->h2s.header_block_fragments + st->h2s.header_block_fragments_pointer, contpl->header_block_fragment, header->length);
   if(rc < 1){
     ERROR("Continuation block fragment was not written or payload was empty");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return -1;
   }
   st->h2s.header_block_fragments_pointer += rc;
@@ -771,10 +776,12 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
 
       if(rc < 0){
         ERROR("Error was found receiving header_block");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
       }
       if(rc!= st->h2s.header_block_fragments_pointer){
           ERROR("ERROR still exists fragments to receive.");
+          send_connection_error(st, HTTP2_INTERNAL_ERROR);
           return -1;
       }
       else{//all fragments already received.
@@ -822,6 +829,7 @@ int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_
   rc = create_continuation_frame(buff_read, size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
   if(rc < 0){
     ERROR("Error creating continuation frame. INTERNAL ERROR");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return rc;
   }
   if(end_stream){
@@ -834,6 +842,7 @@ int send_continuation_frame(hstates_t *st, uint8_t *buff_read, int size, uint32_
   INFO("Sending continuation");
   if(rc != bytes_size){
     ERROR("Error writting continuation frame. INTERNAL ERROR");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return rc;
   }
   return 0;
