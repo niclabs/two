@@ -499,6 +499,7 @@ int handle_settings_payload(settings_payload_t *spl, hstates_t *st){
         return 0;
     }
     else{
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
 }
@@ -521,6 +522,7 @@ int send_local_settings(hstates_t *st){
                                &mysettingframeheader, &mysettings, mypairs);
     if(rc){
         ERROR("Error in Settings Frame creation");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
@@ -530,6 +532,7 @@ int send_local_settings(hstates_t *st){
     INFO("Sending settings");
     if(rc != size_byte_mysettings){
         ERROR("Error in local settings writing");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     /*Settings were sent, so we expect an ack*/
@@ -552,6 +555,7 @@ int send_settings_ack(hstates_t * st){
     rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
     if(rc < 0){
         ERROR("Error in Settings ACK creation!");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
@@ -560,6 +564,7 @@ int send_settings_ack(hstates_t * st){
     INFO("Sending settings ACK");
     if(rc != size_byte_ack){
         ERROR("Error in Settings ACK sending");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     return 0;
