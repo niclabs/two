@@ -113,6 +113,24 @@ int h2_receive_frame_custom_fake_new_headers(hstates_t *hs)
     return 0;
 }
 
+int h2_receive_frame_custom_fake_new_data(hstates_t *hs)
+{
+    if (h2_receive_frame_fake.call_count == 1) {
+        hs->keep_receiving = 1;
+    }
+    if (h2_receive_frame_fake.call_count == 2) {
+        hs->new_headers = 1;
+        hs->keep_receiving = 0;
+    }
+    if (h2_receive_frame_fake.call_count == 3) {
+        hs->keep_receiving = 0;
+        hs->connection_state = 0;
+        hs->evil_goodbye = 1;
+        hs->end_message = 1;
+    }
+    return 0;
+}
+
 int h2_receive_frame_custom_fake_connection_state(hstates_t *hs)
 {
     hs->connection_state = 0;
@@ -682,7 +700,7 @@ void test_receive_server_response_data_fail_connection_state(void)
 }
 
 
-void test_send_client_request_success(void)
+void test_send_client_request_get_success(void)
 {
     hstates_t hs;
 
@@ -710,6 +728,8 @@ void test_send_client_request_success(void)
     TEST_ASSERT_EQUAL(3, h2_receive_frame_fake.call_count);
     TEST_ASSERT_EQUAL(1, headers_get_fake.call_count);
 
+    TEST_ASSERT_EQUAL_STRING("hola", res);
+
     TEST_ASSERT_EQUAL(200, scr);
 
     //TEST_ASSERT_EQUAL(5, (int)size);
@@ -718,12 +738,51 @@ void test_send_client_request_success(void)
 }
 
 
-void test_send_client_request_fail_receive_server_response_data(void)
+void test_send_client_request_head_success(void)
+{
+    hstates_t hs;
+
+    reset_http_states(&hs);
+    hs.connection_state = 1;
+    hs.data_in.size = 8;
+    hs.keep_receiving = 0;
+    uint8_t *buf = (uint8_t *)"hola";
+    memcpy(hs.data_in.buf, buf, 8);
+
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_set_fake.return_val = 0;
+    h2_send_request_fake.return_val = 0;
+    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
+    headers_get_fake.return_val = "200";
+
+    uint8_t *res = (uint8_t *)malloc(5);
+    size_t size = sizeof(res);
+
+    int scr = send_client_request(&hs, "HEAD", "/index", res, &size);
+
+    TEST_ASSERT_EQUAL(2, headers_init_fake.call_count);
+    TEST_ASSERT_EQUAL(4, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_send_request_fake.call_count);
+    TEST_ASSERT_EQUAL(2, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, headers_get_fake.call_count);
+
+    TEST_ASSERT_EQUAL_STRING("", res);
+
+    TEST_ASSERT_EQUAL(200, scr);
+
+    //TEST_ASSERT_EQUAL(5, (int)size);
+
+    free(res);
+}
+
+
+void test_send_client_request_fail_receive_headers(void)
 {
     hstates_t hs;
 
     reset_http_states(&hs);
     hs.connection_state = 0;
+    hs.evil_goodbye = 1;
     hs.data_in.size = 0;
     hs.keep_receiving = 0;
 
@@ -739,6 +798,42 @@ void test_send_client_request_fail_receive_server_response_data(void)
     TEST_ASSERT_EQUAL(2, headers_init_fake.call_count);
     TEST_ASSERT_EQUAL(4, headers_set_fake.call_count);
     TEST_ASSERT_EQUAL(1, h2_send_request_fake.call_count);
+
+    TEST_ASSERT_EQUAL(0, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(0, hs.new_headers);
+
+    TEST_ASSERT_EQUAL(-1, scr);
+
+    free(res);
+}
+
+
+void test_send_client_request_get_fail_receive_server_response_data(void)
+{
+    hstates_t hs;
+
+    reset_http_states(&hs);
+    hs.connection_state = 1;
+    hs.evil_goodbye = 0;
+    hs.data_in.size = 0;
+    hs.keep_receiving = 0;
+
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_set_fake.return_val = 0;
+    h2_send_request_fake.return_val = 0;
+    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake_new_data;
+
+    uint8_t *res = (uint8_t *)malloc(5);
+    size_t size = sizeof(res);
+
+    int scr = send_client_request(&hs, "GET", "/index", res, &size);
+
+    TEST_ASSERT_EQUAL(2, headers_init_fake.call_count);
+    TEST_ASSERT_EQUAL(4, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_send_request_fake.call_count);
+
+    TEST_ASSERT_EQUAL(3, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, hs.new_headers);
 
     TEST_ASSERT_EQUAL(-1, scr);
 
@@ -1014,8 +1109,10 @@ int main(void)
     UNIT_TEST(test_receive_server_response_data_fail_h2_receive_frame);
     UNIT_TEST(test_receive_server_response_data_fail_connection_state);
 
-    UNIT_TEST(test_send_client_request_success);
-    UNIT_TEST(test_send_client_request_fail_receive_server_response_data);
+    UNIT_TEST(test_send_client_request_get_success);
+    UNIT_TEST(test_send_client_request_head_success);
+    UNIT_TEST(test_send_client_request_fail_receive_headers);
+    UNIT_TEST(test_send_client_request_get_fail_receive_server_response_data);
     UNIT_TEST(test_send_client_request_fail_h2_send_request);
     UNIT_TEST(test_send_client_request_fail_headers_set);
 
