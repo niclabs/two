@@ -1037,7 +1037,7 @@ int h2_client_init_connection(hstates_t *st){
     int rc = init_variables(st);
     char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
     uint8_t preface_buff[24];
-    puts("Client: sending preface...");
+    INFO("Client: sending preface...");
     uint8_t i = 0;
     /*We load the buffer with the ascii characters*/
     while(preface[i] != '\0'){
@@ -1050,12 +1050,12 @@ int h2_client_init_connection(hstates_t *st){
         ERROR("Error in preface sending");
         return -1;
     }
-    puts("Client: sending local settings...");
+    INFO("Client: sending local settings...");
     if((rc = send_local_settings(st)) < 0){
         ERROR("Error in local settings sending");
         return -1;
     }
-    puts("Client: init connection done");
+    INFO("Client: init connection done");
     return 0;
 }
 
@@ -1072,25 +1072,25 @@ int h2_server_init_connection(hstates_t *st){
     char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
     uint8_t preface_buff[25];
     preface_buff[24] = '\0';
-    puts("Server: waiting for preface...");
+    INFO("Server: waiting for preface...");
     /*We read the first 24 byes*/
     rc = read_n_bytes(preface_buff, 24, st);
     if(rc != 24){
         ERROR("Error in reading preface");
         return -1;
     }
-    puts("Server: 24 bytes read");
+    INFO("Server: 24 bytes read");
     if(strcmp(preface, (char*)preface_buff) != 0){
         ERROR("Error in preface receiving");
         return -1;
     }
     /*Server sends local settings to endpoint*/
-    puts("Server: sending local settings...");
+    INFO("Server: sending local settings...");
     if((rc = send_local_settings(st)) < 0){
         ERROR("Error in local settings sending");
         return -1;
     }
-    puts("Server: init connection done");
+    INFO("Server: init connection done");
     return 0;
 }
 
