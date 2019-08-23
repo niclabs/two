@@ -1279,7 +1279,7 @@ int h2_receive_frame(hstates_t *st){
             rc = flow_control_receive_window_update(st, window_size_increment);
                 if(rc < 0){
                     ERROR("ERROR in flow control, receiving window update");
-                    send_connection_error(st, HTTP2_INTERNAL_ERROR);
+                    send_connection_error(st, HTTP2_FLOW_CONTROL_ERROR);
                     return -1;
                 }
             return 0;
@@ -1301,6 +1301,7 @@ int h2_receive_frame(hstates_t *st){
             int rc = read_continuation_payload(buff_read, &header, &contpl, continuation_block_fragment);
             if(rc < 1){
               ERROR("Error in continuation payload reading");
+              send_connection_error(st, HTTP2_INTERNAL_ERROR);
               return -1;
             }
             rc = handle_continuation_payload(&header, &contpl, st);
@@ -1393,11 +1394,15 @@ int h2_graceful_connection_shutdown(hstates_t *st){
 * Function: h2_notify_free_data_buffer
 * When application frees space for data processing, notifies endpoint by sending
 * a WINDOW_UPDATE with the space freed.
-*
-*
+* Input: ->st: hstates_t pointer where connection variables are stored
+*        ->data_len: int size to increment
+* Output: 0 if no errors were found during window update sending, -1 if not.
 */
 int h2_notify_free_data_buffer(hstates_t *st, int data_len){
-  (void) st;
-  (void) data_len;
-  return 0;
+  int rc = send_window_update(st, data_len);
+  if(rc < 0){
+    ERROR("Error sending window update");
+    return -1;
+  }
+  return rc;
 }
