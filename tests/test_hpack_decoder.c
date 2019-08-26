@@ -457,6 +457,18 @@ void test_decode_non_huffman_string(void)
     }
 }
 
+void test_decode_non_huffman_string_error(void)
+{
+    uint8_t encoded_string[] = { 0x7f, 0xe1, 0xa6, 0x26 };
+    char decoded_string[30];
+
+    hpack_utils_encoded_integer_size_fake.return_val = 4;
+
+    memset(decoded_string, 0, 30);
+    int rc = hpack_decoder_decode_non_huffman_string(decoded_string, encoded_string);
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 void test_decode_huffman_word(void)
 {
@@ -524,19 +536,19 @@ void test_decode_huffman_string_error(void)
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
 
     /*Couldn't read code*/
-    uint8_t encoded_string3[] = { 0x81, 0x6f };
-    char decoded_string3[] = { 0, 0 };
-    char expected_decoded_string3[] = { 0, 0 };
-    rc = hpack_decoder_decode_huffman_string(decoded_string3, encoded_string3);
+    uint8_t encoded_string4[] = { 0x81, 0x6f };
+    char decoded_string4[] = { 0, 0 };
+    char expected_decoded_string4[] = { 0, 0 };
+    rc = hpack_decoder_decode_huffman_string(decoded_string4, encoded_string4);
     TEST_ASSERT_EQUAL(-2, rc);
     for (int i = 0; i < 2; i++) {
-        TEST_ASSERT_EQUAL(expected_decoded_string3[i], decoded_string3[i]);
+        TEST_ASSERT_EQUAL(expected_decoded_string4[i], decoded_string4[i]);
     }
 
     /*Encoding the EOS symbol*/
-    uint8_t encoded_string4[] = { 0x7f, 0xff, 0xff, 0xff };
-    char decoded_string4[] = { 0, 0, 0, 0 };
-    rc = hpack_decoder_decode_huffman_string(decoded_string4, encoded_string4);
+    uint8_t encoded_string5[] = { 0x84, 0x7f, 0xff, 0xff, 0xff };
+    char decoded_string5[] = { 0, 0, 0, 0 };
+    rc = hpack_decoder_decode_huffman_string(decoded_string5, encoded_string5);
     TEST_ASSERT_EQUAL(-1, rc);
 }
 #endif
@@ -691,6 +703,7 @@ int main(void)
 
     UNIT_TEST(test_decode_integer);
     UNIT_TEST(test_decode_non_huffman_string);
+    UNIT_TEST(test_decode_non_huffman_string_error);
     UNIT_TEST(test_decode_string);
 
     return UNIT_TESTS_END();
