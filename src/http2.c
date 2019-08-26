@@ -177,7 +177,8 @@ int send_data(hstates_t *st, uint8_t end_stream){
     }
     h2_stream_state_t state = st->h2s.current_stream.state;
     if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
-        ERROR("Wrong state for sending DATA");
+        ERROR("Wrong state for sending DATA. INTERNAL_ERROR");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
     uint32_t stream_id=st->h2s.current_stream.stream_id;
