@@ -40,6 +40,7 @@ FAKE_VALUE_FUNC(int, http_clear_header_list, hstates_t *, int, int);
 FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
 FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
 FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
+FAKE_VALUE_FUNC(int, h2_notify_free_data_buffer, hstates_t *, int);
 
 
 /* List of fakes used by this unit tester */
@@ -58,7 +59,8 @@ FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
     FAKE(http_clear_header_list)          \
     FAKE(headers_init)                    \
     FAKE(headers_set)                     \
-    FAKE(headers_get)
+    FAKE(headers_get)                     \
+    FAKE(h2_notify_free_data_buffer)
 
 
 void setUp()
@@ -841,6 +843,45 @@ void test_send_client_request_get_fail_receive_server_response_data(void)
 }
 
 
+void test_send_client_request_fail_h2_notify_free_data_buffer(void)
+{
+    hstates_t hs;
+
+    reset_http_states(&hs);
+    hs.connection_state = 1;
+    hs.data_in.size = 8;
+    hs.keep_receiving = 0;
+    uint8_t *buf = (uint8_t *)"hola";
+    memcpy(hs.data_in.buf, buf, 8);
+
+    headers_init_fake.custom_fake = headers_init_custom_fake;
+    headers_set_fake.return_val = 0;
+    h2_send_request_fake.return_val = 0;
+    h2_receive_frame_fake.custom_fake = h2_receive_frame_custom_fake;
+    headers_get_fake.return_val = "200";
+    h2_notify_free_data_buffer_fake.return_val = -1;
+
+    uint8_t *res = (uint8_t *)malloc(5);
+    size_t size = sizeof(res);
+
+    int scr = send_client_request(&hs, "GET", "/index", res, &size);
+
+    TEST_ASSERT_EQUAL(2, headers_init_fake.call_count);
+    TEST_ASSERT_EQUAL(4, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL(1, h2_send_request_fake.call_count);
+    TEST_ASSERT_EQUAL(3, h2_receive_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(0, headers_get_fake.call_count);
+
+    TEST_ASSERT_EQUAL_STRING("hola", res);
+
+    TEST_ASSERT_EQUAL(-1, scr);
+
+    //TEST_ASSERT_EQUAL(5, (int)size);
+
+    free(res);
+}
+
+
 void test_send_client_request_fail_h2_send_request(void)
 {
     hstates_t hs;
@@ -1113,6 +1154,7 @@ int main(void)
     UNIT_TEST(test_send_client_request_head_success);
     UNIT_TEST(test_send_client_request_fail_receive_headers);
     UNIT_TEST(test_send_client_request_get_fail_receive_server_response_data);
+    UNIT_TEST(test_send_client_request_fail_h2_notify_free_data_buffer);
     UNIT_TEST(test_send_client_request_fail_h2_send_request);
     UNIT_TEST(test_send_client_request_fail_headers_set);
 
