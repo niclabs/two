@@ -2,7 +2,14 @@
 #define TWO_HPACK_UTILS_H
 
 #include <stdint.h>             /* for int8_t, uint8_t, uint32_t, uint16_t*/
+//TODO move macro to conf file
+#define HPACK_CONF_MAXIMUM_INTEGER_SIZE (4096) //DEFAULT
 
+#ifdef HPACK_CONF_MAXIMUM_INTEGER_SIZE
+#define HPACK_MAXIMUM_INTEGER_SIZE (HPACK_CONF_MAXIMUM_INTEGER_SIZE)
+#else
+#define HPACK_MAXIMUM_INTEGER_SIZE (4096)
+#endif
 typedef enum {
     INDEXED_HEADER_FIELD                            = (uint8_t) 128,
     LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING  = (uint8_t) 64,

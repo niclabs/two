@@ -25,11 +25,11 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
     if (b0 != p) {
-        if (b0 <= HPACK_DECODER_MAXIMUM_INTEGER_SIZE) {
-            return (uint32_t)b0;
+        if (b0 > HPACK_MAXIMUM_INTEGER_SIZE) {
+            return -2;
         }
         else {
-            return -2;
+            return (uint32_t)b0;
         }
     }
     else {
@@ -39,11 +39,11 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
             uint8_t bi = bytes[pointer + i];
             if (!(bi & (uint8_t)128)) {
                 integer += (uint32_t)bi * ((uint32_t)1 << depth);
-                if (integer <= HPACK_DECODER_MAXIMUM_INTEGER_SIZE) {
-                    return integer;
+                if (integer > HPACK_MAXIMUM_INTEGER_SIZE) {
+                    return -2;
                 }
                 else {
-                    return -2;
+                    return integer;
                 }
             }
             else {
