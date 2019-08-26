@@ -88,4 +88,14 @@ int h2_send_response(hstates_t *st);
 
 int h2_graceful_connection_shutdown(hstates_t *st);
 
+/*
+* Function: h2_notify_free_data_buffer
+* When application frees space for data processing, notifies endpoint by sending
+* a WINDOW_UPDATE with the space freed.
+* Input: ->st: hstates_t pointer where connection variables are stored
+*        ->data_len: int size to increment
+* Output: 0 if no errors were found during window update sending, -1 if not.
+*/
+int h2_notify_free_data_buffer(hstates_t *st, int data_len);
+
 #endif /*HTTP2_H*/
