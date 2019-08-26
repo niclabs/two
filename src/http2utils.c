@@ -3,7 +3,7 @@
 
 /*
 * Function: read_n_bytes
-* Reads n bytes to buffer.
+* Reads n bytes frto buffer.
 * NOTE: THIS IS A BLOCKING FUNCTION
 * Input: -> buff_read: buffer where bytes are going to be written.
 *        -> n: number of bytes to read.
@@ -14,9 +14,8 @@ int read_n_bytes(uint8_t *buff_read, int n,  hstates_t *hs){
   int incoming_bytes;
   while(read_bytes < n){
     incoming_bytes = http_read(hs, buff_read+read_bytes, n - read_bytes);
-    /* incoming_bytes equals -1 means that there was an error*/
+    /* incoming_bytes less than 1 means that there was an error*/
     if(incoming_bytes < 1){
-      puts("Error in read function");
       return -1;
     }
     read_bytes = read_bytes + incoming_bytes;
@@ -54,7 +53,6 @@ int prepare_new_stream(hstates_t* st){
 
 uint32_t read_setting_from(hstates_t *st, uint8_t place, uint8_t param){
   if(param < 1 || param > 6){
-    printf("Error: %u is not a valid setting parameter\n", param);
     return -1;
   }
   else if(place == LOCAL){
@@ -64,8 +62,6 @@ uint32_t read_setting_from(hstates_t *st, uint8_t place, uint8_t param){
     return st->h2s.remote_settings[--param];
   }
   else{
-    puts("Error: not a valid table to read from");
     return -1;
   }
-  return -1;
 }
