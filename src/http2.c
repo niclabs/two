@@ -9,6 +9,7 @@
 /*
 * This API assumes the existence of a TCP connection between Server and Client,
 * and two methods to use this TCP connection that are http_read and http_write
+* NOTE: The current implementation deals with error as connection errors.
 */
 
 /*----------------- Internal methods headers ------------*/
@@ -76,16 +77,18 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
     /*Must be 0*/
     rc = bytes_to_frame_header(buff_read, 9, header);
     if(rc){
-        ERROR("Error coding bytes to frame header");
+        ERROR("Error coding bytes to frame header. INTERNAL_ERROR");
+        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
-    if(header->length > 256){
-        printf("Error: Payload's size (%u) too big (>256)\n", header->length);
+    if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
+        ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
+        send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
         return -1;
     }
     rc = read_n_bytes(buff_read, header->length, st);
     if(rc != header->length){
-        ERROR("Error reading bytes from http");
+        ERROR("Error reading bytes from http, read %d bytes", rc);
         return -1;
     }
     return 0;
