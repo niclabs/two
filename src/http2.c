@@ -172,7 +172,7 @@ int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_paylo
 */
 int send_data(hstates_t *st, uint8_t end_stream){
     if(st->data_out.size<=0){
-        ERROR("no data to be send");
+        ERROR("No data to be sent. INTERNAL_ERROR");
         send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
@@ -190,7 +190,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
     uint8_t data[count_data_to_send];
     int rc = create_data_frame(&frame_header, &data_payload, data, st->data_out.buf + st->data_out.processed, count_data_to_send, stream_id);
     if(rc<0){
-        ERROR("error creating data frame");
+        ERROR("Error creating data frame. INTERNAL_ERROR");
         send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
@@ -201,9 +201,8 @@ int send_data(hstates_t *st, uint8_t end_stream){
     frame.payload = (void*)&data_payload;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = http_write(st,buff_bytes,bytes_size);
     INFO("Sending DATA");
-
+    rc = http_write(st,buff_bytes,bytes_size);
     if(rc != bytes_size){
         ERROR("Error writting data frame. INTERNAL ERROR");
         send_connection_error(st, HTTP2_INTERNAL_ERROR);
@@ -278,7 +277,6 @@ int check_incoming_headers_condition(frame_header_t *header, hstates_t *st){
         //stream closed error
         ERROR("Current stream is not open. STREAM CLOSED ERROR");
         send_connection_error(st, HTTP2_STREAM_CLOSED);
-        // TODO: Send STREAM_CLOSED_ERROR to endpoint
         return -1;
   }
   else if(header->stream_id != st->h2s.current_stream.stream_id){
@@ -376,7 +374,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
 
 /*
 * Function: send_headers_stream_verification
-* Given an hstates struct, checks the current stream state and uses it, creates
+* Given an hstates struct, checks the current stream and uses it, creates
 * a new one or reports an error. The stream that will be used is stored in
 * st->h2s.current_stream.stream_id .
 * Input: ->st: hstates_t struct where current stream is stored
