@@ -501,11 +501,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
     }
 
     if (hs->connection_state == 0) {
-<<<<<<< HEAD
-        hs->socket_state = 0;
-=======
         http_client_disconnect(hs);
->>>>>>> Fixed client socket destroy after receiving goaway frame
         return 0;
     }
 
