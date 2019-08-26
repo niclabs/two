@@ -255,19 +255,19 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
     uint32_t max_dynamic_table_size = 3000;
     hpack_dynamic_table_t dynamic_table;
     hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size);
-    char name[10];
-    char value[13];
-    memset(name, 0, 10);
-    memset(value, 0, 13);
+    char name[11];
+    char value[14];
+    memset(name, 0, 11);
+    memset(value, 0, 14);
 
     int rc = hpack_decoder_decode_literal_header_field_with_incremental_indexing(&dynamic_table, header_block_name_literal, name, value);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
 
-    for (uint8_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < strlen(name); i++) {
         TEST_ASSERT_EQUAL(expected_name[i], name[i]);
     }
-    for (uint8_t i = 0; i < 13; i++) {
+    for (uint8_t i = 0; i < strlen(value); i++) {
         TEST_ASSERT_EQUAL(expected_value[i], value[i]);
     }
 }
