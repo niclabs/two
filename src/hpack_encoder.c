@@ -79,7 +79,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
 int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
     if(integer > HPACK_MAXIMUM_INTEGER_SIZE) {
-        return -2;
+        return -1;
     }
     int octets_size = hpack_utils_encoded_integer_size(integer, prefix);
     uint8_t max_first_octet = (1 << prefix) - 1;
@@ -124,7 +124,7 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
     int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
     if (encoded_string_length_size < 0){
         ERROR("Integer %d exceeds implementations limits");
-        return -2;
+        return -1;
     }
 
     if (str_length + encoded_string_length_size >= HTTP2_MAX_HBF_BUFFER) {
@@ -185,7 +185,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
 
     if (encoded_word_length_size < 0) {
         ERROR("Integer %d exceeds implementations limits");
-        return -2;
+        return -1;
     }
 
     if (encoded_word_byte_length + encoded_word_length_size >= HTTP2_MAX_HBF_BUFFER) {
@@ -364,7 +364,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
 
             if (encoded_length_size < 0){
                 ERROR("Integer %d exceeds implementations limits");
-                return -2;
+                return -1;
             }
             pointer += encoded_length_size;
 
@@ -414,7 +414,7 @@ int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_tabl
     int encoded_max_size_length = hpack_encoder_encode_integer(max_size, 5, encoded_buffer);
     if (encoded_max_size_length < 0){
         ERROR("Integer %d exceeds implementations limits");
-        return -2;
+        return -1;
     }
     encoded_buffer[0] |= preamble;
 
