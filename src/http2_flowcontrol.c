@@ -53,6 +53,22 @@ int flow_control_receive_data(hstates_t* st, uint32_t length){
     return 0;
 }
 
+/*
+* Function: flow_control_send_data
+* Updates the outgoing window when certain amount of data is sent.
+* Input: -> st: hstates_t struct pointer where connection windows are stored
+*        -> data_sent: the size of the outgoing data.
+* Output: 0 if window increment was successfull. -1 if not
+*/
+int flow_control_send_data(hstates_t *st, uint32_t data_sent){
+  if(data_sent > get_window_available_size(st->h2s.outgoing_window)){
+    ERROR("Trying to send more data than allowed by window.");
+    return -1;
+  }
+  increase_window_used(&st->h2s.outgoing_window, data_sent);
+  return 0;
+}
+
 int flow_control_send_window_update(hstates_t* st, uint32_t window_size_increment){
     if(window_size_increment>st->h2s.incoming_window.window_used){
         ERROR("Increment to big. protocol_error");
@@ -64,7 +80,7 @@ int flow_control_send_window_update(hstates_t* st, uint32_t window_size_incremen
 
 int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment){
     if(window_size_increment>st->h2s.outgoing_window.window_used){
-        ERROR("Increment to big. protocol_error");
+        ERROR("Flow control: window increment bigger than window used. PROTOCOL_ERROR");
         return -1;
     }
     decrease_window_used(&st->h2s.outgoing_window,window_size_increment);
