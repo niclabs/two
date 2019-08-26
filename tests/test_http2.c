@@ -128,6 +128,7 @@ FAKE_VALUE_FUNC(int, goaway_payload_to_bytes, frame_header_t*, goaway_payload_t*
 FAKE_VALUE_FUNC(int, read_goaway_payload, uint8_t*, frame_header_t*, goaway_payload_t* , uint8_t*);
 
 FAKE_VALUE_FUNC(uint32_t, get_window_available_size, h2_window_manager_t);
+FAKE_VALUE_FUNC(int, flow_control_send_data, hstates_t*, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_receive_data, hstates_t*, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_send_window_update, hstates_t*, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_receive_window_update, hstates_t*, uint32_t);
@@ -168,6 +169,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_init_dynamic_table, hpack_dynamic_table_t *);
     FAKE(goaway_payload_to_bytes)   \
     FAKE(read_goaway_payload)   \
     FAKE(get_window_available_size)           \
+    FAKE(flow_control_send_data)   \
     FAKE(flow_control_receive_data)   \
     FAKE(flow_control_send_window_update)   \
     FAKE(flow_control_receive_window_update)   \
