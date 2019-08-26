@@ -506,17 +506,23 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
     }
 
     //If it is a GET request, wait for the server response data
-    if (strncmp("GET", method, 8) == 0){
-      if (receive_server_response_data(hs) < 0) {
-          ERROR("An error ocurred while waiting for server response data");
-          return -1;
-      }
-      else if (hs->data_in.size > 0) {
-          // Get response data (TODO: should we just copy the pointer?)
-          *size = get_data(&hs->data_in, response, *size);
-      } else {
-        DEBUG("Server response hasn't data");
-      }
+    if (strncmp("GET", method, 8) == 0) {
+        if (receive_server_response_data(hs) < 0) {
+            ERROR("An error ocurred while waiting for server response data");
+            return -1;
+        }
+        else if (hs->data_in.size > 0) {
+            // Get response data (TODO: should we just copy the pointer?)
+            *size = get_data(&hs->data_in, response, *size);
+
+            if (h2_notify_free_data_buffer(hs, *size) < 0) {
+                DEBUG("Error updating window after copying data");
+                return -1;
+            }
+        }
+        else {
+            DEBUG("Server response hasn't data");
+        }
     }
 
     int status = atoi(headers_get(&hs->headers_in, ":status"));
@@ -524,6 +530,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
 
     return status;
 }
+
 
 
 int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
