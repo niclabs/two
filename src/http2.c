@@ -383,8 +383,8 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
 int send_headers_stream_verification(hstates_t *st){
   if(st->h2s.current_stream.state == STREAM_CLOSED ||
       st->h2s.current_stream.state == STREAM_HALF_CLOSED_LOCAL){
-      ERROR("Current stream was closed! Send request error. STREAM CLOSED ERROR");
-      send_connection_error(st, HTTP2_STREAM_CLOSED);
+      ERROR("Current stream was closed! Send request error. INTERNAL_ERROR");
+      send_connection_error(st, HTTP2_INTERNAL_ERROR);
       return -1;
   }
   else if(st->h2s.current_stream.state == STREAM_IDLE){
