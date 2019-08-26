@@ -139,11 +139,9 @@ int check_incoming_data_condition(frame_header_t *header, hstates_t *st){
 int handle_data_payload(frame_header_t* frame_header, data_payload_t* data_payload, hstates_t* st) {
     uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
     /*check flow control*/
-    //TODO flow control
     int rc = flow_control_receive_data(st, data_length);
     if(rc < 0){
-        ERROR("flow control error");
-        send_connection_error(st, HTTP2_INTERNAL_ERROR);
+        send_connection_error(st, HTTP2_FLOW_CONTROL_ERROR);
         return -1;
     }
     buffer_copy(st->data_in.buf + st->data_in.size, data_payload->data, data_length);
