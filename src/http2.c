@@ -180,7 +180,7 @@ int send_data(hstates_t *st, uint8_t end_stream){
         ERROR("Wrong state for sending DATA");
         return -1;
     }
-    uint32_t stream_id=st->h2s.current_stream.stream_id;//TODO
+    uint32_t stream_id=st->h2s.current_stream.stream_id;
     uint8_t count_data_to_send = get_size_data_to_send(st);
     frame_t frame;
     frame_header_t frame_header;
@@ -195,7 +195,6 @@ int send_data(hstates_t *st, uint8_t end_stream){
     if(end_stream) {
         frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
     }
-
     frame.frame_header = &frame_header;
     frame.payload = (void*)&data_payload;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
@@ -216,8 +215,6 @@ int send_data(hstates_t *st, uint8_t end_stream){
         st->data_out.size = 0;
         st->data_out.processed = 0;
     }
-
-    //TODO update window size
     return 0;
 }
 
@@ -1155,7 +1152,6 @@ int h2_receive_frame(hstates_t *st){
         ERROR("Error reading frame");
         return -1;
     }
-    INFO("receiving %u", (uint8_t)header.type);
     switch(header.type){
         case DATA_TYPE: {//Data
             /*check stream state*/
@@ -1279,13 +1275,12 @@ int h2_receive_frame(hstates_t *st){
             }
             uint32_t window_size_increment = window_update_payload.window_size_increment;
             if(window_size_increment == 0){
-              ERROR("Error flow-control window icrement of 0. stream error PROTOCOL_ERROR");
+              ERROR("Flow-control window increment is 0. Stream Error. PROTOCOL_ERROR");
               send_connection_error(st, HTTP2_PROTOCOL_ERROR);
               return -1;
             }
             rc = flow_control_receive_window_update(st, window_size_increment);
                 if(rc < 0){
-                    ERROR("ERROR in flow control, receiving window update");
                     send_connection_error(st, HTTP2_FLOW_CONTROL_ERROR);
                     return -1;
                 }
