@@ -25,12 +25,11 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
     if (b0 != p) {
-        if (b0 > HPACK_MAXIMUM_INTEGER_SIZE) {
+        #if (b0 > HPACK_MAXIMUM_INTEGER_SIZE)
             return -1;
-        }
-        else {
+        #else
             return (uint32_t)b0;
-        }
+        #endif
     }
     else {
         uint32_t integer = (uint32_t)p;
@@ -67,10 +66,10 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
  */
 int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
-    uint32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
+    int32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
     /*Integer exceed implementations limits*/
     if(str_length < 0) {
-        ERROR("Integer %d exceeds implementations limits");
+        ERROR("Integer exceeds implementations limits");
         return -1;
     }
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
@@ -146,10 +145,10 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
  */
 int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
 {
-    uint32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
+    int32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
     /*Integer exceed implementations limits*/
     if(str_length < 0) {
-        ERROR("Integer %d exceeds implementations limits");
+        ERROR("Integer exceeds implementations limits");
         return -1;
     }
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
@@ -227,10 +226,10 @@ uint32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer)
 int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
-    uint32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
+    int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
     /*Integer exceed implementations limits*/
     if(index < 0) {
-        ERROR("Integer %d exceeds implementations limits");
+        ERROR("Integer exceeds implementations limits");
         return -1;
     }
     if (index == 0) {
@@ -251,10 +250,10 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
 int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
-    uint32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));//decode index
+    int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));//decode index
     /*Integer exceed implementations limits*/
     if(index < 0) {
-        ERROR("Integer %d exceeds implementations limits");
+        ERROR("Integer exceeds implementations limits");
         return -1;
     }
     if (index == 0) {
@@ -297,10 +296,10 @@ int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dy
 int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
-    uint32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
+    int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
     /*Integer exceed implementations limits*/
     if(index < 0) {
-        ERROR("Integer %d exceeds implementations limits");
+        ERROR("Integer exceeds implementations limits");
         return -1;
     }
     if (index == 0) {
@@ -336,10 +335,10 @@ int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_tab
 int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
-    uint32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
+    int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
     /*Integer exceed implementations limits*/
     if(index < 0) {
-        ERROR("Integer %d exceeds implementations limits");
+        ERROR("Integer exceeds implementations limits");
         return -1;
     }
     if (index == 0) {
@@ -382,10 +381,10 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
  */
 int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block)
 {
-    uint32_t new_table_size = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
+    int32_t new_table_size = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
     /*Integer exceed implementations limits*/
     if(new_table_size < 0) {
-        ERROR("Integer %d exceeds implementations limits");
+        ERROR("Integer exceeds implementations limits");
         return -1;
     }
     DEBUG("New table size is %d", new_table_size);
