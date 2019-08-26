@@ -331,8 +331,14 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
       //return bytes read.
       rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in, &st->h2s.dynamic_table);
       if(rc < 0){
-        ERROR("Error was found receiving header_block");
-        send_connection_error(st, HTTP2_INTERNAL_ERROR);
+        if(rc==-1){
+          ERROR("Error was found receiving header_block. COMPRESSION ERROR");
+          send_connection_error(st, HTTP2_COMPRESSION_ERROR);
+        }
+        else if(rc==-2){
+          ERROR("Error was found receiving header_block. INTERNAL ERROR");
+          send_connection_error(st, HTTP2_INTERNAL_ERROR);
+        }
         return -1;
       }
       if(rc!= st->h2s.header_block_fragments_pointer){
@@ -871,6 +877,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
   int size = compress_headers(&st->headers_out, encoded_bytes, &st->h2s.dynamic_table);
   if(size < 0){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
+    send_connection_error(st, HTTP2_INTERNAL_ERROR);
     return -1;
   }
   if(send_headers_stream_verification(st) < 0){
@@ -1027,7 +1034,7 @@ int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
         rc = send_goaway(st, HTTP2_NO_ERROR);
         if(rc < 0){
           ERROR("Error in GOAWAY sending. INTERNAL ERROR");
-          // TODO shotdown connection
+          shutdown_connection(st);
           return rc;
         }
       }
@@ -1047,7 +1054,7 @@ int change_stream_state_end_stream_flag(hstates_t *st, uint8_t sending){
         rc = send_goaway(st, HTTP2_NO_ERROR);
         if(rc < 0){
           ERROR("Error in GOAWAY sending. INTERNAL ERROR");
-          // TODO shotdown connection
+          shutdown_connection(st);
           return rc;
         }
       }
@@ -1386,6 +1393,7 @@ int h2_graceful_connection_shutdown(hstates_t *st){
   int rc = send_goaway(st, HTTP2_NO_ERROR);
   if(rc < 0){
     ERROR("Error sending GOAWAY FRAME to endpoint.");
+    shutdown_connection(st);
   }
   return rc;
 }
