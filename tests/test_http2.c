@@ -448,13 +448,15 @@ void test_read_frame(void){
   uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
   bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
   /*We write 200 zeros for future reading*/
+  uint32_t read_setting_from_returns[1] = {1024};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int wrc = http_write(&hst, bf, 200);
   TEST_ASSERT_MESSAGE(wrc == 200, "wrc must be 200.");
   TEST_ASSERT_MESSAGE(size == 200, "size must be 200.");
   int rc = read_frame(bf, &header);
-  TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 1, "bytes to frame header must be called once");
-  TEST_ASSERT_MESSAGE(size == 155, "read_frame must have read 45 bytes");
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
+  TEST_ASSERT_MESSAGE(size == 155, "read_frame must have read 45 bytes");
+  TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 1, "bytes to frame header must be called once");
 }
 
 void test_read_frame_errors(void){
@@ -1577,7 +1579,8 @@ void test_h2_receive_frame_window_update(void){
     get_header_block_fragment_size_fake.custom_fake = get_header_block_fragment_size_fake_custom;
     uint8_t bytes[]={0,0,4, 0x8, 0x0, 0,0,0,3,  0,0,0,10};//window_update frame->window_size_increment = 10
     http_write(&st,bytes,13);
-
+    uint32_t read_setting_from_returns[1] = {1024};
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     receive_header_block_fake.custom_fake = receive_header_block_fake_custom;
     bytes_to_frame_header_fake.custom_fake = bytes_to_frame_header_fake_custom;
     read_window_update_payload_fake.custom_fake = read_window_update_payload_fake_custom;
