@@ -208,6 +208,11 @@ int send_data(hstates_t *st, uint8_t end_stream){
         send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return rc;
     }
+    rc = flow_control_send_data(st, count_data_to_send);
+    if(rc < 0){
+      send_connection_error(st, HTTP2_INTERNAL_ERROR);
+      return -1;
+    }
     if(end_stream){
       change_stream_state_end_stream_flag(st, 1); // 1 is for sending
     }
