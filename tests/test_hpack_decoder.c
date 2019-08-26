@@ -263,9 +263,13 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
     int rc = hpack_decoder_decode_literal_header_field_with_incremental_indexing(&dynamic_table, header_block_name_literal, name, value);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL_STRING(expected_name, name);
-    TEST_ASSERT_EQUAL_STRING(expected_value, value);
 
+    for (uint8_t i = 0; i < 10; i++) {
+        TEST_ASSERT_EQUAL(expected_name[i], name[i]);
+    }
+    for (uint8_t i = 0; i < 13; i++) {
+        TEST_ASSERT_EQUAL(expected_value[i], value[i]);
+    }
 }
 
 void test_decode_header_block_literal_never_indexed(void)
@@ -301,7 +305,7 @@ void test_decode_header_block_literal_never_indexed(void)
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)16;
     hpack_utils_find_prefix_size_fake.return_val = 4;
 
-    int rc = hpack_decoder_decode_header_block(NULL,header_block_name_literal, header_block_size, &headers);
+    int rc = hpack_decoder_decode_header_block(NULL, header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
@@ -324,7 +328,7 @@ void test_decode_header_block_literal_never_indexed(void)
     };
     expected_name = ":authority";
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_authority;
-    rc = hpack_decoder_decode_header_block(NULL,header_block_name_indexed, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block(NULL, header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
@@ -404,7 +408,7 @@ void test_decode_header_block_literal_without_indexing(void)
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 4);
 
 
-    int rc = hpack_decoder_decode_header_block(NULL,header_block_name_literal, header_block_size, &headers);
+    int rc = hpack_decoder_decode_header_block(NULL, header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
@@ -675,7 +679,7 @@ int main(void)
 
     UNIT_TEST(test_decode_header_block_literal_without_indexing);
     UNIT_TEST(test_decode_header_block_literal_never_indexed);
-    //UNIT_TEST(test_decode_header_block_literal_with_incremental_indexing);
+    UNIT_TEST(test_decode_header_block_literal_with_incremental_indexing);
     UNIT_TEST(test_hpack_decoder_decode_indexed_header_field);
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
