@@ -500,6 +500,11 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
         return -1;
     }
 
+    if (hs->connection_state == 0) {
+        hs->socket_state = 0;
+        return 0;
+    }
+
     //If it is a GET request, wait for the server response data
     if (strncmp("GET", method, 8) == 0){
       if (receive_server_response_data(hs) < 0) {
