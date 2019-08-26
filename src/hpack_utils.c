@@ -90,7 +90,7 @@ hpack_preamble_t hpack_utils_get_preamble(uint8_t preamble)
 }
 
 /*
- * Function: find_prefix_size
+ * Function: hpack_utils_find_prefix_size
  * Given the preamble octet returns the size of the prefix
  * Input:
  *      -> octet: Preamble of encoding
@@ -111,7 +111,7 @@ uint8_t hpack_utils_find_prefix_size(hpack_preamble_t octet)
     return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 }
 
-/* Function: encoded_integer_size
+/* Function: hpack_utils_encoded_integer_size
  * Input:
  *      -> num: Number to encode
  *      -> prefix: Size of prefix
