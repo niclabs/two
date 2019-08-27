@@ -1,5 +1,5 @@
 # General test configuration variables
-TEST_SUBDIRS += unity/
+TEST_SUBDIRS = unity/
 TEST_PREREQS = unity.o
 TEST_CFLAGS = -Wno-unused-parameter
 TEST_LDFLAGS = --coverage
