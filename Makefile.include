@@ -11,6 +11,7 @@ TARGET_DIR ?= $(call QUALIFY_PATH,${TWO},bin)
 # Build dir is for temporary files
 BUILD_DIR ?= $(call QUALIFY_PATH,${TWO},build)
 
+# Extra definitions can be added using the DEFINES variable
 ifeq ($(DEFINES),)
   -include Makefile.defines
   ifneq ($(DEFINES),)
@@ -42,14 +43,23 @@ define QUALIFY_PATH
 $(addprefix ${1}/,$(filter-out /%,${2}))$(filter /%,${2})
 endef
 
-# Target directories
-OBJECTDIR = $(BUILD_DIR)/obj
-TWO_TARGET_LIB = $(BUILD_DIR)/two.a
+# Remove duplicates
+uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
 
-TWO_OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(TWO_SOURCES)))
+# Path for objects and dependencies
+SRC = src
+OBJECTDIR = $(BUILD_DIR)/obj
+
+# Library paths
+LIBRARY = $(BUILD_DIR)/two.a
+LIBRARY_OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(LIBRARY_SOURCES)))
+
+# Target objects
 OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(SOURCES)))
 
-uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
+# Remove implicit rules
+.SUFFIXES:
+.SUFFIXES: .c .o
 
 # Provide way to create $(BUILD_DIR) if it has been removed by make clean
 $(TARGET_DIR):
@@ -57,16 +67,16 @@ $(OBJECTDIR):
 	$(TRACE_MKDIR)
 	$(Q)mkdir -p $@
 
-# Module configuration (under src/)
+# Library module configuration (under src/)
 # One big module under src for now
 MODULES += .
 
-MODULEDIRS = $(call QUALIFY_PATH,${TWO},$(call CANONICAL_PATH,$(addprefix src/,$(MODULES))))
+MODULEDIRS = $(call QUALIFY_PATH,${TWO},$(call CANONICAL_PATH,$(addprefix $(SRC)/,$(MODULES))))
 UNIQUEMODULES = $(call uniq,$(MODULEDIRS))
 MODULES_SOURCES = $(foreach d, $(UNIQUEMODULES), ${subst ${d}/,,${wildcard $(d)/*.c}})
 
-# Update sources
-TWO_SOURCES += $(MODULES_SOURCES)
+# Update library sources
+LIBRARY_SOURCES += $(MODULES_SOURCES)
 
 # Include module-specific makefiles
 MODULES_INCLUDES = ${wildcard ${foreach d, $(UNIQUEMODULES), $(d)/Makefile.${notdir $(d)}}}
@@ -83,7 +93,6 @@ include $(MODULES_INCLUDED_FIRST_PASS)
 include $(filter-out $(MODULES_INCLUDED_FIRST_PASS),$(MODULES_INCLUDES))
 
 ### Verbosity control. Use  make QUIET=0  to get verbose builds.
-
 ifeq ($(QUIET),0)
   TRACE_CC =
   TRACE_LD =
@@ -94,7 +103,7 @@ ifeq ($(QUIET),0)
   TRACE_CP =
   Q=
 else
-  MAKEFLAGS = --no-print-directory --quiet
+  MAKEFLAGS = --no-print-directory
   TRACE_CC = @echo "  CC       " $<
   TRACE_LD = @echo "  LD       " $@
   TRACE_AR = @echo "  AR       " $@
@@ -109,21 +118,20 @@ endif
 COMMA := ,
 CFLAGS += ${addprefix -D,${subst $(COMMA), ,$(DEFINES)}}
 
-SOURCEDIRS = . $(PROJECTDIRS) $(MODULEDIRS)
-
+### Where to look for source files
+SOURCEDIRS = . $(TARGETDIRS) $(MODULEDIRS)
 vpath %.c $(SOURCEDIRS)
 
+### List of include directories for the compiler
 CFLAGS += $(addprefix -I,$(SOURCEDIRS))
 
 ### Automatic dependency generation
-
 ifneq ($(MAKECMDGOALS),clean)
--include ${addprefix $(OBJECTDIR)/,$(TWO_SOURCES:.c=.d) \
+-include ${addprefix $(OBJECTDIR)/,$(LIBRARY_SOURCES:.c=.d) \
 		                           $(SOURCES:.c=.d)}
 endif
 
 ### See http://make.paulandlesley.org/autodep.html#advanced
-
 define FINALIZE_DEPENDENCY
 cp $(@:.o=.d) $(@:.o=.$$$$); \
 sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
@@ -131,7 +139,7 @@ sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 rm -f $(@:.o=.$$$$)
 endef
 
-.PHONY: clean distclean
+.PHONY: clean distclean debug release
 clean:
 	$(call TRACE_RM,*.d *.o $(CLEAN) $(OBJECTDIR))
 	-$(Q)rm -f *.d *.o $(CLEAN)
@@ -142,23 +150,32 @@ distclean:
 	-$(Q)rm -rf $(BUILD_DIR)
 	-$(Q)rm -rf $(TARGET_DIR)
 
+.PHONY: debug
+debug: CFLAGS += -g $(DEBUG_FLAGS)
+debug: all
+
+# disable assertions for release build
+.PHONY: release
+release: CFLAGS += -DNDEBUG
+release: al
+
 $(OBJECTDIR)/%.o: %.c | $(OBJECTDIR)
 	$(TRACE_CC)
-	$(Q)$(CC) $(CFLAGS) -MMD -c $< -o $@
+	$(Q)$(strip $(CC) $(CFLAGS) -MMD -c $< -o $@)
 	@$(FINALIZE_DEPENDENCY)
 
 %.o: %.c
 	$(TRACE_CC)
-	$(Q)$(CC) $(CFLAGS) -c $< -o $@
+	$(Q)$(strip $(CC) $(CFLAGS) -c $< -o $@)
 
-$(TWO_TARGET_LIB): $(TWO_OBJECTS)
+$(LIBRARY): $(LIBRARY_OBJECTS)
 	$(TRACE_AR)
-	$(Q)$(AR) $(ARFLAGS) $@ $^
+	$(Q)$(strip $(AR) $(ARFLAGS) $@ $^)
 
-$(TARGET_DIR)/%: %.o $(OBJECTS) $(TWO_TARGET_LIB)
+$(TARGET_DIR)/%: %.o $(OBJECTS) $(LIBRARY)
 	$(Q)mkdir -p $(dir $@)
 	$(TRACE_LD)
-	$(Q)$(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS)
+	$(Q)$(strip $(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS))
 
 .PRECIOUS: $(TARGET_DIR)/%
 

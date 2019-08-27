@@ -1,7 +1,8 @@
 TWO = .
 CFLAGS = -std=c99 -Wall -Wextra 
+DEBUG_FLAGS = -DENABLE_DEBUG
 
-PROJECTDIRS = examples/client/ examples/server/
+TARGETDIRS = examples/client/ examples/server/
 
 all: client server
 
