@@ -39,6 +39,7 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
             if (!(bi & (uint8_t)128)) {
                 integer += (uint32_t)bi * ((uint32_t)1 << depth);
                 if (integer > HPACK_MAXIMUM_INTEGER_SIZE) {
+                    DEBUG("Integer is %d:",integer);
                     return -1;
                 }
                 else {
@@ -510,6 +511,75 @@ int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_
             headers_add(headers, tmp_name, tmp_value);
         }
         pointer += rc;
+    }
+    if (pointer > header_block_size) {
+        DEBUG("Error decoding header block, read %d bytes and header_block_size is %d", pointer, header_block_size);
+        return -2;
+    }
+    return pointer;
+}
+
+uint8_t get_huffman_bit(uint8_t num){
+    return 128u & num;
+}
+
+int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t* encoded_header, uint8_t* header_block){
+    int32_t pointer = 0;
+    encoded_header->preamble = hpack_utils_get_preamble(header_block[pointer]);
+    encoded_header->index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
+    int32_t index_size = hpack_utils_encoded_integer_size(encoded_header->index,  hpack_utils_find_prefix_size(encoded_header->preamble));
+    pointer += index_size;
+    if (encoded_header->preamble == INDEXED_HEADER_FIELD) {
+        return pointer;
+    }
+    if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
+        encoded_header->dynamic_table_size = encoded_header->index;
+        encoded_header->index = 0;
+        return pointer;
+    }
+    if(encoded_header->index == 0){
+        encoded_header->huffman_bit_of_name = get_huffman_bit(header_block[pointer]);
+        int32_t name_length = hpack_decoder_decode_integer(&header_block[pointer], 7);
+        /*Integer exceed implementations limits*/
+        if(name_length < 0) {
+            ERROR("Integer exceeds implementations limits");
+            return -1;
+        }
+        encoded_header->name_length = (uint32_t) name_length;
+        pointer += hpack_utils_encoded_integer_size(encoded_header->name_length,7);
+        encoded_header->name_string = &header_block[pointer];
+        pointer += encoded_header->name_length;
+    }
+    encoded_header->huffman_bit_of_value = get_huffman_bit(header_block[pointer]);
+    int32_t value_length = hpack_decoder_decode_integer(&header_block[pointer], 7);
+    /*Integer exceed implementations limits*/
+    if(value_length < 0) {
+        ERROR("Integer exceeds implementations limits");
+        return -1;
+    }
+    encoded_header->value_length = value_length;
+    pointer += hpack_utils_encoded_integer_size(encoded_header->value_length,7);
+    encoded_header->value_string = &header_block[pointer];
+    pointer += encoded_header->value_length;
+    return pointer;
+}
+
+int hpack_decoder_decode_header_v2(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers){
+    int pointer = 0;
+
+    char tmp_name[16];
+    char tmp_value[32];
+
+    while (pointer < header_block_size) {
+        hpack_encoded_header_t encoded_header;
+        memset(tmp_name, 0, 16);
+        memset(tmp_value, 0, 32);
+        int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header, header_block + pointer);
+        if(bytes_read < 0){
+            /*Error*/
+            return bytes_read;
+        }
+        pointer += bytes_read;
     }
     if (pointer > header_block_size) {
         DEBUG("Error decoding header block, read %d bytes and header_block_size is %d", pointer, header_block_size);
