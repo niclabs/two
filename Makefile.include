@@ -11,6 +11,8 @@ TARGET_DIR ?= $(call QUALIFY_PATH,${TWO},bin)
 # Build dir is for temporary files
 BUILD_DIR ?= $(call QUALIFY_PATH,${TWO},build)
 
+SHELL = bash
+
 # Extra definitions can be added using the DEFINES variable
 ifeq ($(DEFINES),)
   -include Makefile.defines
