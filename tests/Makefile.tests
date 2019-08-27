@@ -14,15 +14,18 @@ null :=
 space = $(null) $(null)
 nl := \n
 
-PASSED = $(shell grep -s PASS $(OBJDIR)/*.txt)
+PASSED = $(shell grep -s PASS $(TEST_BUILD)/*.txt)
 PASSED_COUNT = $(words $(PASSED))
-FAIL = $(shell grep -s FAIL $(OBJDIR)/*.txt)
+FAIL = $(shell grep -s FAIL $(TEST_BUILD)/*.txt)
 FAIL_COUNT = $(words $(FAIL))
-IGNORE = $(shell grep -s IGNORE $(OBJDIR)/*.txt)
+IGNORE = $(shell grep -s IGNORE $(TEST_BUILD)/*.txt)
 IGNORE_COUNT = $(words $(IGNORE))
 
+# Ignore the following files
+TEST_SRC_IGNORE = hpack.c
+
 # We need a test for each library source
-RESULTS = $(patsubst %.c,$(TEST_BUILD)/test_%.txt,$(LIBRARY_SOURCES))
+RESULTS = $(patsubst %.c,$(TEST_BUILD)/test_%.txt,$(filter-out $(TEST_SRC_IGNORE),$(LIBRARY_SOURCES)))
 
 test: $(RESULTS)
 	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
