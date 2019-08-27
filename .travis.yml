@@ -33,7 +33,7 @@ jobs:
     - <<: *h2spec
       env: TEST=generic/3.1
     - <<: *h2spec
-      env: TEST=generic/3.2.1
+      env: TEST=generic/3.2/1
 
 # Environment variables
 env:
