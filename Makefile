@@ -1,7 +1,8 @@
-QUIET ?= 1
+TWO = .
+CFLAGS = -std=c99 -Wall -Wextra 
 
-TARGET_DIR = ./bin
-SUBDIRS = ./src/ ./tests/ ./examples/client/ ./examples/server/
+PROJECTDIRS = examples/client/ examples/server/
 
-### General build rules
-include $(CURDIR)/Makefile.include
+all: client server
+
+include $(TWO)/Makefile.include

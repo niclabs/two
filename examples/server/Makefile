@@ -1,4 +1,6 @@
-TARGET = server
-SOURCES = server.c
-INCDIRS = ../../src
-PREREQS = two.a
+TWO = ../..
+CFLAGS = -std=c99 -Wall -Wextra 
+
+all: server
+
+include $(TWO)/Makefile.include

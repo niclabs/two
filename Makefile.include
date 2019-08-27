@@ -1,42 +1,29 @@
-# Makefile.include is heavily  based on
-#
-# boilermake: A reusable, but flexible, boilerplate Makefile.
-# Copyright 2008, 2009, 2010 Dan Moulding, Alan T. DeKok
-# Source: https://github.com/dmoulding/boilermake
+# -*- makefile -*-
 
-# Note: Parameterized "functions" in this makefile that are marked with
-#       "USE WITH EVAL" are only useful in conjuction with eval. This is
-#       because those functions result in a block of Makefile syntax that must
-#       be evaluated after expansion. Since they must be used with eval, most
-#       instances of "$" within them need to be escaped with a second "$" to
-#       accomodate the double expansion that occurs when eval is invoked.
+ifndef TWO
+  ${error TWO not defined! You must specify where two resides}
+endif
 
-# Only include this file once
-ifndef _MAKEFILE_INCLUDE
-_MAKEFILE_INCLUDE := 1
+# Configure output directories
+# Path for final binaries to be stored
+TARGET_DIR ?= $(call QUALIFY_PATH,${TWO},bin)
 
-# Shell used in this makefile
-# bash is used for 'echo -en'
-SHELL = /bin/bash
+# Build dir is for temporary files
+BUILD_DIR ?= $(call QUALIFY_PATH,${TWO},build)
 
-# Get 'Makefile.include' directory, is the starting directory for evaluation
-BASEDIR := $(dir $(lastword $(MAKEFILE_LIST)))
-BASEDIR := $(patsubst ${CURDIR}/%,./%,$(BASEDIR))
-BASEDIR := $(BASEDIR:%/=%)
+ifeq ($(DEFINES),)
+  -include Makefile.defines
+  ifneq ($(DEFINES),)
+    ${info using saved defines '$(DEFINES)'}
+  endif
+endif
 
-### Configurable build flags for all targets
-CF_ALL ?= -std=c99 -Wall -Wextra
-LD_ALL ?=
-LL_ALL ?=
-
-### Configurable build tools
-CC 		 ?= gcc
-COMPILE  = $(CC) $(CF_ALL) $(CFLAGS) -MP -MMD -o $@ -c $<
-LINK 	 = $(CC) $(LF_ALL) $(LDFLAGS) -o $@ $^ $(LL_ALL) $(LDLIBS)
-ARCHIVE  = $(AR) $(ARFLAGS) $@ $^
-
-# Quiet option, to output compile and link commands
-QUIET ?= 1
+#More debug information when running in CI
+ifdef CI
+  ifeq ($(CI),true)
+    QUIET = 0
+  endif
+endif
 
 # CANONICAL_PATH - Given one or more paths, converts the paths to the canonical
 #   form. The canonical form is the path, relative to the project's top-level
@@ -55,142 +42,87 @@ define QUALIFY_PATH
 $(addprefix ${1}/,$(filter-out /%,${2}))$(filter /%,${2})
 endef
 
-# PEEK - Parameterized "function" that results in the value at the top of the
-#   specified colon-delimited stack.
-define PEEK
-$(lastword $(subst :, ,${1}))
-endef
+# Target directories
+OBJECTDIR = $(BUILD_DIR)/obj
+TWO_TARGET_LIB = $(BUILD_DIR)/two.a
 
-# POP - Parameterized "function" that pops the top value off of the specified
-#   colon-delimited stack, and results in the new value of the stack. Note that
-#   the popped value cannot be obtained using this function; use peek for that.
-define POP
-${1:%:$(lastword $(subst :, ,${1}))=%}
-endef
+TWO_OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(TWO_SOURCES)))
+OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(SOURCES)))
 
-# PUSH - Parameterized "function" that pushes a value onto the specified colon-
-#   delimited stack, and results in the new value of the stack.
-define PUSH
-${2:%=${1}:%}
-endef
+uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
 
-define INCLUDE_SUBDIR
-    # Include submakefile if it exists
-    ifneq "$$(wildcard ${1}/Makefile)" ""
-        $$(eval $$(call INCLUDE_SUBMAKEFILE,${1}/Makefile))
-    endif
-endef
+# Provide way to create $(BUILD_DIR) if it has been removed by make clean
+$(TARGET_DIR):
+$(OBJECTDIR):
+	$(TRACE_MKDIR)
+	$(Q)mkdir -p $@
 
-# Include subdirectory makefile if it exists
-define INCLUDE_SUBMAKEFILE
-    # Reset makefile variables
-    TARGET       :=
-    SOURCES      :=
-    SUBDIRS      :=
-    CFLAGS       :=
-    LDFLAGS      :=
-    LDLIBS       :=
-    INCDIRS      :=
-    PREREQS      :=
+# Module configuration (under src/)
+# One big module under src for now
+MODULES += .
 
-    # A directory stack is maintained so that the correct paths are used as we
-    # recursively include all submakefiles. Get the makefile's directory and
-    # push it onto the stack.
-    DIR := $(call CANONICAL_PATH,$(dir ${1}))
-    DIR_STACK := $$(call PUSH,$${DIR_STACK},$${DIR})
+MODULEDIRS = $(call QUALIFY_PATH,${TWO},$(call CANONICAL_PATH,$(addprefix src/,$(MODULES))))
+UNIQUEMODULES = $(call uniq,$(MODULEDIRS))
+MODULES_SOURCES = $(foreach d, $(UNIQUEMODULES), ${subst ${d}/,,${wildcard $(d)/*.c}})
 
-    # Update CURDIR for included submakefile
-    CWD := $${CURDIR}
-    CURDIR := $$(call QUALIFY_PATH,$${CURDIR},$${DIR})
-    include ${1}
-    CURDIR := $${CWD}
+# Update sources
+TWO_SOURCES += $(MODULES_SOURCES)
 
-    # Initialize internal local variables
-    OBJS :=
+# Include module-specific makefiles
+MODULES_INCLUDES = ${wildcard ${foreach d, $(UNIQUEMODULES), $(d)/Makefile.${notdir $(d)}}}
 
-    # Ensure that a valid value is set for BUILD_DIR, TARGET_DIR, IS_PHONY
-    ifeq "$$(strip $${BUILD_DIR})" ""
-        BUILD_DIR := $${BASEDIR}/build
-    endif
-    ifeq "$$(strip $${TARGET_DIR})" ""
-        TARGET_DIR := $${BASEDIR}
-    endif
+### Perform an immediate expansion of MODULES_INCLUDES and store it in a
+### variable. This will allow us to subsequently filter-out module Makefiles
+### that were included in the first pass, such that we don't end up including
+### them twice.
+MODULES_INCLUDED_FIRST_PASS := $(MODULES_INCLUDES)
+include $(MODULES_INCLUDED_FIRST_PASS)
 
-    # Determine which target this makefile's variables apply to. A stack is
-    # used to keep track of which target is the "current" target as we
-    # recursively include other submakefiles.
-    ifneq "$$(strip $${TARGET})" ""
-        # makefile apply to this new target. Initialize the target's variables.
-        TGT := $$(strip $${TARGET})
+# Iterate once more: include the modules added from the previous include.
+# Only works with one level of nested module inclusion.
+include $(filter-out $(MODULES_INCLUDED_FIRST_PASS),$(MODULES_INCLUDES))
 
-        # Check for phony target
-        ifeq "$$(suffix $${TGT})" ".PHONY"
-            TGT := $$(basename $${TGT})
-            $${TGT}_IS_PHONY := 1
-        endif
+### Verbosity control. Use  make QUIET=0  to get verbose builds.
 
-        TARGETS         += $${TGT}
-        $${TGT}_CFLAGS  := $${CFLAGS}
-        $${TGT}_LDFLAGS := $${LDFLAGS}
-        $${TGT}_LDLIBS  := $${LDLIBS}
-        $${TGT}_OBJDIR  := $${BUILD_DIR}/$$(call CANONICAL_PATH,$${TGT})
-        $${TGT}_OBJS    :=
-        INCDIRS         := $$(call QUALIFY_PATH,$${DIR},$${INCDIRS})
-        INCDIRS         := $$(call CANONICAL_PATH,$${INCDIRS})
-        $${TGT}_INCDIRS := $${INCDIRS}
-        $${TGT}_DEPS    :=
-        $${TGT}_SOURCES :=
-        $${TGT}_PREREQS := $$(addprefix $${TARGET_DIR}/,$${PREREQS})
-    else
-        # The values defined by this makefile apply to the the "current" target
-        # as determined by which target is at the top of the stack.
-        TGT := $$(strip $$(call PEEK,$${TGT_STACK}))
-        $${TGT}_CFLAGS  += $${CFLAGS}
-        $${TGT}_LDFLAGS += $${LDFLAGS}
-        $${TGT}_LDLIBS  += $${LDLIBS}
-        INCDIRS         := $$(call QUALIFY_PATH,$${DIR},$${INCDIRS})
-        INCDIRS         := $$(call CANONICAL_PATH,$${INCDIRS})
-        $${TGT}_INCDIRS += $${INCDIRS}
-        $${TGT}_PREREQS += $$(addprefix $${TARGET_DIR}/,$${PREREQS})
-    endif
+ifeq ($(QUIET),0)
+  TRACE_CC =
+  TRACE_LD =
+  TRACE_AR =
+  TRACE_AS =
+  TRACE_MKDIR =
+  TRACE_RM =
+  TRACE_CP =
+  Q=
+else
+  MAKEFLAGS = --no-print-directory --quiet
+  TRACE_CC = @echo "  CC       " $<
+  TRACE_LD = @echo "  LD       " $@
+  TRACE_AR = @echo "  AR       " $@
+  TRACE_AS = @echo "  AS       " $<
+  TRACE_MKDIR = @echo "  MKDIR    " $@
+  TRACE_RM  = @echo "  RM       " ${1}
+  TRACE_CP  = @echo "  CP       " $< "-->" $@
+  Q=@
+endif
 
-    # Push the current target onto the target stack.
-    TGT_STACK := $$(call PUSH,$${TGT_STACK},$${TGT})
+### Forward comma-separated list of arbitrary defines to the compiler
+COMMA := ,
+CFLAGS += ${addprefix -D,${subst $(COMMA), ,$(DEFINES)}}
 
-    ifneq "$$(strip $${SOURCES})" ""
-         # Qualify and canonicalize paths.
-         SOURCES     := $$(call QUALIFY_PATH,$${DIR},$${SOURCES})
-         SOURCES     := $$(call CANONICAL_PATH,$${SOURCES})
+SOURCEDIRS = . $(PROJECTDIRS) $(MODULEDIRS)
 
-         # Convert the source file names to their corresponding object file
-         # names.
-         OBJS := $$(addprefix $${$${TGT}_OBJDIR}/,\
-                    $$(addsuffix .o,$$(basename $${SOURCES})))
+vpath %.c $(SOURCEDIRS)
 
-         $${TGT}_SOURCES += $${SOURCES}
-         $${TGT}_OBJS    += $${OBJS}
-         $${TGT}_DEPS    += $${OBJS:%.o=%.d}
-         $${TGT}_INCDIRS += $$(sort $$(dir $${SOURCES}))
+CFLAGS += $(addprefix -I,$(SOURCEDIRS))
 
-         BUILD_FILES     += $${$${TGT}_OBJS} $${$${TGT}_DEPS}
-    endif
+### Automatic dependency generation
 
-    ifneq "$$(strip $${SUBDIRS})" ""
-         # This makefile has submakefiles. Recursively include them.
-         $$(foreach D,$${SUBDIRS},\
-              $$(eval $$(call INCLUDE_SUBDIR,\
-                         $$(call CANONICAL_PATH,\
-                            $$(call QUALIFY_PATH,$${DIR},$${D})))))
-    endif
+ifneq ($(MAKECMDGOALS),clean)
+-include ${addprefix $(OBJECTDIR)/,$(TWO_SOURCES:.c=.d) \
+		                           $(SOURCES:.c=.d)}
+endif
 
-    # Reset the "current" target to it's previous value.
-    TGT_STACK := $$(call POP,$${TGT_STACK})
-    TGT := $$(call PEEK,$${TGT_STACK})
-
-    # Reset the "current" directory to it's previous value.
-    DIR_STACK := $$(call POP,$${DIR_STACK})
-    DIR := $$(call PEEK,$${DIR_STACK})
-endef
+### See http://make.paulandlesley.org/autodep.html#advanced
 
 define FINALIZE_DEPENDENCY
 cp $(@:.o=.d) $(@:.o=.$$$$); \
@@ -199,115 +131,44 @@ sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 rm -f $(@:.o=.$$$$)
 endef
 
-define ADD_TARGET_RULES
-    # Add build object rules
-    $${${1}_OBJS}: CFLAGS += $${${1}_CFLAGS} $$(addprefix -I,$${${1}_INCDIRS})
-
-    # Add rule to compile individual objects
-    $${${1}_OBJDIR}/%.o: %.c
-    $${${1}_OBJDIR}/%.o: %.c $${${1}_OBJDIR}/%.d
-		@mkdir -p $$(dir $$@)
-		$$(TRACE_CC)
-		$$(Q)$$(strip $${COMPILE})
-		@$${FINALIZE_DEPENDENCY}
-
-    # Add header dependency targets
-    $${${1}_DEPS}:
-    include $$(wildcard $${${1}_DEPS})
-
-    ifeq "$${${1}_IS_PHONY}" ""
-        # Build the actual target
-        ifeq "$$(suffix ${1})" ".a"
-            # If target is an archive file
-            $${TARGET_DIR}/${1}: $${${1}_OBJS}
-        else
-            # Target is an executable
-            $${TARGET_DIR}/${1}: LDFLAGS += $${${1}_LDFLAGS}
-            $${TARGET_DIR}/${1}: LDLIBS += $${${1}_LDLIBS}
-            $${TARGET_DIR}/${1}: $${${1}_OBJS} $${${1}_PREREQS}
-				@mkdir -p $$(dir $$@)
-				$$(TRACE_LD)
-				$$(Q)$$(strip $$(LINK))
-        endif
-    else
-        .PHONY: ${1}
-    endif
-endef
-
-# Remove implicit rules
-.SUFFIXES:
-.SUFFIXES: .c .o
-
-# Define general variables
-DIR_STACK     :=
-TGT_STACK     :=
-TARGETS       :=
-BUILD_FILES   :=
-BUILD_TARGETS :=
-
-.DEFAULT_GOAL := all
-
-# Include top-level Makefile
-$(eval $(call INCLUDE_SUBMAKEFILE,Makefile))
-
-# Quiet flag
-ifeq ($(QUIET),1)
-    TRACE_CC = @echo "  CC       " $<
-    TRACE_LD = @echo "  LD       " $@
-    TRACE_AR = @echo "  AR       " $@
-    TRACE_RM = @echo "  RM       " ${1}
-    Q=@
-    MAKEFLAGS += --no-print-directory
-else
-    TRACE_CC =
-    TRACE_LD =
-    TRACE_AR =
-    TRACE_RM =
-    Q=
-endif
-
-# Add non-phony targets to build file
-BUILD_TARGETS += $(foreach TGT,${TARGETS},$(if ${${TGT}_IS_PHONY},,${TARGET_DIR}/${TGT}))
-
-# Add non-phony targets
-.PHONY: all
-all: $(BUILD_TARGETS)
-
-.PHONY: debug
-debug: CF_ALL += -g -DENABLE_DEBUG
-debug: all
-
-# disable assertions for release build
-.PHONY: release
-release: CF_ALL += -DNDEBUG
-release: all
-
-# Add target rules
-$(foreach TGT,${TARGETS},\
-	$(eval $(call ADD_TARGET_RULES,${TGT})))
-
-# General directory independent rules
-${TARGET_DIR}/%.a:
-	@mkdir -p $(dir $@)
-	$(TRACE_AR)
-	$(Q)$(strip $(ARCHIVE))
-
-.PHONY:	clean
+.PHONY: clean distclean
 clean:
-	$(call TRACE_RM,$(sort $(addprefix *,$(suffix $(BUILD_FILES)))))
-	$(Q)$(strip rm -f $(wildcard $(BUILD_FILES)))
+	$(call TRACE_RM,*.d *.o $(CLEAN) $(OBJECTDIR))
+	-$(Q)rm -f *.d *.o $(CLEAN)
+	-$(Q)rm -rf $(OBJECTDIR)
 
-distclean: clean
-	$(call TRACE_RM,$(BUILD_TARGETS) $(BUILD_DIR))
-	$(Q)$(strip rm -f $(wildcard $(BUILD_TARGETS)))
-	$(Q)rm -rf $(BUILD_DIR)
-ifneq "$(TARGET_DIR)" "."
-	$(call TRACE_RM,$(TARGET_DIR))
-	$(Q)rm -rf $(TARGET_DIR)
-endif
+distclean:
+	$(call TRACE_RM,$(BUILD_DIR) $(TARGET_DIR))
+	-$(Q)rm -rf $(BUILD_DIR)
+	-$(Q)rm -rf $(TARGET_DIR)
 
-# Prevent make from removing any build targets, including intermediate ones
-.SECONDARY:	$(BUILD_FILES)
+$(OBJECTDIR)/%.o: %.c | $(OBJECTDIR)
+	$(TRACE_CC)
+	$(Q)$(CC) $(CFLAGS) -MMD -c $< -o $@
+	@$(FINALIZE_DEPENDENCY)
 
+%.o: %.c
+	$(TRACE_CC)
+	$(Q)$(CC) $(CFLAGS) -c $< -o $@
 
-endif
+$(TWO_TARGET_LIB): $(TWO_OBJECTS)
+	$(TRACE_AR)
+	$(Q)$(AR) $(ARFLAGS) $@ $^
+
+$(TARGET_DIR)/%: %.o $(OBJECTS) $(TWO_TARGET_LIB)
+	$(Q)mkdir -p $(dir $@)
+	$(TRACE_LD)
+	$(Q)$(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS)
+
+.PRECIOUS: $(TARGET_DIR)/%
+
+# Cancel the predefined implict rule for compiling and linking
+# a single C source into a binary to force GNU make to consider
+# the match-anything rule below instead.
+%: %.c
+
+# Match-anything pattern rule to allow the project makefiles to
+# abstract from the actual binary name. It needs to contain some
+# command in order to be a rule, not just a prerequisite.
+%: $(TARGET_DIR)/%
+	@

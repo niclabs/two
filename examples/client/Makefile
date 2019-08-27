@@ -1,4 +1,6 @@
-TARGET = client
-SOURCES = client.c
-INCDIRS = ../../src
-PREREQS = two.a
+TWO = ../..
+CFLAGS = -std=c99 -Wall -Wextra 
+
+all: client
+
+include $(TWO)/Makefile.include
