@@ -12,7 +12,7 @@ void cleanup(int signal)
 {
     (void)signal;
 
-    INFO("Ctrl-C received. Terminating");
+    PRINTF("Ctrl-C received. Terminating");
     http_client_disconnect(&http_server_state);
     http_server_destroy(&http_server_state);
 }

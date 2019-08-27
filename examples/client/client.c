@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <signal.h>
 
-#define LOG_LEVEL (LOG_LEVEL_INFO)
-
 #include "http.h"
 #include "logging.h"
 
@@ -14,7 +12,7 @@ void cleanup(int signal)
 {
     (void)signal;
 
-    INFO("Ctrl-C received. Terminating");
+    PRINTF("Ctrl-C received. Terminating");
     http_client_disconnect(&http_client_state);
     http_server_destroy(&http_client_state);
 }
@@ -49,7 +47,7 @@ int main(int argc, char **argv)
         return 1;
     }
     else if (status == 200) {
-        INFO("Received %d bytes", (int)response_size);
+        PRINTF("Received %d bytes", (int)response_size);
         for (uint32_t i = 0; i < response_size; i++) {
             PRINTF("%c", (char)response[i]);
         }
