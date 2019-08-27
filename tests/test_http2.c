@@ -460,6 +460,7 @@ void test_read_frame(void){
 }
 
 void test_read_frame_errors(void){
+    TEST_IGNORE();
   hstates_t hst;
   /*Header with payload greater than 256*/
   frame_header_t bad_header = {1024, 0x4, 0x0, 0x0, 0};
@@ -1850,7 +1851,7 @@ int main(void)
     UNIT_TEST(test_handle_settings_payload_errors);
     UNIT_TEST(test_read_frame);
     //TODO fix this test - it's throwing segmentation fault
-    //UNIT_TEST(test_read_frame_errors);
+    UNIT_TEST(test_read_frame_errors);
     UNIT_TEST(test_send_local_settings);
     UNIT_TEST(test_send_local_settings_errors);
     UNIT_TEST(test_h2_client_init_connection);
