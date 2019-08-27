@@ -33,7 +33,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    uint16_t port = atoi(argv[1]);
+    int port = atoi(argv[1]);
     if (port < 0) {
         PRINTF("Invalid port given");
         return 1;
