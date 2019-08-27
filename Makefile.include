@@ -50,6 +50,9 @@ uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
 SRC = src
 OBJECTDIR = $(BUILD_DIR)/obj
 
+# Path for test builds
+TEST_BUILD = $(BUILD_DIR)/test
+
 # Library paths
 LIBRARY = $(BUILD_DIR)/two.a
 LIBRARY_OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(LIBRARY_SOURCES)))
@@ -57,13 +60,14 @@ LIBRARY_OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(LIBRARY_SOURCES
 # Target objects
 OBJECTS = $(addprefix ${OBJECTDIR}/,$(patsubst %.c,%.o,$(SOURCES)))
 
+
 # Remove implicit rules
 .SUFFIXES:
 .SUFFIXES: .c .o
 
-# Provide way to create $(BUILD_DIR) if it has been removed by make clean
-$(TARGET_DIR):
-$(OBJECTDIR):
+# Provide way to recreate necessary directories
+DIRS += $(TARGET_DIR) $(TEST_BUILD) $(OBJECTDIR)
+$(DIRS):
 	$(TRACE_MKDIR)
 	$(Q)mkdir -p $@
 
@@ -91,6 +95,26 @@ include $(MODULES_INCLUDED_FIRST_PASS)
 # Iterate once more: include the modules added from the previous include.
 # Only works with one level of nested module inclusion.
 include $(filter-out $(MODULES_INCLUDED_FIRST_PASS),$(MODULES_INCLUDES))
+
+# Test configurations
+
+define INCLUDE_TEST
+    TEST_SUBDIRS :=
+    DIR := $$(call QUALIFY_PATH,$${TWO},$$(call CANONICAL_PATH,${1}))
+    ifneq ($$(wildcard $${DIR}/Makefile.$$(notdir $$(DIR))),)
+        include $$(DIR)/Makefile.$$(notdir $$(DIR))
+
+        TEST_SUBDIRS := $$(call QUALIFY_PATH,$${DIR},$${TEST_SUBDIRS})    
+        TESTDIRS += $${TEST_SUBDIRS}
+        
+        # Include Makefile.<dirname> if it exists
+        include $$(wildcard $$(foreach d,$${TEST_SUBDIRS},$${d}/Makefile.$$(notdir $${d})))
+    endif
+endef
+
+#Include all tests in TESTDIRS
+$(foreach d,${TESTDIRS},$(eval $(call INCLUDE_TEST,${d})))
+
 
 ### Verbosity control. Use  make QUIET=0  to get verbose builds.
 ifeq ($(QUIET),0)
@@ -120,7 +144,7 @@ CFLAGS += ${addprefix -D,${subst $(COMMA), ,$(DEFINES)}}
 
 ### Where to look for source files
 SOURCEDIRS = . $(TARGETDIRS) $(MODULEDIRS)
-vpath %.c $(SOURCEDIRS)
+vpath %.c $(SOURCEDIRS) $(TESTDIRS)
 
 ### List of include directories for the compiler
 CFLAGS += $(addprefix -I,$(SOURCEDIRS))
@@ -159,9 +183,20 @@ debug: all
 release: CFLAGS += -DNDEBUG
 release: al
 
+# Build regular objects
 $(OBJECTDIR)/%.o: %.c | $(OBJECTDIR)
 	$(TRACE_CC)
 	$(Q)$(strip $(CC) $(CFLAGS) -MMD -c $< -o $@)
+	@$(FINALIZE_DEPENDENCY)
+
+$(TEST_BUILD)/test_%.o: CFLAGS += -g ${TEST_CFLAGS} $(addprefix -I,$(TESTDIRS))
+$(TEST_BUILD)/test_%.o: test_%.c | $(TEST_BUILD)
+	$(TRACE_CC)
+	$(Q)$(strip $(CC) $(CFLAGS) -c $< -o $@)
+
+$(TEST_BUILD)/%.o: %.c | $(TEST_BUILD)
+	$(TRACE_CC)
+	$(Q)$(strip $(CC) $(CFLAGS) $(TEST_SRC_CFLAGS) -g -DNDEBUG -MMD -c $< -o $@)
 	@$(FINALIZE_DEPENDENCY)
 
 %.o: %.c
@@ -172,12 +207,23 @@ $(LIBRARY): $(LIBRARY_OBJECTS)
 	$(TRACE_AR)
 	$(Q)$(strip $(AR) $(ARFLAGS) $@ $^)
 
-$(TARGET_DIR)/%: %.o $(OBJECTS) $(LIBRARY)
-	$(Q)mkdir -p $(dir $@)
+# Build target rule
+$(TARGET_DIR)/%: %.o $(OBJECTS) $(LIBRARY) | $(TARGET_DIR)
 	$(TRACE_LD)
 	$(Q)$(strip $(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS))
 
-.PRECIOUS: $(TARGET_DIR)/%
+# Build tests rule
+$(TEST_BUILD)/test_%: LDFLAGS += $(TEST_LDFLAGS)
+$(TEST_BUILD)/test_%: LDLIBS += $(TEST_LDLIBS)
+$(TEST_BUILD)/test_%: $(TEST_BUILD)/test_%.o $(TEST_BUILD)/%.o $(TEST_PREREQS)
+	$(TRACE_LD)
+	$(Q)$(strip $(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS))
+
+.PHONY: test_%
+test_%: $(TEST_BUILD)/test_%
+	$(Q)$^
+
+.PRECIOUS: $(TARGET_DIR)/% $(TEST_BUILD)/test_%
 
 # Cancel the predefined implict rule for compiling and linking
 # a single C source into a binary to force GNU make to consider
