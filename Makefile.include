@@ -191,11 +191,13 @@ $(OBJECTDIR)/%.o: %.c | $(OBJECTDIR)
 	$(Q)$(strip $(CC) $(CFLAGS) -MMD -c $< -o $@)
 	@$(FINALIZE_DEPENDENCY)
 
+# Build test object
 $(TEST_BUILD)/test_%.o: CFLAGS += -g ${TEST_CFLAGS} $(addprefix -I,$(TESTDIRS))
 $(TEST_BUILD)/test_%.o: test_%.c | $(TEST_BUILD)
 	$(TRACE_CC)
 	$(Q)$(strip $(CC) $(CFLAGS) -c $< -o $@)
 
+# Build source object for testing
 $(TEST_BUILD)/%.o: %.c | $(TEST_BUILD)
 	$(TRACE_CC)
 	$(Q)$(strip $(CC) $(CFLAGS) $(TEST_SRC_CFLAGS) -g -DNDEBUG -MMD -c $< -o $@)
