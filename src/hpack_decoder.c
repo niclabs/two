@@ -26,9 +26,9 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p >> (8 - prefix);
     if (b0 != p) {
         #if (b0 > HPACK_MAXIMUM_INTEGER_SIZE)
-            return -1;
+        return -1;
         #else
-            return (uint32_t)b0;
+        return (uint32_t)b0;
         #endif
     }
     else {
@@ -39,7 +39,7 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
             if (!(bi & (uint8_t)128)) {
                 integer += (uint32_t)bi * ((uint32_t)1 << depth);
                 if (integer > HPACK_MAXIMUM_INTEGER_SIZE) {
-                    DEBUG("Integer is %d:",integer);
+                    DEBUG("Integer is %d:", integer);
                     return -1;
                 }
                 else {
@@ -68,11 +68,7 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
 int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
     int32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
-    /*Integer exceed implementations limits*/
-    if(str_length < 0) {
-        ERROR("Integer exceeds implementations limits");
-        return -1;
-    }
+
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
 
     for (uint16_t i = 0; i < str_length; i++) {
@@ -111,11 +107,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
             return -2;
         }
         uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
-        /*Check if it's the EOS Symbol*/
-        if (i == 30 && result == 0x3fffffff) {
-            ERROR("Decoding error: The compressed header contains the EOS Symbol");
-            return -1;
-        }
+
         encoded_word.code = result;
         encoded_word.length = i;
         uint8_t decoded_sym = 0;
@@ -147,11 +139,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
 {
     int32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
-    /*Integer exceed implementations limits*/
-    if(str_length < 0) {
-        ERROR("Integer exceeds implementations limits");
-        return -1;
-    }
+
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
     uint8_t *encoded_buffer = encoded_string + str_length_size;
     uint16_t bit_position = 0;
@@ -216,7 +204,7 @@ uint32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer)
         return hpack_decoder_decode_huffman_string(str, encoded_buffer);
         #else
         ERROR("Not implemented: Cannot decode a huffman compressed header");
-        return -1;
+        return -2;
         #endif
     }
     else {
@@ -228,16 +216,9 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
 {
     int pointer = 0;
     int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD));
-    /*Integer exceed implementations limits*/
-    if(index < 0) {
-        ERROR("Integer exceeds implementations limits");
-        return -1;
-    }
-    if (index == 0) {
-        ERROR("Decoding Error: Cannot retrieve a 0 index from hpack tables");
-        return -1;
-    }
+
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, index, name, value);
+
     if (rc < 0) {
         DEBUG("Error en find_entry ");
         return rc;
@@ -247,16 +228,26 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
     return pointer;
 }
 
+int hpack_decoder_decode_indexed_header_field_v2(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char *name, char *value)
+{
+    int pointer = 0;
+    int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, encoded_header->index, name, value);
+
+    if (rc < 0) {
+        DEBUG("Error en find_entry ");
+        return rc;
+    }
+
+    pointer += hpack_utils_encoded_integer_size(encoded_header->index, hpack_utils_find_prefix_size(encoded_header->preamble));
+    return pointer;
+}
+
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value)
 {
     int pointer = 0;
     int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING));//decode index
-    /*Integer exceed implementations limits*/
-    if(index < 0) {
-        ERROR("Integer exceeds implementations limits");
-        return -1;
-    }
+
     if (index == 0) {
         pointer += 1;
         DEBUG("Decoding a new name compressed header");
@@ -298,11 +289,7 @@ int hpack_decoder_decode_literal_header_field_without_indexing(hpack_dynamic_tab
 {
     int pointer = 0;
     int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_WITHOUT_INDEXING));//decode index
-    /*Integer exceed implementations limits*/
-    if(index < 0) {
-        ERROR("Integer exceeds implementations limits");
-        return -1;
-    }
+
     if (index == 0) {
         pointer += 1;
         DEBUG("Decoding a new name compressed header");
@@ -337,11 +324,7 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
 {
     int pointer = 0;
     int32_t index = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(LITERAL_HEADER_FIELD_NEVER_INDEXED));//decode index
-    /*Integer exceed implementations limits*/
-    if(index < 0) {
-        ERROR("Integer exceeds implementations limits");
-        return -1;
-    }
+
     if (index == 0) {
         pointer += 1;
         DEBUG("Decoding a new name compressed header");
@@ -371,6 +354,54 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
     return pointer;
 }
 
+
+int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char *name, char *value)
+{
+    int pointer = 0;
+
+    /*New name*/
+    if (encoded_header->index == 0) {
+        pointer += 1;
+        DEBUG("Decoding a new name compressed header");
+        int32_t rc = hpack_decoder_decode_string(name, encoded_header->name_string);
+        if (rc < 0) {
+            DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
+            return rc;
+        }
+        pointer += rc;
+    }
+    else {
+        //find entry in either static or dynamic table_length
+        DEBUG("Decoding an indexed name compressed header");
+        int8_t rc = hpack_tables_find_entry_name(dynamic_table, encoded_header->index, name);
+        if (rc < 0) {
+            DEBUG("Error en find_entry ");
+            return rc;
+        }
+        pointer += hpack_utils_encoded_integer_size(encoded_header->index, hpack_utils_find_prefix_size(encoded_header->preamble));
+    }
+    int32_t rc = hpack_decoder_decode_string(value, encoded_header->value_string);
+    if (rc < 0) {
+        DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
+        return rc;
+    }
+    pointer += rc;
+    if (encoded_header->preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+        /*Here we add it to the dynamic table*/
+        int rc = hpack_tables_dynamic_table_add_entry(dynamic_table, name, value);
+        if (rc < 0) {
+            DEBUG("Couldn't add to dynamic table");
+            return rc;
+        }
+#else
+        ERROR("Dynamic Table is not included, couldn't add header to table");
+        return -1;
+#endif
+    }
+    return pointer;
+}
+
 /*
  * Function: hpack_decode_dynamic_table_size_update
  * Decodes a header that represents a dynamic table size update
@@ -383,11 +414,7 @@ int hpack_decoder_decode_literal_header_field_never_indexed(hpack_dynamic_table_
 int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block)
 {
     int32_t new_table_size = hpack_decoder_decode_integer(header_block, hpack_utils_find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));//decode index
-    /*Integer exceed implementations limits*/
-    if(new_table_size < 0) {
-        ERROR("Integer exceeds implementations limits");
-        return -1;
-    }
+
     DEBUG("New table size is %d", new_table_size);
     int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, new_table_size);
     if (rc < 0) {
@@ -397,6 +424,27 @@ int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynami
 
     return hpack_utils_encoded_integer_size(new_table_size, hpack_utils_find_prefix_size(DYNAMIC_TABLE_SIZE_UPDATE));
 }
+
+/*
+ * Function: hpack_decode_dynamic_table_size_update_v2
+ * Decodes a header that represents a dynamic table size update
+ * Input:
+ *      -> *header_block: Header block to decode
+ *      -> *dynamic_table: dynamic table to resize
+ * Output:
+ *      Returns the number of bytes decoded if successful or a value < 0 if an error occurs.
+ */
+int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header)
+{
+    DEBUG("New table size is %d", encoded_header->dynamic_table_size);
+    int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, encoded_header->dynamic_table_size);
+    if (rc < 0) {
+        DEBUG("Dynamic table failed to resize");
+        return rc;
+    }
+    return hpack_utils_encoded_integer_size(encoded_header->dynamic_table_size, hpack_utils_find_prefix_size(encoded_header->preamble));
+}
+
 
 /* Function: hpack_decoder_decode_header
  * decodes a header according to the preamble
@@ -519,52 +567,139 @@ int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_
     return pointer;
 }
 
-uint8_t get_huffman_bit(uint8_t num){
+uint8_t get_huffman_bit(uint8_t num)
+{
     return 128u & num;
 }
 
-int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t* encoded_header, uint8_t* header_block){
+int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block)
+{
     int32_t pointer = 0;
+
     encoded_header->preamble = hpack_utils_get_preamble(header_block[pointer]);
     encoded_header->index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
     int32_t index_size = hpack_utils_encoded_integer_size(encoded_header->index,  hpack_utils_find_prefix_size(encoded_header->preamble));
     pointer += index_size;
+
     if (encoded_header->preamble == INDEXED_HEADER_FIELD) {
         return pointer;
     }
+
     if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
         encoded_header->dynamic_table_size = encoded_header->index;
         encoded_header->index = 0;
         return pointer;
     }
-    if(encoded_header->index == 0){
+
+    if (encoded_header->index == 0) {
         encoded_header->huffman_bit_of_name = get_huffman_bit(header_block[pointer]);
         int32_t name_length = hpack_decoder_decode_integer(&header_block[pointer], 7);
+
         /*Integer exceed implementations limits*/
-        if(name_length < 0) {
+        if (name_length < 0) {
             ERROR("Integer exceeds implementations limits");
             return -1;
         }
-        encoded_header->name_length = (uint32_t) name_length;
-        pointer += hpack_utils_encoded_integer_size(encoded_header->name_length,7);
+
+        encoded_header->name_length = (uint32_t)name_length;
+        pointer += hpack_utils_encoded_integer_size(encoded_header->name_length, 7);
         encoded_header->name_string = &header_block[pointer];
         pointer += encoded_header->name_length;
     }
     encoded_header->huffman_bit_of_value = get_huffman_bit(header_block[pointer]);
     int32_t value_length = hpack_decoder_decode_integer(&header_block[pointer], 7);
+
     /*Integer exceed implementations limits*/
-    if(value_length < 0) {
+    if (value_length < 0) {
         ERROR("Integer exceeds implementations limits");
         return -1;
     }
+
     encoded_header->value_length = value_length;
-    pointer += hpack_utils_encoded_integer_size(encoded_header->value_length,7);
+    pointer += hpack_utils_encoded_integer_size(encoded_header->value_length, 7);
     encoded_header->value_string = &header_block[pointer];
     pointer += encoded_header->value_length;
     return pointer;
 }
 
-int hpack_decoder_decode_header_v2(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers){
+int hpack_decoder_decode_header_v2(hpack_encoded_header_t *encoded_header, hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+{
+    if (encoded_header->preamble == INDEXED_HEADER_FIELD) {
+        DEBUG("Decoding an indexed header field");
+        return hpack_decoder_decode_indexed_header_field_v2(dynamic_table, encoded_header, name, value);
+    }
+    else if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
+        DEBUG("Decoding a dynamic table size update");
+        return hpack_decoder_decode_dynamic_table_size_update_v2(dynamic_table, encoded_header);
+    }
+    else if (encoded_header->preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING
+             || encoded_header->preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED
+             || encoded_header->preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+        return hpack_decoder_decode_literal_header_field(dynamic_table, encoded_header, name, value);
+    }
+
+    else {
+        ERROR("Error unknown preamble value: %d", encoded_header->preamble);
+        return -2;
+    }
+}
+
+int hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
+{
+    uint32_t eos = 0x3fffffff;
+
+    for (uint32_t i = 0; i + 3 < buffer_length; i++) {
+        uint32_t symbol = 0;
+        symbol |= (encoded_buffer[i]) << 24;
+        symbol |= (encoded_buffer[i + 1]) << 16;
+        symbol |= (encoded_buffer[i + 2]) << 8;
+        symbol |= (encoded_buffer[i + 3]);
+        if (symbol == eos) {
+            ERROR("Decoding error: The compressed header contains the EOS Symbol");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
+{
+    /*Row doesn't exist*/
+    if (encoded_header->preamble == INDEXED_HEADER_FIELD && encoded_header->index == 0) {
+        ERROR("Decoding Error: Cannot retrieve a 0 index from hpack tables");
+        return -1;
+    }
+
+    /*Integer exceed implementations limits*/
+    if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE && encoded_header->dynamic_table_size > HPACK_MAXIMUM_INTEGER_SIZE) {
+        ERROR("Integer exceeds implementations limits");
+        return -1;
+    }
+
+    /*It's ok*/
+    if (encoded_header->preamble == INDEXED_HEADER_FIELD || encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
+        return 0;
+    }
+
+    if ((encoded_header->index == 0) && (encoded_header->name_length >= 4)) {
+        /*Check if it's the EOS Symbol in name_string*/
+        int rc = hpack_check_eos_symbol(encoded_header->name_string, encoded_header->name_length);
+        if (rc < 0) {
+            return rc;
+        }
+    }
+    if (encoded_header->value_length >= 4) {
+        /*Check if it's the EOS Symbol in value_string*/
+        int rc = hpack_check_eos_symbol(encoded_header->value_string, encoded_header->value_length);
+        if (rc < 0) {
+            return rc;
+        }
+    }
+    return 0;
+}
+
+int hpack_decoder_decode_header_block_v2(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)
+{
     int pointer = 0;
 
     char tmp_name[16];
@@ -575,11 +710,22 @@ int hpack_decoder_decode_header_v2(hpack_dynamic_table_t *dynamic_table, uint8_t
         memset(tmp_name, 0, 16);
         memset(tmp_value, 0, 32);
         int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header, header_block + pointer);
-        if(bytes_read < 0){
+        if (bytes_read < 0) {
             /*Error*/
             return bytes_read;
         }
         pointer += bytes_read;
+        int err = hpack_decoder_check_errors(&encoded_header);
+        if (err < 0) {
+            return err;
+        }
+        int rc = hpack_decoder_decode_header_v2(&encoded_header, dynamic_table,tmp_name,tmp_value);
+        if (rc < 0) {
+            return rc;
+        }
+        if (tmp_name[0] != 0 && tmp_value != 0) {
+            headers_add(headers, tmp_name, tmp_value);
+        }
     }
     if (pointer > header_block_size) {
         DEBUG("Error decoding header block, read %d bytes and header_block_size is %d", pointer, header_block_size);
