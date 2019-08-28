@@ -95,7 +95,7 @@ We use [GitHub](https://github.com/) for versioning. For the versions available,
 * **Gabriel Norambuena** - [gnorambuena](https://github.com/people/gnorambuena)
 * **Pablo Aliaga** - [maitegm](https://github.com/people/pabloaliaga)
 * **Diego Ortego** - [gedoix](https://github.com/people/gedoix)
-* **Felipe Lalanne** - [gedoix](https://github.com/people/pipex)
+* **Felipe Lalanne** - [pipex](https://github.com/people/pipex)
 
 See the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
 
