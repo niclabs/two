@@ -193,21 +193,28 @@ int sock_write(sock_t *sock, char *buf, int len)
 
 int sock_destroy(sock_t *sock)
 {
-    if (sock == NULL || sock->state != SOCK_CONNECTED) {
-        errno = EINVAL;
-        return -1;
-    }
+	if (sock == NULL || sock->state != SOCK_CONNECTED) {
+		errno = EINVAL;
+		return -1;
+	}
 
-    if (sock->state == SOCK_CLOSED) {
-        errno = EBADF;
-        return -1;
-    }
+	if (sock->state == SOCK_CLOSED) {
+		errno = EBADF;
+		return -1;
+	}
 
-    if (close(sock->socket) < 0) {
-        return -1;
-    }
+	struct linger sl;
+	sl.l_onoff = 1;  /* non-zero value enables linger option in kernel */
+	sl.l_linger = 0; /* timeout interval in seconds */
 
-    sock->socket = -1;
-    sock->state = SOCK_CLOSED;
-    return 0;
+	// Configure socket to wait for data to send before closing
+	setsockopt(sock->socket, SOL_SOCKET, SO_LINGER, &sl, sizeof(sl));
+
+	if (close(sock->socket) < 0) {
+		return -1;
+	}
+
+	sock->socket = -1;
+	sock->state = SOCK_CLOSED;
+	return 0;
 }
