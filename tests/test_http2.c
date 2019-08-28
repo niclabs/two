@@ -16,7 +16,7 @@ extern int update_settings_table(settings_payload_t *spl, uint8_t place, hstates
 extern int send_settings_ack(hstates_t *st);
 extern int check_incoming_settings_condition(frame_header_t *header, hstates_t *st);
 extern int handle_settings_payload(settings_payload_t *spl, hstates_t *st);
-extern int read_frame(uint8_t *buff_read, frame_header_t *header);
+extern int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st);
 extern int check_incoming_headers_condition(frame_header_t *header, hstates_t *st);
 extern int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstates_t *st);
 extern int check_incoming_continuation_condition(frame_header_t *header, hstates_t *st);
@@ -68,7 +68,6 @@ int read_n_bytes(uint8_t *buff_read, int n, hstates_t *st){
    incoming_bytes = http_read(st, buff_read+read_bytes, n - read_bytes);
    /* incoming_bytes equals -1 means that there was an error*/
    if(incoming_bytes < 1){
-     puts("Error in read function");
      return -1;
    }
    read_bytes = read_bytes + incoming_bytes;
@@ -444,6 +443,7 @@ void test_handle_settings_payload_errors(void){
 
 void test_read_frame(void){
   hstates_t hst;
+  init_variables(&hst);
   frame_header_t header = {36, 0x4, 0x0, 0x0, 0};
   uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
   bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
@@ -453,39 +453,43 @@ void test_read_frame(void){
   int wrc = http_write(&hst, bf, 200);
   TEST_ASSERT_MESSAGE(wrc == 200, "wrc must be 200.");
   TEST_ASSERT_MESSAGE(size == 200, "size must be 200.");
-  int rc = read_frame(bf, &header);
+  int rc = read_frame(bf, &header, &hst);
   TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0");
   TEST_ASSERT_MESSAGE(size == 155, "read_frame must have read 45 bytes");
   TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 1, "bytes to frame header must be called once");
 }
 
 void test_read_frame_errors(void){
-    TEST_IGNORE();
   hstates_t hst;
-  /*Header with payload greater than 256*/
-  frame_header_t bad_header = {1024, 0x4, 0x0, 0x0, 0};
+  init_variables(&hst);
+  /*Header with payload greater than 1024*/
+  frame_header_t bad_header = {2048, 0x4, 0x0, 0x0, 0};
   frame_header_t good_header = {200, 0x4, 0x0, 0x0, 0};
   uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
   // Second error, bytes_to_frame_header return
   int bytes_return[2] = {-1, 0};
   SET_RETURN_SEQ(bytes_to_frame_header, bytes_return, 2);
+  uint32_t read_setting_from_returns[1] = {1024};
+  SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+  int frame_to_bytes_return[1] = {1000};
+  SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
   // First error, there is no data to read
-  int rc = read_frame(bf, &good_header);
+  int rc = read_frame(bf, &good_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (read_n_bytes error)");
   int wrc = http_write(&hst, bf, 200);
   TEST_ASSERT_MESSAGE(wrc == 200, "wrc must be 200.");
   TEST_ASSERT_MESSAGE(size == 200, "size must be 200.");
   // Second error
-  rc = read_frame(bf, &good_header);
+  rc = read_frame(bf, &good_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (bytes_to_frame_header error)");
   /*We write 200 zeros for future reading*/
   // Third error, payload size too big
-  rc = read_frame(bf, &bad_header);
+  rc = read_frame(bf, &bad_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload size error)");
   TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 2, "bytes to frame header must be called once");
   TEST_ASSERT_MESSAGE(size == 182, "read_frame must have read  bytes of header");
   // Fourth error, read_n_bytes payload reading error
-  rc = read_frame(bf, &good_header);
+  rc = read_frame(bf, &good_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload read error)");
 }
 
@@ -1850,7 +1854,6 @@ int main(void)
     UNIT_TEST(test_handle_settings_payload);
     UNIT_TEST(test_handle_settings_payload_errors);
     UNIT_TEST(test_read_frame);
-    //TODO fix this test - it's throwing segmentation fault
     UNIT_TEST(test_read_frame_errors);
     UNIT_TEST(test_send_local_settings);
     UNIT_TEST(test_send_local_settings_errors);
