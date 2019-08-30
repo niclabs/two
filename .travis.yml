@@ -28,7 +28,7 @@ jobs:
       script: $SH "make h2spec PORT=8888 SPEC=$SPEC"
       env: SPEC=generic/1
     - <<: *h2spec
-      env: SPEC=generic/2.1
+      env: SPEC=generic/2/2
     - <<: *h2spec
       env: SPEC=generic/3.1
     - <<: *h2spec
