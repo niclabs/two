@@ -23,14 +23,16 @@ jobs:
   include:
     - stage: test
       script: $SH "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
-    - stage: http/2 conformance testing
-      script: $SH make h2spec SPEC=generic/1
-    - stage: http/2 conformance testing
-      script: $SH make h2spec SPEC=generic/2.1
-    - stage: http/2 conformance testing
-      script: $SH make h2spec SPEC=generic/3.1
-    - stage: http/2 conformance testing
-      script: $SH make h2spec SPEC=generic/3.2/1
+    - &h2spec
+      stage: http/2 conformance testing
+      script: $SH make h2spec -p 8888 SPEC=$SPEC
+      env: SPEC=generic/1
+    - <<: *h2spec
+      env: SPEC=generic/2.1
+    - <<: *h2spec
+      env: SPEC=generic/3.1
+    - <<: *h2spec
+      env: SPEC=generic/3.2/1
 
 # Environment variables
 env:
