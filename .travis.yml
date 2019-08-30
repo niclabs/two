@@ -25,7 +25,7 @@ jobs:
       script: $SH "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
     - &h2spec
       stage: http/2 conformance testing
-      script: $SH "make h2spec -p 8888 SPEC=$SPEC"
+      script: $SH "make h2spec PORT=8888 SPEC=$SPEC"
       env: SPEC=generic/1
     - <<: *h2spec
       env: SPEC=generic/2.1
