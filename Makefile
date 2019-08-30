@@ -7,4 +7,15 @@ TESTDIRS = tests/
 
 all: client server
 
+PORT=8888
+server.pid: ./bin/server
+	@(./bin/server $(PORT) & echo $$! > $@)
+
+h2spec: /usr/local/bin/h2spec server.pid
+	h2spec $(SPEC) -p $(PORT) > h2spec.log
+	@kill `cat server.pid` && rm server.pid
+	@cat h2spec.log
+	@rm h2spec.log
+
+
 include $(TWO)/Makefile.include
