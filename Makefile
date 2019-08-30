@@ -13,9 +13,9 @@ server.pid: ./bin/server
 
 h2spec: /usr/local/bin/h2spec server.pid
 	h2spec $(SPEC) -p $(PORT) > h2spec.log
-	@kill `cat server.pid` && rm server.pid
+	@-kill `cat server.pid` 
 	@cat h2spec.log
-	@rm h2spec.log
+	@rm server.pid h2spec.log
 
 
 include $(TWO)/Makefile.include
