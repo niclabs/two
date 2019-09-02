@@ -62,6 +62,8 @@ jobs:
       env: SPEC=generic/5/13
     - <<: *h2spec
       env: SPEC=generic/5/14
+    - <<: *h2spec
+      env: SPEC=generic/5/15
 
       ##HPACK
     - <<: *h2spec
