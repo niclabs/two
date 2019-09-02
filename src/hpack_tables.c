@@ -541,20 +541,20 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             ERROR("Dynamic table not initialized ");
-            return -1;
+            return -2;
         }
 
         int8_t rc = hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
         if (rc < 0) {
             DEBUG("The entry doesn't exist in dynamic table");
-            return -2;
+            return rc;
         }
     }
     else {
         int8_t rc = hpack_tables_static_find_entry_name_and_value(index, name, value);
         if (rc < 0) {
             DEBUG("The index was greater than the size of the static table");
-            return -2;
+            return rc;
         }
     }
     #else

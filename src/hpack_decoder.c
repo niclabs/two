@@ -329,7 +329,7 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, index, name, value);
 
     if (rc < 0) {
-        DEBUG("Error en find_entry ");
+        DEBUG("Error en find_entry %d",rc);
         return rc;
     }
 
@@ -343,7 +343,7 @@ int hpack_decoder_decode_indexed_header_field_v2(hpack_dynamic_table_t *dynamic_
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, encoded_header->index, name, value);
 
     if (rc < 0) {
-        DEBUG("Error en find_entry ");
+        DEBUG("Error en find_entry %d",rc);
         return rc;
     }
 
