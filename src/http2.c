@@ -1294,7 +1294,7 @@ int h2_receive_frame(hstates_t *st){
         case CONTINUATION_TYPE:{//Continuation
             //returns -1 if protocol error, -2 if stream closed, 0 if no errors
             INFO("h2_receive_frame: CONTINUATION");
-            rc = check_incoming_continuation_condition(&header, st);
+            int rc = check_incoming_continuation_condition(&header, st);
             if(rc < 0){
               return rc;
             }
@@ -1305,7 +1305,7 @@ int h2_receive_frame(hstates_t *st){
               ERROR("Error block fragments too big (not enough space allocated). INTERNAL ERROR");
               return -1;
             }
-            int rc = read_continuation_payload(buff_read, &header, &contpl, continuation_block_fragment);
+            rc = read_continuation_payload(buff_read, &header, &contpl, continuation_block_fragment);
             if(rc < 1){
               ERROR("Error in continuation payload reading");
               send_connection_error(st, HTTP2_INTERNAL_ERROR);
