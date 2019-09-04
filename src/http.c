@@ -348,7 +348,9 @@ int http_server_start(hstates_t *hs)
                 if (ignore_unsupported_data_frames(hs) < 0) {
                     ERROR("An error occurred while ignoring unsupported dataframes");
                 }
-                error(hs, 501, "Not Implemented");
+                if (hs->connection_state) {
+                    error(hs, 501, "Not Implemented");
+                }
                 continue;
             }
 
