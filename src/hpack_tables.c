@@ -148,9 +148,9 @@ int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, 
 {
     if (index <= 0) {
         ERROR("Decoding error: %d index is lower than 1", index);
-        return -1; //Decoding error: indexed header field with 0
+        return -1;  //Decoding error: indexed header field with 0
     }
-    index--; //because static table begins at index 1
+    index--;        //because static table begins at index 1
     const char *table_name = hpack_static_table.name_table[index];
     const char *table_value = hpack_static_table.value_table[index];
     strncpy(name, table_name, strlen(table_name));
@@ -547,10 +547,10 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
         }
 
         return hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
-        }
+    }
     else {
         return hpack_tables_static_find_entry_name_and_value(index, name, value);
-        }
+    }
     #else
     return hpack_tables_static_find_entry_name_and_value(index, name, value);
     #endif
