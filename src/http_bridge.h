@@ -14,7 +14,7 @@
 
 
 
-#define HTTP2_MAX_HBF_BUFFER 1024
+#define HTTP2_MAX_HBF_BUFFER 16384
 
 typedef enum {
     STREAM_IDLE,
@@ -97,7 +97,7 @@ typedef struct HTTP2_STATES {
 #ifdef HTTP_CONF_MAX_DATA_SIZE
 #define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
 #else
-#define HTTP_MAX_DATA_SIZE (128)
+#define HTTP_MAX_DATA_SIZE (16384)
 #endif
 
 /**
