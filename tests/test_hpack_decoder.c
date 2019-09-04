@@ -516,7 +516,7 @@ void test_decode_header_block_literal_never_indexed(void)
     };
 
     headers_add_fake.custom_fake = headers_add_check_inputs;
-    rc = hpack_decoder_decode_header_block_from_table(&dynamic_table, header_block_dynamic_index, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block(&dynamic_table, header_block_dynamic_index, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(3, headers_add_fake.call_count);
