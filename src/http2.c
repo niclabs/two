@@ -71,7 +71,7 @@ int init_variables(hstates_t * st){
 int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
     int rc = read_n_bytes(buff_read, 9, st);
     if(rc != 9){
-        ERROR("Error reading bytes from http, read %d bytes", rc);
+        WARN("Read %d bytes from socket", rc);
         return -1;
     }
     /*Must be 0*/
@@ -1154,7 +1154,6 @@ int h2_receive_frame(hstates_t *st){
     frame_header_t header;
     rc = read_frame(buff_read, &header, st);
     if(rc == -1){
-        ERROR("Error reading frame");
         return -1;
     }
     switch(header.type){
