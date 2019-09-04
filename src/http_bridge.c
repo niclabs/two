@@ -31,7 +31,8 @@ int http_write(hstates_t *hs, uint8_t *buf, int len)
     if (wr <= 0) {
         ERROR("Error in writing");
         if (wr == 0) {
-            hs->socket_state = 0;
+            hs->connection_state = 0;
+            http_client_disconnect(hs);
         }
         return wr;
     }
@@ -55,12 +56,12 @@ int http_read(hstates_t *hs, uint8_t *buf, int len)
 
     if (rd <= 0) {
         if (rd == 0) {
-            hs->socket_state = 0;
+          WARN("Read 0 bytes, connection closed");
+          hs->connection_state = 0;
+          http_client_disconnect(hs);
         } else if (rd < 0) {
             ERROR("Error in reading: %d", rd);
         }
-        return rd;
     }
     return rd;
-
 }
