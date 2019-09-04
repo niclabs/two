@@ -18,6 +18,7 @@
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_read, sock_t *, char *, int, int);
 FAKE_VALUE_FUNC(int, sock_write, sock_t *, char *, int);
+FAKE_VALUE_FUNC(int, http_client_disconnect, hstates_t*);
 
 
 /* List of fakes used by this unit tester */
