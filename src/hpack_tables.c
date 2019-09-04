@@ -542,31 +542,18 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
     #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
-            ERROR("Dynamic table not initialized ");
+            DEBUG("Dynamic table not initialized ");
             return -2;
         }
 
-        int8_t rc = hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
-        if (rc < 0) {
-            DEBUG("The entry doesn't exist in dynamic table");
-            return rc;
+        return hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
         }
-    }
     else {
-        int8_t rc = hpack_tables_static_find_entry_name_and_value(index, name, value);
-        if (rc < 0) {
-            DEBUG("The index was greater than the size of the static table");
-            return rc;
+        return hpack_tables_static_find_entry_name_and_value(index, name, value);
         }
-    }
     #else
-    int8_t rc = hpack_tables_static_find_entry_name_and_value(index, name, value);
-    if (rc < 0) {
-        ERROR("The index was greater than the size of the static table");
-        return -1;
-    }
+    return hpack_tables_static_find_entry_name_and_value(index, name, value);
     #endif
-    return 0;
 }
 
 /*
@@ -584,28 +571,16 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
     #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
-            ERROR("Dynamic table not initialized ");
-            return -1;
-        }
-        int8_t rc = hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
-        if (rc < 0) {
-            DEBUG("The entry doesn't exist in dynamic table");
+            DEBUG("Dynamic table not initialized ");
             return -2;
         }
+        return hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
     }
     else {
-        int8_t rc = hpack_tables_static_find_entry_name(index, name);
-        if (rc < 0) {
-            DEBUG("The index was greater than the size of the static table");
-            return -2;
-        }
+        return hpack_tables_static_find_entry_name(index, name);
     }
     #else
-    int8_t rc = hpack_tables_static_find_entry_name(index, name);
-    if (rc < 0) {
-        ERROR("The index was greater than the size of the static table");
-        return -1;
-    }
+    return hpack_tables_static_find_entry_name(index, name);
     #endif
     return 0;
 }
