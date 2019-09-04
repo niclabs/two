@@ -51,10 +51,13 @@ int http_read(hstates_t *hs, uint8_t *buf, int len)
         return -1;
     }
 
+    INFO("http_read: read %d bytes from socket\n", rd);
+
     if (rd <= 0) {
-        ERROR("Error in reading: %d", rd);
         if (rd == 0) {
             hs->socket_state = 0;
+        } else if (rd < 0) {
+            ERROR("Error in reading: %d", rd);
         }
         return rd;
     }
