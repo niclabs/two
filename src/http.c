@@ -65,12 +65,14 @@ int parse_uri(char *uri, char *path, char *query_params)
  */
 int has_method_support(char *method)
 {
-    if ((strncmp("GET", method, 8) != 0) &&
-    (strncmp("HEAD", method, 8) != 0)){
+    if ((method == NULL) ||
+        ((strncmp("GET", method, 8) != 0) &&
+         (strncmp("HEAD", method, 8) != 0))) {
         return 0;
     }
     return 1;
 }
+
 
 /**
  * Get received data
