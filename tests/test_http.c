@@ -41,6 +41,8 @@ FAKE_VALUE_FUNC(int, headers_init, headers_t *, header_t *, int);
 FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
 FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
 FAKE_VALUE_FUNC(int, h2_notify_free_data_buffer, hstates_t *, int);
+FAKE_VALUE_FUNC(int, headers_validate, headers_t*);
+FAKE_VOID_FUNC(h2_send_goaway_protocol_error, hstates_t *);
 
 
 /* List of fakes used by this unit tester */
@@ -412,7 +414,7 @@ void test_http_server_start_success(void)
 
     int returnVals1[2] = { 0, -1 };
     SET_RETURN_SEQ(sock_accept, returnVals1, 2);
-    char *returnVals2[2] = { "GET", "/index" };
+    char *returnVals2[2] = { "GET", "/index" , "HTTP", "/index"};
     SET_RETURN_SEQ(headers_get, returnVals2, 2);
 
     int ss = http_server_start(&hs);
@@ -421,7 +423,7 @@ void test_http_server_start_success(void)
     TEST_ASSERT_EQUAL(1, h2_server_init_connection_fake.call_count);
     TEST_ASSERT_EQUAL(2, h2_receive_frame_fake.call_count);
     TEST_ASSERT_EQUAL(3, headers_init_fake.call_count);
-    TEST_ASSERT_EQUAL(2, headers_get_fake.call_count);
+    TEST_ASSERT_EQUAL(4, headers_get_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_destroy_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, ss, "Error message must come from http2 layer");

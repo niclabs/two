@@ -133,50 +133,26 @@ char *headers_get(headers_t *headers, const char *name)
 }
 
 
-int headers_validate_request(headers_t* headers) {
+int headers_validate(headers_t* headers) {
     // Assertions for debugging
     assert(headers != NULL);
 
-    int found_path = 0;
-    int found_method = 0;
-    int found_scheme = 0;
-
-    for (int i = 0; i < headers->count; i++) {
-        // case insensitive name comparison of headers
-        if (strncasecmp(headers->headers[i].name, "path", MAX_HEADER_NAME_LEN) == 0) {
-            if (!found_path)
-                found_path = 1;
-            else
-            {
-                ERROR("Headers validation failed, path field duplicated");
-                return -1;
-            }
+    for (int i = 0; i < headers_count(headers); i++) {
+        char* name = headers_get_name_from_index(headers, i);
+        char* value = headers_get_value_from_index(headers, i);
+        if (value == NULL)
+        {
+            ERROR("Headers validation failed, the \"%s\" field had no value", name);
+            return -1;
         }
-        else if (strncasecmp(headers->headers[i].name, "method", MAX_HEADER_NAME_LEN) == 0) {
-            if (!found_method)
-                found_method = 1;
-            else
-            {
-                ERROR("Headers validation failed, method field duplicated");
-                return -1;
-            }
-        }
-        else if (strncasecmp(headers->headers[i].name, "scheme", MAX_HEADER_NAME_LEN) == 0) {
-            if (!found_scheme)
-                found_scheme = 1;
-            else
-            {
-                ERROR("Headers validation failed, scheme field duplicated");
-                return -1;
-            }
+        if (strchr(value, ',') != NULL)
+        {
+            ERROR("Headers validation failed, the \"%s\" field was ducplicated", name);
+            return -1;
         }
     }
 
-    if (found_path && found_method && found_scheme)
-        return 0;
-
-    ERROR("Headers validation failed, some fields were missing");
-    return -1;
+    return 0;
 }
 
 

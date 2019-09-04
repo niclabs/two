@@ -342,17 +342,26 @@ int http_server_start(hstates_t *hs)
                 break;
             }
 
+            if (headers_validate(&hs->headers_in) < 0) {
+                h2_send_goaway_protocol_error(hs);
+                break;
+            }
+
             // Get the method from headers
             char *method = headers_get(&hs->headers_in, ":method");
+
+            if (method == NULL || headers_get(&hs->headers_in, ":path") == NULL || headers_get(&hs->headers_in, ":scheme") == NULL) {
+                h2_send_goaway_protocol_error(hs);
+                break;
+            }
+
             DEBUG("Received %s request", method);
             if (!has_method_support(method)) {
                 DEBUG("Ignoring unsupported request's DATA frames");
                 if (ignore_unsupported_data_frames(hs) < 0) {
                     ERROR("An error occurred while ignoring unsupported dataframes");
                 }
-                if (hs->connection_state) {
-                    error(hs, 501, "Not Implemented");
-                }
+                error(hs, 501, "Not Implemented");
                 continue;
             }
 
