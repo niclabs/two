@@ -133,6 +133,53 @@ char *headers_get(headers_t *headers, const char *name)
 }
 
 
+int headers_validate_request(headers_t* headers) {
+    // Assertions for debugging
+    assert(headers != NULL);
+
+    int found_path = 0;
+    int found_method = 0;
+    int found_scheme = 0;
+
+    for (int i = 0; i < headers->count; i++) {
+        // case insensitive name comparison of headers
+        if (strncasecmp(headers->headers[i].name, "path", MAX_HEADER_NAME_LEN) == 0) {
+            if (!found_path)
+                found_path = 1;
+            else
+            {
+                ERROR("Headers validation failed, path field duplicated");
+                return -1;
+            }
+        }
+        else if (strncasecmp(headers->headers[i].name, "method", MAX_HEADER_NAME_LEN) == 0) {
+            if (!found_method)
+                found_method = 1;
+            else
+            {
+                ERROR("Headers validation failed, method field duplicated");
+                return -1;
+            }
+        }
+        else if (strncasecmp(headers->headers[i].name, "scheme", MAX_HEADER_NAME_LEN) == 0) {
+            if (!found_scheme)
+                found_scheme = 1;
+            else
+            {
+                ERROR("Headers validation failed, scheme field duplicated");
+                return -1;
+            }
+        }
+    }
+
+    if (found_path && found_method && found_scheme)
+        return 0;
+
+    ERROR("Headers validation failed, some fields were missing");
+    return -1;
+}
+
+
 int headers_count(headers_t *headers)
 {
     return headers->count;

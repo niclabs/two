@@ -81,6 +81,17 @@ int headers_set(headers_t * headers, const char * name, const char * value);
 char * headers_get(headers_t * headers, const char * name);
 
 /**
+ * Cheacks all headers for validity of a request.
+ * 
+ * There shouldn't be any ommited header fields, nor any duplicated ones, among
+ * the group [path, method, scheme].
+ * 
+ * @param headers headers list data structure
+ * @return 0 if ok -1 if validation failed
+ * */
+int headers_validate_request(headers_t* headers);
+
+/**
  * Return total number of headers in the header list
  */
 int headers_count(headers_t * headers);
