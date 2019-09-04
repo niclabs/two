@@ -45,6 +45,14 @@ int sock_read_custom_fake(sock_t *s, char *buf, int l, int u)
     return 5;
 }
 
+int http_client_disconnect_custom_fake(hstates_t* hs)
+{
+    hs->socket_state = 0;
+    hs->connection_state = 0;
+
+    return 0;
+}
+
 
 void test_http_write_success(void)
 {
@@ -53,6 +61,7 @@ void test_http_write_success(void)
     uint8_t *buf = (uint8_t *)"hola";
     hstates_t hs;
     hs.socket_state = 1;
+    hs.connection_state = 1;
     int wr = http_write(&hs, buf, 256);
 
 
@@ -65,10 +74,12 @@ void test_http_write_success(void)
 void test_http_write_fail_sock_write(void)
 {
     sock_write_fake.return_val = 0;
+    http_client_disconnect_fake.custom_fake = http_client_disconnect_custom_fake;
 
     uint8_t *buf = (uint8_t *)"hola";
     hstates_t hs;
     hs.socket_state = 1;
+    hs.connection_state = 1;
     int wr = http_write(&hs, buf, 256);
 
 
@@ -101,6 +112,7 @@ void test_http_read_success(void)
     uint8_t *buf = (uint8_t *)malloc(256);
     hstates_t hs;
     hs.socket_state = 1;
+    hs.connection_state = 1;
     int rd = http_read(&hs, buf, 256);
 
 
@@ -117,10 +129,12 @@ void test_http_read_success(void)
 void test_http_read_fail_sock_read(void)
 {
     sock_read_fake.return_val = 0;
+    http_client_disconnect_fake.custom_fake = http_client_disconnect_custom_fake;
 
     uint8_t *buf = (uint8_t *)malloc(256);
     hstates_t hs;
     hs.socket_state = 1;
+    hs.connection_state = 1;
     int rd = http_read(&hs, buf, 256);
 
     TEST_ASSERT_EQUAL((void *)sock_read, fff.call_history[0]);
