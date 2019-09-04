@@ -379,13 +379,13 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
 
     int16_t initial_position = hpack_tables_dynamic_pos_of_index(dynamic_table, index);
     if (initial_position < 0) {
-        ERROR("Error at finding position in buffer");
+        DEBUG("Error at finding position in buffer");
         return -2;
     }
 
     //only copy name
     if (hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name) < 0) {
-        ERROR("Error while copying name into external buffer");
+        DEBUG("Error while copying name into external buffer");
         return -2;
     }
 
