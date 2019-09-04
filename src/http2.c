@@ -507,7 +507,6 @@ int handle_settings_payload(settings_payload_t *spl, hstates_t *st){
         return 0;
     }
     else{
-        send_connection_error(st, HTTP2_INTERNAL_ERROR);
         return -1;
     }
 }
