@@ -342,7 +342,7 @@ void test_send_settings_ack_errors(void){
   hstates_t hdummy;
   int create_return[2] = {-1, 0};
   SET_RETURN_SEQ(create_settings_ack_frame, create_return, 2);
-  int frame_to_bytes_return[1] = {1000};
+  int frame_to_bytes_return[1] = {10000};
   SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
   int rc = send_settings_ack(&hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (error in creation)");
@@ -476,9 +476,7 @@ void test_read_frame_errors(void){
   // First error, there is no data to read
   int rc = read_frame(bf, &good_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (read_n_bytes error)");
-  int wrc = http_write(&hst, bf, 200);
-  TEST_ASSERT_MESSAGE(wrc == 200, "wrc must be 200.");
-  TEST_ASSERT_MESSAGE(size == 200, "size must be 200.");
+  http_write(&hst, bf, 9);
   // Second error
   rc = read_frame(bf, &good_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (bytes_to_frame_header error)");
@@ -487,8 +485,8 @@ void test_read_frame_errors(void){
   rc = read_frame(bf, &bad_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload size error)");
   TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 2, "bytes to frame header must be called once");
-  TEST_ASSERT_MESSAGE(size == 182, "read_frame must have read  bytes of header");
   // Fourth error, read_n_bytes payload reading error
+  clean_buffer();
   rc = read_frame(bf, &good_header, &hst);
   TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload read error)");
 }
@@ -525,7 +523,7 @@ void test_send_local_settings_errors(void){
   int create_return[2] = {-1, 0};
   SET_RETURN_SEQ(create_settings_frame, create_return, 2);
   // Second error, http_write error
-  int frame_return[3] = {1000, 1000, 12};
+  int frame_return[3] = {1000, 10000, 12};
   SET_RETURN_SEQ(frame_to_bytes, frame_return, 3);
   int rc = send_local_settings(&hdummy);
   TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (create_settings_frame error)");
@@ -1780,7 +1778,7 @@ void test_send_goaway_errors(void){
   SET_RETURN_SEQ(create_goaway_frame, create_goaway_return, 2);
   rc = send_goaway(&st, HTTP2_NO_ERROR);
   TEST_ASSERT_MESSAGE(rc < 0, "Return code must be less than 0");
-  int frame_to_bytes_return[1] = {300};
+  int frame_to_bytes_return[1] = {30000};
   SET_RETURN_SEQ(frame_to_bytes, frame_to_bytes_return, 1);
   rc = send_goaway(&st, HTTP2_NO_ERROR);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (write error)" );
