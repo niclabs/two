@@ -20,7 +20,7 @@ int http_write(hstates_t *hs, uint8_t *buf, int len)
 {
     int wr = 0;
 
-    if (hs->socket_state == 1) {
+    if (hs->socket_state && hs->connection_state) {
         wr = sock_write(&hs->socket, (char *)buf, len);
     }
     else {
@@ -43,7 +43,7 @@ int http_read(hstates_t *hs, uint8_t *buf, int len)
 {
     int rd = 0;
 
-    if (hs->socket_state == 1) {
+    if (hs->socket_state && hs->connection_state) {
         rd = sock_read(&hs->socket, (char *)buf, len, 0);
     }
     else {
