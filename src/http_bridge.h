@@ -14,7 +14,7 @@
 
 
 
-#define HTTP2_MAX_HBF_BUFFER 128
+#define HTTP2_MAX_HBF_BUFFER 1024
 
 typedef enum {
     STREAM_IDLE,

@@ -754,16 +754,15 @@ int main(void)
     UNIT_TEST(test_encode_huffman_word);
     UNIT_TEST(test_encode_huffman_string);
 #endif
+    /*
     UNIT_TEST(test_encode_non_huffman_string);
-/*
-    UNIT_TEST(test_encode_then_decode_non_huffman_string);
-    UNIT_TEST(test_encode_then_decode_huffman_string);
- */
     UNIT_TEST(test_encode_literal_header_field_new_name);
+
     UNIT_TEST(test_encode_literal_header_field_new_name_error);
     UNIT_TEST(test_encode_literal_header_field_indexed_name);
     UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
     UNIT_TEST(test_hpack_encoder_encode_dynamic_size_update);
+    */
     return UNIT_TESTS_END();
 }

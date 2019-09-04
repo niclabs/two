@@ -1033,7 +1033,7 @@ void test_handle_continuation_payload_errors(void){
   st.h2s.header_block_fragments_pointer = 50;
   st.h2s.received_end_stream = 0;
   // First error, header length too big
-  head.length = 300;
+  head.length = 5000;
   // Second error, buffer copy invalid
   int bc_returns[2] = {-1, 20};
   SET_RETURN_SEQ(buffer_copy, bc_returns, 2);
