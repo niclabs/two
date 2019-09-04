@@ -440,12 +440,13 @@ void test_http_server_start_fail_h2_server_init_connection(void)
     reset_http_states(&hs);
     hs.server_socket_state = 1;
 
-    sock_accept_fake.return_val = 0;
+    int returnVals[2] = { 0, -1 };
+    SET_RETURN_SEQ(sock_accept, returnVals, 2);
     h2_server_init_connection_fake.return_val = -1;
 
     int is = http_server_start(&hs);
 
-    TEST_ASSERT_EQUAL(1, sock_accept_fake.call_count);
+    TEST_ASSERT_EQUAL(2, sock_accept_fake.call_count);
     TEST_ASSERT_EQUAL(1, h2_server_init_connection_fake.call_count);
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, is, "Error message must come from http2 layer");
@@ -972,10 +973,10 @@ void test_http_client_connect_fail_h2_client_init_connection(void)
 
     TEST_ASSERT_EQUAL_MESSAGE(-1, cc, "Error message must come from http2 layer");
 
-    TEST_ASSERT_EQUAL(1, hs.socket_state);
+    TEST_ASSERT_EQUAL(0, hs.socket_state);
     TEST_ASSERT_EQUAL(0, hs.server_socket_state);
     TEST_ASSERT_EQUAL(0, hs.headers_in.count);
-    TEST_ASSERT_EQUAL(1, hs.connection_state);
+    TEST_ASSERT_EQUAL(0, hs.connection_state);
     TEST_ASSERT_EQUAL(0, hs.is_server);
 }
 
