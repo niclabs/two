@@ -98,4 +98,6 @@ int h2_graceful_connection_shutdown(hstates_t *st);
 */
 int h2_notify_free_data_buffer(hstates_t *st, int data_len);
 
+void h2_send_goaway_protocol_error(hstates_t *st);
+
 #endif /*HTTP2_H*/

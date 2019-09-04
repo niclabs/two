@@ -1413,3 +1413,7 @@ int h2_notify_free_data_buffer(hstates_t *st, int data_len){
   }
   return rc;
 }
+
+void h2_send_goaway_protocol_error(hstates_t *st){
+  send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+}
