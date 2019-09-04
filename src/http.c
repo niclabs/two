@@ -321,12 +321,8 @@ int http_server_start(hstates_t *hs)
         // Initialize http2 connection (send headers)
         if (h2_server_init_connection(hs) < 0) {
             DEBUG("Could not perform HTTP/2 initialization");
-
-            // TODO: terminate client and continue
-            sock_destroy(&hs->socket);
-            hs->connection_state = 0;
-            hs->socket_state = 0;
-            return -1;
+            http_client_disconnect(hs);
+            continue;
         }
 
         while (hs->connection_state == 1) {
@@ -561,7 +557,7 @@ int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
     // Initialize http/2 connection
     if (h2_client_init_connection(hs) < 0) {
         DEBUG("Failed to perform HTTP/2 initialization");
-        //TODO: should we destroy client socket?
+        http_client_disconnect(hs);
         return -1;
     }
 
