@@ -911,27 +911,30 @@ void test_handle_headers_payload_errors(void){
   headers_payload_t hpl;
   hstates_t st;
   // First error, header block fragment too big
-  uint32_t ghbfs_returns[2] = {10000, 20};
-  SET_RETURN_SEQ(get_header_block_fragment_size, ghbfs_returns, 2);
+  uint32_t ghbfs_returns[6] = {17000,20,20,20,20,20};
+  SET_RETURN_SEQ(get_header_block_fragment_size, ghbfs_returns, 6);
   // Second error, buffer_copy invalid
-  int bc_returns[2] = {-1, 20};
-  SET_RETURN_SEQ(buffer_copy, bc_returns, 2);
+  int bc_returns[5] = {-1, 20, 20, 20, 20};
+  SET_RETURN_SEQ(buffer_copy, bc_returns, 5);
   // Third error and fourth error, receive_header_block invalid
-  int rcv_returns[3] = {-1, 25, 20};
-  SET_RETURN_SEQ(receive_header_block, rcv_returns, 3);
-  int flag_returns[6] = {0, 1, 0 ,1, 0, 1};
-  SET_RETURN_SEQ(is_flag_set, flag_returns, 6);
+  int rcv_returns[4] = {-1,-2, 25, 20};
+  SET_RETURN_SEQ(receive_header_block, rcv_returns, 4);
+  int flag_returns[2] = {0, 1};
+  SET_RETURN_SEQ(is_flag_set, flag_returns, 2);
   // Fifth error, header list size bigger than expected
   uint32_t headers_get_header_list_size_returns[1] = {129};
   SET_RETURN_SEQ(headers_get_header_list_size, headers_get_header_list_size_returns, 1);
   uint32_t get_setting_value_returns[1] = {128};
   SET_RETURN_SEQ(get_setting_value, get_setting_value_returns, 1);
+
   int rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (Internal error)");
   rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (writting error)");
   rc = handle_headers_payload(&head, &hpl, &st);
-  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (receive header error)");
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (receive header error - compression)");
+  rc = handle_headers_payload(&head, &hpl, &st);
+  TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (receive header error - internal)");
   rc = handle_headers_payload(&head, &hpl, &st);
   TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (hbf pointer invalid)");
   rc = handle_headers_payload(&head, &hpl, &st);
@@ -1871,7 +1874,7 @@ int main(void)
     UNIT_TEST(test_handle_headers_payload_just_end_stream_flag);
     UNIT_TEST(test_handle_headers_payload_full_message_header_no_end_stream);
     UNIT_TEST(test_handle_headers_payload_full_message_header_end_stream);
-    //UNIT_TEST(test_handle_headers_payload_errors);
+    UNIT_TEST(test_handle_headers_payload_errors);
     UNIT_TEST(test_handle_continuation_payload_no_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream_flag_set);
