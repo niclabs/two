@@ -1036,7 +1036,7 @@ void test_handle_continuation_payload_errors(void){
   st.h2s.header_block_fragments_pointer = 50;
   st.h2s.received_end_stream = 0;
   // First error, header length too big
-  head.length = 5000;
+  head.length = 17000;
   // Second error, buffer copy invalid
   int bc_returns[2] = {-1, 20};
   SET_RETURN_SEQ(buffer_copy, bc_returns, 2);
@@ -1878,7 +1878,7 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_no_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_flag_set);
     UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream_flag_set);
-    //UNIT_TEST(test_handle_continuation_payload_errors);
+    UNIT_TEST(test_handle_continuation_payload_errors);
     UNIT_TEST(test_send_headers_stream_verification_server);
     UNIT_TEST(test_send_headers_stream_verification_client);
     UNIT_TEST(test_send_headers_frame);
