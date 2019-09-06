@@ -718,19 +718,21 @@ void test_check_incoming_headers_condition_creation_of_stream(void){
   st.h2s.waiting_for_end_headers_flag = 0;
   st.h2s.current_stream.stream_id = 0;
   st.h2s.current_stream.state = 0;
+  st.h2s.last_open_stream_id = 2438;
   uint32_t read_setting_from_returns[1] = {128};
   SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
   int rc = check_incoming_headers_condition(&head, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
   st.h2s.current_stream.stream_id = 2438;
   st.h2s.current_stream.state = STREAM_IDLE;
   rc = check_incoming_headers_condition(&head, &st);
   TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
   TEST_ASSERT_MESSAGE(st.h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
-
+  TEST_ASSERT_MESSAGE(st.h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
 }
 
 void test_check_incoming_headers_condition_mismatch(void){
@@ -1861,7 +1863,7 @@ int main(void)
     UNIT_TEST(test_h2_server_init_connection_errors);
     UNIT_TEST(test_check_incoming_headers_condition);
     UNIT_TEST(test_check_incoming_headers_condition_error);
-    //UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
+    UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_continuation_condition);
     UNIT_TEST(test_check_incoming_continuation_condition_errors);
