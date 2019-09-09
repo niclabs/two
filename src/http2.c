@@ -1126,6 +1126,7 @@ int h2_server_init_connection(hstates_t *st){
     INFO("Server: 24 bytes read");
     if(strcmp(preface, (char*)preface_buff) != 0){
         ERROR("Error in preface receiving");
+        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
         return -1;
     }
     /*Server sends local settings to endpoint*/
