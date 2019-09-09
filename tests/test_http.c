@@ -414,7 +414,7 @@ void test_http_server_start_success(void)
 
     int returnVals1[2] = { 0, -1 };
     SET_RETURN_SEQ(sock_accept, returnVals1, 2);
-    char *returnVals2[2] = { "GET", "/index" , "HTTP", "/index"};
+    char *returnVals2[4] = { "GET", "/index" , "HTTP", "/index"};
     SET_RETURN_SEQ(headers_get, returnVals2, 2);
 
     int ss = http_server_start(&hs);
