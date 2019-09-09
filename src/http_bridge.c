@@ -55,9 +55,9 @@ int http_read(hstates_t *hs, uint8_t *buf, int len)
     INFO("http_read: read %d bytes from socket\n", rd);
 
     if (rd <= 0) {
+        hs->connection_state = 0;
         if (rd == 0) {
           WARN("Read 0 bytes, connection closed");
-          hs->connection_state = 0;
           http_client_disconnect(hs);
         } else if (rd < 0) {
             ERROR("Error in reading: %d", rd);
