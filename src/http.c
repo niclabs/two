@@ -347,10 +347,13 @@ int http_server_start(hstates_t *hs)
                 break;
             }
 
-            // Get the method from headers
+            // Get the method, path and scheme from headers
             char *method = headers_get(&hs->headers_in, ":method");
+            char *path = headers_get(&hs->headers_in, ":path");
+            char* scheme = headers_get(&hs->headers_in, ":scheme");
 
-            if (method == NULL || headers_get(&hs->headers_in, ":path") == NULL || headers_get(&hs->headers_in, ":scheme") == NULL) {
+            // Check the request's validity
+            if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
                 h2_send_goaway_protocol_error(hs);
                 break;
             }
