@@ -60,6 +60,34 @@ void test_hpack_utils_read_bits_from_bytes(void)
     code = hpack_utils_read_bits_from_bytes(4, 16, buffer);
     TEST_ASSERT_EQUAL(0x1C56, code);
 
+    /**/
+    uint8_t buffer2[] = {0x9d};
+    code = hpack_utils_read_bits_from_bytes(2, 5, buffer2);
+    TEST_ASSERT_EQUAL(0xe, code);
+
+    code = hpack_utils_read_bits_from_bytes(2, 6, buffer2);
+    TEST_ASSERT_EQUAL(0x1d, code);
+
+    /*Test reading eos*/
+    uint8_t eos[] = {0xff,0xff,0xff,0xfc};
+
+    code = hpack_utils_read_bits_from_bytes(0, 30, eos);
+    TEST_ASSERT_EQUAL(0x3fffffff, code);
+
+    uint8_t eos2[] = {0x7f,0xff,0xff,0xfe};
+
+    code = hpack_utils_read_bits_from_bytes(1, 30, eos2);
+    TEST_ASSERT_EQUAL(0x3fffffff, code);
+
+    uint8_t eos3[] = {0x3f,0xff,0xff,0xff};
+
+    code = hpack_utils_read_bits_from_bytes(2, 30, eos3);
+    TEST_ASSERT_EQUAL(0x3fffffff, code);
+
+    uint8_t eos4[] = {0x3,0xff,0xff,0xff,0xf0};
+
+    code = hpack_utils_read_bits_from_bytes(6, 30, eos4);
+    TEST_ASSERT_EQUAL(0x3fffffff, code);
 }
 void test_hpack_utils_log128(void)
 {

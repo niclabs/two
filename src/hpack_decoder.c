@@ -154,7 +154,6 @@ int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
             }
             uint8_t bits_left = 8 * str_length - bit_position;
             uint8_t last_byte = encoded_buffer[str_length - 1];
-
             if (bits_left < 8) {
                 uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
                 if ((last_byte & mask) == mask) {
@@ -199,7 +198,7 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
             return -1;
         }
     }
-    else {
+    else{
         /*Check if it has a padding greater than 7 bits*/
         uint8_t mask = 255u;
         if (last_byte == mask) {
@@ -216,9 +215,8 @@ int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_strin
 {
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
     uint16_t bit_position = 0;
-    uint16_t i = 0;
 
-    for (i = 0; ((bit_position - 1) / 8) < (int32_t)str_length; i++) {
+    for (uint16_t i = 0; ((bit_position - 1) / 8) < (int32_t)str_length; i++) {
         int32_t word_length = hpack_decoder_decode_huffman_word(str + i, encoded_string, str_length, bit_position);
         if (word_length < 0) {
             return hpack_decoder_check_huffman_padding(bit_position, encoded_string, str_length, str_length_size);
@@ -232,6 +230,7 @@ int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_strin
 int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length)
 {
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
+
     for (uint16_t i = 0; i < str_length; i++) {
         str[i] = (char)encoded_string[i];
     }
@@ -329,7 +328,7 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, index, name, value);
 
     if (rc < 0) {
-        DEBUG("Error en find_entry %d",rc);
+        DEBUG("Error en find_entry %d", rc);
         return rc;
     }
 
@@ -343,7 +342,7 @@ int hpack_decoder_decode_indexed_header_field_v2(hpack_dynamic_table_t *dynamic_
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table, encoded_header->index, name, value);
 
     if (rc < 0) {
-        DEBUG("Error en find_entry %d",rc);
+        DEBUG("Error en find_entry %d", rc);
         return rc;
     }
 
@@ -650,7 +649,7 @@ int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_
             DEBUG("Error in hpack_decoder_decode_header ");
             return rc;
         }
-        if (tmp_name[0] != 0 && tmp_value != 0) {
+        if (tmp_name[0] != 0 && tmp_value[0] != 0) {
             headers_add(headers, tmp_name, tmp_value);
         }
         pointer += rc;
@@ -741,19 +740,17 @@ int hpack_decoder_decode_header_v2(hpack_encoded_header_t *encoded_header, hpack
 
 int hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
 {
-    uint32_t eos = 0x3fffffff;
+    const uint32_t eos = 0x3fffffff;
+    uint8_t eos_bit_length = 30;
+    for (int32_t bit_position = 0; (bit_position + eos_bit_length) / 8 < buffer_length; bit_position++) { //search through all lengths possible
 
-    for (uint32_t i = 0; i + 3 < buffer_length; i++) {
-        uint32_t symbol = 0;
-        symbol |= (encoded_buffer[i]) << 24;
-        symbol |= (encoded_buffer[i + 1]) << 16;
-        symbol |= (encoded_buffer[i + 2]) << 8;
-        symbol |= (encoded_buffer[i + 3]);
-        if (symbol == eos) {
-            ERROR("Decoding error: The compressed header contains the EOS Symbol");
+        uint32_t result = hpack_utils_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
+        if (result == eos) {
+            ERROR("Decoding Error: The compressed header contains the EOS Symbol");
             return -1;
         }
     }
+
     return 0;
 }
 
@@ -793,15 +790,33 @@ int hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
     return 0;
 }
 
+void init_hpack_encoded_header_t(hpack_encoded_header_t *encoded_header)
+{
+    encoded_header->index = 0;
+    encoded_header->name_length = 0;
+    encoded_header->value_length = 0;
+    encoded_header->name_string = 0;
+    encoded_header->value_string = 0;
+    encoded_header->huffman_bit_of_name = 0;
+    encoded_header->huffman_bit_of_value = 0;
+    encoded_header->dynamic_table_size = 0;
+    encoded_header->preamble = 0;
+}
+
 int hpack_decoder_decode_header_block_v2(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)
 {
     int pointer = 0;
 
     char tmp_name[16];
     char tmp_value[32];
+    hpack_encoded_header_t encoded_header;
 
+    /*
+    for (int i = 0; i < header_block_size; i++) {
+        DEBUG("The byte is %x", header_block[i]);
+    }*/
     while (pointer < header_block_size) {
-        hpack_encoded_header_t encoded_header;
+        init_hpack_encoded_header_t(&encoded_header);
         memset(tmp_name, 0, 16);
         memset(tmp_value, 0, 32);
         int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header, header_block + pointer);
@@ -809,7 +824,22 @@ int hpack_decoder_decode_header_block_v2(hpack_dynamic_table_t *dynamic_table, u
             /*Error*/
             return bytes_read;
         }
+
+        /*
+        DEBUG("\n\nDECODING A NEW HEADER");
+        DEBUG("\n\n%d BYTES READ", bytes_read);
+        for (int i = 0; i < bytes_read; i++) {
+            DEBUG("The byte is %x", header_block[pointer + i]);
+        }
+        DEBUG("preamble: %u", encoded_header.preamble);
+        DEBUG("index: %u", encoded_header.index);
+        DEBUG("name_length: %u", encoded_header.name_length);
+        DEBUG("value_length: %u", encoded_header.value_length);
+        DEBUG("huffman_bit_of_name: %u", encoded_header.huffman_bit_of_name);
+        DEBUG("huffman_bit_of_value: %u", encoded_header.huffman_bit_of_value);
+*/
         pointer += bytes_read;
+
         int err = hpack_decoder_check_errors(&encoded_header);
         if (err < 0) {
             return err;

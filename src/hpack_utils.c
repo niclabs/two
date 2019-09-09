@@ -1,6 +1,6 @@
 #include "hpack_utils.h"
-#include <stdint.h>   /* for int8_t */
-#include "logging.h"  /* for ERROR  */
+#include <stdint.h>     /* for int8_t */
+#include "logging.h"    /* for ERROR  */
 
 
 /*
@@ -20,12 +20,16 @@ uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t 
     uint32_t byte_offset = current_bit_pointer / 8;
     uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
     uint8_t num_bytes = ((number_of_bits_to_read + current_bit_pointer - 1) / 8) - (current_bit_pointer / 8) + 1;
-
+/*
     uint32_t mask = 1 << (8 * num_bytes - number_of_bits_to_read);
     mask -= 1;
     mask = ~mask;
     mask >>= bit_offset;
+    DEBUG("Mask is %u", mask);
     mask &= ((1 << (8 * num_bytes - bit_offset)) - 1);
+    DEBUG("The other number is %u",((1 << (8 * num_bytes - bit_offset)) - 1));
+    DEBUG("Mask is %u", mask);
+    DEBUG("num_bytes is %u", num_bytes);
     uint32_t code = buffer[byte_offset];
     for (int i = 1; i < num_bytes; i++) {
         code <<= 8;
@@ -33,7 +37,35 @@ uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t 
     }
     code &= mask;
     code >>= (8 * num_bytes - number_of_bits_to_read - bit_offset);
+ */
+    uint32_t code = 0;
+    uint8_t first_byte_mask = 255u;
 
+    if (num_bytes == 1) {
+        first_byte_mask <<= bit_offset;
+        first_byte_mask >>= bit_offset;
+        first_byte_mask >>= (8 - bit_offset - number_of_bits_to_read);
+        first_byte_mask <<= (8 - bit_offset - number_of_bits_to_read);
+        code |= first_byte_mask & buffer[byte_offset];
+        code >>= (8 - bit_offset - number_of_bits_to_read);
+    }
+    else {
+        first_byte_mask >>= bit_offset;
+        code |= first_byte_mask & buffer[byte_offset];
+
+        for (int i = 1; i < num_bytes - 1; i++) {
+            code <<= 8;
+            code |= buffer[i + byte_offset];
+        }
+
+        uint8_t last_bit_offset = (current_bit_pointer + number_of_bits_to_read) % 8;
+        last_bit_offset = last_bit_offset == 0 ? 8 : last_bit_offset;
+        uint8_t last_byte_mask = 255u << (8 - last_bit_offset);
+        uint8_t last_byte = last_byte_mask & buffer[byte_offset + num_bytes - 1];
+        last_byte >>= (8 - last_bit_offset);
+        code <<= last_bit_offset;
+        code |= last_byte;
+    }
     return code;
 }
 
