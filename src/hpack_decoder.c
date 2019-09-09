@@ -671,7 +671,13 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     int32_t pointer = 0;
 
     encoded_header->preamble = hpack_utils_get_preamble(header_block[pointer]);
-    encoded_header->index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
+    int8_t index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
+    /*Integer exceed implementations limits*/
+    if (index < 0) {
+        ERROR("Integer exceeds implementations limits");
+        return -1;
+    }
+    encoded_header->index = index;
     int32_t index_size = hpack_utils_encoded_integer_size(encoded_header->index,  hpack_utils_find_prefix_size(encoded_header->preamble));
     pointer += index_size;
 
@@ -820,6 +826,8 @@ int hpack_decoder_decode_header_block_v2(hpack_dynamic_table_t *dynamic_table, u
         memset(tmp_name, 0, 16);
         memset(tmp_value, 0, 32);
         int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header, header_block + pointer);
+        DEBUG("Decoding a %d",encoded_header.preamble);
+
         if (bytes_read < 0) {
             /*Error*/
             return bytes_read;
@@ -874,7 +882,7 @@ int hpack_decoder_decode_header_block_v2(hpack_dynamic_table_t *dynamic_table, u
  */
 int hpack_decoder_decode_header_block(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
-    //return hpack_decoder_decode_header_block_v2(dynamic_table, header_block, header_block_size, headers);
+    return hpack_decoder_decode_header_block_v2(dynamic_table, header_block, header_block_size, headers);
 
-    return hpack_decoder_decode_header_block_from_table(dynamic_table, header_block, header_block_size, headers);
+    //return hpack_decoder_decode_header_block_from_table(dynamic_table, header_block, header_block_size, headers);
 }
