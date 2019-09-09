@@ -198,7 +198,7 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
             return -1;
         }
     }
-    else{
+    else {
         /*Check if it has a padding greater than 7 bits*/
         uint8_t mask = 255u;
         if (last_byte == mask) {
@@ -671,13 +671,13 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     int32_t pointer = 0;
 
     encoded_header->preamble = hpack_utils_get_preamble(header_block[pointer]);
-    int8_t index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
+    int16_t index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
     /*Integer exceed implementations limits*/
     if (index < 0) {
         ERROR("Integer exceeds implementations limits");
         return -1;
     }
-    encoded_header->index = index;
+    encoded_header->index = (uint32_t)index;
     int32_t index_size = hpack_utils_encoded_integer_size(encoded_header->index,  hpack_utils_find_prefix_size(encoded_header->preamble));
     pointer += index_size;
 
@@ -748,6 +748,7 @@ int hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
 {
     const uint32_t eos = 0x3fffffff;
     uint8_t eos_bit_length = 30;
+
     for (int32_t bit_position = 0; (bit_position + eos_bit_length) / 8 < buffer_length; bit_position++) { //search through all lengths possible
 
         uint32_t result = hpack_utils_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
@@ -816,36 +817,46 @@ int hpack_decoder_decode_header_block_v2(hpack_dynamic_table_t *dynamic_table, u
     char tmp_name[16];
     char tmp_value[32];
     hpack_encoded_header_t encoded_header;
+    uint8_t can_receive_dynamic_table_size_update = 1;//TRUE
 
     /*
-    for (int i = 0; i < header_block_size; i++) {
+       for (int i = 0; i < header_block_size; i++) {
         DEBUG("The byte is %x", header_block[i]);
-    }*/
+       }*/
     while (pointer < header_block_size) {
         init_hpack_encoded_header_t(&encoded_header);
         memset(tmp_name, 0, 16);
         memset(tmp_value, 0, 32);
         int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header, header_block + pointer);
-        DEBUG("Decoding a %d",encoded_header.preamble);
+        DEBUG("Decoding a %d", encoded_header.preamble);
 
         if (bytes_read < 0) {
             /*Error*/
             return bytes_read;
         }
 
-        /*
-        DEBUG("\n\nDECODING A NEW HEADER");
-        DEBUG("\n\n%d BYTES READ", bytes_read);
-        for (int i = 0; i < bytes_read; i++) {
-            DEBUG("The byte is %x", header_block[pointer + i]);
+        if (encoded_header.preamble != DYNAMIC_TABLE_SIZE_UPDATE) {
+            can_receive_dynamic_table_size_update = 0; /*False*/
         }
-        DEBUG("preamble: %u", encoded_header.preamble);
-        DEBUG("index: %u", encoded_header.index);
-        DEBUG("name_length: %u", encoded_header.name_length);
-        DEBUG("value_length: %u", encoded_header.value_length);
-        DEBUG("huffman_bit_of_name: %u", encoded_header.huffman_bit_of_name);
-        DEBUG("huffman_bit_of_value: %u", encoded_header.huffman_bit_of_value);
-*/
+        else { /*it's a dynamic table size update*/
+            if(!can_receive_dynamic_table_size_update){
+                /*Error*/
+                return -1;
+            }
+        }
+        /*
+           DEBUG("\n\nDECODING A NEW HEADER");
+           DEBUG("\n\n%d BYTES READ", bytes_read);
+           for (int i = 0; i < bytes_read; i++) {
+            DEBUG("The byte is %x", header_block[pointer + i]);
+           }
+           DEBUG("preamble: %u", encoded_header.preamble);
+           DEBUG("index: %u", encoded_header.index);
+           DEBUG("name_length: %u", encoded_header.name_length);
+           DEBUG("value_length: %u", encoded_header.value_length);
+           DEBUG("huffman_bit_of_name: %u", encoded_header.huffman_bit_of_name);
+           DEBUG("huffman_bit_of_value: %u", encoded_header.huffman_bit_of_value);
+         */
         pointer += bytes_read;
 
         int err = hpack_decoder_check_errors(&encoded_header);
