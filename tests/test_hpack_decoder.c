@@ -162,7 +162,41 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xf4,
                                           0xff };
 #endif
+/*
+int log128(uint32_t x)
+{
+    uint32_t n = 0;
+    uint32_t m = 1;
 
+    while (m < x) {
+        m = 1 << (7 * (++n));
+    }
+
+    if (m == x) {
+        return n;
+    }
+    return n - 1;
+}
+
+uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix)
+{
+    uint8_t p = (1 << prefix) - 1;
+
+    if (num < p) {
+        printf("%d\n",1);
+        return 1;
+    }
+    else if (num == p) {
+        printf("%d\n",2);
+        return 2;
+    }
+    else {
+        uint32_t k = log128(num - p);//log(num - p) / log(128);
+        printf("%d\n",k+2);
+        return k + 2;
+    }
+}
+*/
 int8_t hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
@@ -475,8 +509,25 @@ void test_decode_header_block_literal_never_indexed(void)
     headers.count = 0;
     headers.maxlen = 3;
     headers.headers = h_list;
-    uint32_t hpack_encoded_integer_size_fake_seq[] = { 1, 1, 1, 1, 2, 1 };
-    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 6);
+
+    uint32_t hpack_encoded_integer_size_fake_seq[] = {
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1
+    };
+
+    //uint32_t hpack_encoded_integer_size_fake_seq[] = { 1, 1, 1, 1, 2, 1 };
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 14);
 
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)16;
     hpack_utils_find_prefix_size_fake.return_val = 4;
@@ -545,7 +596,7 @@ void test_decode_header_block_literal_never_indexed(void)
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(3, headers_add_fake.call_count);
     TEST_ASSERT_EQUAL_STRING(new_name, headers_add_fake.arg1_val);
-//    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val); TODO checkear porqué falla el assert
+    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
 
 }
 
@@ -580,13 +631,23 @@ void test_decode_header_block_literal_without_indexing(void)
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)0;
     hpack_utils_find_prefix_size_fake.return_val = 4;
 
-    uint32_t hpack_encoded_integer_size_fake_seq[] = { 1, 1, 2, 1 };
-    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 4);
+    uint32_t hpack_encoded_integer_size_fake_seq[] = {
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1,
+    };
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 9);
 
 
     int rc = hpack_decoder_decode_header_block(NULL, header_block_name_literal, header_block_size, &headers);
 
-    //TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
+    TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
     TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
     TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
@@ -635,7 +696,6 @@ void test_decode_non_huffman_string(void)
 
 void test_decode_non_huffman_string_error(void)
 {
-    TEST_IGNORE();
     uint8_t encoded_string[] = { 0x7f, 0xe1, 0xa6, 0x26 };
     char decoded_string[30];
 

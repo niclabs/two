@@ -69,7 +69,9 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
 int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
     int32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
-
+    if(str_length < 0){
+        return str_length;
+    }
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
 
     for (uint16_t i = 0; i < str_length; i++) {
