@@ -78,7 +78,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
  */
 int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
-    if(integer > HPACK_MAXIMUM_INTEGER_SIZE) {
+    if (integer > HPACK_MAXIMUM_INTEGER_SIZE) {
         return -1;
     }
     int octets_size = hpack_utils_encoded_integer_size(integer, prefix);
@@ -122,7 +122,8 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
     int str_length = strlen(str);
     int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
-    if (encoded_string_length_size < 0){
+
+    if (encoded_string_length_size < 0) {
         ERROR("Integer exceeds implementations limits");
         return -1;
     }
@@ -296,9 +297,9 @@ int hpack_encoder_encode_literal_header_field_indexed_name(char *value_string, u
  * Output:
  *      Returns the number of octets used to encode the given name and value, or -1 if it fails.
  */
-int hpack_encoder_encode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, char *name, char *value, uint8_t *encoded_buffer)
+int hpack_encoder_encode_indexed_header_field(hpack_states_t *states, char *name, char *value, uint8_t *encoded_buffer)
 {
-    int rc = hpack_tables_find_index(dynamic_table, name, value);
+    int rc = hpack_tables_find_index(&states->dynamic_table, name, value, states->tmp_name, states->tmp_value);
 
     if (rc < 0) {
         return rc;
@@ -319,19 +320,19 @@ int hpack_encoder_encode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_string,  uint8_t *encoded_buffer)
+int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
 {
     //PATCH
 
-    int index = hpack_tables_find_index(dynamic_table, name_string, value_string);
+    int index = hpack_tables_find_index(&states->dynamic_table, name_string, value_string, states->tmp_name, states->tmp_value);
     int pointer = 0;
 
     if (index < 0) {
-        index = hpack_tables_find_index_name(dynamic_table, name_string);
+        index = hpack_tables_find_index_name(&states->dynamic_table, name_string, states->tmp_name);
         #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
         hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
         DEBUG("Encoding a literal header field with incremental indexing");
-        int8_t res = hpack_tables_dynamic_table_add_entry(dynamic_table, name_string, value_string);
+        int8_t res = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, name_string, value_string);
 
         if (res < 0) {
             DEBUG("Couldn't add to dynamic table");
@@ -359,7 +360,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
             //INDEXED NAME
             int encoded_length_size = hpack_encoder_encode_integer(index, prefix, encoded_buffer + pointer);
 
-            if (encoded_length_size < 0){
+            if (encoded_length_size < 0) {
                 ERROR("Integer exceeds implementations limits");
                 return -1;
             }
@@ -379,7 +380,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
         //INDEXED HEADER FIELD
         DEBUG("Encoding an indexed header field");
         hpack_preamble_t preamble = INDEXED_HEADER_FIELD;
-        int rc = hpack_encoder_encode_indexed_header_field(dynamic_table, name_string, value_string, encoded_buffer);
+        int rc = hpack_encoder_encode_indexed_header_field(states, name_string, value_string, encoded_buffer);
         if (rc < 0) {
             ERROR("Error while trying to encode");
             return rc;
@@ -400,16 +401,16 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, char *name_string
  * Output:
  *      Returns the size in bytes of the update, or an int < 0 if an error occurs.
  */
-int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t *encoded_buffer)
+int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer)
 {
     DEBUG("Encoding a dynamic table size update");
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
-    int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, max_size);
+    int8_t rc = hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, max_size);
     if (rc < 0) {
         return rc;
     }
     int encoded_max_size_length = hpack_encoder_encode_integer(max_size, 5, encoded_buffer);
-    if (encoded_max_size_length < 0){
+    if (encoded_max_size_length < 0) {
         ERROR("Integer exceeds implementations limits");
         return -1;
     }

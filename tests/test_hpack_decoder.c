@@ -15,14 +15,13 @@ extern int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_str
 extern int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit);
 extern int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length);
 extern int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length);
-extern int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
+extern int hpack_decoder_decode_indexed_header_field_v2(hpack_states_t *hpack_states, uint8_t *header_block, char *name, char *value);
 extern uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
 //extern int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
 extern int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block);
 extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size);
-extern int hpack_decoder_decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
 typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_decode_fake when huffman_compression is not included*/
@@ -38,9 +37,9 @@ FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name_and_value, uint8_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
 FAKE_VALUE_FUNC(uint32_t, hpack_tables_get_table_length, uint32_t);
-FAKE_VALUE_FUNC(int8_t, hpack_tables_init_dynamic_table, hpack_dynamic_table_t *, uint32_t);
+FAKE_VALUE_FUNC(int8_t, hpack_init_states, hpack_states_t *, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
-FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t);
+FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t,uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name_and_value, hpack_dynamic_table_t *, uint32_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, uint32_t, char *);
 
@@ -52,7 +51,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, u
     FAKE(hpack_encoder_encode)                   \
     FAKE(hpack_utils_encoded_integer_size)       \
     FAKE(hpack_tables_get_table_length)          \
-    FAKE(hpack_tables_init_dynamic_table)        \
+    FAKE(hpack_init_states)        \
     FAKE(hpack_tables_dynamic_table_add_entry)   \
     FAKE(hpack_tables_find_entry_name_and_value) \
     FAKE(hpack_tables_find_entry_name)           \
@@ -465,8 +464,8 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
     hpack_utils_find_prefix_size_fake.return_val = 6;
 
     uint32_t max_dynamic_table_size = 3000;
-    hpack_dynamic_table_t dynamic_table;
-    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size);
+    hpack_states_t hpack_states;
+    hpack_init_states(&hpack_states, max_dynamic_table_size);
     char name[11];
     char value[14];
     memset(name, 0, 11);
@@ -480,7 +479,7 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
     headers.maxlen = 3;
     headers.headers = h_list;
     //int rc = hpack_decoder_decode_literal_header_field_with_incremental_indexing(&dynamic_table, header_block_name_literal, name, value);
-    int rc = hpack_decoder_decode_header_block(&dynamic_table, header_block_name_literal, header_block_size, &headers);
+    int rc = hpack_decoder_decode_header_block(&hpack_states, header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
 
@@ -515,6 +514,8 @@ void test_decode_header_block_literal_never_indexed(void)
 
     header_t h_list[1];
     headers_t headers;
+    hpack_states_t states;
+    hpack_init_states(&states, 100); // 100 is a dummy value
 
     headers.count = 0;
     headers.maxlen = 3;
@@ -542,7 +543,7 @@ void test_decode_header_block_literal_never_indexed(void)
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)16;
     hpack_utils_find_prefix_size_fake.return_val = 4;
 
-    int rc = hpack_decoder_decode_header_block(NULL, header_block_name_literal, header_block_size, &headers);
+    int rc = hpack_decoder_decode_header_block(&states, header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
@@ -565,7 +566,7 @@ void test_decode_header_block_literal_never_indexed(void)
     };
     expected_name = ":authority";
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_authority;
-    rc = hpack_decoder_decode_header_block(NULL, header_block_name_indexed, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block(&states, header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
@@ -578,16 +579,15 @@ void test_decode_header_block_literal_never_indexed(void)
 
     uint32_t max_dynamic_table_size = 3000;
 
-    hpack_dynamic_table_t dynamic_table;
 
 
-    hpack_tables_init_dynamic_table(&dynamic_table, max_dynamic_table_size);
+    hpack_init_states(&states, max_dynamic_table_size);
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_new_name;
 
     char *new_name = "new_name";
     char *new_value = "new_value";
 
-    hpack_tables_dynamic_table_add_entry(&dynamic_table, new_name, new_value);
+    hpack_tables_dynamic_table_add_entry(&states.dynamic_table, new_name, new_value);
 
     header_block_size = 6;
 
@@ -601,7 +601,7 @@ void test_decode_header_block_literal_never_indexed(void)
     };
 
     headers_add_fake.custom_fake = headers_add_check_inputs;
-    rc = hpack_decoder_decode_header_block(&dynamic_table, header_block_dynamic_index, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block(&states, header_block_dynamic_index, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(3, headers_add_fake.call_count);
@@ -633,6 +633,8 @@ void test_decode_header_block_literal_without_indexing(void)
 
     header_t h_list[1];
     headers_t headers;
+    hpack_states_t states;
+    hpack_init_states(&states, 100); //100 is a dummy value btw
 
     headers.count = 0;
     headers.maxlen = 3;
@@ -655,7 +657,7 @@ void test_decode_header_block_literal_without_indexing(void)
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_encoded_integer_size_fake_seq, 9);
 
 
-    int rc = hpack_decoder_decode_header_block(NULL, header_block_name_literal, header_block_size, &headers);
+    int rc = hpack_decoder_decode_header_block(&states, header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
@@ -679,7 +681,7 @@ void test_decode_header_block_literal_without_indexing(void)
     };
     expected_name = "age";
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_age;
-    rc = hpack_decoder_decode_header_block(NULL, header_block_name_indexed, header_block_size, &headers);
+    rc = hpack_decoder_decode_header_block(&states, header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
     TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);

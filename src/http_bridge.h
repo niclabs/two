@@ -1,7 +1,7 @@
 /*
    This API contains the internal methods in HTTP layer to be used by HTTP/2
    and HTTP
-*/
+ */
 #ifndef HTTP_BRIDGE_H
 #define HTTP_BRIDGE_H
 
@@ -51,11 +51,11 @@ typedef struct HTTP2_STATES {
     h2_window_manager_t incoming_window;
     h2_window_manager_t outgoing_window;
     uint8_t sent_goaway;
-    uint8_t received_goaway; // bool
-    uint8_t debug_data_buffer[0]; // TODO not implemented yet
-    uint8_t debug_size; // TODO not implemented yet
+    uint8_t received_goaway;        // bool
+    uint8_t debug_data_buffer[0];   // TODO not implemented yet
+    uint8_t debug_size;             // TODO not implemented yet
     //Hpack dynamic table
-    hpack_dynamic_table_t dynamic_table;
+    hpack_states_t hpack_states;
 } h2states_t;
 
 
@@ -115,7 +115,7 @@ typedef struct HTTP2_STATES {
  *
  * the handler must return the number of bytes written or -1 if an error ocurred
  */
-typedef int (* http_resource_handler_t) (char * method, char * uri, uint8_t * response, int maxlen);
+typedef int (*http_resource_handler_t) (char *method, char *uri, uint8_t *response, int maxlen);
 
 typedef struct {
     char path[HTTP_MAX_PATH_SIZE];

@@ -55,8 +55,8 @@ int init_variables(hstates_t * st){
     st->h2s.sent_goaway = 0;
     st->h2s.received_goaway = 0;
     st->h2s.debug_size = 0;
-    //TODO change this
-    hpack_init_dynamic_table(&st->h2s.dynamic_table);
+    //TODO: check settings max table size
+    hpack_init_states(&st->h2s.hpack_states, DEFAULT_HEADER_TABLE_SIZE);
     return 0;
 }
 
@@ -331,7 +331,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, hstat
   //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
   if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
       //return bytes read.
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in, &st->h2s.dynamic_table);
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in, &st->h2s.hpack_states);
       if(rc < 0){
         if(rc==-1){
           ERROR("Error was found receiving header_block. COMPRESSION ERROR");
@@ -780,7 +780,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
   st->h2s.header_block_fragments_pointer += rc;
   if(is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)){
       //return number of headers written on header_list, so http2 can update header_list_count
-      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in, &st->h2s.dynamic_table); //TODO check this: rc is the byte read from the header
+      rc = receive_header_block(st->h2s.header_block_fragments, st->h2s.header_block_fragments_pointer,&st->headers_in, &st->h2s.hpack_states); //TODO check this: rc is the byte read from the header
 
       if(rc < 0){
         ERROR("Error was found receiving header_block");
@@ -875,7 +875,7 @@ int send_headers(hstates_t *st, uint8_t end_stream){
     return -1;
   }
   uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-  int size = compress_headers(&st->headers_out, encoded_bytes, &st->h2s.dynamic_table);
+  int size = compress_headers(&st->headers_out, encoded_bytes, &st->h2s.hpack_states);
   if(size < 0){
     ERROR("Error was found compressing headers. INTERNAL ERROR");
     send_connection_error(st, HTTP2_INTERNAL_ERROR);

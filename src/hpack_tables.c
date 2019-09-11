@@ -398,14 +398,15 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
  * Makes an update of the size of the dynamic table_length
  * Input:
  *      -> *dynamic_table: Dynamic table to search
+ *      -> settings_max_size: max size setted in settings frame at the beggining of the connection
  *      -> new_max_size: new virtual max size of the table, setted in the header of resize
  * Output:
  *      return 0 if the update is succesful, or -1 otherwise
  */
 
-int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size)
+int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t settings_max_size, uint32_t new_max_size)
 {
-    if (new_max_size > HPACK_MAX_DYNAMIC_TABLE_SIZE) {
+    if (new_max_size > settings_max_size) {
         ERROR("Decoding Error: Resize operation exceeds the maximum size set by the protocol ");
         return -1;
     }
@@ -598,7 +599,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
  *      otherwise it returns -1.
  */
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value, char *tmp_name, char *tmp_value)
 #else
 int hpack_tables_find_index(char *name, char *value)
 #endif
@@ -615,8 +616,6 @@ int hpack_tables_find_index(char *name, char *value)
 
     #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     //Then search in dynamic table
-    char tmp_name[MAX_HEADER_NAME_LEN];
-    char tmp_value[MAX_HEADER_VALUE_LEN];
     for (uint16_t i = 0; i < dynamic_table->n_entries; i++) {
         hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name, tmp_value);
         if ((strlen(tmp_name) == strlen(name) &&
@@ -642,7 +641,7 @@ int hpack_tables_find_index(char *name, char *value)
  *      otherwise it returns -1.
  */
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name)
+int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name, char *tmp_name)
 #else
 int hpack_tables_find_index_name(char *name)
 #endif
@@ -659,7 +658,6 @@ int hpack_tables_find_index_name(char *name)
     #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     //Then search in dynamic table, TODO this parts can be optimized a lot!,
     //right now it copies one on one values from table to buffer, it can do instead a linear search in the buffer;
-    char tmp_name[MAX_HEADER_NAME_LEN];
     for (uint8_t i = 0; i < dynamic_table->n_entries; i++) {
         hpack_tables_dynamic_find_entry_name(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name);
 

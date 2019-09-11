@@ -8,7 +8,8 @@
 
 #include <stdint.h>             /* for uint8_t, uint32_t    */
 #include "headers.h"            /* for headers_t    */
-#include "hpack_tables.h"       /* for hpack_dynamic_table_t, header_pair_t */
+#include "hpack_utils.h"        /* for hpack_states */
+
 
 /*
    int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers);
@@ -16,15 +17,15 @@
    int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers);
  */
 
-int decode_header_block(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
+int decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
 //int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
-int encode(hpack_dynamic_table_t *dynamic_table, char *name_string, char *value_string,  uint8_t *encoded_buffer);
+int encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer);
 
-int encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t* encoded_buffer);
+int encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer);
 
-int8_t hpack_init_dynamic_table(hpack_dynamic_table_t *dynamic_table);
+int8_t hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size);
 
 
 #endif //TWO_HPACK_H
