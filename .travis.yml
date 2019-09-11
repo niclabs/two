@@ -35,47 +35,11 @@ jobs:
       env: SPEC=generic/3.2/1
       ##generic/5 Hpack
     - <<: *h2spec
-      env: SPEC=generic/5/1
-    - <<: *h2spec
-      env: SPEC=generic/5/2
-    - <<: *h2spec
-      env: SPEC=generic/5/3
-    - <<: *h2spec
-      env: SPEC=generic/5/4
-    - <<: *h2spec
-      env: SPEC=generic/5/5
-    - <<: *h2spec
-      env: SPEC=generic/5/6
-    - <<: *h2spec
-      env: SPEC=generic/5/7
-    - <<: *h2spec
-      env: SPEC=generic/5/8
-    - <<: *h2spec
-      env: SPEC=generic/5/9
-    - <<: *h2spec
-      env: SPEC=generic/5/10
-    - <<: *h2spec
-      env: SPEC=generic/5/11
-    - <<: *h2spec
-      env: SPEC=generic/5/12
-    - <<: *h2spec
-      env: SPEC=generic/5/13
-    - <<: *h2spec
-      env: SPEC=generic/5/14
-    - <<: *h2spec
-      env: SPEC=generic/5/15
+      env: SPEC=generic/5
 
       ##HPACK
     - <<: *h2spec
-      env: SPEC=hpack/2.3.3/1
-    - <<: *h2spec
-      env: SPEC=hpack/5.2/1
-    - <<: *h2spec
-      env: SPEC=hpack/5.2/2
-    - <<: *h2spec
-      env: SPEC=hpack/6.1/1
-    - <<: *h2spec
-      env: SPEC=hpack/6.3/1
+      env: SPEC=hpack
 
       ##HTTP2
     - <<: *h2spec
