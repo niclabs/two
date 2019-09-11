@@ -700,7 +700,8 @@ void test_decode_non_huffman_string(void)
     memset(decoded_string, 0,str_length);
     char expected_decoded_string[] = "www.example.com";
     int rc = hpack_decoder_decode_non_huffman_string_v2(decoded_string, encoded_string, str_length);
-    for (int i = 0; i < rc; i++) {
+    TEST_ASSERT_EQUAL(rc, 16);
+    for (int i = 0; i < str_length; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
 }
@@ -805,7 +806,7 @@ void test_decode_string(void)
     char expected_decoded_string[] = "www.example.com";
     int rc = hpack_decoder_decode_string_v2(decoded_string, encoded_string, str_length, 0);
     TEST_ASSERT_EQUAL(16, rc);
-    for (int i = 0; i < rc; i++) {
+    for (int i = 0; i < str_length; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
     #ifdef INCLUDE_HUFFMAN_COMPRESSION
