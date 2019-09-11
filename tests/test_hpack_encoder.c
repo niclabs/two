@@ -686,6 +686,8 @@ void test_encode_literal_header_field_indexed_name(void)
     int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string, encoded_buffer);
     TEST_ASSERT_EQUAL(expected_len, rc);
     for (int i = 0; i < expected_len; i++) {
+        ERROR("expected encoded buffer %c",expected_encoded_buffer[i]);
+        ERROR("encoded buffer %c",encoded_buffer[i]);
         TEST_ASSERT_EQUAL(expected_encoded_buffer[i], encoded_buffer[i]);
     }
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
@@ -742,9 +744,8 @@ int main(void)
     UNIT_TESTS_BEGIN();
 
     UNIT_TEST(test_hpack_encoder_encode_test1);
-    //TODO FIX THIS
-    //UNIT_TEST(test_hpack_encoder_encode_test2);
-    //UNIT_TEST(test_hpack_encoder_encode_test3);
+    UNIT_TEST(test_hpack_encoder_encode_test2);
+    UNIT_TEST(test_hpack_encoder_encode_test3);
     UNIT_TEST(test_encode_integer);
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
@@ -754,15 +755,15 @@ int main(void)
     UNIT_TEST(test_encode_huffman_word);
     UNIT_TEST(test_encode_huffman_string);
 #endif
-    /*
+
     UNIT_TEST(test_encode_non_huffman_string);
     UNIT_TEST(test_encode_literal_header_field_new_name);
 
-    UNIT_TEST(test_encode_literal_header_field_new_name_error);
-    UNIT_TEST(test_encode_literal_header_field_indexed_name);
-    UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
+    //UNIT_TEST(test_encode_literal_header_field_new_name_error);
+    //UNIT_TEST(test_encode_literal_header_field_indexed_name);
+    //UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
-    UNIT_TEST(test_hpack_encoder_encode_dynamic_size_update);
-    */
+    UNIT_TEST(test_hpack_encoder_encode_dynamic_size_update); 
+
     return UNIT_TESTS_END();
 }
