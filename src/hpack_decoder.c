@@ -57,30 +57,8 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     }
 }
 
-/*
- * Function: hpack_decoder_decode_non_huffman_string
- * Decodes an Array of char not compressed with Huffman Compression
- * Input:
- *      -> *str: Buffer to store encoded array
- *      -> *encoded_string: Buffer containing encoded bytes
- * Output:
- *      return the number of bytes written in str if succesful or -1 otherwise
- */
-/*
-   int hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string)
-   {
-    int32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
-    if(str_length < 0){
-        return str_length;
-    }
-    uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
 
-    for (uint16_t i = 0; i < str_length; i++) {
-        str[i] = (char)encoded_string[str_length_size + i];
-    }
-    return str_length + str_length_size;
-   }
- */
+
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*
  * Function: hpack_decoder_decode_huffman_word
@@ -130,65 +108,10 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
 
 /*
- * Function: hpack_decoder_decode_huffman_string
- * Tries to decode encoded_string (compressed using huffman) and store the result in *str
- * Input:
- *      -> *str: Buffer to store the result of the decompression process, this buffer must be bigger than encoded_string
- *      -> *encoded_string: Buffer containing a string compressed using Huffman Compression
- * Output:
- *      Stores the decompressed version of encoded_string in str if successful and returns the number of bytes read
- *      of encoded_string, if it fails to decode the string the return value is -1
+ * Function: hpack_decoder_check_huffman_padding
+ * TODO:
  */
-/*
- #ifdef INCLUDE_HUFFMAN_COMPRESSION
 
-   int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string)
-   {
-    int32_t str_length = hpack_decoder_decode_integer(encoded_string, 7);
-
-    uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
-    uint8_t *encoded_buffer = encoded_string + str_length_size;
-    uint16_t bit_position = 0;
-    uint16_t i = 0;
-
-    for (i = 0; (bit_position - 1) / 8 < (int16_t)str_length; i++) {
-        int32_t word_length = hpack_decoder_decode_huffman_word(str + i, encoded_buffer, str_length, bit_position);
-        if (word_length < 0) {
-        //Compression Error: It's the EOS Symbol
-            if (word_length == -1) {
-                return -1;
-            }
-            uint8_t bits_left = 8 * str_length - bit_position;
-            uint8_t last_byte = encoded_buffer[str_length - 1];
-            //padding of encoding
-            if (bits_left < 8) {
-                uint8_t mask = (1 << bits_left) - 1;
-                if ((last_byte & mask) == mask) {
-                    return str_length + str_length_size;
-                }
-                else {
-                    DEBUG("Last byte is %d", last_byte);
-                    ERROR("Decoding error: The compressed header padding contains a value different from the EOS symbol");
-                    return -1;
-                }
-            }
-            else {
-                //Check if it has a padding greater than 7 bits
-                uint8_t mask = 255u;
-                if (last_byte == mask) {
-                    ERROR("Decoding error: The compressed header has a padding greater than 7 bits");
-                    return -1;
-                }
-                DEBUG("Couldn't decode string in hpack_decoder_decode_huffman_string");
-                return -2;
-            }
-        }
-        bit_position += word_length;
-    }
-    return str_length + str_length_size;
-   }
- #endif
- */
 int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size)
 {
     uint8_t bits_left = 8 * str_length - bit_position;
@@ -218,6 +141,18 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
 }
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
+
+/*
+ * Function: hpack_decoder_decode_huffman_string_v2
+ * Tries to decode encoded_string (compressed using huffman) and store the result in *str
+ * Input:
+ *      -> *str: Buffer to store the result of the decompression process, this buffer must be bigger than encoded_string
+ *      -> *encoded_string: Buffer containing a string compressed using Huffman Compression
+ *      -> str_length: length of the string to decode
+ * Output:
+ *      Stores the decompressed version of encoded_string in str if successful and returns the number of bytes read
+ *      of encoded_string, if it fails to decode the string the return value is -1
+ */
 int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length)
 {
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
@@ -234,6 +169,16 @@ int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_strin
 }
 #endif
 
+/*
+ * Function: hpack_decoder_decode_non_huffman_string
+ * Decodes an Array of char not compressed with Huffman Compression
+ * Input:
+ *      -> *str: Buffer to store encoded array
+ *      -> *encoded_string: Buffer containing encoded bytes
+ *      -> str_length: length of the string to decode
+ * Output:
+ *      return the number of bytes written in str if succesful or -1 otherwise
+ */
 int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length)
 {
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
@@ -244,36 +189,7 @@ int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_s
     return str_length + str_length_size;
 }
 
-/*
- * Function: hpack_decoder_decode_string
- * Decodes an string according to its huffman bit, if it's 1 the string is decoded using huffman decompression
- * if it's 0 it copies the content of the encoded_buffer to str.
- * Input:
- *      -> *str: Buffer to store the result of the decoding process
- *      -> *encoded_buffer: Buffer containing the string to decode
- * Output:
- *      Returns the number of bytes read from encoded_buffer in the decoding process if succesful,
- *      if the process fails the function returns -1
- */
-/*
-   int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer)
-   {
-    //decode huffman name
-    //decode name length
-    uint8_t huffman_bit = 128u & *(encoded_buffer);
 
-    if (huffman_bit) {
- #ifdef INCLUDE_HUFFMAN_COMPRESSION
-        return hpack_decoder_decode_huffman_string(str, encoded_buffer);
- #else
-        ERROR("Not implemented: Cannot decode a huffman compressed header");
-        return -2;
- #endif
-    }
-    else {
-        return hpack_decoder_decode_non_huffman_string(str, encoded_buffer);
-    }
-   }*/
 
 /*
  * Function: hpack_decoder_decode_name_string
@@ -287,6 +203,18 @@ int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_s
  * Output:
  *      Returns the number of bytes read from encoded_header in the decoding process if successful,
  *      if the process fails the function returns -2 or -1.
+ */
+
+/*
+ * Function: hpack_decoder_decode_string
+ * Decodes an string according to its huffman bit, if it's 1 the string is decoded using huffman decompression
+ * if it's 0 it copies the content of the encoded_buffer to str.
+ * Input:
+ *      -> *str: Buffer to store the result of the decoding process
+ *      -> *encoded_buffer: Buffer containing the string to decode
+ * Output:
+ *      Returns the number of bytes read from encoded_buffer in the decoding process if succesful,
+ *      if the process fails the function returns -1
  */
 int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit)
 {
