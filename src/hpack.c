@@ -3,36 +3,7 @@
 #include "hpack_encoder.h"
 #include "hpack_tables.h"
 
-/*
- *
- * returns compressed headers size or -1 if error
- */
-/*
-   int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers){
-    (void)headers;
-    (void)headers_size;
-    (void)compressed_headers;
-    ERROR("compress_huffman: not implemented yet!");
-    return -1;
-   }
 
-/*
- * Function: decode_header_block_from_table
- * decodes an array of headers using a dynamic_table, as it decodes one, the pointer of the headers
- * moves forward also updates the decoded header list
- * Input:
- *      -> *dynamic_table: //TODO
- *      -> *header_block: //TODO
- *      -> header_block_size: //TODO
- *      -> headers: //TODO
- * Output:
- *      returns the amount of octets in which the pointer has move to read all the headers
- */
-/*
-   int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)//header_t* h_list, uint8_t * header_counter)
-   {
-    return hpack_decoder_decode_header_block_from_table(dynamic_table, header_block, header_block_size, headers);
-   }*/
 /*
  * Function: decode_header_block
  * decodes an array of headers,
