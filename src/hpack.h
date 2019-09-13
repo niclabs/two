@@ -11,15 +11,8 @@
 #include "hpack_utils.h"        /* for hpack_states */
 
 
-/*
-   int compress_huffman(char* headers, int headers_size, uint8_t* compressed_headers);
-   int compress_static(char* headers, int headers_size, uint8_t* compressed_headers);
-   int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers);
- */
 
 int decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
-
-//int decode_header_block_from_table(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, uint8_t header_block_size, headers_t *headers);
 
 int encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer);
 
