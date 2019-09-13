@@ -5,6 +5,8 @@ DEBUG_FLAGS = -DENABLE_DEBUG
 TARGETDIRS = examples/client/ examples/server/
 TESTDIRS = tests/
 
+MODULES	+= hpack
+
 all: client server
 
 PORT=8888
