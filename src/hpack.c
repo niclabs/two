@@ -16,23 +16,6 @@
     return -1;
    }
 
-   int compress_static(char* headers, int headers_size, uint8_t* compressed_headers){
-    (void)headers;
-    (void)headers_size;
-    (void)compressed_headers;
-    ERROR("compress_static: not implemented yet!");
-    return -1;
-   }
-   int compress_dynamic(char* headers, int headers_size, uint8_t* compressed_headers){
-    (void)headers;
-    (void)headers_size;
-    (void)compressed_headers;
-    ERROR("compress_dynamic: not implemented yet!");
-    return -1;
-   }
- */
-
-
 /*
  * Function: decode_header_block_from_table
  * decodes an array of headers using a dynamic_table, as it decodes one, the pointer of the headers
