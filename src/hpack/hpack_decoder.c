@@ -569,19 +569,6 @@ int hpack_decoder_decode_header_block_v2(hpack_states_t *states, uint8_t *header
                 return PROTOCOL_ERROR;
             }
         }
-        /*
-           DEBUG("\n\nDECODING A NEW HEADER");
-           DEBUG("\n\n%d BYTES READ", bytes_read);
-           for (int i = 0; i < bytes_read; i++) {
-            DEBUG("The byte is %x", header_block[pointer + i]);
-           }
-           DEBUG("preamble: %u", encoded_header.preamble);
-           DEBUG("index: %u", encoded_header.index);
-           DEBUG("name_length: %u", encoded_header.name_length);
-           DEBUG("value_length: %u", encoded_header.value_length);
-           DEBUG("huffman_bit_of_name: %u", encoded_header.huffman_bit_of_name);
-           DEBUG("huffman_bit_of_value: %u", encoded_header.huffman_bit_of_value);
-         */
         pointer += bytes_read;
 
         int err = hpack_decoder_check_errors(&states->encoded_header);
@@ -620,5 +607,4 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
 {
     return hpack_decoder_decode_header_block_v2(states, header_block, header_block_size, headers);
 
-    //return hpack_decoder_decode_header_block_from_table(dynamic_table, header_block, header_block_size, headers);
 }
