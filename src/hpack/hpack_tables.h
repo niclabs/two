@@ -1,41 +1,15 @@
 #ifndef TWO_HPACK_TABLES_H
 #define TWO_HPACK_TABLES_H
 #include <stdint.h>             /* for int8_t, uint32_t */
-
-//TODO add macros to conf file
-#define HPACK_CONF_INCLUDE_DYNAMIC_TABLE (1)
+#include "hpack_utils.h"
 
 #define STATIC_TABLE_SIZE (61)
-#ifdef HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE
-#define HPACK_MAX_DYNAMIC_TABLE_SIZE (HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE)
-#else
-#define HPACK_MAX_DYNAMIC_TABLE_SIZE (4096)
-#endif
-#ifdef HPACK_CONF_INCLUDE_DYNAMIC_TABLE
-#define HPACK_INCLUDE_DYNAMIC_TABLE (HPACK_CONF_INCLUDE_DYNAMIC_TABLE)
-#endif
 
-//typedef for HeaderPair
-typedef struct hpack_header_pair {
-    char *name;
-    char *value;
-} header_pair_t;
 
 typedef struct {
     const char *const name_table[STATIC_TABLE_SIZE];
     const char *const value_table[STATIC_TABLE_SIZE];
 } hpack_static_table_t;
-
-//typedefs for dinamic
-//size: 10 bytes in params + size of buffer
-typedef struct hpack_dynamic_table {
-    uint16_t max_size;
-    uint16_t first;
-    uint16_t next;
-    uint16_t actual_size;
-    uint16_t n_entries;
-    char buffer[HPACK_MAX_DYNAMIC_TABLE_SIZE];
-} hpack_dynamic_table_t;
 
 
 
