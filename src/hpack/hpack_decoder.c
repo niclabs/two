@@ -327,12 +327,16 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
 int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_states_t *states)
 {
     DEBUG("New table size is %d", states->encoded_header.dynamic_table_size);
+    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     int8_t rc = hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, states->encoded_header.dynamic_table_size);
     if (rc < 0) {
         DEBUG("Dynamic table failed to resize");
         return rc;
     }
     return hpack_utils_encoded_integer_size(states->encoded_header.dynamic_table_size, hpack_utils_find_prefix_size(states->encoded_header.preamble));
+    #else
+    return INTERNAL_ERROR;
+    #endif
 }
 
 
