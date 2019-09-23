@@ -656,7 +656,7 @@ int hpack_tables_find_index_name(char *name)
     }
 
     #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-    //Then search in dynamic table, TODO this parts can be optimized a lot!,
+    //Then search in dynamic table, TODO: this parts can be optimized a lot!,
     //right now it copies one on one values from table to buffer, it can do instead a linear search in the buffer;
     for (uint8_t i = 0; i < dynamic_table->n_entries; i++) {
         hpack_tables_dynamic_find_entry_name(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name);
