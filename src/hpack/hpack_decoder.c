@@ -26,6 +26,7 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
     if (b0 != p) {
+        //TODO: border case, if MAXIMUM INTEGER SIZE var is less than 256 it will fail!!!! 
         return (int32_t)b0;
     }
     else {
