@@ -347,7 +347,7 @@ int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_states_t *states)
  *      returns the amount of octets in which the pointer has moved to read all the headers
  *
  */
-/*
+
  
 
 /*
