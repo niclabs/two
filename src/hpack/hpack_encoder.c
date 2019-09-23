@@ -403,6 +403,7 @@ int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_
  */
 int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer)
 {
+    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     DEBUG("Encoding a dynamic table size update");
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
     int8_t rc = hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, max_size);
@@ -417,4 +418,8 @@ int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t ma
     encoded_buffer[0] |= preamble;
 
     return encoded_max_size_length;
+    #else
+    DEBUG("Trying to resize dynamic table while in No dynamic table mode");
+    return -2;
+    #endif
 }
