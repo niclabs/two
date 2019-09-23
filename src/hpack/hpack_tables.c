@@ -587,11 +587,9 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
  *      Returns the index in the static or dynamic table containing both name and value if successful,
  *      otherwise it returns -2.
  */
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value, char *tmp_name, char *tmp_value)
-#else
-int hpack_tables_find_index(char *name, char *value)
-#endif
+
 {
     //Search first in static table
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
@@ -629,11 +627,9 @@ int hpack_tables_find_index(char *name, char *value)
  *      Returns the index in the static or dynamic table containing name if successful,
  *      otherwise it returns -2.
  */
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+
 int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name, char *tmp_name)
-#else
-int hpack_tables_find_index_name(char *name)
-#endif
+
 {
 
     //Search first in static table
