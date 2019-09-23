@@ -15,7 +15,7 @@
  * Output:
  *      returns the decoded integer if succesful, -1 otherwise
  */
-uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
+int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
 {
     int pointer = 0;
     uint8_t b0 = bytes[0];
@@ -26,11 +26,12 @@ uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
     if (b0 != p) {
-        #if (b0 > HPACK_MAXIMUM_INTEGER_SIZE)
+        if (b0 > HPACK_MAXIMUM_INTEGER_SIZE){
         return -1;
-        #else
+        }
+        else{
         return (uint32_t)b0;
-        #endif
+    }
     }
     else {
         uint32_t integer = (uint32_t)p;

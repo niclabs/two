@@ -16,7 +16,7 @@ extern int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer
 extern int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length);
 extern int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length);
 extern int hpack_decoder_decode_indexed_header_field_v2(hpack_states_t *hpack_states, uint8_t *header_block, char *name, char *value);
-extern uint32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
+extern int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
 //extern int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
