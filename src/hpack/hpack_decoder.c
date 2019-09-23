@@ -87,7 +87,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
                for(uint8_t j = 0 ; j <= encoded_string_size; j++){
                 DEBUG("Byte %d is: %d",j,encoded_string[j]);
                }*/
-            return -2;
+            return INTERNAL_ERROR;
         }
         uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
 
@@ -103,7 +103,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
         }
     }
     ERROR("Couldn't read bits in hpack_decoder_decode_huffman_word");
-    return -2;
+    return INTERNAL_ERROR;
 }
 #endif
 
@@ -126,7 +126,7 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
         else {
             DEBUG("Last byte is %d", last_byte);
             ERROR("Decoding error: The compressed header padding contains a value different from the EOS symbol");
-            return -1;
+            return PROTOCOL_ERROR;
         }
     }
     else {
@@ -134,10 +134,10 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
         uint8_t mask = 255u;
         if (last_byte == mask) {
             ERROR("Decoding error: The compressed header has a padding greater than 7 bits");
-            return -1;
+            return PROTOCOL_ERROR;
         }
         DEBUG("Couldn't decode string in hpack_decoder_decode_huffman_string");
-        return -2;
+        return INTERNAL_ERROR;
     }
 }
 
@@ -224,7 +224,7 @@ int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint3
         return hpack_decoder_decode_huffman_string_v2(str, encoded_buffer, length);
 #else
         ERROR("Not implemented: Cannot decode a huffman compressed header");
-        return -2;
+        return INTERNAL_ERROR;
 #endif
     }
     else {
@@ -299,7 +299,7 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
         }
 #else
         ERROR("Dynamic Table is not included, couldn't add header to table");
-        return -1;
+        return PROTOCOL_ERROR;
 #endif
     }
     return pointer;
@@ -464,7 +464,7 @@ int hpack_decoder_decode_header_v2(hpack_states_t *states)
 
     else {
         ERROR("Error unknown preamble value: %d", states->encoded_header.preamble);
-        return -2;
+        return INTERNAL_ERROR;
     }
 }
 
@@ -478,7 +478,7 @@ int hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
         uint32_t result = hpack_utils_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
         if (result == eos) {
             ERROR("Decoding Error: The compressed header contains the EOS Symbol");
-            return -1;
+            return PROTOCOL_ERROR;
         }
     }
 
@@ -490,13 +490,13 @@ int hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
     /*Row doesn't exist*/
     if (encoded_header->preamble == INDEXED_HEADER_FIELD && encoded_header->index == 0) {
         ERROR("Decoding Error: Cannot retrieve a 0 index from hpack tables");
-        return -1;
+        return PROTOCOL_ERROR;
     }
 
     /*Integer exceed implementations limits*/
     if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE && encoded_header->dynamic_table_size > HPACK_MAXIMUM_INTEGER_SIZE) {
         ERROR("Integer exceeds implementations limits");
-        return -1;
+        return PROTOCOL_ERROR;
     }
 
     /*It's ok*/
@@ -562,7 +562,7 @@ int hpack_decoder_decode_header_block_v2(hpack_states_t *states, uint8_t *header
         else {                                              /*it's a dynamic table size update*/
             if (!can_receive_dynamic_table_size_update) {
                 /*Error*/
-                return -1;
+                return PROTOCOL_ERROR;
             }
         }
         /*
@@ -594,7 +594,7 @@ int hpack_decoder_decode_header_block_v2(hpack_states_t *states, uint8_t *header
     }
     if (pointer > header_block_size) {
         DEBUG("Error decoding header block, read %d bytes and header_block_size is %d", pointer, header_block_size);
-        return -2;
+        return INTERNAL_ERROR;
     }
     return pointer;
 }
