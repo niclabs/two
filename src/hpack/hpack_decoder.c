@@ -27,11 +27,11 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p >> (8 - prefix);
     if (b0 != p) {
         if (b0 > HPACK_MAXIMUM_INTEGER_SIZE){
-        return -1;
+            return -1;
         }
         else{
-        return (uint32_t)b0;
-    }
+            return (uint32_t)b0;
+        }
     }
     else {
         uint32_t integer = (uint32_t)p;
