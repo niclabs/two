@@ -186,7 +186,7 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
  *      -> *dynamic_table: table which can be modified by server or client
  *      -> index: table's position of the entry
  * Output:
- *      Position in dynamic_table->buffer of entry... used like dynamic_table->buffer[(next-POS) % size], -1 if error
+ *      Position in dynamic_table->buffer of entry... used like dynamic_table->buffer[(next-POS) % size], -2 if error
  */
 int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, uint32_t index)
 {
@@ -218,7 +218,7 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
  *      -> initial position: table's position of the entry
  *      -> char *buff: buffer where to copy
  * Output:
- *      Position of the end of the string in the table's buffer, -1 if error
+ *      Position of the end of the string in the table's buffer, -2 if error
  */
 int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer)
 {
@@ -247,7 +247,7 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
  *      -> initial position: table's position of the entry
  *      -> char *buff: buffer which has the string
  * Output:
- *      Position of the end of the string in the table's buffer, -1 if error
+ *      Position of the end of the string in the table's buffer, -2 if error
  */
 int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer)
 {
@@ -276,7 +276,7 @@ int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table,
  * Input:
  *      -> *dynamic_table: Dynamic table to search
  * Output:
- *      0 if success, -1 otherwise
+ *      0 if success, -2 otherwise
  */
 int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
 {
@@ -315,7 +315,7 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  * Output:
- *      0 if success, -1 in case of Error
+ *      0 if success, -1 in case of protocol error, -2 in case of internal error
  */
 int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
@@ -368,7 +368,7 @@ uint32_t hpack_tables_header_pair_size(header_pair_t header_pair)
  *      -> index: table's position of the entry
  *      -> *name: Buffer to store name of the header
  * Output:
- *      0 if success, -1 in case of Error
+ *      0 if success, -1 in case of protocol error, -2 in case of internal error
  */
 int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
@@ -494,7 +494,7 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
  *      -> *name: New entry name added
  *      -> *value: New entry value added
  * Output:
- *      0 if success, -1 otherwise
+ *      0 if success, -1 in case of protocol error, -2 in case of internal error
  */
 int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
@@ -536,7 +536,7 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
  *      -> *name: buffer where the name of the entry will be stored
  *      -> *value: buffer where the value of the entry will be stored
  * Output:
- *      0 if success, -1 in case of Error
+ *      0 if success,  -1 in case of protocol error, -2 in case of internal error
  */
 int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
@@ -565,7 +565,7 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
  *      -> index: table's position of the entry
  *      -> *name: buffer where the name of the entry will be stored
  * Output:
- *      0 if success, -1 in case of Error
+ *      0 if success,  -1 in case of protocol error, -2 in case of internal error
  */
 int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
@@ -596,7 +596,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
  *      -> *value: Buffer containing the value of a header to search
  *  Output:
  *      Returns the index in the static or dynamic table containing both name and value if successful,
- *      otherwise it returns -1.
+ *      otherwise it returns -2.
  */
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value, char *tmp_name, char *tmp_value)
@@ -638,7 +638,7 @@ int hpack_tables_find_index(char *name, char *value)
  *      -> *name: Buffer containing the name of a header to search
  *  Output:
  *      Returns the index in the static or dynamic table containing name if successful,
- *      otherwise it returns -1.
+ *      otherwise it returns -2.
  */
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name, char *tmp_name)
