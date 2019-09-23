@@ -670,13 +670,6 @@ int hpack_tables_find_index_name(char *name)
 }
 
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
-uint32_t hpack_tables_get_table_length(uint32_t dynamic_table_size)
-{
-    return (uint32_t)((dynamic_table_size / 32) + 1);
-}
-#endif
-
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_init_dynamic_table
  * Initialize dynamic_table for protocol uses, but it requires a previous header_pair_t table initialization
