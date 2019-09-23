@@ -346,18 +346,7 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
     return 0;
 }
 #endif
-/*
- * Function: hpack_tables_header_pair_size
- * Input:
- *      -> header_pair:
- * Output:
- *      return the size of a header HeaderPair, the size is
- *      the sum of octets used for its encoding and 32
- */
-uint32_t hpack_tables_header_pair_size(header_pair_t header_pair)
-{
-    return (uint32_t)(strlen(header_pair.name) + strlen(header_pair.value) + 32);
-}
+
 
 #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
 /*
