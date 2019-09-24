@@ -178,6 +178,7 @@ int error(hstates_t *hs, int code, char *msg)
     }
 
     // Send response
+    //TODO: return to http2 layer
     if (h2_send_response(hs) < 0) {
         DEBUG("Could not send data");
         return -1;
@@ -386,8 +387,14 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 int receive_server_response_data(hstates_t *hs)
 {
     return -1;
+    // Send response
+    //TODO: return to http2 layer
 }
 
+    if (headers_validate(&hs->headers_in) < 0) {
+        //TODO: this should return to http2 layer
+    if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
+        //TODO: this should return to http2 layer
 int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size)
 {
     // Initialize output header list
@@ -404,15 +411,18 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
     }
 
     // Try to send request
+    //TODO: this should return to http2 layer
     if (h2_send_request(hs) < 0) {
         DEBUG("Failed to send request %s %s", method, uri);
         return -1;
     }
 
+
     // Initialize input header list
     header_t header_list_in[HTTP_MAX_HEADER_COUNT];
     headers_init(&hs->headers_in, header_list_in, HTTP_MAX_HEADER_COUNT);
 
+    /* this is work of http2 layer now
     hs->end_message = 0;
     if (receive_headers(hs) < 0) {
         ERROR("An error ocurred while waiting for server response headers");
@@ -423,6 +433,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
         http_client_disconnect(hs);
         return 0;
     }
+    */
 
     //If it is a GET request, wait for the server response data
     if (strncmp("GET", method, 8) == 0) {
