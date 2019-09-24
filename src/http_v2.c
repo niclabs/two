@@ -272,51 +272,49 @@ int http_server_start(hstates_t *hs)
     return -1;
 }
 
-            if (hs->connection_state == 0) {
-                break;
-            }
 
-            if (headers_validate(&hs->headers_in) < 0) {
-                h2_send_goaway_protocol_error(hs);
-                break;
-            }
+int http_server_response(hstates_t *hs)
+{
+    // Initialize input header list before read it
+    //header_t header_list[HTTP_MAX_HEADER_COUNT];
+    //headers_init(&hs->headers_in, header_list, HTTP_MAX_HEADER_COUNT);
 
-            // Get the method, path and scheme from headers
-            char *method = headers_get(&hs->headers_in, ":method");
-            char *path = headers_get(&hs->headers_in, ":path");
-            char* scheme = headers_get(&hs->headers_in, ":scheme");
 
-            // Check the request's validity
-            if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
-                h2_send_goaway_protocol_error(hs);
-                break;
-            }
-
-            DEBUG("Received %s request", method);
-            if (!has_method_support(method)) {
-                DEBUG("Ignoring unsupported request's DATA frames");
-                if (ignore_unsupported_data_frames(hs) < 0) {
-                    ERROR("An error occurred while ignoring unsupported dataframes");
-                }
-                error(hs, 501, "Not Implemented");
-                continue;
-            }
-
-            // TODO: read data (if POST)
-
-            // Get uri
-            char *uri = headers_get(&hs->headers_in, ":path");
-
-            // Process the http request
-            do_request(hs, method, uri);
-        }
-
-        http_client_disconnect(hs);
+    if (headers_validate(&hs->headers_in) < 0) {
+        h2_send_goaway_protocol_error(hs);
+        break;
     }
 
-    ERROR("Not client found");
+    // Get the method, path and scheme from headers
+    char *method = headers_get(&hs->headers_in, ":method");
+    char *path = headers_get(&hs->headers_in, ":path");
+    char *scheme = headers_get(&hs->headers_in, ":scheme");
 
-    return -1;
+    // Check the request's validity
+    if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
+        h2_send_goaway_protocol_error(hs);
+        break;
+    }
+
+    DEBUG("Received %s request", method);
+    if (!has_method_support(method)) {
+        DEBUG("Ignoring unsupported request's DATA frames");
+        if (ignore_unsupported_data_frames(hs) < 0) {
+            ERROR("An error occurred while ignoring unsupported dataframes");
+        }
+        error(hs, 501, "Not Implemented");
+        continue;
+    }
+
+    // TODO: read data (if POST)
+
+    // Get uri
+    char *uri = headers_get(&hs->headers_in, ":path");
+
+    // Process the http request
+    do_request(hs, method, uri);
+
+    return 0;
 }
 
 
