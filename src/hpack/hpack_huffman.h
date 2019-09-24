@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #define HUFFMAN_TABLE_SIZE (256)
-#define NUMBER_OF_CODE_LENGTHS (21)
+#define NUMBER_OF_CODE_LENGTHS (31)
 
 //TODO move macro to conf file
 #define HPACK_INCLUDE_HUFFMAN_LENGTH_TABLE (1) //DEFAULT
@@ -31,13 +31,18 @@ typedef struct {
 } huffman_encoded_word_t;
 
 typedef struct {
+    /*
     const uint32_t codes[HUFFMAN_TABLE_SIZE];
     const uint8_t symbols[HUFFMAN_TABLE_SIZE];
 #ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
     const uint8_t huffman_length[HUFFMAN_TABLE_SIZE];
 #endif
     const uint8_t sR[NUMBER_OF_CODE_LENGTHS];
-    const uint8_t code_length[NUMBER_OF_CODE_LENGTHS];
+    const uint8_t code_length[NUMBER_OF_CODE_LENGTHS];*/
+    const uint8_t L[HUFFMAN_TABLE_SIZE];
+    const uint8_t L_inv[HUFFMAN_TABLE_SIZE];
+    const uint8_t F[NUMBER_OF_CODE_LENGTHS];
+    const uint32_t C[NUMBER_OF_CODE_LENGTHS];
 } hpack_huffman_tree_t;
 
 
