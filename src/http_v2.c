@@ -185,31 +185,12 @@ int error(hstates_t *hs, int code, char *msg)
     return 0;
 }
 
+
 /**
  * Read headers from the request
  */
 int receive_headers(hstates_t *hs)
 {
-    hs->new_headers = 0;
-    while (hs->connection_state == 1) {
-        // receive frame
-        if (h2_receive_frame(hs) < 0) {
-            break;
-        }
-
-        // if we need to wait for continuation
-        if (hs->keep_receiving == 1) {
-            continue;
-        }
-
-        // when new headers are available return
-        if (hs->new_headers == 1) {
-            return 0;
-        }
-    }
-    if (hs->evil_goodbye == 0 && hs->connection_state == 0){
-        return 0;
-    }
     return -1;
 }
 
@@ -283,60 +264,13 @@ int ignore_unsupported_data_frames(hstates_t *hs)
 
 int http_server_create(hstates_t *hs, uint16_t port)
 {
-    reset_http_states(hs);
-
-    hs->is_server = 1;
-
-    if (sock_create(&hs->server_socket) < 0) {
-        DEBUG("Error in server creation");
-        return -1;
-    }
-
-    hs->server_socket_state = 1;
-
-    if (sock_listen(&hs->server_socket, port) < 0) {
-        DEBUG("Partial error in server creation");
-        if (sock_destroy(&hs->server_socket) == 0) {
-            hs->server_socket_state = 0;
-        }
-        return -1;
-    }
-
-    return 0;
+    return -1;
 }
 
 int http_server_start(hstates_t *hs)
 {
-    INFO("Server waiting for a client");
-
-    while (1) {
-        if (sock_accept(&hs->server_socket, &hs->socket) < 0) {
-            break;
-        }
-        DEBUG("New client connection");
-
-        // Update http_state
-        hs->socket_state = 1;
-        hs->connection_state = 1;
-        hs->evil_goodbye = 0;
-
-        // Initialize http2 connection (send headers)
-        if (h2_server_init_connection(hs) < 0) {
-            DEBUG("Could not perform HTTP/2 initialization");
-            http_client_disconnect(hs);
-            continue;
-        }
-
-        while (hs->connection_state == 1) {
-            // Initialize input header list
-            header_t header_list[HTTP_MAX_HEADER_COUNT];
-            headers_init(&hs->headers_in, header_list, HTTP_MAX_HEADER_COUNT);
-
-            // read headers
-            if (receive_headers(hs) < 0) {
-                ERROR("An error ocurred while receiving headers");
-                break;
-            }
+    return -1;
+}
 
             if (hs->connection_state == 0) {
                 break;
@@ -388,23 +322,7 @@ int http_server_start(hstates_t *hs)
 
 int http_server_destroy(hstates_t *hs)
 {
-    if (hs->server_socket_state == 0) {
-        WARN("Server not found");
-        return -1;
-    }
-
-    http_client_disconnect(hs);
-
-    if (sock_destroy(&hs->server_socket) < 0) {
-        DEBUG("Error in server disconnection");
-        return -1;
-    }
-
-    hs->server_socket_state = 0;
-
-    INFO("Server destroyed\n");
-
-    return 0;
+    return -1;
 }
 
 
@@ -469,15 +387,6 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 
 int receive_server_response_data(hstates_t *hs)
 {
-    while (hs->connection_state == 1) {
-        if (hs->end_message > 0) {
-            return hs->end_message;
-        }
-        if (h2_receive_frame(hs) < 0) {
-            break;
-        }
-    }
-
     return -1;
 }
 
@@ -547,40 +456,7 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
 
 int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
 {
-    reset_http_states(hs);
-
-    hs->is_server = 0;
-
-    if (sock_create(&(hs->socket)) < 0) {
-        DEBUG("Failed to create socket for client connection");
-        return -1;
-    }
-
-    hs->socket_state = 1;
-
-    if (sock_connect(&hs->socket, addr, port) < 0) {
-        DEBUG("Connection to remote address %s failed", addr);
-        http_client_disconnect(hs);
-        return -1;
-    }
-
-    INFO("Connected to %s", addr);
-
-    // Connected
-    hs->connection_state = 1;
-    hs->evil_goodbye = 0;
-
-    // Initialize http/2 connection
-    if (h2_client_init_connection(hs) < 0) {
-        DEBUG("Failed to perform HTTP/2 initialization");
-        http_client_disconnect(hs);
-        return -1;
-    }
-
-    // Copy address into host field
-    strncpy(hs->host, addr, HTTP_MAX_HOST_SIZE);
-
-    return 0;
+    return -1;
 }
 
 int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
@@ -593,24 +469,7 @@ int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
     return send_client_request(hs, "HEAD", uri, response, size);
 }
 
-int http_client_disconnect(hstates_t *hs){
-    if (hs->socket_state) {
-        if (hs->connection_state) {
-            if (h2_graceful_connection_shutdown(hs) < 0) {
-                WARN("Client will disconnect without a successful goaway");
-            }
-        }
-
-        if (sock_destroy(&hs->socket) < 0) {
-            DEBUG("Error in client disconnection");
-            return -1;
-        }
-
-        INFO("Client disconnected\n");
-    }
-
-    hs->socket_state = 0;
-    hs->connection_state = 0;
-
-    return 0;
+int http_client_disconnect(hstates_t *hs)
+{
+    return -1;
 }
