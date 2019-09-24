@@ -133,29 +133,6 @@ int is_valid_path(char *path)
     return 1;
 }
 
-/**
- * Get a resource handler for the given path
- */
-http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *path)
-{
-    http_resource_t res;
-
-    for (int i = 0; i < hs->resource_list_size; i++) {
-        res = hs->resource_list[i];
-        if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
-            return res.handler;
-        }
-    }
-    return NULL;
-}
-
-/**
- * Set all hstates values to its initial values
- */
-void reset_http_states(hstates_t *hs)
-{
-    memset(hs, 0, sizeof(*hs));
-}
 
 /**
  * Send an http error with the given code and message
@@ -187,6 +164,37 @@ int error(hstates_t *hs, int code, char *msg)
 }
 
 
+/******************************************************************************
+ Methods that should be deleted from this layer
+*****************************************************************************/
+
+
+
+/**
+ * Get a resource handler for the given path
+ */
+http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *path)
+{
+    http_resource_t res;
+
+    for (int i = 0; i < hs->resource_list_size; i++) {
+        res = hs->resource_list[i];
+        if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
+            return res.handler;
+        }
+    }
+    return NULL;
+}
+
+/**
+ * Set all hstates values to its initial values
+ */
+void reset_http_states(hstates_t *hs)
+{
+    memset(hs, 0, sizeof(*hs));
+}
+
+
 /**
  * Read headers from the request
  */
@@ -195,51 +203,6 @@ int receive_headers(hstates_t *hs)
     return -1;
 }
 
-
-/**
- * Perform request for the given method and uri
- */
-int do_request(hstates_t *hs, char *method, char *uri)
-{
-    // parse URI removing query parameters
-    char path[HTTP_MAX_PATH_SIZE];
-
-    parse_uri(uri, path, NULL);
-
-    // find callback for resource
-    http_resource_handler_t handle_uri;
-    if ((handle_uri = get_resource_handler(hs, method, path)) == NULL) {
-        return error(hs, 404, "Not Found");
-    }
-
-    // TODO: response pointer should be pointer to hs->data_out
-    uint8_t response[HTTP_MAX_RESPONSE_SIZE];
-    int len;
-    if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
-        // if the handler returns
-        return error(hs, 500, "Server Error");
-    }
-    // If it is GET method Prepare response for callback
-    else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
-        set_data(&hs->data_out, response, len);
-    }
-
-    // Initialize header list
-    header_t header_list[HTTP_MAX_HEADER_COUNT];
-    headers_init(&hs->headers_out, header_list, HTTP_MAX_HEADER_COUNT);
-
-    // Set default headers
-    headers_set(&hs->headers_out, ":status", "200");
-
-    // Send response
-    if (h2_send_response(hs) < 0) {
-        // TODO: get error code from HTTP/2
-        DEBUG("HTTP/2 error ocurred. Could not send data");
-        return -1;
-    }
-
-    return 0;
-}
 
 int ignore_unsupported_data_frames(hstates_t *hs)
 {
@@ -259,63 +222,16 @@ int ignore_unsupported_data_frames(hstates_t *hs)
     return -1;
 }
 
-/************************************
-* Server API methods
-************************************/
 
 int http_server_create(hstates_t *hs, uint16_t port)
 {
     return -1;
 }
 
+
 int http_server_start(hstates_t *hs)
 {
     return -1;
-}
-
-
-int http_server_response(hstates_t *hs)
-{
-    // Initialize input header list before read it
-    //header_t header_list[HTTP_MAX_HEADER_COUNT];
-    //headers_init(&hs->headers_in, header_list, HTTP_MAX_HEADER_COUNT);
-
-
-    if (headers_validate(&hs->headers_in) < 0) {
-        h2_send_goaway_protocol_error(hs);
-        break;
-    }
-
-    // Get the method, path and scheme from headers
-    char *method = headers_get(&hs->headers_in, ":method");
-    char *path = headers_get(&hs->headers_in, ":path");
-    char *scheme = headers_get(&hs->headers_in, ":scheme");
-
-    // Check the request's validity
-    if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
-        h2_send_goaway_protocol_error(hs);
-        break;
-    }
-
-    DEBUG("Received %s request", method);
-    if (!has_method_support(method)) {
-        DEBUG("Ignoring unsupported request's DATA frames");
-        if (ignore_unsupported_data_frames(hs) < 0) {
-            ERROR("An error occurred while ignoring unsupported dataframes");
-        }
-        error(hs, 501, "Not Implemented");
-        continue;
-    }
-
-    // TODO: read data (if POST)
-
-    // Get uri
-    char *uri = headers_get(&hs->headers_in, ":path");
-
-    // Process the http request
-    do_request(hs, method, uri);
-
-    return 0;
 }
 
 
@@ -380,21 +296,132 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 }
 
 
-/************************************
-* Client API methods
-************************************/
-
 int receive_server_response_data(hstates_t *hs)
 {
     return -1;
+}
+
+
+int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
+{
+    return -1;
+}
+
+
+int http_client_disconnect(hstates_t *hs)
+{
+    return -1;
+}
+
+
+
+/****************************************************************************/
+
+
+
+/************************************
+* Server methods
+************************************/
+
+/**
+ * Perform request for the given method and uri
+ */
+int do_request(hstates_t *hs, char *method, char *uri)
+{
+    // parse URI removing query parameters
+    char path[HTTP_MAX_PATH_SIZE];
+
+    parse_uri(uri, path, NULL);
+
+    // find callback for resource
+    http_resource_handler_t handle_uri;
+    if ((handle_uri = get_resource_handler(hs, method, path)) == NULL) {
+        return error(hs, 404, "Not Found");
+    }
+
+    // TODO: response pointer should be pointer to hs->data_out
+    uint8_t response[HTTP_MAX_RESPONSE_SIZE];
+    int len;
+    if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
+        // if the handler returns
+        return error(hs, 500, "Server Error");
+    }
+    // If it is GET method Prepare response for callback
+    else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
+        set_data(&hs->data_out, response, len);
+    }
+
+    // Initialize header list
+    header_t header_list[HTTP_MAX_HEADER_COUNT];
+    headers_init(&hs->headers_out, header_list, HTTP_MAX_HEADER_COUNT);
+
+    // Set default headers
+    headers_set(&hs->headers_out, ":status", "200");
+
     // Send response
     //TODO: return to http2 layer
+    if (h2_send_response(hs) < 0) {
+        // TODO: get error code from HTTP/2
+        DEBUG("HTTP/2 error ocurred. Could not send data");
+        return -1;
+    }
+
+    return 0;
 }
+
+
+int http_server_response(hstates_t *hs)
+{
+    // Initialize input header list before read it
+    //header_t header_list[HTTP_MAX_HEADER_COUNT];
+    //headers_init(&hs->headers_in, header_list, HTTP_MAX_HEADER_COUNT);
+
 
     if (headers_validate(&hs->headers_in) < 0) {
         //TODO: this should return to http2 layer
+        h2_send_goaway_protocol_error(hs);
+        return -1;
+    }
+
+    // Get the method, path and scheme from headers
+    char *method = headers_get(&hs->headers_in, ":method");
+    char *path = headers_get(&hs->headers_in, ":path");
+    char *scheme = headers_get(&hs->headers_in, ":scheme");
+
+    // Check the request's validity
     if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
         //TODO: this should return to http2 layer
+        h2_send_goaway_protocol_error(hs);
+        return -1;
+    }
+
+    DEBUG("Received %s request", method);
+    if (!has_method_support(method)) {
+        DEBUG("Ignoring unsupported request's DATA frames");
+        if (ignore_unsupported_data_frames(hs) < 0) {
+            ERROR("An error occurred while ignoring unsupported dataframes");
+        }
+        error(hs, 501, "Not Implemented");
+        return 0;
+    }
+
+    // TODO: read data (if POST)
+
+    // Get uri
+    char *uri = headers_get(&hs->headers_in, ":path");
+
+    // Process the http request
+    do_request(hs, method, uri);
+
+    return 0;
+}
+
+
+/************************************
+* Client methods
+************************************/
+
+
 int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size)
 {
     // Initialize output header list
@@ -462,23 +489,13 @@ int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *respons
 }
 
 
-
-int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
-{
-    return -1;
-}
-
 int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 {
     return send_client_request(hs, "GET", uri, response, size);
 }
 
+
 int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 {
     return send_client_request(hs, "HEAD", uri, response, size);
-}
-
-int http_client_disconnect(hstates_t *hs)
-{
-    return -1;
 }
