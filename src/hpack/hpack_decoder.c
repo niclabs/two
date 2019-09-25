@@ -91,7 +91,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
         else {
             uint8_t number_of_padding_bits = length-bits_left;
             uint32_t padding = (1<<(number_of_padding_bits)) - 1;
-            result = hpack_utils_read_bits_from_bytes(bit_position, 30, encoded_string);
+            result = hpack_utils_read_bits_from_bytes(bit_position, bits_left, encoded_string);
             result <<= number_of_padding_bits;
             result |= padding;
 

@@ -42,6 +42,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t
     FAKE(hpack_tables_dynamic_table_resize)      \
     FAKE(hpack_huffman_encode)
 
+
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 /*----------Value Return for FAKEs ----------*/
 int8_t hpack_huffman_encode_return_w(huffman_encoded_word_t *h, uint8_t sym)
@@ -730,7 +731,15 @@ void test_encode_dynamic_size_update(void)
     memset(encoded_buffer, 0, 3);
     uint32_t new_max_size = 302;
     hpack_utils_encoded_integer_size_fake.return_val = 3;
-    int rc = hpack_encoder_encode_dynamic_size_update(NULL, new_max_size, encoded_buffer);
+    hpack_states_t state;
+    hpack_dynamic_table_t* dynamic_table = &state.dynamic_table;
+    memset(dynamic_table->buffer, 0, 4092);
+    dynamic_table->max_size = 4092;
+    dynamic_table->actual_size = 0;
+    dynamic_table->n_entries = 0;
+    dynamic_table->first = 0;
+    dynamic_table->next = 0;
+    int rc = hpack_encoder_encode_dynamic_size_update(&state, new_max_size, encoded_buffer);
     TEST_ASSERT_EQUAL(3, rc);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded[i], encoded_buffer[i]);
