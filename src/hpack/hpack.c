@@ -56,8 +56,8 @@ int encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_
  * Function: hpack_init_states
  * Initialize the given hpack_states
  * Input:
- *      -> *states: hpack main struct wrapper to intitialize
- *      -> settings_max_table_size: max table size setted in settings frame
+ *      -> *states: hpack main struct wrapper to initialize
+ *      -> settings_max_table_size: max table size set in settings frame
  * Output:
  *      returns 0 if successful
  */

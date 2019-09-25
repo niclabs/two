@@ -28,10 +28,12 @@ typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huff
 #endif
 
 /*helper function*/
-void pad_code(uint32_t* code, uint8_t length){
-    uint8_t number_of_padding_bits = 30-length;
-    uint32_t padding = (1<<(number_of_padding_bits)) - 1;
+void pad_code(uint32_t *code, uint8_t length)
+{
+    uint8_t number_of_padding_bits = 30 - length;
+    uint32_t padding = (1 << (number_of_padding_bits)) - 1;
     uint32_t result = *code;
+
     result <<= number_of_padding_bits;
     result |= padding;
     *code = result;
@@ -50,7 +52,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_static_find_name, uint8_t, char *);
 FAKE_VALUE_FUNC(uint32_t, hpack_tables_get_table_length, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_init_states, hpack_states_t *, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
-FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t,uint32_t);
+FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t, uint32_t);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name_and_value, hpack_dynamic_table_t *, uint32_t, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, uint32_t, char *);
 
@@ -523,6 +525,7 @@ void test_decode_header_block_literal_never_indexed(void)
     header_t h_list[1];
     headers_t headers;
     hpack_states_t states;
+
     hpack_init_states(&states, 100); // 100 is a dummy value
 
     headers.count = 0;
@@ -642,6 +645,7 @@ void test_decode_header_block_literal_without_indexing(void)
     header_t h_list[1];
     headers_t headers;
     hpack_states_t states;
+
     hpack_init_states(&states, 100); //100 is a dummy value btw
 
     headers.count = 0;
@@ -707,7 +711,7 @@ void test_decode_non_huffman_string(void)
 
     hpack_utils_encoded_integer_size_fake.return_val = 1;
 
-    memset(decoded_string, 0,str_length);
+    memset(decoded_string, 0, str_length);
     char expected_decoded_string[] = "www.example.com";
     int rc = hpack_decoder_decode_non_huffman_string_v2(decoded_string, encoded_string, str_length);
     TEST_ASSERT_EQUAL(rc, 16);
@@ -737,8 +741,8 @@ void test_decode_huffman_word(void)
                                                            0x1721e9ff,
                                                            0x87a7fff,
                                                            0xf4fffff,
-                                                           0x14fffff,
-                                                           };
+                                                           0x14fffff, };
+
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 16);
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 15);
 
@@ -801,7 +805,7 @@ void test_decode_huffman_string_error(void)
     uint8_t encoded_string4[] = { 0x81, 0x6f };
     char decoded_string4[] = { 0, 0 };
     char expected_decoded_string4[] = { 0, 0 };
-    rc = hpack_decoder_decode_huffman_string_v2(decoded_string4, encoded_string4,2);
+    rc = hpack_decoder_decode_huffman_string_v2(decoded_string4, encoded_string4, 2);
     TEST_ASSERT_EQUAL(-2, rc);
     for (int i = 0; i < 2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string4[i], decoded_string4[i]);
