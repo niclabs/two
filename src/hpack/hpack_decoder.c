@@ -26,7 +26,7 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
     if (b0 != p) {
-        //TODO: border case, if MAXIMUM INTEGER SIZE var is less than 256 it will fail!!!! 
+        //TODO: border case, if MAXIMUM INTEGER SIZE var is less than 256 it will fail!!!!
         return (int32_t)b0;
     }
     else {
@@ -74,29 +74,41 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
 int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position)
 {
     huffman_encoded_word_t encoded_word;
+    uint8_t length = 30;
+    uint32_t result;
 
-    for (uint8_t i = 5; i < 31; i++) { //search through all lengths possible
-
-        /*Check if can read buffer*/
-        if (bit_position + i > 8 * encoded_string_size) {
-            /*DEBUG("Can't read more bits i:%d ; bit_position: %d ; encoded_string_size: %d",i,bit_position,encoded_string_size);
-               for(uint8_t j = 0 ; j <= encoded_string_size; j++){
-                DEBUG("Byte %d is: %d",j,encoded_string[j]);
-               }*/
+    /*Check if can read buffer*/
+    if (bit_position + length > 8 * encoded_string_size) {
+        /*DEBUG("Can't read more bits i:%d ; bit_position: %d ; encoded_string_size: %d",i,bit_position,encoded_string_size);
+           for(uint8_t j = 0 ; j <= encoded_string_size; j++){
+            DEBUG("Byte %d is: %d",j,encoded_string[j]);
+           }*/
+        uint8_t bits_left = (8 * encoded_string_size) - bit_position;
+        if (bits_left < 5) {
+            /*Can't read more*/
             return INTERNAL_ERROR;
         }
-        uint32_t result =  hpack_utils_read_bits_from_bytes(bit_position, i, encoded_string);
+        else {
+            uint8_t number_of_padding_bits = length-bits_left;
+            uint32_t padding = (1<<(number_of_padding_bits)) - 1;
+            result = hpack_utils_read_bits_from_bytes(bit_position, 30, encoded_string);
+            result <<= number_of_padding_bits;
+            result |= padding;
 
-        encoded_word.code = result;
-        encoded_word.length = i;
-        uint8_t decoded_sym = 0;
-
-        int8_t rc = hpack_huffman_decode(&encoded_word, &decoded_sym);
-
-        if (rc == 0) {/*Code is found on huffman tree*/
-            str[0] = (char)decoded_sym;
-            return i;
         }
+    } else {
+        result = hpack_utils_read_bits_from_bytes(bit_position, 30, encoded_string);
+    }
+
+    encoded_word.code = result;
+    encoded_word.length = 30;
+    uint8_t decoded_sym = 0;
+
+    int8_t rc = hpack_huffman_decode(&encoded_word, &decoded_sym);
+
+    if (rc == 0) {    /*Code is found on huffman tree*/
+        str[0] = (char)decoded_sym;
+        return encoded_word.length;
     }
     ERROR("Couldn't read bits in hpack_decoder_decode_huffman_word");
     return INTERNAL_ERROR;
@@ -348,7 +360,7 @@ int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_states_t *states)
  *
  */
 
- 
+
 
 /*
  * Function: hpack_decoder_decode_header_block_from_table

@@ -873,36 +873,36 @@ static const hpack_huffman_tree_t huffman_tree = {
  */
 int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
 {
-    if(huffman_tree.L_inv[sym] >= huffman_tree.F[NUMBER_OF_CODE_LENGTHS-1]){
+    if (huffman_tree.L_inv[sym] >= huffman_tree.F[NUMBER_OF_CODE_LENGTHS - 1]) {
         result->code =
-                huffman_tree.L_inv[sym]
-                - huffman_tree.F[NUMBER_OF_CODE_LENGTHS-1]
-                + huffman_tree.C[NUMBER_OF_CODE_LENGTHS-1];
+            huffman_tree.L_inv[sym]
+            - huffman_tree.F[NUMBER_OF_CODE_LENGTHS - 1]
+            + huffman_tree.C[NUMBER_OF_CODE_LENGTHS - 1];
         result->length = NUMBER_OF_CODE_LENGTHS - 1;
         return 0;
     }
 
-    for(int i = 1; i < NUMBER_OF_CODE_LENGTHS; i++){
-        if(huffman_tree.L_inv[sym] < huffman_tree.F[i]){
-            result->code = huffman_tree.L_inv[sym] - huffman_tree.F[i-1] + huffman_tree.C[i-1];
-            result->length = i-1;
+    for (int i = 1; i < NUMBER_OF_CODE_LENGTHS; i++) {
+        if (huffman_tree.L_inv[sym] < huffman_tree.F[i]) {
+            result->code = huffman_tree.L_inv[sym] - huffman_tree.F[i - 1] + huffman_tree.C[i - 1];
+            result->length = i - 1;
             return 0;
         }
     }
     return -1;
     /*
-    for i in range(1,len(F)):
-    if Lp[p] < F[i]:
-    code = Lp[p] - F[i-1] + C[i-1]
-    return code,i-1
-    return Lp[p] - F[-1] + C[-1], 30
-    /*
-    result->code = huffman_tree.codes[sym];
-#ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
-    result->length = huffman_tree.huffman_length[sym];
-    return 0;
-#else
-    for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
+       for i in range(1,len(F)):
+       if Lp[p] < F[i]:
+       code = Lp[p] - F[i-1] + C[i-1]
+       return code,i-1
+       return Lp[p] - F[-1] + C[-1], 30
+       /*
+       result->code = huffman_tree.codes[sym];
+     #ifdef INCLUDE_HUFFMAN_LENGTH_TABLE
+       result->length = huffman_tree.huffman_length[sym];
+       return 0;
+     #else
+       for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
         uint8_t symbol_index = huffman_tree.sR[i];
         uint16_t top = i + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[i + 1]) : HUFFMAN_TABLE_SIZE;
 
@@ -912,9 +912,9 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
                 return 0;
             }
         }
-    }
-    return -1;
-#endif*/
+       }
+       return -1;
+     #endif*/
 }
 
 /*
@@ -929,25 +929,25 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
 int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     /*
-    uint8_t index = 0;
+       uint8_t index = 0;
 
-    for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
+       for (uint8_t i = 0; i < NUMBER_OF_CODE_LENGTHS; i++) {
         if (huffman_tree.code_length[i] == encoded->length) {
             index = i;
             break;
         }
-    }
+       }
 
-    uint8_t symbol_index = huffman_tree.sR[index];
-    uint16_t top = index + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[index + 1]) : HUFFMAN_TABLE_SIZE;
+       uint8_t symbol_index = huffman_tree.sR[index];
+       uint16_t top = index + 1 < NUMBER_OF_CODE_LENGTHS ? (huffman_tree.sR[index + 1]) : HUFFMAN_TABLE_SIZE;
 
-    for (uint8_t i = symbol_index; i < top; i++) {
+       for (uint8_t i = symbol_index; i < top; i++) {
         uint8_t code_index = huffman_tree.symbols[i];
         if (huffman_tree.codes[code_index] == encoded->code) {
-            *sym = code_index;
+     * sym = code_index;
             return 0;
         }
-    }*/
+       }*/
 /*    N = codesp[i]
     largo = lengthsp[i]
 
@@ -958,9 +958,25 @@ int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
     break
     print("length=",length,"largo=",largo)
     dec = L[F[length]+N-C[length]]*/
-    uint32_t pos = huffman_tree.F[encoded->length] + encoded->code - huffman_tree.C[encoded->length];
-    if(pos < HUFFMAN_TABLE_SIZE){
+    uint8_t length = 30;
+    uint8_t h = NUMBER_OF_CODE_LENGTHS - 1;
+    uint32_t code = encoded->code;
+
+    for (uint8_t i = 1; i < h; i++) {
+        uint32_t offset = (1 << (h - i - 1));
+        uint32_t lower_bound = ((uint32_t)huffman_tree.C[i]) * (offset * 2);
+        uint32_t upper_bound = ((uint32_t)huffman_tree.C[i + 1]) * offset;
+        if (lower_bound <= code && code < upper_bound) {
+            length = i;
+            code >>= (h - i);
+            break;
+        }
+    }
+    uint32_t pos = huffman_tree.F[length] + code - huffman_tree.C[length];
+    if (pos < HUFFMAN_TABLE_SIZE) {
         *sym = huffman_tree.L[pos];
+        //TODO: Change this to return length
+        encoded->length = length;
         return 0;
     }
     return -1;
