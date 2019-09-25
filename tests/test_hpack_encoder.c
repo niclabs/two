@@ -722,7 +722,7 @@ void test_encode_literal_header_field_indexed_name_error(void)
 
 }
 
-void test_hpack_encoder_encode_dynamic_size_update(void)
+void test_encode_dynamic_size_update(void)
 {
     uint8_t expected_encoded[] = { 0x3f, 0x8f, 0x2 };
     uint8_t encoded_buffer[3];
@@ -761,7 +761,7 @@ int main(void)
     //UNIT_TEST(test_encode_literal_header_field_indexed_name);
     //UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
-    UNIT_TEST(test_hpack_encoder_encode_dynamic_size_update);
+    UNIT_TEST(test_encode_dynamic_size_update);
 
     return UNIT_TESTS_END();
 }

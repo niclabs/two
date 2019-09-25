@@ -26,6 +26,17 @@ extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
 typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_decode_fake when huffman_compression is not included*/
 #endif
+
+/*helper function*/
+void pad_code(uint32_t* code, uint8_t length){
+    uint8_t number_of_padding_bits = 30-length;
+    uint32_t padding = (1<<(number_of_padding_bits)) - 1;
+    uint32_t result = *code;
+    result <<= number_of_padding_bits;
+    result |= padding;
+    *code = result;
+}
+
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
 FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
@@ -68,82 +79,79 @@ int8_t hpack_huffman_decode_return_not_found(huffman_encoded_word_t *encoded, ui
 int8_t hpack_huffman_decode_return_w(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'w';
+    encoded->length = 7;
     return 0;
 }
 int8_t hpack_huffman_decode_return_dot(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'.';
+    encoded->length = 6;
     return 0;
 }
 int8_t hpack_huffman_decode_return_e(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'e';
+    encoded->length = 5;
     return 0;
 }
 int8_t hpack_huffman_decode_return_x(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'x';
+    encoded->length = 7;
     return 0;
 }
 int8_t hpack_huffman_decode_return_a(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'a';
+    encoded->length = 5;
     return 0;
 }
 int8_t hpack_huffman_decode_return_m(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'m';
+    encoded->length = 6;
     return 0;
 }
 int8_t hpack_huffman_decode_return_p(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'p';
+    encoded->length = 6;
     return 0;
 }
 int8_t hpack_huffman_decode_return_l(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'l';
+    encoded->length = 6;
     return 0;
 }
 int8_t hpack_huffman_decode_return_c(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     *sym = (uint8_t)'c';
-    return 0;
-}
-int8_t hpack_huffman_decode_return_o(huffman_encoded_word_t *encoded, uint8_t *sym)
-{
-    *sym = (uint8_t)'o';
+    encoded->length = 5;
     return 0;
 }
 
-int8_t(*hpack_huffman_decode_wwwdotexampledotcom_arr[])(huffman_encoded_word_t *, uint8_t *) = { hpack_huffman_decode_return_not_found,
-                                                                                                 hpack_huffman_decode_return_not_found,
+int8_t hpack_huffman_decode_return_o(huffman_encoded_word_t *encoded, uint8_t *sym)
+{
+    *sym = (uint8_t)'o';
+    encoded->length = 5;
+    return 0;
+}
+
+int8_t(*hpack_huffman_decode_wwwdotexampledotcom_arr[])(huffman_encoded_word_t *, uint8_t *) = { hpack_huffman_decode_return_w,
                                                                                                  hpack_huffman_decode_return_w,
-                                                                                                 hpack_huffman_decode_return_not_found,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_w,
-                                                                                                 hpack_huffman_decode_return_not_found,
-                                                                                                 hpack_huffman_decode_return_not_found,
-                                                                                                 hpack_huffman_decode_return_w,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_dot,
                                                                                                  hpack_huffman_decode_return_e,
-                                                                                                 hpack_huffman_decode_return_not_found,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_x,
                                                                                                  hpack_huffman_decode_return_a,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_m,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_p,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_l,
                                                                                                  hpack_huffman_decode_return_e,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_dot,
                                                                                                  hpack_huffman_decode_return_c,
                                                                                                  hpack_huffman_decode_return_o,
-                                                                                                 hpack_huffman_decode_return_not_found,
                                                                                                  hpack_huffman_decode_return_m,
                                                                                                  hpack_huffman_decode_return_not_found };
 int8_t(*hpack_huffman_decode_bad_padding_arr[])(huffman_encoded_word_t *, uint8_t *) = { hpack_huffman_decode_return_a,
@@ -715,10 +723,24 @@ void test_decode_huffman_word(void)
     uint8_t *encoded_string = encoded_wwwdotexampledotcom + 1; //We don't need to decode as string the first byte
     char expected_decoded_string[] = "www.example.com";
     uint8_t expected_word_length[] = { 7, 7, 7, 6, 5, 7, 5, 6, 6, 6, 5, 6, 5, 5, 6 };
-    uint32_t return_fake_values_read_bits_from_bytes[] = { 30, 60, 120, 30, 60, 120, 30, 60, 120, 11, 23, 5, 30, 60, 121, 3, 20, 41, 21, 43, 20, 40, 5, 11, 23, 4, 7, 20, 41 };
-
-    SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
-    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 29);
+    uint32_t return_fake_values_read_bits_from_bytes[] = { 0x3c78f0b9,
+                                                           0x3c785cbe,
+                                                           0x3c2e5f23,
+                                                           0x172f91d3,
+                                                           0xbe474d7,
+                                                           0x3c8e9ae8,
+                                                           0x74d7415,
+                                                           0x29ae82ae,
+                                                           0x2ba0ab90,
+                                                           0x282ae43d,
+                                                           0xab90f4f,
+                                                           0x1721e9ff,
+                                                           0x87a7fff,
+                                                           0xf4fffff,
+                                                           0x14fffff,
+                                                           };
+    SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 16);
+    SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 15);
 
     char decoded_sym = (char)0;
     uint8_t encoded_string_size = 12;
@@ -730,7 +752,7 @@ void test_decode_huffman_word(void)
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_sym);
         bit_position += rc;
     }
-    TEST_ASSERT_EQUAL(29, hpack_huffman_decode_fake.call_count);
+    TEST_ASSERT_EQUAL(15, hpack_huffman_decode_fake.call_count);
 }
 #endif
 
@@ -749,7 +771,7 @@ void test_decode_huffman_string(void)
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
     int rc = hpack_decoder_decode_huffman_string_v2(decoded_string, encoded_string, 12);
     TEST_ASSERT_EQUAL(13, rc);
-    TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
+    TEST_ASSERT_EQUAL(16, hpack_huffman_decode_fake.call_count);
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
     }
@@ -818,7 +840,7 @@ void test_decode_string(void)
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     uint8_t *encoded_string_huffman = encoded_wwwdotexampledotcom + 1;
     int rc2 = hpack_decoder_decode_string_v2(decoded_string, encoded_string_huffman, 12, 1);
-    TEST_ASSERT_EQUAL(32, hpack_huffman_decode_fake.call_count);
+    TEST_ASSERT_EQUAL(16, hpack_huffman_decode_fake.call_count);
 
     TEST_ASSERT_EQUAL(13, rc2);
     for (int i = 0; i < rc2; i++) {
