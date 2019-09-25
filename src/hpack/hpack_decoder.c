@@ -79,13 +79,9 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
     /*Check if can read buffer*/
     if (bit_position + length > 8 * encoded_string_size) {
-        /*DEBUG("Can't read more bits i:%d ; bit_position: %d ; encoded_string_size: %d",i,bit_position,encoded_string_size);
-           for(uint8_t j = 0 ; j <= encoded_string_size; j++){
-            DEBUG("Byte %d is: %d",j,encoded_string[j]);
-           }*/
         uint8_t bits_left = (8 * encoded_string_size) - bit_position;
         if (bits_left < 5) {
-            /*Can't read more*/
+            /*This is not a true error, just for checking*/
             return INTERNAL_ERROR;
         }
         else {
@@ -118,7 +114,14 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
 /*
  * Function: hpack_decoder_check_huffman_padding
- * TODO:
+ * Checks if the last byte has correct padding
+ * Input:
+ *      bit_position: position of last read bit, check from that bit forward.
+ *      *encoded_buffer: Buffer containing encoded bytes.
+ *      str_length: Length of the buffer
+ *      str_length_size: Size in bytes of the length of the string
+ * Output:
+ *      returns the number of bytes read from encoded_buffer is succesful, if it fails throws an error.
  */
 
 int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size)
@@ -197,22 +200,6 @@ int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_s
     }
     return str_length + str_length_size;
 }
-
-
-
-/*
- * Function: hpack_decoder_decode_name_string
- * Decodes a name string according to its huffman bit, if it's 1 the string is decoded using huffman decompression
- * if it's 0 it copies the content of the encoded_buffer to str.
- * Input:
- *      -> *str: Buffer to store the result of the decoding process
- *      -> *encoded_buffer: Encoded string to decode
- *      -> length: Length of string to decode
- *      -> huffman_bit: Boolean, true if compressed with huffman tree
- * Output:
- *      Returns the number of bytes read from encoded_header in the decoding process if successful,
- *      if the process fails the function returns -2 or -1.
- */
 
 /*
  * Function: hpack_decoder_decode_string
@@ -313,17 +300,6 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
     return pointer;
 }
 
-
-/*
- * Function: hpack_decode_dynamic_table_size_update
- * Decodes a header that represents a dynamic table size update
- * Input:
- *      -> *header_block: Header block to decode
- *      -> *dynamic_table: dynamic table to resize
- * Output:
- *      Returns the number of bytes decoded if successful or a value < 0 if an error occurs.
- */
-
 /*
  * Function: hpack_decode_dynamic_table_size_update_v2
  * Decodes a header that represents a dynamic table size update
@@ -346,34 +322,6 @@ int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_states_t *states)
     return INTERNAL_ERROR;
     #endif
 }
-
-
-/* Function: hpack_decoder_decode_header
- * decodes a header according to the preamble
- * Input:
- *      -> *dynamic_table: table that could be modified by encoder or decoder, it allocates headers
- *      -> *bytes: Buffer containing data to decode
- *      -> *name: Memory to store decoded name
- *      -> *value: Memory to store decoded value
- * Output:
- *      returns the amount of octets in which the pointer has moved to read all the headers
- *
- */
-
-
-
-/*
- * Function: hpack_decoder_decode_header_block_from_table
- * decodes an array of headers using a dynamic_table, as it decodes one, the pointer of the headers
- * moves forward also updates the decoded header list
- * Input:
- *      -> *dynamic_table: table that could be modified by encoder or decoder, it allocates headers
- *      -> *header_block: Pointer to a sequence of octets (bytes)
- *      -> header_block_size: Size in bytes of the header block that will be decoded
- *      -> headers: struct that allocates a list of headers (pair name and value)
- * Output:
- *      returns the amount of octets in which the pointer has move to read all the headers
- */
 
 uint8_t get_huffman_bit(uint8_t num)
 {
@@ -458,6 +406,19 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     return pointer;
 }
 
+
+
+/* Function: hpack_decoder_decode_header
+ * decodes a header according to the preamble
+ * Input:
+ *      -> *dynamic_table: table that could be modified by encoder or decoder, it allocates headers
+ *      -> *bytes: Buffer containing data to decode
+ *      -> *name: Memory to store decoded name
+ *      -> *value: Memory to store decoded value
+ * Output:
+ *      returns the amount of octets in which the pointer has moved to read all the headers
+ *
+ */
 int hpack_decoder_decode_header_v2(hpack_states_t *states)
 {
     if (states->encoded_header.preamble == INDEXED_HEADER_FIELD) {
@@ -546,20 +507,30 @@ void init_hpack_encoded_header_t(hpack_encoded_header_t *encoded_header)
     encoded_header->preamble = 0;
 }
 
-int hpack_decoder_decode_header_block_v2(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)
+/*
+ * Function: hpack_decoder_decode_header_block
+ * decodes an array of headers,
+ * as it decodes one, the pointer of the headers moves forward
+ * also has updates the decoded header lists, this is a wrapper function
+ * Input:
+ *      -> *dynamic_table: Pointer to dynamic table to store headers
+ *      -> *header_block: Pointer to a sequence of octets (bytes)
+ *      -> header_block_size: Size in bytes of the header block that will be decoded
+ *      -> headers: struct that allocates a list of headers (pair name and value)
+ * Output:
+ *      returns the amount of octets in which the pointer has move to read all the headers
+ */
+int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)
 {
     int pointer = 0;
 
     uint8_t can_receive_dynamic_table_size_update = 1;    //TRUE
 
-    /*
-       for (int i = 0; i < header_block_size; i++) {
-        DEBUG("The byte is %x", header_block[i]);
-       }*/
     while (pointer < header_block_size) {
         init_hpack_encoded_header_t(&states->encoded_header);
         memset(states->tmp_name, 0, MAX_HEADER_NAME_LEN);
         memset(states->tmp_value, 0, MAX_HEADER_VALUE_LEN);
+
         int bytes_read = hpack_decoder_parse_encoded_header(&states->encoded_header, header_block + pointer, header_block_size - pointer);
         DEBUG("Decoding a %d", states->encoded_header.preamble);
 
@@ -596,23 +567,4 @@ int hpack_decoder_decode_header_block_v2(hpack_states_t *states, uint8_t *header
         return INTERNAL_ERROR;
     }
     return pointer;
-}
-
-/*
- * Function: hpack_decoder_decode_header_block
- * decodes an array of headers,
- * as it decodes one, the pointer of the headers moves forward
- * also has updates the decoded header lists, this is a wrapper function
- * Input:
- *      -> *dynamic_table: Pointer to dynamic table to store headers
- *      -> *header_block: Pointer to a sequence of octets (bytes)
- *      -> header_block_size: Size in bytes of the header block that will be decoded
- *      -> headers: struct that allocates a list of headers (pair name and value)
- * Output:
- *      returns the amount of octets in which the pointer has move to read all the headers
- */
-int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)    //header_t* h_list, uint8_t * header_counter)
-{
-    return hpack_decoder_decode_header_block_v2(states, header_block, header_block_size, headers);
-
 }
