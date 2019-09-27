@@ -66,11 +66,7 @@ hpack_dynamic_table_t;
     It contains all the required structs or fields for hpack functionality
  */
 typedef struct {
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
     hpack_dynamic_table_t dynamic_table;
-    #else
-    char dynamic_table;
-    #endif
     hpack_encoded_header_t encoded_header;
     char tmp_name[MAX_HEADER_NAME_LEN];
     char tmp_value[MAX_HEADER_VALUE_LEN];
