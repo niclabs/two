@@ -285,7 +285,7 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
     }
     pointer += rc;
     if (states->encoded_header.preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
         //Here we add it to the dynamic table
         int rc = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, states->tmp_name, states->tmp_value);
         if (rc < 0) {
@@ -311,7 +311,7 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
 int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_states_t *states)
 {
     DEBUG("New table size is %d", states->encoded_header.dynamic_table_size);
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
     int8_t rc = hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, states->encoded_header.dynamic_table_size);
     if (rc < 0) {
         DEBUG("Dynamic table failed to resize");

@@ -329,7 +329,7 @@ int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_
 
     if (index < 0) {
         index = hpack_tables_find_index_name(&states->dynamic_table, name_string, states->tmp_name);
-        #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+        #if HPACK_INCLUDE_DYNAMIC_TABLE
         hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
         DEBUG("Encoding a literal header field with incremental indexing");
         int8_t res = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, name_string, value_string);
@@ -403,7 +403,7 @@ int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_
  */
 int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer)
 {
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
     DEBUG("Encoding a dynamic table size update");
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
     int8_t rc = hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, max_size);
