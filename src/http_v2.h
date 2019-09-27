@@ -12,6 +12,12 @@
  * Data buffer struct
  ***********************************************/
 
+ #ifdef HTTP_CONF_MAX_DATA_SIZE
+ #define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
+ #else
+ #define HTTP_MAX_DATA_SIZE (16384)
+ #endif
+
 typedef struct {
     uint32_t size;
     uint8_t buf[HTTP_MAX_DATA_SIZE];
