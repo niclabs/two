@@ -116,6 +116,21 @@ int set_data(data_t *data_buf, uint8_t *data, int data_size)
 }
 
 /*
+ * Clean data buffer
+ *
+ * @param    data_buf   Struct with data information
+ *
+ * @return   0          Successfully cleaned data buffer
+ * @return   -1         There was an error in the process
+ */
+int clean_data(data_t *data_buf)
+{
+    data_buf->size = 0;
+    memset(data_buf->buf, 0, sizeof(*data_buf->buf));
+    return 0;
+}
+
+/*
  * Check for valid HTTP path according to
  * RFC 2396 (see https://tools.ietf.org/html/rfc2396#section-3.3)
  *
