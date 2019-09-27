@@ -1,0 +1,48 @@
+#include "sock_non_blocking.h"
+
+#ifndef NET_H
+#define NET_H
+
+#ifndef NET_MAX_CLIENTS
+#define NET_MAX_CLIENTS ((unsigned int) 2)
+#endif
+
+#ifndef NET_CLIENT_BUFFER_SIZE
+#define NET_CLIENT_BUFFER_SIZE ((unsigned int)24)
+#endif
+
+#ifndef NET_CLIENT_STATE_SIZE
+#define NET_CLIENT_STATE_SIZE ((unsigned int)24)
+#endif
+
+/*
+* Signature of a callback
+* 
+* buf_in:       has size NET_CLIENT_BUFFER_SIZE, net writes into it
+* buf_out:      has size NET_CLIENT_BUFFER_SIZE, net reads from it
+* write_out:    amount of bytes to write from buf_out after the callback returns
+* state:        has size NET_CLIENT_STATE_SIZE, net doesn't touch it. inits to 0
+*/
+typedef net_Callback* (*net_Callback) (char* buf_in, char* buf_out, unsigned int* write_out, void* state);
+
+/*
+* Enum for possible error cases within a connection looṕ.
+*/
+typedef enum
+{
+    Ok = 0,
+    SocketError = -1,
+    ReadError = -2,
+    WriteError = -3,
+} NetReturnCode;
+
+/*
+* Main loop of a server.
+* 
+* port:                 port to listen from
+* default_callback:     Callback a client executes on connection
+* stop_flag:            Stops the server loop when set to 1 from outside
+*/
+NetReturnCode net_server_loop(uint16_t port, net_Callback default_callback, int* stop_flag);
+
+#endif
