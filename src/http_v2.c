@@ -173,10 +173,131 @@ int error(data_t *data_buff, headers_t *headers_buff, int code, char *msg)
 }
 
 
+/************************************
+* Server methods
+************************************/
+
+/**
+ * Perform request for the given method and uri
+ */
+int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *uri)
+{
+    // parse URI removing query parameters
+    char path[HTTP_MAX_PATH_SIZE];
+
+    parse_uri(uri, path, NULL);
+
+    // find callback for resource
+    http_resource_handler_t handle_uri;
+    if ((handle_uri = get_resource_handler(method, path)) == NULL) {
+        return error(data_buff, headers_buff, 404, "Not Found");
+    }
+
+    // TODO: response pointer should be pointer to hs->data_out
+    uint8_t response[HTTP_MAX_RESPONSE_SIZE];
+    int len;
+    if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
+        // if the handler returns
+        return error(data_buff, headers_buff, 500, "Server Error");
+    }
+    // If it is GET method Prepare response for callback
+    else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
+        clean_data(data_buff);
+        set_data(data_buff, response, len);
+    }
+
+    // Clean header list
+    headers_clean(headers_buff);
+
+    // Set default headers
+    headers_set(headers_buff, ":status", "200");
+
+    return 0;
+}
+
+
+int http_server_response(data_t *data_buff, headers_t *headers_buff)
+{
+    // Get the method, path and scheme from headers
+    char *method = headers_get(headers_buff, ":method");
+    char *path = headers_get(headers_buff, ":path");
+
+    DEBUG("Received %s request", method);
+    if (!has_method_support(method)) {
+        error(data_buff, headers_buff, 501, "Not Implemented");
+        return 0;
+    }
+
+    // TODO: read data (if POST)
+
+    // Process the http request
+    return do_request(data_buff, headers_buff, method, path);
+}
+
+
+/************************************
+* Client methods
+************************************/
+
+
+int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host)
+{
+    // Clean output header list
+    headers_clean(headers_buff);
+
+    if (headers_set(headers_buff, ":method", method) < 0 ||
+        headers_set(headers_buff, ":scheme", "http") < 0 ||
+        headers_set(headers_buff, ":path", uri) < 0 ||
+        headers_set(headers_buff, ":host", host) < 0) {
+        DEBUG("Failed to set headers for request");
+        return -1;
+    }
+
+    return 0;
+}
+
+int process_server_response(data_t *data_buff, headers_t *headers_buff, char *method, uint8_t *response, size_t *size)
+{
+    //If it is a GET request, wait for the server response data
+    if (strncmp("GET", method, 8) == 0) {
+        if (!data_buff->size) {
+            DEBUG("Server response hasn't data");
+        }
+        else if (data_buff->size > 0) {
+            // Get response data (TODO: should we just copy the pointer?)
+            *size = get_data(data_buff, response, *size);
+        }
+    }
+
+    int status = atoi(headers_get(headers_buff, ":status"));
+    DEBUG("Server replied with status %d", status);
+
+    return status;
+}
+
+
+
+int http_get(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
+{
+    (void)response;
+    (void)size;
+    return send_client_request(headers_buff, "GET", uri, "DEFINIR HOST");
+}
+
+
+
+int http_head(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
+{
+    (void)response;
+    (void)size;
+    return send_client_request(headers_buff, "HEAD", uri, "DEFINIR HOST");
+}
+
+
+
 /******************************************************************************
  Methods that should be deleted from this layer
 *****************************************************************************/
-
 
 
 /**
@@ -256,127 +377,3 @@ int http_server_register_resource(resource_list_t *res_list, char *method, char 
 
 
 /****************************************************************************/
-
-
-
-/************************************
-* Server methods
-************************************/
-
-/**
- * Perform request for the given method and uri
- */
-int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *uri)
-{
-    // parse URI removing query parameters
-    char path[HTTP_MAX_PATH_SIZE];
-
-    parse_uri(uri, path, NULL);
-
-    // find callback for resource
-    http_resource_handler_t handle_uri;
-    if ((handle_uri = get_resource_handler(method, path)) == NULL) {
-        return error(data_buff, headers_buff, 404, "Not Found");
-    }
-
-    // TODO: response pointer should be pointer to hs->data_out
-    uint8_t response[HTTP_MAX_RESPONSE_SIZE];
-    int len;
-    if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
-        // if the handler returns
-        return error(data_buff, headers_buff, 500, "Server Error");
-    }
-    // If it is GET method Prepare response for callback
-    else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
-        clean_data(data_buff);
-        set_data(data_buff, response, len);
-    }
-
-    // Clean header list
-    headers_clean(headers_buff);
-
-    // Set default headers
-    headers_set(headers_buff, ":status", "200");
-
-    return 0;
-}
-
-
-int http_server_response(data_t *data_buff, headers_t *headers_buff)
-{
-    // Get the method, path and scheme from headers
-    char *method = headers_get(headers_buff, ":method");
-    char *path = headers_get(headers_buff, ":path");
-
-    DEBUG("Received %s request", method);
-    if (!has_method_support(method)) {
-        error(data_buff, headers_buff, 501, "Not Implemented");
-        return 0;
-    }
-
-    // TODO: read data (if POST)
-
-    // Process the http request
-    do_request(data_buff, headers_buff, method, path);
-
-    return 0;
-}
-
-
-/************************************
-* Client methods
-************************************/
-
-
-int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host)
-{
-    // Clean output header list
-    headers_clean(headers_buff);
-
-    if (headers_set(headers_buff, ":method", method) < 0 ||
-        headers_set(headers_buff, ":scheme", "http") < 0 ||
-        headers_set(headers_buff, ":path", uri) < 0 ||
-        headers_set(headers_buff, ":host", host) < 0) {
-        DEBUG("Failed to set headers for request");
-        return -1;
-    }
-
-    return 0;
-}
-
-int process_server_response(data_t *data_buff, headers_t *headers_buff, char *method, uint8_t *response, size_t *size)
-{
-    //If it is a GET request, wait for the server response data
-    if (strncmp("GET", method, 8) == 0) {
-        if (!data_buff->size) {
-            DEBUG("Server response hasn't data");
-        }
-        else if (data_buff->size > 0) {
-            // Get response data (TODO: should we just copy the pointer?)
-            *size = get_data(data_buff, response, *size);
-        }
-    }
-
-    int status = atoi(headers_get(headers_buff, ":status"));
-    DEBUG("Server replied with status %d", status);
-
-    return status;
-}
-
-
-
-int http_get(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
-{
-    (void)response;
-    (void)size;
-    return send_client_request(headers_buff, "GET", uri, "DEFINIR HOST");
-}
-
-
-
-int http_head(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
-{
-    (void)response;
-    (void)size;
-    return send_client_request(headers_buff, "HEAD", uri, "DEFINIR HOST");
-}
