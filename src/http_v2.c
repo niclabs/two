@@ -364,9 +364,12 @@ int process_server_response(data_t *data_buff, headers_t *headers_buff, char *me
 }
 
 
-int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
+
+int http_get(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
 {
-    return send_client_request(hs, "GET", uri, response, size);
+    (void)response;
+    (void)size;
+    return send_client_request(headers_buff, "GET", uri, "DEFINIR HOST");
 }
 
 
