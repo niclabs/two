@@ -50,7 +50,7 @@ typedef struct {
 //typedefs for dinamic
 //size: 10 bytes in params + size of buffer
 typedef
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
     struct hpack_dynamic_table {
     uint16_t max_size;
     uint16_t first;

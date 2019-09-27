@@ -178,7 +178,7 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
     return 0;
 }
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_dynamic_pos_of_index
  * Finds the position in bytes of an index in dynamic table
@@ -209,7 +209,7 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
 }
 #endif
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_copy_to_ext
  * Copy string of table's buffer into external buffer
@@ -238,7 +238,7 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
 }
 #endif
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_copy_from_ext
  * Copy string of external buffer into table's buffer
@@ -269,7 +269,7 @@ int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table,
 }
 #endif
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: dynamic_table_pop
  * Delete the oldest element of the table
@@ -305,7 +305,7 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
 }
 #endif
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_dynamic_find_entry_name_and_value
  * Finds entry in dynamic table, entry is a pair name-value
@@ -348,7 +348,7 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
 #endif
 
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_tables_dynamic_find_entry_name
  * Finds entry in dynamic table, entry is a pair name-value
@@ -382,7 +382,7 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
 }
 #endif
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /* Function: hpack_tables_dynamic_table_resize
  * Makes an update of the size of the dynamic table_length
  * Input:
@@ -474,7 +474,7 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
 }
 #endif
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: dynamic_table_add_entry
  * Add an header pair entry in the table
@@ -529,7 +529,7 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
  */
 int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             DEBUG("Dynamic table not initialized ");
@@ -558,7 +558,7 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
  */
 int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             DEBUG("Dynamic table not initialized ");
@@ -601,7 +601,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
         }
     }
 
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
     //Then search in dynamic table
     for (uint16_t i = 0; i < dynamic_table->n_entries; i++) {
         hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name, tmp_value);
@@ -640,7 +640,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
         }
     }
 
-    #ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
     //Then search in dynamic table, TODO: this parts can be optimized a lot!,
     //right now it copies one on one values from table to buffer, it can do instead a linear search in the buffer;
     for (uint8_t i = 0; i < dynamic_table->n_entries; i++) {
@@ -654,7 +654,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     return INTERNAL_ERROR;
 }
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
  * Function: hpack_init_dynamic_table
  * Initialize dynamic_table for protocol uses, but it requires a previous header_pair_t table initialization
