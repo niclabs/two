@@ -337,7 +337,7 @@ int http_client_disconnect(hstates_t *hs)
 /**
  * Perform request for the given method and uri
  */
-int do_request(hstates_t *hs, char *method, char *uri)
+int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *uri)
 {
     // parse URI removing query parameters
     char path[HTTP_MAX_PATH_SIZE];
@@ -346,8 +346,8 @@ int do_request(hstates_t *hs, char *method, char *uri)
 
     // find callback for resource
     http_resource_handler_t handle_uri;
-    if ((handle_uri = get_resource_handler(hs, method, path)) == NULL) {
-        return error(&hs->data_in, &hs->headers_in, 404, "Not Found");
+    if ((handle_uri = get_resource_handler(method, path)) == NULL) {
+        return error(data_buff, headers_buff, 404, "Not Found");
     }
 
     // TODO: response pointer should be pointer to hs->data_out
@@ -355,27 +355,19 @@ int do_request(hstates_t *hs, char *method, char *uri)
     int len;
     if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
         // if the handler returns
-        return error(&hs->data_in, &hs->headers_in, 500, "Server Error");
+        return error(data_buff, headers_buff, 500, "Server Error");
     }
     // If it is GET method Prepare response for callback
     else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
-        set_data(&hs->data_out, response, len);
+        clean_data(data_buff);
+        set_data(data_buff, response, len);
     }
 
-    // Initialize header list
-    header_t header_list[HTTP_MAX_HEADER_COUNT];
-    headers_init(&hs->headers_out, header_list, HTTP_MAX_HEADER_COUNT);
+    // Clean header list
+    headers_clean(headers_buff);
 
     // Set default headers
-    headers_set(&hs->headers_out, ":status", "200");
-
-    // Send response
-    //TODO: this should return to http2 layer
-    if (h2_send_response(hs) < 0) {
-        // TODO: get error code from HTTP/2
-        DEBUG("HTTP/2 error ocurred. Could not send data");
-        return -1;
-    }
+    headers_set(headers_buff, ":status", "200");
 
     return 0;
 }
