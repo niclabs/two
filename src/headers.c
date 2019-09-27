@@ -18,6 +18,12 @@ int headers_init(headers_t *headers, header_t *hlist, int maxlen)
     return 0;
 }
 
+int headers_clean(headers_t *headers)
+{
+    headers_init(headers, headers->headers, headers->maxlen);
+}
+
+
 int headers_add(headers_t *headers, const char *name, const char *value)
 {
     assert(headers != NULL);
