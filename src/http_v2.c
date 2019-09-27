@@ -328,7 +328,7 @@ int http_server_response(data_t *data_buff, headers_t *headers_buff)
 ************************************/
 
 
-int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host, uint8_t *response, size_t *size)
+int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host)
 {
     // Clean output header list
     headers_clean(headers_buff);
@@ -344,29 +344,20 @@ int send_client_request(headers_t *headers_buff, char *method, char *uri, char *
     return 0;
 }
 
-int process_server_response(data_t *data_buff){
-
+int process_server_response(data_t *data_buff, headers_t *headers_buff, char *method, uint8_t *response, size_t *size)
+{
     //If it is a GET request, wait for the server response data
     if (strncmp("GET", method, 8) == 0) {
-        if (receive_server_response_data(hs) < 0) {
-            ERROR("An error ocurred while waiting for server response data");
-            return -1;
-        }
-        else if (hs->data_in.size > 0) {
-            // Get response data (TODO: should we just copy the pointer?)
-            *size = get_data(&hs->data_in, response, *size);
-
-            if (h2_notify_free_data_buffer(hs, *size) < 0) {
-                DEBUG("Error updating window after copying data");
-                return -1;
-            }
-        }
-        else {
+        if (!data_buff->size) {
             DEBUG("Server response hasn't data");
+        }
+        else if (data_buff->size > 0) {
+            // Get response data (TODO: should we just copy the pointer?)
+            *size = get_data(data_buff, response, *size);
         }
     }
 
-    int status = atoi(headers_get(&hs->headers_in, ":status"));
+    int status = atoi(headers_get(headers_buff, ":status"));
     DEBUG("Server replied with status %d", status);
 
     return status;
