@@ -82,7 +82,7 @@ int has_method_support(char *method)
  *
  * @return                    Data lengt
  */
-uint32_t get_data(http_data_t *data_in, uint8_t *data_buffer, size_t size)
+uint32_t get_data(data_t *data_in, uint8_t *data_buffer, size_t size)
 {
     int copysize = MIN(data_in->size, size);
 
