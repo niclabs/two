@@ -198,7 +198,7 @@ http_resource_handler_t get_resource_handler(char *method, char *path)
 }
 
 
-int http_server_register_resource(hstates_t *hs, char *method, char *path, http_resource_handler_t handler)
+int http_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler)
 {
     if (hs == NULL || method == NULL || path == NULL || handler == NULL) {
         errno = EINVAL;
@@ -226,8 +226,8 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
 
     // Checks if the path and method already exist
     http_resource_t *res;
-    for (int i = 0; i < hs->resource_list_size; i++) {
-        res = &hs->resource_list[i];
+    for (int i = 0; i < res_list->resource_list_size; i++) {
+        res = &res_list->resource_list[i];
         //If it does, replaces the resource
         if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
             res->handler = handler;
@@ -236,13 +236,13 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
     }
 
     // Checks if the list is full
-    if (hs->resource_list_size >= HTTP_MAX_RESOURCES) {
+    if (res_list->resource_list_size >= HTTP_MAX_RESOURCES) {
         ERROR("HTTP resource limit (%d) reached. Try changing value for HTTP_CONF_MAX_RESOURCES", HTTP_MAX_RESOURCES);
         return -1;
     }
 
     // Adds the resource to the list
-    res = &hs->resource_list[hs->resource_list_size++];
+    res = &res_list->resource_list[res_list->resource_list_size++];
 
     // Sets values
     strncpy(res->method, method, 8);
@@ -340,30 +340,10 @@ int send_client_request(headers_t *headers_buff, char *method, char *uri, char *
         return -1;
     }
 
-    // Try to send request
-    //TODO: this should return to http2 layer
-    if (h2_send_request(hs) < 0) {
-        DEBUG("Failed to send request %s %s", method, uri);
-        return -1;
-    }
+    return 0;
+}
 
-
-    // Initialize input header list
-    header_t header_list_in[HTTP_MAX_HEADER_COUNT];
-    headers_init(&hs->headers_in, header_list_in, HTTP_MAX_HEADER_COUNT);
-
-    /* this is work of http2 layer now
-    hs->end_message = 0;
-    if (receive_headers(hs) < 0) {
-        ERROR("An error ocurred while waiting for server response headers");
-        return -1;
-    }
-
-    if (hs->connection_state == 0) {
-        http_client_disconnect(hs);
-        return 0;
-    }
-    */
+int process_server_response(data_t *data_buff){
 
     //If it is a GET request, wait for the server response data
     if (strncmp("GET", method, 8) == 0) {
