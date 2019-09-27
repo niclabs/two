@@ -155,7 +155,7 @@ int error(hstates_t *hs, int code, char *msg)
     }
 
     // Send response
-    //TODO: return to http2 layer
+    //TODO: this should return to http2 layer
     if (h2_send_response(hs) < 0) {
         DEBUG("Could not send data");
         return -1;
@@ -359,7 +359,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
     headers_set(&hs->headers_out, ":status", "200");
 
     // Send response
-    //TODO: return to http2 layer
+    //TODO: this should return to http2 layer
     if (h2_send_response(hs) < 0) {
         // TODO: get error code from HTTP/2
         DEBUG("HTTP/2 error ocurred. Could not send data");
@@ -388,12 +388,14 @@ int http_server_response(hstates_t *hs)
     char *path = headers_get(&hs->headers_in, ":path");
     char *scheme = headers_get(&hs->headers_in, ":scheme");
 
+    /* this is work of http2 layer now
     // Check the request's validity
     if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
         //TODO: this should return to http2 layer
         h2_send_goaway_protocol_error(hs);
         return -1;
     }
+    */
 
     DEBUG("Received %s request", method);
     if (!has_method_support(method)) {
