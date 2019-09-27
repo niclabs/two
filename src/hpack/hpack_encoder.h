@@ -6,9 +6,9 @@
 #define TWO_HPACK_ENCODER_H
 
 #include <stdint.h>             /* for uint8_t, uint32_t    */
-#include "hpack.h"
-#include "hpack_tables.h"       /* for hpack_dynamic_table_t    */
-#include "config.h"
+#include "hpack_tables.h"       /* for hpack_find_index ...    */
+#include "http_bridge.h"
+#include "hpack_utils.h"        /* for hpack_utils_find_prefix_size, hpack_pr...*/
 
 
 int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer);

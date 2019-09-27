@@ -2,7 +2,6 @@
 #include <stdint.h>             /*for int8_t, int32_t  */
 #include <string.h>             /* for strlen, memset    */
 #include "hpack_huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
-#include "hpack_utils.h"        /* for hpack_utils_find_prefix_size, hpack_pr...*/
 #include "logging.h"            /* for ERROR */
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
