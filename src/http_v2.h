@@ -7,6 +7,16 @@
 #include "http_bridge.h"
 #include "headers.h"
 
+
+/***********************************************
+ * Data buffer struct
+ ***********************************************/
+
+typedef struct {
+    uint32_t size;
+    uint8_t buf[HTTP_MAX_DATA_SIZE];
+} data_t;
+
 /***********************************************
  * Server API methods
  *
