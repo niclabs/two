@@ -58,7 +58,7 @@ typedef
     char buffer[HPACK_MAX_DYNAMIC_TABLE_SIZE];
 }
     #else
-    char
+    char //case No dynamic table mode, this conversion to char makes the code cleaner
     #endif
 hpack_dynamic_table_t;
 
