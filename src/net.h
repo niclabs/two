@@ -31,7 +31,7 @@
 * buf_out:      has size NET_CLIENT_BUFFER_SIZE, net reads from it
 * state:        has size NET_CLIENT_STATE_SIZE, net doesn't touch it. inits to 0
 */
-typedef net_Callback* (*net_Callback) (cbuf_t* buf_in, cbuf_t* buf_out, void* state);
+typedef void* (*net_Callback) (cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 
 /*
 * Enum for possible error cases within a connection looṕ.
@@ -51,6 +51,6 @@ typedef enum
 * default_callback:     Callback a client executes on connection
 * stop_flag:            Stops the server loop when set to 1 from outside
 */
-NetReturnCode net_server_loop(uint16_t port, net_Callback default_callback, int* stop_flag);
+NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, int* stop_flag);
 
 #endif

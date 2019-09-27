@@ -49,7 +49,7 @@ void init_clients(Client* clients)
     }
 }
 
-NetReturnCode net_server_loop(uint16_t port, net_Callback default_callback, int* stop_flag)
+NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, int* stop_flag)
 {
     // Socket error return codes go here
     int sock_rc = 0;
@@ -118,7 +118,7 @@ NetReturnCode net_server_loop(uint16_t port, net_Callback default_callback, int*
 
                 // The callback does stuff
                 DEBUG("Executing callback");
-                net_Callback cb = client.cb(client.buf_in, client.buf_out, client.state.ptr);
+                net_Callback cb = (net_Callback) client.cb(client.buf_in, client.buf_out, client.state.ptr);
 
                 unsigned int writable_data = cbuf_len(client.buf_out);
 
