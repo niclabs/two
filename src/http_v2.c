@@ -197,60 +197,6 @@ http_resource_handler_t get_resource_handler(char *method, char *path)
     return NULL;
 }
 
-/**
- * Set all hstates values to its initial values
- */
-void reset_http_states(hstates_t *hs)
-{
-    memset(hs, 0, sizeof(*hs));
-}
-
-
-/**
- * Read headers from the request
- */
-int receive_headers(hstates_t *hs)
-{
-    return -1;
-}
-
-
-int ignore_unsupported_data_frames(hstates_t *hs)
-{
-    while (hs->connection_state == 1) {
-        if (hs->end_message > 0) {
-            return 0;
-        }
-        if (h2_receive_frame(hs) < 0) {
-            break;
-        }
-    }
-
-    if (hs->data_in.size > 0) {
-        hs->data_in.size = 0;
-    }
-
-    return -1;
-}
-
-
-int http_server_create(hstates_t *hs, uint16_t port)
-{
-    return -1;
-}
-
-
-int http_server_start(hstates_t *hs)
-{
-    return -1;
-}
-
-
-int http_server_destroy(hstates_t *hs)
-{
-    return -1;
-}
-
 
 int http_server_register_resource(hstates_t *hs, char *method, char *path, http_resource_handler_t handler)
 {
@@ -304,24 +250,6 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
     res->handler = handler;
 
     return 0;
-}
-
-
-int receive_server_response_data(hstates_t *hs)
-{
-    return -1;
-}
-
-
-int http_client_connect(hstates_t *hs, char *addr, uint16_t port)
-{
-    return -1;
-}
-
-
-int http_client_disconnect(hstates_t *hs)
-{
-    return -1;
 }
 
 
@@ -399,17 +327,15 @@ int http_server_response(data_t *data_buff, headers_t *headers_buff)
 ************************************/
 
 
-int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size)
+int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host, uint8_t *response, size_t *size)
 {
-    // Initialize output header list
-    header_t header_list_out[HTTP_MAX_HEADER_COUNT];
+    // Clean output header list
+    headers_clean(headers_buff);
 
-    headers_init(&hs->headers_out, header_list_out, HTTP_MAX_HEADER_COUNT);
-
-    if (headers_set(&hs->headers_out, ":method", method) < 0 ||
-        headers_set(&hs->headers_out, ":scheme", "http") < 0 ||
-        headers_set(&hs->headers_out, ":path", uri) < 0 ||
-        headers_set(&hs->headers_out, "Host", hs->host) < 0) {
+    if (headers_set(headers_buff, ":method", method) < 0 ||
+        headers_set(headers_buff, ":scheme", "http") < 0 ||
+        headers_set(headers_buff, ":path", uri) < 0 ||
+        headers_set(headers_buff, ":host", host) < 0) {
         DEBUG("Failed to set headers for request");
         return -1;
     }
