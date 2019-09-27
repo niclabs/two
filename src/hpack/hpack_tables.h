@@ -1,7 +1,7 @@
 #ifndef TWO_HPACK_TABLES_H
 #define TWO_HPACK_TABLES_H
 #include <stdint.h>             /* for int8_t, uint32_t */
-#include "hpack_utils.h"
+#include "hpack_structs.h"
 
 #define STATIC_TABLE_SIZE (61)
 
