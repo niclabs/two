@@ -200,7 +200,8 @@ http_resource_handler_t get_resource_handler(char *method, char *path)
 
 int http_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler)
 {
-    if (hs == NULL || method == NULL || path == NULL || handler == NULL) {
+    // TODO: Verify that resource_list_t is not empty
+    if (method == NULL || path == NULL || handler == NULL) {
         errno = EINVAL;
         ERROR("ERROR found %d", errno );
         return -1;
