@@ -373,50 +373,22 @@ int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *u
 }
 
 
-int http_server_response(hstates_t *hs)
+int http_server_response(data_t *data_buff, headers_t *headers_buff)
 {
-    // Initialize input header list before read it
-    //header_t header_list[HTTP_MAX_HEADER_COUNT];
-    //headers_init(&hs->headers_in, header_list, HTTP_MAX_HEADER_COUNT);
-
-
-    if (headers_validate(&hs->headers_in) < 0) {
-        //TODO: this should return to http2 layer
-        h2_send_goaway_protocol_error(hs);
-        return -1;
-    }
-
     // Get the method, path and scheme from headers
-    char *method = headers_get(&hs->headers_in, ":method");
-    char *path = headers_get(&hs->headers_in, ":path");
-    char *scheme = headers_get(&hs->headers_in, ":scheme");
-
-    /* this is work of http2 layer now
-    // Check the request's validity
-    if (method == NULL || path == NULL || strcmp(path, "") == 0 || scheme == NULL) {
-        //TODO: this should return to http2 layer
-        h2_send_goaway_protocol_error(hs);
-        return -1;
-    }
-    */
+    char *method = headers_get(headers_buff, ":method");
+    char *path = headers_get(headers_buff, ":path");
 
     DEBUG("Received %s request", method);
     if (!has_method_support(method)) {
-        DEBUG("Ignoring unsupported request's DATA frames");
-        if (ignore_unsupported_data_frames(hs) < 0) {
-            ERROR("An error occurred while ignoring unsupported dataframes");
-        }
-        error(&hs->data_in, &hs->headers_in, 501, "Not Implemented");
+        error(data_buff, headers_buff, 501, "Not Implemented");
         return 0;
     }
 
     // TODO: read data (if POST)
 
-    // Get uri
-    char *uri = headers_get(&hs->headers_in, ":path");
-
     // Process the http request
-    do_request(hs, method, uri);
+    do_request(data_buff, headers_buff, method, path);
 
     return 0;
 }
