@@ -127,7 +127,7 @@ NetReturnCode net_server_loop(uint16_t port, net_Callback default_callback, int*
                 {
                     unsigned char buf_aux[writable_data];
 
-                    cbuf_pop(client.buf_out, buf_aux, writable_data);
+                    cbuf_peek(client.buf_out, buf_aux, writable_data);
 
                     DEBUG("Writing data for client %i", i);
                     int write_rc = sock_write(client.socket, buf_aux, writable_data);
@@ -137,7 +137,13 @@ NetReturnCode net_server_loop(uint16_t port, net_Callback default_callback, int*
                         rc = WriteError;
                         break;
                     }
-                    DEBUG("Wrote %i bytes into socket", write_rc);
+
+                    if (write_rc < writable_data)
+                        WARN("Could only write %i out of %i bytes into socket", write_rc, writable_data);
+                    else
+                        DEBUG("Wrote %i bytes into socket", write_rc);
+
+                    cbuf_pop(client.buf_out, buf_aux, write_rc);
                 }
 
                 // If client should be disconnected
