@@ -240,6 +240,30 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
+ * Function: hpack_tables_dynamic_compare_string 
+ * Compare a string in a buffer with a string in a position of the dynamic table buffer
+ * Input:
+ *      -> *dynamic_table: table which can be modified by server or client
+ *      -> initial position: table's current position
+ *      -> char *buff: string to compare
+ * Output:
+ *      In case of equal strings, returns the end position of the string in the table's buffer, -1 otherwise
+ */
+int16_t hpack_tables_dynamic_compare_string(hpack_dynamic_table_t *dynamic_table, uint16_t initial_position, char *buffer)
+{
+    int16_t max_size = strlen(buffer);
+    for(uint8_t i=0; i<max_size; i++){
+        if(buffer[i] != dynamic_table->buffer[(dynamic_table->next - initial_position+ 1 + i + dynamic_table->max_size) % dynamic_table->max_size]){
+            return -1; // different strings
+        }
+    }
+
+    return max_size + 1; // plus the 0'
+}
+#endif
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
+/*
  * Function: hpack_tables_copy_from_ext
  * Copy string of external buffer into table's buffer
  * Input:
@@ -610,6 +634,46 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
             (strlen(tmp_value) == strlen(value) &&
              (strncmp(tmp_value, value, strlen(value)) == 0))) {
             return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
+        }
+    }
+    #endif
+    return INTERNAL_ERROR;
+}
+
+int hpack_tables_find_index_v2(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+
+{
+    //Search first in static table
+    for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
+        const char *table_name = hpack_static_table.name_table[i];
+        const char *table_value = hpack_static_table.value_table[i];
+        if ((strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) &&
+            ((strlen(value) == strlen(table_value) && strncmp(table_value, value, strlen(value)) == 0))) {
+            return i + 1;
+        }
+    }
+
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
+    //Then search in dynamic table with a linear search
+    uint8_t strings_counter = 0;
+    for (uint16_t i = 1; i <= dynamic_table->max_size; i++) {
+        
+        if(!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]){
+            //found an end of string
+            strings_counter++;
+            if(strings_counter%2 == 0 && strings_counter > 0){
+                int16_t rc = hpack_tables_dynamic_compare_string(dynamic_table, i, name);
+                if(rc > 0){ //match name
+                    rc = hpack_tables_dynamic_compare_string(dynamic_table, i - rc, value);
+                    if(rc > 0){
+                        return strings_counter/2 + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
+                    }
+                }
+            }
+        }
+
+        if(strings_counter/2 >= dynamic_table->n_entries){
+            break; //not found
         }
     }
     #endif
