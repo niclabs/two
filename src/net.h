@@ -3,14 +3,23 @@
 #ifndef NET_H
 #define NET_H
 
+/*
+* Amount of clients.
+*/
 #ifndef NET_MAX_CLIENTS
 #define NET_MAX_CLIENTS ((unsigned int) 2)
 #endif
 
+/*
+* Size in bytes for the client's in and out buffers.
+*/
 #ifndef NET_CLIENT_BUFFER_SIZE
 #define NET_CLIENT_BUFFER_SIZE ((unsigned int)24)
 #endif
 
+/*
+* Size in bytes to reserve for the client's state.
+*/
 #ifndef NET_CLIENT_STATE_SIZE
 #define NET_CLIENT_STATE_SIZE ((unsigned int)24)
 #endif
