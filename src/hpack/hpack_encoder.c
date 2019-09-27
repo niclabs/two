@@ -299,7 +299,7 @@ int hpack_encoder_encode_literal_header_field_indexed_name(char *value_string, u
  */
 int hpack_encoder_encode_indexed_header_field(hpack_states_t *states, char *name, char *value, uint8_t *encoded_buffer)
 {
-    int rc = hpack_tables_find_index(&states->dynamic_table, name, value, states->tmp_name, states->tmp_value);
+    int rc = hpack_tables_find_index(&states->dynamic_table, name, value);
 
     if (rc < 0) {
         return rc;
@@ -324,11 +324,11 @@ int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_
 {
     //PATCH
 
-    int index = hpack_tables_find_index(&states->dynamic_table, name_string, value_string, states->tmp_name, states->tmp_value);
+    int index = hpack_tables_find_index(&states->dynamic_table, name_string, value_string);
     int pointer = 0;
 
     if (index < 0) {
-        index = hpack_tables_find_index_name(&states->dynamic_table, name_string, states->tmp_name);
+        index = hpack_tables_find_index_name(&states->dynamic_table, name_string);
         #if HPACK_INCLUDE_DYNAMIC_TABLE
         hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
         DEBUG("Encoding a literal header field with incremental indexing");
