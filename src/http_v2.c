@@ -93,16 +93,16 @@ uint32_t get_data(http_data_t *data_in, uint8_t *data_buffer, size_t size)
 /*
  * Add data to be sent to data lists
  *
- * @param    data_out   Struct with data information
+ * @param    data_buf   Struct with data information
  * @param    data       Data
  * @param    data_size  Size of data
  *
  * @return   0          Successfully added data
  * @return   -1         There was an error in the process
  */
-int set_data(http_data_t *data_out, uint8_t *data, int data_size)
+int set_data(data_t *data_buf, uint8_t *data, int data_size)
 {
-    if (HTTP_MAX_DATA_SIZE == data_out->size) {
+    if (HTTP_MAX_DATA_SIZE == data_buf->size) {
         ERROR("Data buffer full");
         return -1;
     }
@@ -110,8 +110,8 @@ int set_data(http_data_t *data_out, uint8_t *data, int data_size)
         ERROR("Data too large for buffer size");
         return -1;
     }
-    data_out->size = data_size;
-    memcpy(data_out->buf, data, data_size);
+    data_buf->size = data_size;
+    memcpy(data_buf->buf, data, data_size);
     return 0;
 }
 
