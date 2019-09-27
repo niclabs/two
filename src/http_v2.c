@@ -184,14 +184,16 @@ int error(data_t *data_buff, headers_t *headers_buff, int code, char *msg)
  */
 http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *path)
 {
-    http_resource_t res;
+    /*http_resource_t res;
 
     for (int i = 0; i < hs->resource_list_size; i++) {
         res = hs->resource_list[i];
         if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
             return res.handler;
         }
-    }
+    }*/
+    (void) method;
+    (void) path;
     return NULL;
 }
 
