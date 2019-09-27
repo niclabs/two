@@ -37,7 +37,7 @@ void test_hpack_tables_find_index(void)
         TEST_ASSERT_EQUAL(expected_index[i], actual_index);
     }
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
     //Now little test with dynamic table_length
     uint16_t dynamic_table_max_size = 500;
     hpack_dynamic_table_t dynamic_table;
@@ -91,7 +91,7 @@ void test_hpack_tables_static_find_entry_name(void)
     }
 }
 
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 void test_hpack_tables_dynamic_add_find_entry_and_reset_table(void)
 {
     uint16_t dynamic_table_max_size = 500;
@@ -387,7 +387,7 @@ void test_hpack_tables_dynamic_resize_circular(void)
 
 void test_hpack_tables_find_entry(void)
 {
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 
     uint16_t dynamic_table_max_size = 500;
     hpack_dynamic_table_t dynamic_table;
@@ -448,7 +448,7 @@ int main(void)
     UNIT_TEST(test_hpack_tables_static_find_entry_name_and_value);
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_find_entry);
-#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
     UNIT_TEST(test_hpack_tables_dynamic_add_find_entry_and_reset_table);
     UNIT_TEST(test_hpack_tables_dynamic_pop_old_entry);
     UNIT_TEST(test_hpack_tables_dynamic_circular_test);
