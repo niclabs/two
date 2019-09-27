@@ -28,6 +28,7 @@ typedef struct {
  *
  * TODO: make server/client methods toggable
  * by use of a macro (reduce binary size)
+ * Aplication resources structs
  ***********************************************/
 
 /*
@@ -99,7 +100,17 @@ int http_server_register_resource(hstates_t * hs, char * method, char * path, ht
  * @return   0 if connection was succesful or -1 if an error ocurred
  */
 int http_client_connect(hstates_t *hs, char *address, uint16_t port);
+ #ifdef HTTP_CONF_MAX_RESOURCES
+ #define HTTP_MAX_RESOURCES (HTTP_CONF_MAX_RESOURCES)
+ #else
+ #define HTTP_MAX_RESOURCES (16)
+ #endif
 
+ #ifdef HTTP_CONF_MAX_PATH_SIZE
+ #define HTTP_MAX_PATH_SIZE (HTTP_CONF_MAX_PATH_SIZE)
+ #else
+ #define HTTP_MAX_PATH_SIZE (32)
+ #endif
 
 /*
  * Send a GET request to server and wait for a reply
@@ -111,7 +122,13 @@ int http_client_connect(hstates_t *hs, char *address, uint16_t port);
  * @return http status or -1 if an unexpected error ocurred
  */
 int http_get(hstates_t *hs, char *uri, uint8_t * response, size_t * size);
+typedef int (*http_resource_handler_t) (char *method, char *uri, uint8_t *response, int maxlen);
 
+typedef struct {
+    char path[HTTP_MAX_PATH_SIZE];
+    char method[8];
+    http_resource_handler_t handler;
+} http_resource_t;
 
 /*
  * Send a HEAD request to server and wait for a reply
@@ -123,6 +140,10 @@ int http_get(hstates_t *hs, char *uri, uint8_t * response, size_t * size);
  * @return http status or -1 if an unexpected error ocurred
  */
 int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size);
+typedef struct {
+    http_resource_t resource_list[HTTP_MAX_RESOURCES];
+    uint8_t resource_list_size;
+} resource_list_t;
 
 
 /*
