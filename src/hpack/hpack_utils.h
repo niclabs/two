@@ -14,6 +14,8 @@
 #endif
 #ifdef HPACK_CONF_INCLUDE_DYNAMIC_TABLE
 #define HPACK_INCLUDE_DYNAMIC_TABLE (HPACK_CONF_INCLUDE_DYNAMIC_TABLE)
+#else
+#define HPACK_INCLUDE_DYNAMIC_TABLE (1)
 #endif
 
 #ifdef HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE
@@ -22,7 +24,7 @@
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (4096)
 #endif
 
-#define HPACK_INCLUDE_DYNAMIC_TABLE (1)
+
 
 typedef enum {
     INDEXED_HEADER_FIELD                            = (uint8_t) 128,
