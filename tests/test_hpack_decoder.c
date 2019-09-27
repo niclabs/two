@@ -430,7 +430,7 @@ void test_parse_encoded_header_test3(void)
     TEST_ASSERT_EQUAL(141, encoded_header.dynamic_table_size);
 
 }
-
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 void test_decode_header_block_literal_with_incremental_indexing(void)
 {
     //Literal Header Field Representation
@@ -500,6 +500,7 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
         TEST_ASSERT_EQUAL(expected_value[i], value[i]);
     }
 }
+#endif
 
 void test_decode_header_block_literal_never_indexed(void)
 {
@@ -960,7 +961,9 @@ int main(void)
 
     UNIT_TEST(test_decode_header_block_literal_without_indexing);
     UNIT_TEST(test_decode_header_block_literal_never_indexed);
+#if HPACK_INCLUDE_DYNAMIC_TABLE
     UNIT_TEST(test_decode_header_block_literal_with_incremental_indexing);
+#endif
     UNIT_TEST(test_hpack_decoder_decode_indexed_header_field);
     UNIT_TEST(test_parse_encoded_header_test1);
     UNIT_TEST(test_parse_encoded_header_test2);
