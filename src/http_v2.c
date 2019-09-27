@@ -370,7 +370,10 @@ int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 }
 
 
-int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
+
+int http_head(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
 {
-    return send_client_request(hs, "HEAD", uri, response, size);
+    (void)response;
+    (void)size;
+    return send_client_request(headers_buff, "HEAD", uri, "DEFINIR HOST");
 }
