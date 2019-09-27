@@ -611,36 +611,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
  *      Returns the index in the static or dynamic table containing both name and value if successful,
  *      otherwise it returns -2.
  */
-
-int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value, char *tmp_name, char *tmp_value)
-
-{
-    //Search first in static table
-    for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
-        const char *table_name = hpack_static_table.name_table[i];
-        const char *table_value = hpack_static_table.value_table[i];
-        if ((strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) &&
-            ((strlen(value) == strlen(table_value) && strncmp(table_value, value, strlen(value)) == 0))) {
-            return i + 1;
-        }
-    }
-
-    #if HPACK_INCLUDE_DYNAMIC_TABLE
-    //Then search in dynamic table
-    for (uint16_t i = 0; i < dynamic_table->n_entries; i++) {
-        hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name, tmp_value);
-        if ((strlen(tmp_name) == strlen(name) &&
-             (strncmp(tmp_name, name, strlen(name)) == 0)) &&
-            (strlen(tmp_value) == strlen(value) &&
-             (strncmp(tmp_value, value, strlen(value)) == 0))) {
-            return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
-        }
-    }
-    #endif
-    return INTERNAL_ERROR;
-}
-
-int hpack_tables_find_index_v2(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 
 {
     //Search first in static table
@@ -692,26 +663,36 @@ int hpack_tables_find_index_v2(hpack_dynamic_table_t *dynamic_table, char *name,
  *      otherwise it returns -2.
  */
 
-int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name, char *tmp_name)
+int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name)
 
 {
 
     //Search first in static table
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         const char *table_name = hpack_static_table.name_table[i];
-        if (strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) {
+        if (strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0){
             return i + 1;
         }
     }
 
     #if HPACK_INCLUDE_DYNAMIC_TABLE
-    //Then search in dynamic table, TODO: this parts can be optimized a lot!,
-    //right now it copies one on one values from table to buffer, it can do instead a linear search in the buffer;
-    for (uint8_t i = 0; i < dynamic_table->n_entries; i++) {
-        hpack_tables_dynamic_find_entry_name(dynamic_table, i + HPACK_TABLES_FIRST_INDEX_DYNAMIC, tmp_name);
+    //Then search in dynamic table with a linear search
+    uint8_t strings_counter = 0;
+    for (uint16_t i = 1; i <= dynamic_table->max_size; i++) {
+        
+        if(!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]){
+            //found an end of string
+            strings_counter++;
+            if(strings_counter%2 == 0 && strings_counter > 0){
+                int16_t rc = hpack_tables_dynamic_compare_string(dynamic_table, i, name);
+                if(rc > 0){ //match name
+                    return strings_counter/2 + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
+                }
+            }
+        }
 
-        if (strlen(name) == strlen(tmp_name) && strncmp(tmp_name, name, strlen(name)) == 0) {
-            return i + HPACK_TABLES_FIRST_INDEX_DYNAMIC;
+        if(strings_counter/2 >= dynamic_table->n_entries){
+            break; //not found
         }
     }
     #endif

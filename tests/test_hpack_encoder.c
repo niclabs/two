@@ -27,8 +27,8 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_encoded_integer_size, uint32_t, uint8_t);
-FAKE_VALUE_FUNC(int, hpack_tables_find_index, hpack_dynamic_table_t *, char *, char *, char *, char *);
-FAKE_VALUE_FUNC(int, hpack_tables_find_index_name, hpack_dynamic_table_t *, char *, char *);
+FAKE_VALUE_FUNC(int, hpack_tables_find_index, hpack_dynamic_table_t *, char *, char *);
+FAKE_VALUE_FUNC(int, hpack_tables_find_index_name, hpack_dynamic_table_t *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_add_entry, hpack_dynamic_table_t *, char *, char *);
 FAKE_VALUE_FUNC(int8_t, hpack_tables_dynamic_table_resize, hpack_dynamic_table_t *, uint32_t, uint32_t);
 
@@ -205,7 +205,7 @@ int8_t(*hpack_huffman_encode_customvalue_arr[])(huffman_encoded_word_t *, uint8_
                                                                                        hpack_huffman_encode_return_e };
 #endif
 
-int hpack_tables_find_index_fake_method_get(hpack_dynamic_table_t *dynamic_table, char *name, char *value, char *tmp_name, char *tmp_value)
+int hpack_tables_find_index_fake_method_get(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
     TEST_ASSERT_EQUAL_STRING(":method", name);
     TEST_ASSERT_EQUAL_STRING("GET", value);
