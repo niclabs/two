@@ -21,26 +21,23 @@ int sock_listen(sock_t* server_socket, uint16_t port);
 /*
 Checks if there's new data to be read from the socket.
 
-Returns 1   if there is new data
-        0   if there's not
+Returns >=0 the amount of data available
 */
 int sock_poll(sock_t* socket);
 
 /*
 Reads from a socket without blocking.
 
-Returns 0   if read nothing
-        -1  if Error
-        >0  the amount of bytes read
+Returns -1  if Error
+        >=0 the amount of bytes read
 */
 int sock_read(sock_t* socket, char * buffer, unsigned int buffer_length);
 
 /*
 Writes into a socket without blocking.
 
-Returns 0   if wrote nothing
-        -1  if Error
-        >0  the amount of bytes written
+Returns -1  if Error
+        >=0 the amount of bytes written
 */
 int sock_write(sock_t* socket, char * buffer, unsigned int buffer_length);
 

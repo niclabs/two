@@ -1,4 +1,4 @@
-#include "sock_non_blocking.h"
+#include "cbuf.h"
 
 #ifndef NET_H
 #define NET_H
@@ -29,10 +29,9 @@
 * 
 * buf_in:       has size NET_CLIENT_BUFFER_SIZE, net writes into it
 * buf_out:      has size NET_CLIENT_BUFFER_SIZE, net reads from it
-* write_out:    amount of bytes to write from buf_out after the callback returns
 * state:        has size NET_CLIENT_STATE_SIZE, net doesn't touch it. inits to 0
 */
-typedef net_Callback* (*net_Callback) (char* buf_in, char* buf_out, unsigned int* write_out, void* state);
+typedef net_Callback* (*net_Callback) (cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 
 /*
 * Enum for possible error cases within a connection looṕ.
