@@ -152,20 +152,20 @@ int is_valid_path(char *path)
 /**
  * Send an http error with the given code and message
  */
-int error(data_t *data_buff, headers_t *headers_buff, hstates_t *hs, int code, char *msg)
+int error(data_t *data_buff, headers_t *headers_buff, int code, char *msg)
 {
     // Set status code
     char strCode[4];
 
     snprintf(strCode, 4, "%d", code);
 
-    headers_clean(&headers_buff);
-    headers_set(&headers_buff, ":status", strCode);
+    headers_clean(headers_buff);
+    headers_set(headers_buff, ":status", strCode);
 
     // Set error message
     if (msg != NULL) {
-        clean_data(&data_buff);
-        set_data(&data_buff, (uint8_t *)msg, strlen(msg));
+        clean_data(data_buff);
+        set_data(data_buff, (uint8_t *)msg, strlen(msg));
     }
 
     DEBUG("Error with status code %d", code);
@@ -345,7 +345,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
     // find callback for resource
     http_resource_handler_t handle_uri;
     if ((handle_uri = get_resource_handler(hs, method, path)) == NULL) {
-        return error(hs, 404, "Not Found");
+        return error(&hs->data_in, &hs->headers_in, 404, "Not Found");
     }
 
     // TODO: response pointer should be pointer to hs->data_out
@@ -353,7 +353,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
     int len;
     if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
         // if the handler returns
-        return error(hs, 500, "Server Error");
+        return error(&hs->data_in, &hs->headers_in, 500, "Server Error");
     }
     // If it is GET method Prepare response for callback
     else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
@@ -412,7 +412,7 @@ int http_server_response(hstates_t *hs)
         if (ignore_unsupported_data_frames(hs) < 0) {
             ERROR("An error occurred while ignoring unsupported dataframes");
         }
-        error(hs, 501, "Not Implemented");
+        error(&hs->data_in, &hs->headers_in, 501, "Not Implemented");
         return 0;
     }
 
