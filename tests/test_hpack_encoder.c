@@ -723,6 +723,7 @@ void test_encode_literal_header_field_indexed_name_error(void)
 
 }
 
+#if HPACK_INCLUDE_DYNAMIC_TABLE
 void test_encode_dynamic_size_update(void)
 {
     uint8_t expected_encoded[] = { 0x3f, 0x8f, 0x2 };
@@ -745,6 +746,7 @@ void test_encode_dynamic_size_update(void)
         TEST_ASSERT_EQUAL(expected_encoded[i], encoded_buffer[i]);
     }
 }
+#endif
 
 int main(void)
 {
@@ -770,7 +772,8 @@ int main(void)
     //UNIT_TEST(test_encode_literal_header_field_indexed_name);
     //UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
+#if HPACK_INCLUDE_DYNAMIC_TABLE
     UNIT_TEST(test_encode_dynamic_size_update);
-
+#endif
     return UNIT_TESTS_END();
 }
