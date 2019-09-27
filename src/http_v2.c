@@ -182,7 +182,7 @@ int error(data_t *data_buff, headers_t *headers_buff, int code, char *msg)
 /**
  * Get a resource handler for the given path
  */
-http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *path)
+http_resource_handler_t get_resource_handler(char *method, char *path)
 {
     /*http_resource_t res;
 
