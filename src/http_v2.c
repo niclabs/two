@@ -152,29 +152,23 @@ int is_valid_path(char *path)
 /**
  * Send an http error with the given code and message
  */
-int error(hstates_t *hs, int code, char *msg)
+int error(data_t *data_buff, headers_t *headers_buff, hstates_t *hs, int code, char *msg)
 {
     // Set status code
     char strCode[4];
 
     snprintf(strCode, 4, "%d", code);
 
-    // Initialize header list
-    header_t header_list[HTTP_MAX_HEADER_COUNT];
-    headers_init(&hs->headers_out, header_list, HTTP_MAX_HEADER_COUNT);
-    headers_set(&hs->headers_out, ":status", strCode);
+    headers_clean(&headers_buff);
+    headers_set(&headers_buff, ":status", strCode);
 
     // Set error message
     if (msg != NULL) {
-        set_data(&hs->data_out, (uint8_t *)msg, strlen(msg));
+        clean_data(&data_buff);
+        set_data(&data_buff, (uint8_t *)msg, strlen(msg));
     }
 
-    // Send response
-    //TODO: this should return to http2 layer
-    if (h2_send_response(hs) < 0) {
-        DEBUG("Could not send data");
-        return -1;
-    }
+    DEBUG("Error with status code %d", code);
     return 0;
 }
 
