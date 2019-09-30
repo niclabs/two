@@ -721,7 +721,8 @@ void test_encode_literal_header_field_indexed_name_error(void)
     /*Test border condition*/
     char value_to_encode[2 * HTTP2_MAX_HBF_BUFFER];
 
-    memset(value_to_encode, 'w', 2 * HTTP2_MAX_HBF_BUFFER);
+    memset(value_to_encode, 'w', 2 * HTTP2_MAX_HBF_BUFFER - 1);
+    value_to_encode[HTTP2_MAX_HBF_BUFFER - 1] = 0;
     uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
 
     memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
@@ -733,7 +734,7 @@ void test_encode_literal_header_field_indexed_name_error(void)
     hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
 #endif
     int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-2, rc);
+    TEST_ASSERT_EQUAL(-1, rc);
 
 }
 
@@ -767,7 +768,7 @@ int main(void)
     UNIT_TESTS_BEGIN();
 
     UNIT_TEST(test_hpack_encoder_encode_test1);
-    UNIT_TEST(test_hpack_encoder_encode_test2); //FIXME: test is failling while compiling on docker
+    UNIT_TEST(test_hpack_encoder_encode_test2);
     UNIT_TEST(test_hpack_encoder_encode_test3);
     UNIT_TEST(test_encode_integer);
 
@@ -784,7 +785,7 @@ int main(void)
 
     //UNIT_TEST(test_encode_literal_header_field_new_name_error);
     //UNIT_TEST(test_encode_literal_header_field_indexed_name);
-    //UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
+    UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
 #if HPACK_INCLUDE_DYNAMIC_TABLE
     UNIT_TEST(test_encode_dynamic_size_update);

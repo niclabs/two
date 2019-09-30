@@ -29,7 +29,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
 
     if (required_bytes > buffer_size) {
         ERROR("Buffer size is less than the required amount in hpack_encoder_pack_encoded_words_to_bytes");
-        return -1;
+        return INTERNAL_ERROR;
     }
 
     int cur = 0;
@@ -180,7 +180,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
 
     uint32_t encoded_word_bit_length = hpack_encoder_encode_huffman_word(str, str_length, encoded_words);
 
-    uint8_t encoded_word_byte_length = encoded_word_bit_length % 8 ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
+    uint32_t encoded_word_byte_length = encoded_word_bit_length % 8 ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
     int encoded_word_length_size = hpack_encoder_encode_integer(encoded_word_byte_length, 7, encoded_string);
 
     if (encoded_word_length_size < 0) {
