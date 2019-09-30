@@ -441,7 +441,7 @@ int hpack_decoder_decode_header_v2(hpack_states_t *states)
     }
 }
 
-int hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
+int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
 {
     const uint32_t eos = 0x3fffffff;
     uint8_t eos_bit_length = 30;
@@ -458,7 +458,7 @@ int hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
     return 0;
 }
 
-int hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
+int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
 {
     /*Row doesn't exist*/
     if (encoded_header->preamble == INDEXED_HEADER_FIELD && encoded_header->index == 0) {
