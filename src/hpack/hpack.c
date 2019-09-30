@@ -11,9 +11,9 @@
  * also has updates the decoded header lists, this is a wrapper function
  * Input:
  *      -> *states: hpack_pack main struct
- *      -> *header_block: //TODO
- *      -> header_block_size: //TODO
- *      -> headers: //TODO
+ *      -> *header_block: buffer which contains headers
+ *      -> header_block_size: size of the header to be read
+ *      -> headers: list of headers which has to be updated after decoding
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */

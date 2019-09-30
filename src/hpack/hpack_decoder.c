@@ -227,7 +227,14 @@ int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint3
     }
 }
 
-
+/*
+ * Function: hpack_decoder_decode_indexed_header_field 
+ * Decodes an indexed header field, it searches for name and value of an entry in hpack tables
+ * Input:
+ *      -> *states: struct in which is stored the header to be decoded and the temporal buffers to save the entry
+ * Output:
+ *      -> returns the amount of octets of the header, less than 0 in case of error
+ */
 int hpack_decoder_decode_indexed_header_field_v2(hpack_states_t *states)
 {
     int pointer = 0;
@@ -245,7 +252,14 @@ int hpack_decoder_decode_indexed_header_field_v2(hpack_states_t *states)
 }
 
 
-
+/*
+ * Function: hpack_decoder_decode_literal_header_field
+ * Decodes a literal header field, the entry info comes directly in the header block
+ * Input:
+ *      -> *states: struct in which is stored the header to be decoded and the temporal buffers to save the entry
+ * Output:
+ *      -> returns the amount of octets of the header, less than 0 in case of error
+ */
 int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
 {
     int pointer = 0;
@@ -323,12 +337,29 @@ int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_states_t *states)
     #endif
 }
 
+/*
+ * Function: get_huffman_bit
+ * Gets the flag to check if word is huffman encoded or not
+ * Input:
+ *      -> num: Octet which represent the begginning of the number
+ * Output:
+ *      -> returns 0 in case of no huffman encoded, grower than 0 in case of huffman encoded
+ */
 uint8_t get_huffman_bit(uint8_t num)
 {
     return 128u & num;
 }
 
-
+/*
+ * Funcion: hpack_decoder_parse_encoded_header
+ * Parses the header info from the header block to the encoded header struct
+ * Input:
+ *      -> *encoded_header: struct in which will be stored the header info
+ *      -> *header_block: header block to be read
+ *      -> header_size: size of the header block
+ * Output:
+ *      -> returns the amount of octets of the header, less than 0 in case of error 
+ */
 int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size)
 {
     int32_t pointer = 0;
@@ -441,6 +472,15 @@ int hpack_decoder_decode_header_v2(hpack_states_t *states)
     }
 }
 
+/*
+ * Function: hpack_check_eos_symbol
+ * Checks if compressed header contains EOS symbol, which is a decoding error
+ * Input:
+ *      -> *encoded_buffer: Buffer to check
+ *      -> buffer_length: The size of the buffer
+ * Output:
+ *      returns 0 in successfull case, -1 in case of protocol error
+ */
 int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
 {
     const uint32_t eos = 0x3fffffff;
@@ -458,6 +498,14 @@ int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
     return 0;
 }
 
+/*
+ * Function: hpack_decoder_check_errors
+ * Check protocol errors before starting decoding the header
+ * Input:
+ *      -> *encoded_header: Pointer to encoded_header to check
+ * Output:
+ *      returns 0 in successfull case, -1 in case of protocol error
+ */
 int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
 {
     /*Row doesn't exist*/
@@ -494,6 +542,14 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
     return 0;
 }
 
+/*
+ * Function: init_hpack_encoded_header_t 
+ * initializes an hpack_encoded_header before using it
+ * Input:
+ *      -> *encoded_header: Pointer to encoded header which has to be initialized
+ * Output:
+ *      (void)
+ */
 void init_hpack_encoded_header_t(hpack_encoded_header_t *encoded_header)
 {
     encoded_header->index = 0;
