@@ -115,13 +115,13 @@ typedef struct HTTP2_STATES {
  *
  * the handler must return the number of bytes written or -1 if an error ocurred
  */
-typedef int (*http_resource_handler_t) (char *method, char *uri, uint8_t *response, int maxlen);
+typedef int (*http_resource_handler_t_1) (char *method, char *uri, uint8_t *response, int maxlen);
 
 typedef struct {
     char path[HTTP_MAX_PATH_SIZE];
     char method[8];
-    http_resource_handler_t handler;
-} http_resource_t;
+    http_resource_handler_t_1 handler;
+} http_resource_t_1;
 
 typedef struct {
     uint32_t size;
@@ -148,7 +148,7 @@ typedef struct HTTP_STATES {
     headers_t headers_out;
 
     // Resource handler list
-    http_resource_t resource_list[HTTP_MAX_RESOURCES];
+    http_resource_t_1 resource_list[HTTP_MAX_RESOURCES];
     uint8_t resource_list_size;
 
     //boolean. Notifies HTTP if new headers were written

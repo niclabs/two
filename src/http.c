@@ -136,9 +136,9 @@ int is_valid_path(char *path)
 /**
  * Get a resource handler for the given path
  */
-http_resource_handler_t get_resource_handler(hstates_t *hs, char *method, char *path)
+http_resource_handler_t_1 get_resource_handler(hstates_t *hs, char *method, char *path)
 {
-    http_resource_t res;
+    http_resource_t_1 res;
 
     for (int i = 0; i < hs->resource_list_size; i++) {
         res = hs->resource_list[i];
@@ -225,7 +225,7 @@ int do_request(hstates_t *hs, char *method, char *uri)
     parse_uri(uri, path, NULL);
 
     // find callback for resource
-    http_resource_handler_t handle_uri;
+    http_resource_handler_t_1 handle_uri;
     if ((handle_uri = get_resource_handler(hs, method, path)) == NULL) {
         return error(hs, 404, "Not Found");
     }
@@ -408,7 +408,7 @@ int http_server_destroy(hstates_t *hs)
 }
 
 
-int http_server_register_resource(hstates_t *hs, char *method, char *path, http_resource_handler_t handler)
+int http_server_register_resource(hstates_t *hs, char *method, char *path, http_resource_handler_t_1 handler)
 {
     if (hs == NULL || method == NULL || path == NULL || handler == NULL) {
         errno = EINVAL;
@@ -435,7 +435,7 @@ int http_server_register_resource(hstates_t *hs, char *method, char *path, http_
     }
 
     // Checks if the path and method already exist
-    http_resource_t *res;
+    http_resource_t_1 *res;
     for (int i = 0; i < hs->resource_list_size; i++) {
         res = &hs->resource_list[i];
         //If it does, replaces the resource

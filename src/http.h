@@ -65,7 +65,7 @@ int http_server_destroy(hstates_t *hs);
  *
  * @return 0 if ok, -1 if error
  */
-int http_server_register_resource(hstates_t * hs, char * method, char * path, http_resource_handler_t fn);
+int http_server_register_resource(hstates_t * hs, char * method, char * path, http_resource_handler_t_1 fn);
 
 
 /*************************************************************
