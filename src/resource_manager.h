@@ -73,4 +73,7 @@ typedef struct {
 int http_server_response(data_t *data_buff, headers_t *headers_buff);
 
 
-#endif /* HTTP_H */
+int http_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler);
+
+
+#endif /* RESOURCE_MANAGER_H */
