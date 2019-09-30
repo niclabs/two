@@ -1,8 +1,8 @@
 /*
    This API contains the methods in HTTP layer
 */
-#ifndef HTTP_H
-#define HTTP_H
+#ifndef RESOURCE_MANAGER_H
+#define RESOURCE_MANAGER_H
 
 #include "headers.h"
 
@@ -10,6 +10,13 @@
 /***********************************************
  * Data buffer struct
  ***********************************************/
+
+//Revisar
+ #ifdef HTTP_CONF_MAX_RESPONSE_SIZE
+ #define HTTP_MAX_RESPONSE_SIZE (HTTP_CONF_MAX_RESPONSE_SIZE)
+ #else
+ #define HTTP_MAX_RESPONSE_SIZE (128)
+ #endif
 
  #ifdef HTTP_CONF_MAX_DATA_SIZE
  #define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)

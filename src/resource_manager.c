@@ -10,17 +10,15 @@
 //#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 
 
-#include "http_v2.h"
-#include "headers.h"
-#include "http_bridge.h"
+#include "resource_manager.h"
 #include "logging.h"
-#include "sock.h"
-#include "http2.h"
 
 
 #ifndef MIN
 #define MIN(n, m)   (((n) < (m)) ? (n) : (m))
 #endif
+
+http_resource_handler_t get_resource_handler(char *method, char *path);
 
 /*********************************************************
 * Private HTTP API methods
