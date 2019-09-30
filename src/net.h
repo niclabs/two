@@ -11,20 +11,6 @@
 #endif
 
 /*
-* Size in bytes for the client's in and out buffers.
-*/
-#ifndef NET_CLIENT_BUFFER_SIZE
-#define NET_CLIENT_BUFFER_SIZE ((unsigned int)24)
-#endif
-
-/*
-* Size in bytes to reserve for the client's state.
-*/
-#ifndef NET_CLIENT_STATE_SIZE
-#define NET_CLIENT_STATE_SIZE ((unsigned int)24)
-#endif
-
-/*
 * Signature of a callback
 * 
 * buf_in:       has size NET_CLIENT_BUFFER_SIZE, net writes into it
@@ -50,7 +36,9 @@ typedef enum
 * port:                 port to listen from
 * default_callback:     Callback a client executes on connection
 * stop_flag:            Stops the server loop when set to 1 from outside
+* data_buffer_size      Size in bytes for the client's in and out buffers
+* client_state_size     Size in bytes to reserve for the client's state.
 */
-NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, int* stop_flag);
+NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size);
 
 #endif

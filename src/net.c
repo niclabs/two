@@ -3,23 +3,16 @@
 #include "sock_non_blocking.h"
 #include "logging.h"
 
-/*
-* Union for abstracting the client's state.
-*/
-union client_state {
-    void* ptr;                                  // Pointer to give the callback
-    unsigned char data[NET_CLIENT_STATE_SIZE]   // Data allocation
-};
 
 /*
 * Per-client struct.
 */
 typedef struct {
-    unsigned char buf_in_data[NET_CLIENT_BUFFER_SIZE];  // In buffer's memory
-    unsigned char buf_out_data[NET_CLIENT_BUFFER_SIZE]; // Out buffer's memory
-    cbuf_t buf_in[1];                        // Circular buffer in
+    unsigned char* buf_in_data;             // In buffer's memory
+    unsigned char* buf_out_data;            // Out buffer's memory
+    cbuf_t buf_in[1];                       // Circular buffer in
     cbuf_t buf_out[1];                      // Circular buffer out
-    union client_state state;               // The client's state
+    void* state;                            // The client's state
     sock_t* socket;                         // The client's socket
     net_Callback cb;                        // Next callback to execute
 } Client;
@@ -27,37 +20,42 @@ typedef struct {
 /*
 * Resets a client to it's default values.
 */
-void reset_client(Client* p_client)
+void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state_size)
 {
-    memset(p_client->buf_in_data, 0, NET_CLIENT_BUFFER_SIZE);
-    cbuf_init(p_client->buf_in, p_client->buf_in_data, NET_CLIENT_BUFFER_SIZE);
-    memset(p_client->buf_out_data, 0, NET_CLIENT_BUFFER_SIZE);
-    cbuf_init(p_client->buf_out, p_client->buf_out_data, NET_CLIENT_BUFFER_SIZE);
-    memset(p_client->state.ptr, 0, NET_CLIENT_STATE_SIZE);
+    memset(p_client->buf_in_data, 0, data_buffer_size);
+    cbuf_init(p_client->buf_in, p_client->buf_in_data, data_buffer_size);
+    memset(p_client->buf_out_data, 0, data_buffer_size);
+    cbuf_init(p_client->buf_out, p_client->buf_out_data, data_buffer_size);
+
+    memset(p_client->state, 0, client_state_size);
+
     p_client->socket = NULL;
     p_client->cb = NULL;
 }
 
-/*
-* Resets an array of clients to it's default values.
-*/
-void init_clients(Client* clients)
-{
-    for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
-    {
-        reset_client(&clients[i]);
-    }
-}
-
-NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, int* stop_flag)
+NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size)
 {
     // Socket error return codes go here
     int sock_rc = 0;
     INFO("Initializing server");
 
-    // Client initialization
+    // Allocation ofr memory for the clients
     Client clients[NET_MAX_CLIENTS];
-    init_clients(clients);
+    unsigned char buffers_in[NET_MAX_CLIENTS][data_buffer_size];
+    unsigned char buffers_out[NET_MAX_CLIENTS][data_buffer_size];
+    unsigned char states[NET_MAX_CLIENTS][client_state_size];
+
+    // Client initialization
+    for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
+    {
+        Client client = clients[i];
+        
+        client.buf_in_data = buffers_in[i];
+        client.buf_out_data = buffers_out[i];
+        client.state = states[i];
+
+        reset_client(&client, data_buffer_size, client_state_size);
+    }
 
     // Server socket setup
     sock_t* server_socket;
@@ -90,7 +88,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
             // If the client is connected and has data
             if (client.cb != NULL && (available_data=sock_poll(client.socket)) != 0)
             {
-                unsigned int available_in_space = NET_CLIENT_BUFFER_SIZE-cbuf_len(client.buf_in);
+                unsigned int available_in_space = data_buffer_size-cbuf_len(client.buf_in);
                 unsigned int readable_data = (available_data <= available_in_space) ? available_data : available_in_space;
 
                 if (readable_data > 0)
@@ -118,7 +116,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
 
                 // The callback does stuff
                 DEBUG("Executing callback");
-                net_Callback cb = (net_Callback) client.cb(client.buf_in, client.buf_out, client.state.ptr);
+                net_Callback cb = (net_Callback) client.cb(client.buf_in, client.buf_out, client.state);
 
                 unsigned int writable_data = cbuf_len(client.buf_out);
 
@@ -159,7 +157,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
                     }
                     INFO("Client disconnected");
 
-                    reset_client(&client);
+                    reset_client(&client, data_buffer_size, client_state_size);
                 }
 
                 // Callback is replaced
