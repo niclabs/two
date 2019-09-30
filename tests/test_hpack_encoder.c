@@ -614,9 +614,10 @@ void test_hpack_encoder_encode_test2(void)
     };
 
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 2 * HTTP2_MAX_HBF_BUFFER, 1 };
+
     #if !HPACK_INCLUDE_DYNAMIC_TABLE
-        //TODO: Fix test hpack encoder encode test 2 no dynamic table mode 
-        TEST_IGNORE();
+    //TODO: Fix test hpack encoder encode test 2 no dynamic table mode
+    TEST_IGNORE();
     #endif
 
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 2);
@@ -624,6 +625,7 @@ void test_hpack_encoder_encode_test2(void)
     hpack_utils_find_prefix_size_fake.return_val = 4;
     hpack_tables_find_index_fake.return_val = -1;
     hpack_tables_find_index_name_fake.return_val = -1;
+    hpack_tables_dynamic_table_add_entry_fake.return_val = -1;
     int rc = hpack_encoder_encode(NULL, name_string, value_string, encoded_buffer);
 
     TEST_ASSERT_EQUAL(10, rc);
@@ -647,8 +649,8 @@ void test_hpack_encoder_encode_test3(void)
     };
 
     #if !HPACK_INCLUDE_DYNAMIC_TABLE
-        //TODO: Fix test hpack encoder encode test 3 no dynamic table mode 
-        TEST_IGNORE();
+    //TODO: Fix test hpack encoder encode test 3 no dynamic table mode
+    TEST_IGNORE();
     #endif
 
     hpack_utils_find_prefix_size_fake.return_val = 4;
@@ -742,7 +744,7 @@ void test_encode_dynamic_size_update(void)
     uint32_t new_max_size = 302;
     hpack_utils_encoded_integer_size_fake.return_val = 3;
     hpack_states_t state;
-    hpack_dynamic_table_t* dynamic_table = &state.dynamic_table;
+    hpack_dynamic_table_t *dynamic_table = &state.dynamic_table;
     memset(dynamic_table->buffer, 0, 4092);
     dynamic_table->max_size = 4092;
     dynamic_table->actual_size = 0;
@@ -762,7 +764,7 @@ int main(void)
     UNIT_TESTS_BEGIN();
 
     UNIT_TEST(test_hpack_encoder_encode_test1);
-    //UNIT_TEST(test_hpack_encoder_encode_test2); FIXME: test is failling while compiling on docker
+    UNIT_TEST(test_hpack_encoder_encode_test2); //FIXME: test is failling while compiling on docker
     UNIT_TEST(test_hpack_encoder_encode_test3);
     UNIT_TEST(test_encode_integer);
 
