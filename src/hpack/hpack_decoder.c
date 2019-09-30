@@ -85,14 +85,15 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
             return INTERNAL_ERROR;
         }
         else {
-            uint8_t number_of_padding_bits = length-bits_left;
-            uint32_t padding = (1<<(number_of_padding_bits)) - 1;
+            uint8_t number_of_padding_bits = length - bits_left;
+            uint32_t padding = (1 << (number_of_padding_bits)) - 1;
             result = hpack_utils_read_bits_from_bytes(bit_position, bits_left, encoded_string);
             result <<= number_of_padding_bits;
             result |= padding;
 
         }
-    } else {
+    }
+    else {
         result = hpack_utils_read_bits_from_bytes(bit_position, 30, encoded_string);
     }
 
@@ -228,7 +229,7 @@ int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint3
 }
 
 /*
- * Function: hpack_decoder_decode_indexed_header_field 
+ * Function: hpack_decoder_decode_indexed_header_field
  * Decodes an indexed header field, it searches for name and value of an entry in hpack tables
  * Input:
  *      -> *states: struct in which is stored the header to be decoded and the temporal buffers to save the entry
@@ -358,7 +359,7 @@ uint8_t get_huffman_bit(uint8_t num)
  *      -> *header_block: header block to be read
  *      -> header_size: size of the header block
  * Output:
- *      -> returns the amount of octets of the header, less than 0 in case of error 
+ *      -> returns the amount of octets of the header, less than 0 in case of error
  */
 int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size)
 {
@@ -543,7 +544,7 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
 }
 
 /*
- * Function: init_hpack_encoded_header_t 
+ * Function: init_hpack_encoded_header_t
  * initializes an hpack_encoded_header before using it
  * Input:
  *      -> *encoded_header: Pointer to encoded header which has to be initialized

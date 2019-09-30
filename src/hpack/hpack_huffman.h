@@ -41,6 +41,6 @@ typedef struct {
 
 int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym);
 
-int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t* sym);
+int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym);
 #endif
 #endif //HPACK_HUFFMAN_H

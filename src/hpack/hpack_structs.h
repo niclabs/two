@@ -74,8 +74,8 @@ typedef struct {
 } hpack_states_t;
 
 typedef enum {
-    PROTOCOL_ERROR  = (int8_t) -1,
-    INTERNAL_ERROR  = (int8_t) -2
+    PROTOCOL_ERROR  = (int8_t) - 1,
+    INTERNAL_ERROR  = (int8_t) - 2
 } hpack_error_t;
 
 #endif
