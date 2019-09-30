@@ -1,5 +1,5 @@
 /*
-   This API contains the HTTP methods to be used by
+   This API contains the Resource Manager methods to be used by
    HTTP/2
  */
 
@@ -9,7 +9,6 @@
 
 //#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 
-
 #include "resource_manager.h"
 #include "logging.h"
 
@@ -18,7 +17,6 @@
 #define MIN(n, m)   (((n) < (m)) ? (n) : (m))
 #endif
 
-http_resource_handler_t get_resource_handler(char *method, char *path);
 
 /*********************************************************
 * Private HTTP API methods
@@ -128,25 +126,6 @@ int clean_data(data_t *data_buf)
     return 0;
 }
 
-/*
- * Check for valid HTTP path according to
- * RFC 2396 (see https://tools.ietf.org/html/rfc2396#section-3.3)
- *
- * TODO: for now this function only checks that the path starts
- * by a '/'. Validity of the path should be implemented according to
- * the RFC
- *
- * @return 1 if the path is valid or 0 if not
- * */
-int is_valid_path(char *path)
-{
-    if (path[0] != '/') {
-        return 0;
-    }
-    return 1;
-}
-
-
 /**
  * Send an http error with the given code and message
  */
@@ -167,6 +146,104 @@ int error(data_t *data_buff, headers_t *headers_buff, int code, char *msg)
     }
 
     DEBUG("Error with status code %d", code);
+    return 0;
+}
+
+/************************************
+* Resource app methods
+************************************/
+
+
+/*
+ * Check for valid HTTP path according to
+ * RFC 2396 (see https://tools.ietf.org/html/rfc2396#section-3.3)
+ *
+ * TODO: for now this function only checks that the path starts
+ * by a '/'. Validity of the path should be implemented according to
+ * the RFC
+ *
+ * @return 1 if the path is valid or 0 if not
+ * */
+int is_valid_path(char *path)
+{
+    if (path[0] != '/') {
+        return 0;
+    }
+    return 1;
+}
+
+
+/**
+ * Get a resource handler for the given path
+ */
+http_resource_handler_t get_resource_handler(char *method, char *path)
+{
+    /*http_resource_t res;
+
+       for (int i = 0; i < hs->resource_list_size; i++) {
+        res = hs->resource_list[i];
+        if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
+            return res.handler;
+        }
+       }*/
+    (void)method;
+    (void)path;
+    return NULL;
+}
+
+
+int http_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler)
+{
+    // TODO: Verify that resource_list_t is not empty
+    if (method == NULL || path == NULL || handler == NULL) {
+        errno = EINVAL;
+        ERROR("ERROR found %d", errno );
+        return -1;
+    }
+
+    if (!has_method_support(method)) {
+        errno = EINVAL;
+        ERROR("Method %s not implemented yet", method);
+        return -1;
+    }
+
+    if (!is_valid_path(path)) {
+        errno = EINVAL;
+        ERROR("Path %s does not have a valid format", path);
+        return -1;
+    }
+
+    if (strlen(path) >= HTTP_MAX_PATH_SIZE) {
+        errno = EINVAL;
+        ERROR("Path length is larger than max supported size (%d). Try updating HTTP_CONF_MAX_PATH_SIZE", HTTP_MAX_PATH_SIZE);
+        return -1;
+    }
+
+    // Checks if the path and method already exist
+    http_resource_t *res;
+    for (int i = 0; i < res_list->resource_list_size; i++) {
+        res = &res_list->resource_list[i];
+        //If it does, replaces the resource
+        if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
+            res->handler = handler;
+            return 0;
+        }
+    }
+
+    // Checks if the list is full
+    if (res_list->resource_list_size >= HTTP_MAX_RESOURCES) {
+        ERROR("HTTP resource limit (%d) reached. Try changing value for HTTP_CONF_MAX_RESOURCES", HTTP_MAX_RESOURCES);
+        return -1;
+    }
+
+    // Adds the resource to the list
+    res = &res_list->resource_list[res_list->resource_list_size++];
+
+    // Sets values
+    strncpy(res->method, method, 8);
+    strncpy(res->path, path, HTTP_MAX_PATH_SIZE);
+    res->handler = handler;
+
     return 0;
 }
 
@@ -254,6 +331,7 @@ int send_client_request(headers_t *headers_buff, char *method, char *uri, char *
     return 0;
 }
 
+
 int process_server_response(data_t *data_buff, headers_t *headers_buff, char *method, uint8_t *response, size_t *size)
 {
     //If it is a GET request, wait for the server response data
@@ -274,8 +352,7 @@ int process_server_response(data_t *data_buff, headers_t *headers_buff, char *me
 }
 
 
-
-int http_get(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
+int http_get(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
 {
     (void)response;
     (void)size;
@@ -283,95 +360,9 @@ int http_get(headers_t * headers_buff, char *uri, uint8_t *response, size_t *siz
 }
 
 
-
-int http_head(headers_t * headers_buff, char *uri, uint8_t *response, size_t *size)
+int http_head(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
 {
     (void)response;
     (void)size;
     return send_client_request(headers_buff, "HEAD", uri, "DEFINIR HOST");
 }
-
-
-
-/******************************************************************************
- Methods that should be deleted from this layer
-*****************************************************************************/
-
-
-/**
- * Get a resource handler for the given path
- */
-http_resource_handler_t get_resource_handler(char *method, char *path)
-{
-    /*http_resource_t res;
-
-    for (int i = 0; i < hs->resource_list_size; i++) {
-        res = hs->resource_list[i];
-        if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
-            return res.handler;
-        }
-    }*/
-    (void) method;
-    (void) path;
-    return NULL;
-}
-
-
-int http_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler)
-{
-    // TODO: Verify that resource_list_t is not empty
-    if (method == NULL || path == NULL || handler == NULL) {
-        errno = EINVAL;
-        ERROR("ERROR found %d", errno );
-        return -1;
-    }
-
-    if (!has_method_support(method)) {
-        errno = EINVAL;
-        ERROR("Method %s not implemented yet", method);
-        return -1;
-    }
-
-    if (!is_valid_path(path)) {
-        errno = EINVAL;
-        ERROR("Path %s does not have a valid format", path);
-        return -1;
-    }
-
-    if (strlen(path) >= HTTP_MAX_PATH_SIZE) {
-        errno = EINVAL;
-        ERROR("Path length is larger than max supported size (%d). Try updating HTTP_CONF_MAX_PATH_SIZE", HTTP_MAX_PATH_SIZE);
-        return -1;
-    }
-
-    // Checks if the path and method already exist
-    http_resource_t *res;
-    for (int i = 0; i < res_list->resource_list_size; i++) {
-        res = &res_list->resource_list[i];
-        //If it does, replaces the resource
-        if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
-            res->handler = handler;
-            return 0;
-        }
-    }
-
-    // Checks if the list is full
-    if (res_list->resource_list_size >= HTTP_MAX_RESOURCES) {
-        ERROR("HTTP resource limit (%d) reached. Try changing value for HTTP_CONF_MAX_RESOURCES", HTTP_MAX_RESOURCES);
-        return -1;
-    }
-
-    // Adds the resource to the list
-    res = &res_list->resource_list[res_list->resource_list_size++];
-
-    // Sets values
-    strncpy(res->method, method, 8);
-    strncpy(res->path, path, HTTP_MAX_PATH_SIZE);
-    res->handler = handler;
-
-    return 0;
-}
-
-
-
-/****************************************************************************/
