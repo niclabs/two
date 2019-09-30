@@ -1,6 +1,6 @@
 /*
-   This API contains the methods in HTTP layer
-*/
+   This API contains the methods in Resource Manager layer
+ */
 #ifndef RESOURCE_MANAGER_H
 #define RESOURCE_MANAGER_H
 
@@ -8,8 +8,8 @@
 
 
 /***********************************************
- * Data buffer struct
- ***********************************************/
+* Data buffer struct
+***********************************************/
 
 //Revisar
  #ifdef HTTP_CONF_MAX_RESPONSE_SIZE
@@ -17,6 +17,13 @@
  #else
  #define HTTP_MAX_RESPONSE_SIZE (128)
  #endif
+
+ #ifdef HTTP_CONF_MAX_PATH_SIZE
+ #define HTTP_MAX_PATH_SIZE (HTTP_CONF_MAX_PATH_SIZE)
+ #else
+ #define HTTP_MAX_PATH_SIZE (32)
+ #endif
+//
 
  #ifdef HTTP_CONF_MAX_DATA_SIZE
  #define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
@@ -29,21 +36,22 @@ typedef struct {
     uint8_t buf[HTTP_MAX_DATA_SIZE];
 } data_t;
 
+
 /***********************************************
- * Aplication resources structs
- ***********************************************/
+* Aplication resources structs
+***********************************************/
 
- #ifdef HTTP_CONF_MAX_RESOURCES
- #define HTTP_MAX_RESOURCES (HTTP_CONF_MAX_RESOURCES)
- #else
- #define HTTP_MAX_RESOURCES (16)
- #endif
+#ifdef HTTP_CONF_MAX_RESOURCES
+#define HTTP_MAX_RESOURCES (HTTP_CONF_MAX_RESOURCES)
+#else
+#define HTTP_MAX_RESOURCES (16)
+#endif
 
- #ifdef HTTP_CONF_MAX_PATH_SIZE
- #define HTTP_MAX_PATH_SIZE (HTTP_CONF_MAX_PATH_SIZE)
- #else
- #define HTTP_MAX_PATH_SIZE (32)
- #endif
+#ifdef HTTP_CONF_MAX_PATH_SIZE
+#define HTTP_MAX_PATH_SIZE (HTTP_CONF_MAX_PATH_SIZE)
+#else
+#define HTTP_MAX_PATH_SIZE (32)
+#endif
 
 typedef int (*http_resource_handler_t) (char *method, char *uri, uint8_t *response, int maxlen);
 
@@ -58,18 +66,17 @@ typedef struct {
     uint8_t resource_list_size;
 } resource_list_t;
 
-
 /***********************************************
- * Server API methods
- ***********************************************/
+* Server API methods
+***********************************************/
 
- /**
-  * Generate a respnse from server to each client request
-  *
-  * @param data_buff data structure
-  * @param headers_buff headers data structure
-  * @return 0 if ok -1 if an error ocurred
-  */
+/**
+ * Generate a respnse from server to each client request
+ *
+ * @param data_buff data structure
+ * @param headers_buff headers data structure
+ * @return 0 if ok -1 if an error ocurred
+ */
 int http_server_response(data_t *data_buff, headers_t *headers_buff);
 
 
