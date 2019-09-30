@@ -150,7 +150,7 @@ int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, 
         ERROR("Decoding error: %d index is lower than 1", index);
         return PROTOCOL_ERROR;  //Decoding error: indexed header field with 0
     }
-    index--;        //because static table begins at index 1
+    index--;                    //because static table begins at index 1
     const char *table_name = hpack_static_table.name_table[index];
     const char *table_value = hpack_static_table.value_table[index];
     strncpy(name, table_name, strlen(table_name));
@@ -240,7 +240,7 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
 /*
- * Function: hpack_tables_dynamic_compare_string 
+ * Function: hpack_tables_dynamic_compare_string
  * Compare a string in a buffer with a string in a position of the dynamic table buffer
  * Input:
  *      -> *dynamic_table: table which can be modified by server or client
@@ -252,8 +252,9 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
 int16_t hpack_tables_dynamic_compare_string(hpack_dynamic_table_t *dynamic_table, uint16_t initial_position, char *buffer)
 {
     int16_t max_size = strlen(buffer);
-    for(uint8_t i=0; i<max_size; i++){
-        if(buffer[i] != dynamic_table->buffer[(dynamic_table->next - initial_position+ 1 + i + dynamic_table->max_size) % dynamic_table->max_size]){
+
+    for (uint8_t i = 0; i < max_size; i++) {
+        if (buffer[i] != dynamic_table->buffer[(dynamic_table->next - initial_position + 1 + i + dynamic_table->max_size) % dynamic_table->max_size]) {
             return -1; // different strings
         }
     }
@@ -628,22 +629,22 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     //Then search in dynamic table with a linear search
     uint8_t strings_counter = 0;
     for (uint16_t i = 1; i <= dynamic_table->max_size; i++) {
-        
-        if(!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]){
+
+        if (!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]) {
             //found an end of string
             strings_counter++;
-            if(strings_counter%2 == 0 && strings_counter > 0){
+            if (strings_counter % 2 == 0 && strings_counter > 0) {
                 int16_t rc = hpack_tables_dynamic_compare_string(dynamic_table, i, name);
-                if(rc > 0){ //match name
+                if (rc > 0) { //match name
                     rc = hpack_tables_dynamic_compare_string(dynamic_table, i - rc, value);
-                    if(rc > 0){
-                        return strings_counter/2 + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
+                    if (rc > 0) {
+                        return strings_counter / 2 + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
                     }
                 }
             }
         }
 
-        if(strings_counter/2 >= dynamic_table->n_entries){
+        if (strings_counter / 2 >= dynamic_table->n_entries) {
             break; //not found
         }
     }
@@ -670,7 +671,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     //Search first in static table
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         const char *table_name = hpack_static_table.name_table[i];
-        if (strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0){
+        if (strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) {
             return i + 1;
         }
     }
@@ -679,19 +680,19 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     //Then search in dynamic table with a linear search
     uint8_t strings_counter = 0;
     for (uint16_t i = 1; i <= dynamic_table->max_size; i++) {
-        
-        if(!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]){
+
+        if (!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]) {
             //found an end of string
             strings_counter++;
-            if(strings_counter%2 == 0 && strings_counter > 0){
+            if (strings_counter % 2 == 0 && strings_counter > 0) {
                 int16_t rc = hpack_tables_dynamic_compare_string(dynamic_table, i, name);
-                if(rc > 0){ //match name
-                    return strings_counter/2 + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
+                if (rc > 0) { //match name
+                    return strings_counter / 2 + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
                 }
             }
         }
 
-        if(strings_counter/2 >= dynamic_table->n_entries){
+        if (strings_counter / 2 >= dynamic_table->n_entries) {
             break; //not found
         }
     }
