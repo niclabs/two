@@ -601,7 +601,7 @@ void test_hpack_encoder_encode_test2(void)
     char name_string[] = "name";
     uint8_t encoded_buffer[64];
     uint8_t expected_encoded_bytes[] = {
-        64,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=0
+        16,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=0
         4,              //name_length
         (uint8_t)'n',
         (uint8_t)'a',
@@ -613,19 +613,22 @@ void test_hpack_encoder_encode_test2(void)
         (uint8_t)'l'
     };
 
-    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 2 * HTTP2_MAX_HBF_BUFFER, 1 };
+    uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 2 * HTTP2_MAX_HBF_BUFFER, 1, 2 * HTTP2_MAX_HBF_BUFFER, 1 };
 
     #if !HPACK_INCLUDE_DYNAMIC_TABLE
     //TODO: Fix test hpack encoder encode test 2 no dynamic table mode
     TEST_IGNORE();
     #endif
 
-    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 2);
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 4);
     //TODO ADD check to input of hpack_tables_dynamic_add_entry
+
     hpack_utils_find_prefix_size_fake.return_val = 4;
+    //hpack_utils_encoded_integer_size_fake.return_val = 2 * HTTP2_MAX_HBF_BUFFER;
     hpack_tables_find_index_fake.return_val = -1;
     hpack_tables_find_index_name_fake.return_val = -1;
     hpack_tables_dynamic_table_add_entry_fake.return_val = -1;
+
     int rc = hpack_encoder_encode(NULL, name_string, value_string, encoded_buffer);
 
     TEST_ASSERT_EQUAL(10, rc);
