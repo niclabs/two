@@ -13,31 +13,13 @@
  *      -> number_of_bits_to_read: The number of bits to read from the buffer
  *      -> *buffer: The buffer containing the bits to read
  *      -> buffer_size: Size of the buffer
- * output: returns the bits read from
+ * output: returns the bits read from the buffer
  */
 uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer)
 {
     uint32_t byte_offset = current_bit_pointer / 8;
     uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
     uint8_t num_bytes = ((number_of_bits_to_read + current_bit_pointer - 1) / 8) - (current_bit_pointer / 8) + 1;
-/*
-    uint32_t mask = 1 << (8 * num_bytes - number_of_bits_to_read);
-    mask -= 1;
-    mask = ~mask;
-    mask >>= bit_offset;
-    DEBUG("Mask is %u", mask);
-    mask &= ((1 << (8 * num_bytes - bit_offset)) - 1);
-    DEBUG("The other number is %u",((1 << (8 * num_bytes - bit_offset)) - 1));
-    DEBUG("Mask is %u", mask);
-    DEBUG("num_bytes is %u", num_bytes);
-    uint32_t code = buffer[byte_offset];
-    for (int i = 1; i < num_bytes; i++) {
-        code <<= 8;
-        code |= buffer[i + byte_offset];
-    }
-    code &= mask;
-    code >>= (8 * num_bytes - number_of_bits_to_read - bit_offset);
- */
     uint32_t code = 0;
     uint8_t first_byte_mask = 255u;
 
