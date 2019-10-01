@@ -14,7 +14,7 @@ extern int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_str
 #endif
 extern int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit);
 extern int32_t hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length);
-extern int hpack_decoder_decode_indexed_header_field(hpack_states_t *hpack_states, uint8_t *header_block, char *name, char *value);
+extern int hpack_decoder_decode_indexed_header_field(hpack_states_t *states);
 extern int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
@@ -924,34 +924,37 @@ void test_decode_integer(void)
 
 void test_hpack_decoder_decode_indexed_header_field(void)
 {
-    /*
-       char expected_name[] = ":method";
-       char expected_value[] = "GET";
-       char name[strlen(expected_name)];
-       char value[strlen(expected_value)];
 
-       memset(name, 0, strlen(expected_name));
-       memset(value, 0, strlen(expected_value));
+    char expected_name[] = ":method\0";
+    char expected_value[] = "GET\0";
 
-       uint8_t encoded_buffer[] = { 0x82 };
-       hpack_utils_encoded_integer_size_fake.return_val = 1;
-       hpack_utils_find_prefix_size_fake.return_val = 7;
-       hpack_tables_find_entry_name_and_value_fake.custom_fake = hpack_tables_find_entry_name_and_value_return_method_get;
-       int rc = hpack_decoder_decode_indexed_header_field(NULL, encoded_buffer, name, value);
+    hpack_states_t states;
+    hpack_init_states(&states, 100);     //100 is a dummy value btw
 
-       TEST_ASSERT_EQUAL(1, rc);
-       for (uint8_t i = 0; i < strlen(expected_name); i++) {
+    char* name = states.tmp_name;
+    char* value = states.tmp_value;
+
+    states.encoded_header.index = 2;
+    states.encoded_header.preamble = INDEXED_HEADER_FIELD;
+
+    hpack_tables_find_entry_name_and_value_fake.custom_fake = hpack_tables_find_entry_name_and_value_return_method_get;
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    hpack_utils_find_prefix_size_fake.return_val = 7;
+    int rc = hpack_decoder_decode_indexed_header_field(&states);
+
+    TEST_ASSERT_EQUAL(1, rc);
+    for (uint8_t i = 0; i < strlen(expected_name); i++) {
         TEST_ASSERT_EQUAL(expected_name[i], name[i]);
-       }
-       for (uint8_t i = 0; i < strlen(expected_value); i++) {
+    }
+    for (uint8_t i = 0; i < strlen(expected_value); i++) {
         TEST_ASSERT_EQUAL(expected_value[i], value[i]);
-       }
-       //Test error
-       setUp();
-       hpack_tables_find_entry_name_and_value_fake.return_val = -1;
-       rc = hpack_decoder_decode_indexed_header_field(NULL, encoded_buffer, name, value);
-       TEST_ASSERT_EQUAL(-1, rc);
-     */
+    }
+    //Test error
+    setUp();
+    hpack_tables_find_entry_name_and_value_fake.return_val = -1;
+    rc = hpack_decoder_decode_indexed_header_field(&states);
+    TEST_ASSERT_EQUAL(-1, rc);
+
 }
 
 int main(void)
