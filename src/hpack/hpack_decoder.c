@@ -156,7 +156,7 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 
 /*
- * Function: hpack_decoder_decode_huffman_string_v2
+ * Function: hpack_decoder_decode_huffman_string
  * Tries to decode encoded_string (compressed using huffman) and store the result in *str
  * Input:
  *      -> *str: Buffer to store the result of the decompression process, this buffer must be bigger than encoded_string
@@ -166,7 +166,7 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
  *      Stores the decompressed version of encoded_string in str if successful and returns the number of bytes read
  *      of encoded_string, if it fails to decode the string the return value is -1
  */
-int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length)
+int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length)
 {
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
     uint16_t bit_position = 0;
@@ -192,7 +192,7 @@ int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_strin
  * Output:
  *      return the number of bytes written in str if succesful or -1 otherwise
  */
-int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length)
+int32_t hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length)
 {
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
 
@@ -213,18 +213,18 @@ int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_s
  *      Returns the number of bytes read from encoded_buffer in the decoding process if succesful,
  *      if the process fails the function returns -1
  */
-int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit)
+int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit)
 {
     if (huffman_bit) {
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
-        return hpack_decoder_decode_huffman_string_v2(str, encoded_buffer, length);
+        return hpack_decoder_decode_huffman_string(str, encoded_buffer, length);
 #else
         ERROR("Not implemented: Cannot decode a huffman compressed header");
         return INTERNAL_ERROR;
 #endif
     }
     else {
-        return hpack_decoder_decode_non_huffman_string_v2(str, encoded_buffer, length);
+        return hpack_decoder_decode_non_huffman_string(str, encoded_buffer, length);
     }
 }
 
@@ -236,7 +236,7 @@ int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint3
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int hpack_decoder_decode_indexed_header_field_v2(hpack_states_t *states)
+int hpack_decoder_decode_indexed_header_field(hpack_states_t *states)
 {
     int pointer = 0;
     int8_t rc = hpack_tables_find_entry_name_and_value(&states->dynamic_table,
@@ -261,7 +261,7 @@ int hpack_decoder_decode_indexed_header_field_v2(hpack_states_t *states)
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
+int hpack_decoder_decode_literal_header_field(hpack_states_t *states)
 {
     int pointer = 0;
 
@@ -270,7 +270,7 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
         pointer += 1;
         DEBUG("Decoding a new name compressed header");
         int32_t rc =
-            hpack_decoder_decode_string_v2(states->tmp_name,
+            hpack_decoder_decode_string(states->tmp_name,
                                            states->encoded_header.name_string,
                                            states->encoded_header.name_length,
                                            states->encoded_header.huffman_bit_of_name);
@@ -293,7 +293,7 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
         pointer += hpack_utils_encoded_integer_size(states->encoded_header.index, hpack_utils_find_prefix_size(states->encoded_header.preamble));
     }
 
-    int32_t rc = hpack_decoder_decode_string_v2(states->tmp_value, states->encoded_header.value_string, states->encoded_header.value_length, states->encoded_header.huffman_bit_of_value);
+    int32_t rc = hpack_decoder_decode_string(states->tmp_value, states->encoded_header.value_string, states->encoded_header.value_length, states->encoded_header.huffman_bit_of_value);
     if (rc < 0) {
         DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
         return rc;
@@ -316,14 +316,14 @@ int hpack_decoder_decode_literal_header_field_v2(hpack_states_t *states)
 }
 
 /*
- * Function: hpack_decode_dynamic_table_size_update_v2
+ * Function: hpack_decode_dynamic_table_size_update
  * Decodes a header that represents a dynamic table size update
  * Input:
  *      -> *states: hpack main struct wrapper
  * Output:
  *      Returns the number of bytes decoded if successful or a value < 0 if an error occurs.
  */
-int hpack_decoder_decode_dynamic_table_size_update_v2(hpack_states_t *states)
+int hpack_decoder_decode_dynamic_table_size_update(hpack_states_t *states)
 {
     DEBUG("New table size is %d", states->encoded_header.dynamic_table_size);
     #if HPACK_INCLUDE_DYNAMIC_TABLE
@@ -438,8 +438,6 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     return pointer;
 }
 
-
-
 /* Function: hpack_decoder_decode_header
  * decodes a header according to the preamble
  * Input:
@@ -451,20 +449,20 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
  *      returns the amount of octets in which the pointer has moved to read all the headers
  *
  */
-int hpack_decoder_decode_header_v2(hpack_states_t *states)
+int hpack_decoder_decode_header(hpack_states_t *states)
 {
     if (states->encoded_header.preamble == INDEXED_HEADER_FIELD) {
         DEBUG("Decoding an indexed header field");
-        return hpack_decoder_decode_indexed_header_field_v2(states);
+        return hpack_decoder_decode_indexed_header_field(states);
     }
     else if (states->encoded_header.preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
         DEBUG("Decoding a dynamic table size update");
-        return hpack_decoder_decode_dynamic_table_size_update_v2(states);
+        return hpack_decoder_decode_dynamic_table_size_update(states);
     }
     else if (states->encoded_header.preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING
              || states->encoded_header.preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED
              || states->encoded_header.preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
-        return hpack_decoder_decode_literal_header_field_v2(states);
+        return hpack_decoder_decode_literal_header_field(states);
     }
 
     else {
@@ -611,7 +609,7 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
         if (err < 0) {
             return err;
         }
-        int rc = hpack_decoder_decode_header_v2(states);
+        int rc = hpack_decoder_decode_header(states);
         if (rc < 0) {
             return rc;
         }

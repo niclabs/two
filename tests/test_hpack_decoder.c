@@ -9,13 +9,12 @@
 #include "hpack_utils.h"
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
-extern int hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string);
+extern int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length);
 extern int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
 #endif
-extern int32_t hpack_decoder_decode_string_v2(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit);
-extern int32_t hpack_decoder_decode_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length);
-extern int32_t hpack_decoder_decode_non_huffman_string_v2(char *str, uint8_t *encoded_string, uint32_t str_length);
-extern int hpack_decoder_decode_indexed_header_field_v2(hpack_states_t *hpack_states, uint8_t *header_block, char *name, char *value);
+extern int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit);
+extern int32_t hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length);
+extern int hpack_decoder_decode_indexed_header_field(hpack_states_t *hpack_states, uint8_t *header_block, char *name, char *value);
 extern int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
@@ -714,7 +713,7 @@ void test_decode_non_huffman_string(void)
 
     memset(decoded_string, 0, str_length);
     char expected_decoded_string[] = "www.example.com";
-    int rc = hpack_decoder_decode_non_huffman_string_v2(decoded_string, encoded_string, str_length);
+    int rc = hpack_decoder_decode_non_huffman_string(decoded_string, encoded_string, str_length);
     TEST_ASSERT_EQUAL(rc, 16);
     for (int i = 0; i < str_length; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
@@ -774,7 +773,7 @@ void test_decode_huffman_string(void)
     hpack_utils_encoded_integer_size_fake.return_val = 1;
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     SET_RETURN_SEQ(hpack_utils_read_bits_from_bytes, return_fake_values_read_bits_from_bytes, 32);
-    int rc = hpack_decoder_decode_huffman_string_v2(decoded_string, encoded_string, 12);
+    int rc = hpack_decoder_decode_huffman_string(decoded_string, encoded_string, 12);
     TEST_ASSERT_EQUAL(13, rc);
     TEST_ASSERT_EQUAL(16, hpack_huffman_decode_fake.call_count);
     for (int i = 0; i < rc; i++) {
@@ -797,7 +796,7 @@ void test_decode_huffman_string_error(void)
     char expected_decoded_string2[] = "a";
     char decoded_string2[] = { 0, 0 };
 
-    int rc = hpack_decoder_decode_huffman_string_v2(decoded_string2, encoded_string2, 1);
+    int rc = hpack_decoder_decode_huffman_string(decoded_string2, encoded_string2, 1);
     TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(1, hpack_huffman_decode_fake.call_count);
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
@@ -806,7 +805,7 @@ void test_decode_huffman_string_error(void)
     uint8_t encoded_string4[] = { 0x81, 0x6f };
     char decoded_string4[] = { 0, 0 };
     char expected_decoded_string4[] = { 0, 0 };
-    rc = hpack_decoder_decode_huffman_string_v2(decoded_string4, encoded_string4, 2);
+    rc = hpack_decoder_decode_huffman_string(decoded_string4, encoded_string4, 2);
     TEST_ASSERT_EQUAL(-2, rc);
     for (int i = 0; i < 2; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string4[i], decoded_string4[i]);
@@ -815,7 +814,7 @@ void test_decode_huffman_string_error(void)
     /*Encoding the EOS symbol*/
     uint8_t encoded_string5[] = { 0x84, 0x7f, 0xff, 0xff, 0xff };
     char decoded_string5[] = { 0, 0, 0, 0 };
-    rc = hpack_decoder_decode_huffman_string_v2(decoded_string5, encoded_string5, 5);
+    rc = hpack_decoder_decode_huffman_string(decoded_string5, encoded_string5, 5);
     TEST_ASSERT_EQUAL(-1, rc);
 }
 #endif
@@ -833,7 +832,7 @@ void test_decode_string(void)
     /*Test decode a non huffman string*/
     memset(decoded_string, 0, str_length);
     char expected_decoded_string[] = "www.example.com";
-    int rc = hpack_decoder_decode_string_v2(decoded_string, encoded_string, str_length, 0);
+    int rc = hpack_decoder_decode_string(decoded_string, encoded_string, str_length, 0);
     TEST_ASSERT_EQUAL(16, rc);
     for (int i = 0; i < str_length; i++) {
         TEST_ASSERT_EQUAL(expected_decoded_string[i], decoded_string[i]);
@@ -844,7 +843,7 @@ void test_decode_string(void)
 
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_decode, hpack_huffman_decode_wwwdotexampledotcom_arr, 30);
     uint8_t *encoded_string_huffman = encoded_wwwdotexampledotcom + 1;
-    int rc2 = hpack_decoder_decode_string_v2(decoded_string, encoded_string_huffman, 12, 1);
+    int rc2 = hpack_decoder_decode_string(decoded_string, encoded_string_huffman, 12, 1);
     TEST_ASSERT_EQUAL(16, hpack_huffman_decode_fake.call_count);
 
     TEST_ASSERT_EQUAL(13, rc2);
@@ -869,7 +868,7 @@ void test_decode_string_error(void)
     char expected_decoded_string2[] = "a";
     char decoded_string2[] = { 0, 0 };
 
-    int rc = hpack_decoder_decode_string_v2(decoded_string2, encoded_string2, 1, 1);
+    int rc = hpack_decoder_decode_string(decoded_string2, encoded_string2, 1, 1);
     TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(expected_decoded_string2[0], decoded_string2[0]);
 }
