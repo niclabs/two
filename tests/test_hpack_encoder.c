@@ -561,6 +561,8 @@ void test_encode_literal_header_field_new_name_error(void)
     uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER];
 
     memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
+    memset(name_to_encode, 0, 2 * HTTP2_MAX_HBF_BUFFER);
+    memset(value_to_encode, 0, 2 *HTTP2_MAX_HBF_BUFFER);
 
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2, 2, 1, 2 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 5);
@@ -568,18 +570,18 @@ void test_encode_literal_header_field_new_name_error(void)
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
     hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_w;
 #endif
-    for (int i = 0; i < 2 * HTTP2_MAX_HBF_BUFFER; i++) {
+    for (int i = 0; i < 2 * HTTP2_MAX_HBF_BUFFER - 1; i++) {
         name_to_encode[i] = 'w';
         value_to_encode[i] = 'w';
     }
     int rc = hpack_encoder_encode_literal_header_field_new_name(name_to_encode, value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-2, rc);
+    TEST_ASSERT_EQUAL(-1, rc);
     char name_to_encode2[10];
     for (int i = 0; i < 10; i++) {
         name_to_encode2[i] = 'w';
     }
     rc = hpack_encoder_encode_literal_header_field_new_name(name_to_encode2, value_to_encode, encoded_string);
-    TEST_ASSERT_EQUAL(-2, rc);
+    TEST_ASSERT_EQUAL(-1, rc);
 }
 
 void test_hpack_encoder_encode_test1(void)
@@ -626,10 +628,8 @@ void test_hpack_encoder_encode_test2(void)
     #endif
 
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 4);
-    //TODO ADD check to input of hpack_tables_dynamic_add_entry
 
     hpack_utils_find_prefix_size_fake.return_val = 4;
-    //hpack_utils_encoded_integer_size_fake.return_val = 2 * HTTP2_MAX_HBF_BUFFER;
     hpack_tables_find_index_fake.return_val = -1;
     hpack_tables_find_index_name_fake.return_val = -1;
     hpack_tables_dynamic_table_add_entry_fake.return_val = -1;
@@ -637,6 +637,9 @@ void test_hpack_encoder_encode_test2(void)
     int rc = hpack_encoder_encode(NULL, name_string, value_string, encoded_buffer);
 
     TEST_ASSERT_EQUAL(10, rc);
+    TEST_ASSERT_EQUAL_STRING(name_string, hpack_tables_dynamic_table_add_entry_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(value_string, hpack_tables_dynamic_table_add_entry_fake.arg2_val);
+
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
     }
@@ -664,12 +667,15 @@ void test_hpack_encoder_encode_test3(void)
     hpack_utils_find_prefix_size_fake.return_val = 4;
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2 * HTTP2_MAX_HBF_BUFFER, 1 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 3);
-    //TODO ADD check to input of hpack_tables_dynamic_add_entry
     hpack_tables_find_index_fake.return_val = -1;
     hpack_tables_find_index_name_fake.return_val = 1;
+
     int rc = hpack_encoder_encode(NULL, name_string, value_string, encoded_buffer);
 
     TEST_ASSERT_EQUAL(5, rc);
+    TEST_ASSERT_EQUAL_STRING(name_string, hpack_tables_dynamic_table_add_entry_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(value_string, hpack_tables_dynamic_table_add_entry_fake.arg2_val);
+
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
     }
@@ -791,8 +797,7 @@ int main(void)
 
     UNIT_TEST(test_encode_non_huffman_string);
     UNIT_TEST(test_encode_literal_header_field_new_name);
-
-    //UNIT_TEST(test_encode_literal_header_field_new_name_error);
+    UNIT_TEST(test_encode_literal_header_field_new_name_error);
     UNIT_TEST(test_encode_literal_header_field_indexed_name);
     UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
