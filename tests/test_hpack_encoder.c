@@ -149,7 +149,12 @@ int8_t hpack_huffman_encode_return_v(huffman_encoded_word_t *h, uint8_t sym)
     h->length = 7;
     return 0;
 }
-
+int8_t hpack_huffman_encode_return_infinity(huffman_encoded_word_t *h, uint8_t sym)
+{
+    h->code = 0x0;
+    h->length = 255;
+    return 0;
+}
 uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xf1,
                                           0xe3,
@@ -696,17 +701,21 @@ void test_encode_literal_header_field_indexed_name(void)
     uint8_t encoded_buffer[13];
 
     memset(encoded_buffer, 0, 13);
-    char value_string[] = "/sample/path";
-    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    char value_string[] = "/sample/path\0";
+    uint32_t encoded_integer_fake_seq[2] = { HTTP2_MAX_HBF_BUFFER, 1 };
+    SET_RETURN_SEQ(hpack_utils_encoded_integer_size, encoded_integer_fake_seq, 2);
+    hpack_huffman_encode_fake.custom_fake = hpack_huffman_encode_return_infinity;// SETUP COMPRESSION
     int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string, encoded_buffer);
     TEST_ASSERT_EQUAL(expected_len, rc);
     for (int i = 0; i < expected_len; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_buffer[i], encoded_buffer[i]);
     }
+    setUp();
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
     /*Test with compression*/
     char value_string_huffman[] = "www.example.com";
     memset(encoded_buffer, 0, 13);
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
     SET_CUSTOM_FAKE_SEQ(hpack_huffman_encode, hpack_huffman_encode_wwwdotexampledotcom_arr, strlen(value_string_huffman));
     rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string_huffman, encoded_buffer);
     TEST_ASSERT_EQUAL(13, rc);
@@ -784,7 +793,7 @@ int main(void)
     UNIT_TEST(test_encode_literal_header_field_new_name);
 
     //UNIT_TEST(test_encode_literal_header_field_new_name_error);
-    //UNIT_TEST(test_encode_literal_header_field_indexed_name);
+    UNIT_TEST(test_encode_literal_header_field_indexed_name);
     UNIT_TEST(test_encode_literal_header_field_indexed_name_error);
     UNIT_TEST(test_encode_indexed_header_field);
 #if HPACK_INCLUDE_DYNAMIC_TABLE
