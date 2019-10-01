@@ -21,6 +21,7 @@ extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t 
 //extern int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
 extern int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block);
 extern int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length);
+extern int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header);
 extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size);
 
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
@@ -172,41 +173,7 @@ uint8_t encoded_wwwdotexampledotcom[] = { 0x8c,
                                           0xf4,
                                           0xff };
 #endif
-/*
-   int log128(uint32_t x)
-   {
-    uint32_t n = 0;
-    uint32_t m = 1;
 
-    while (m < x) {
-        m = 1 << (7 * (++n));
-    }
-
-    if (m == x) {
-        return n;
-    }
-    return n - 1;
-   }
-
-   uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix)
-   {
-    uint8_t p = (1 << prefix) - 1;
-
-    if (num < p) {
-        printf("%d\n",1);
-        return 1;
-    }
-    else if (num == p) {
-        printf("%d\n",2);
-        return 2;
-    }
-    else {
-        uint32_t k = log128(num - p);//log(num - p) / log(128);
-        printf("%d\n",k+2);
-        return k + 2;
-    }
-   }
- */
 int8_t hpack_tables_find_name_return_authority(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     (void)index;
@@ -296,6 +263,66 @@ void test_hpack_decoder_check_eos_symbol(void)
     TEST_ASSERT_EQUAL(30, hpack_utils_read_bits_from_bytes_fake.arg1_val);
     TEST_ASSERT_EQUAL(encoded_buffer, hpack_utils_read_bits_from_bytes_fake.arg2_val);
 }
+
+void test_hpack_decoder_hpack_decoder_check_errors(void)
+{
+    hpack_encoded_header_t encoded_header;
+
+    /*Row doesn't exist*/
+    encoded_header.preamble = INDEXED_HEADER_FIELD;
+    encoded_header.index = 0;
+
+    int8_t rc = hpack_decoder_check_errors(&encoded_header);
+    TEST_ASSERT_EQUAL(-1, rc);
+
+    /*Integer exceed implementations limits in dynamic table size update*/
+    encoded_header.preamble = DYNAMIC_TABLE_SIZE_UPDATE;
+    encoded_header.dynamic_table_size = 2 * HPACK_MAXIMUM_INTEGER_SIZE;
+    rc = hpack_decoder_check_errors(&encoded_header);
+    TEST_ASSERT_EQUAL(-1, rc);
+
+    /*Test an ok INDEXED HEADER FIELD*/
+    encoded_header.preamble = INDEXED_HEADER_FIELD;
+    encoded_header.index = 1;
+    rc = hpack_decoder_check_errors(&encoded_header);
+    TEST_ASSERT_EQUAL(0, rc);
+
+    /*Test an ok DYNAMIC TABLE SIZE*/
+    encoded_header.preamble = DYNAMIC_TABLE_SIZE_UPDATE;
+    encoded_header.dynamic_table_size = HPACK_MAXIMUM_INTEGER_SIZE;
+    rc = hpack_decoder_check_errors(&encoded_header);
+    TEST_ASSERT_EQUAL(0, rc);
+
+    /*Test a LITERAL HEADER FIELD with an EOS symbol in the name*/
+    uint8_t encoded_buffer[] = { 0x3f, 0xff, 0xff, 0xff };
+    hpack_utils_read_bits_from_bytes_fake.return_val = 0x3fffffff;
+
+    encoded_header.index = 0;
+    encoded_header.preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+    encoded_header.name_length = 4;
+    encoded_header.name_string = encoded_buffer;
+
+    rc = hpack_decoder_check_errors(&encoded_header);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(0, hpack_utils_read_bits_from_bytes_fake.arg0_val);
+    TEST_ASSERT_EQUAL(30, hpack_utils_read_bits_from_bytes_fake.arg1_val);
+    TEST_ASSERT_EQUAL(encoded_header.name_string, hpack_utils_read_bits_from_bytes_fake.arg2_val);
+
+
+    /*Test a LITERAL HEADER FIELD with an EOS symbol in the value*/
+    encoded_header.index = 1;
+    encoded_header.value_length = 4;
+    encoded_header.value_string = encoded_buffer;
+
+    rc = hpack_decoder_check_errors(&encoded_header);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(0, hpack_utils_read_bits_from_bytes_fake.arg0_val);
+    TEST_ASSERT_EQUAL(30, hpack_utils_read_bits_from_bytes_fake.arg1_val);
+    TEST_ASSERT_EQUAL(encoded_header.value_string, hpack_utils_read_bits_from_bytes_fake.arg2_val);
+}
+
 
 void test_parse_encoded_header_test1(void)
 {
@@ -995,6 +1022,7 @@ int main(void)
     UNIT_TEST(test_parse_encoded_header_test3);
     UNIT_TEST(test_hpack_decoder_check_huffman_padding);
     UNIT_TEST(test_hpack_decoder_check_eos_symbol);
+    UNIT_TEST(test_hpack_decoder_hpack_decoder_check_errors);
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
     UNIT_TEST(test_decode_huffman_word);
     UNIT_TEST(test_decode_huffman_string);
