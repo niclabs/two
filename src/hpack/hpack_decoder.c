@@ -370,7 +370,7 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     /*Integer exceed implementations limits*/
     if (index < 0) {
         ERROR("Integer exceeds implementations limits");
-        return -1;
+        return PROTOCOL_ERROR;
     }
     encoded_header->index = (uint32_t)index;
     int32_t index_size = hpack_utils_encoded_integer_size(encoded_header->index,  hpack_utils_find_prefix_size(encoded_header->preamble));
@@ -388,7 +388,7 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
 
     /*Size is not sufficient for LITERAL HEADER FIELD*/
     if (pointer > header_size) {
-        return -1;
+        return PROTOCOL_ERROR;
     }
 
     if (encoded_header->index == 0) {
@@ -398,20 +398,20 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
         /*Integer exceed implementations limits*/
         if (name_length < 0) {
             ERROR("Integer exceeds implementations limits");
-            return -1;
+            return PROTOCOL_ERROR;
         }
         encoded_header->name_length = (uint32_t)name_length;
         pointer += hpack_utils_encoded_integer_size(encoded_header->name_length, 7);
         /*Size is not sufficient for LITERAL HEADER FIELD*/
         if (pointer > header_size) {
-            return -1;
+            return PROTOCOL_ERROR;
         }
 
         encoded_header->name_string = &header_block[pointer];
         pointer += encoded_header->name_length;
         /*Size is not sufficient for LITERAL HEADER FIELD*/
         if (pointer > header_size) {
-            return -1;
+            return PROTOCOL_ERROR;
         }
     }
 
@@ -420,20 +420,20 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     /*Integer exceed implementations limits*/
     if (value_length < 0) {
         ERROR("Integer exceeds implementations limits");
-        return -1;
+        return PROTOCOL_ERROR;
     }
 
     encoded_header->value_length = value_length;
     pointer += hpack_utils_encoded_integer_size(encoded_header->value_length, 7);
     /*Size is not sufficient for LITERAL HEADER FIELD*/
     if (pointer > header_size) {
-        return -1;
+        return PROTOCOL_ERROR;
     }
     encoded_header->value_string = &header_block[pointer];
     pointer += encoded_header->value_length;
     /*Size is not sufficient for LITERAL HEADER FIELD*/
     if (pointer > header_size) {
-        return -1;
+        return PROTOCOL_ERROR;
     }
     return pointer;
 }
@@ -488,7 +488,7 @@ int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
     for (int32_t bit_position = 0; (bit_position + eos_bit_length) / 8 < buffer_length; bit_position++) {     //search through all lengths possible
 
         uint32_t result = hpack_utils_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
-        if (result == eos) {
+        if ((result & eos) == eos) {
             ERROR("Decoding Error: The compressed header contains the EOS Symbol");
             return PROTOCOL_ERROR;
         }
