@@ -20,6 +20,7 @@ extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
 //extern int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
 extern int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block);
+extern int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length);
 extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size);
 
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
@@ -271,6 +272,29 @@ void test_hpack_decoder_check_huffman_padding(void)
     rc = hpack_decoder_check_huffman_padding(bit_position, encoded_buffer, str_length, str_length_size);
     TEST_ASSERT_EQUAL(-1, rc);
     /**/
+}
+
+void test_hpack_decoder_check_eos_symbol(void)
+{
+    uint8_t encoded_buffer[] = { 0x3f, 0xff, 0xff, 0xff };
+    uint8_t buffer_length = 4;
+
+    hpack_utils_read_bits_from_bytes_fake.return_val = 0x3fffffff;
+
+    int8_t rc = hpack_check_eos_symbol(encoded_buffer, buffer_length);
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(0, hpack_utils_read_bits_from_bytes_fake.arg0_val);
+    TEST_ASSERT_EQUAL(30, hpack_utils_read_bits_from_bytes_fake.arg1_val);
+    TEST_ASSERT_EQUAL(encoded_buffer, hpack_utils_read_bits_from_bytes_fake.arg2_val);
+
+    /*test with a shift*/
+    setUp();
+    hpack_utils_read_bits_from_bytes_fake.return_val = 0xffffffff;
+    rc = hpack_check_eos_symbol(encoded_buffer, buffer_length);
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(0, hpack_utils_read_bits_from_bytes_fake.arg0_val);
+    TEST_ASSERT_EQUAL(30, hpack_utils_read_bits_from_bytes_fake.arg1_val);
+    TEST_ASSERT_EQUAL(encoded_buffer, hpack_utils_read_bits_from_bytes_fake.arg2_val);
 }
 
 void test_parse_encoded_header_test1(void)
@@ -589,8 +613,6 @@ void test_decode_header_block_literal_never_indexed(void)
     //No huffman encoding - Header name as dynamic table index
 
     uint32_t max_dynamic_table_size = 3000;
-
-
 
     hpack_init_states(&states, max_dynamic_table_size);
     hpack_tables_find_entry_name_fake.custom_fake = hpack_tables_find_name_return_new_name;
@@ -929,10 +951,11 @@ void test_hpack_decoder_decode_indexed_header_field(void)
     char expected_value[] = "GET\0";
 
     hpack_states_t states;
+
     hpack_init_states(&states, 100);     //100 is a dummy value btw
 
-    char* name = states.tmp_name;
-    char* value = states.tmp_value;
+    char *name = states.tmp_name;
+    char *value = states.tmp_value;
 
     states.encoded_header.index = 2;
     states.encoded_header.preamble = INDEXED_HEADER_FIELD;
@@ -971,6 +994,7 @@ int main(void)
     UNIT_TEST(test_parse_encoded_header_test2);
     UNIT_TEST(test_parse_encoded_header_test3);
     UNIT_TEST(test_hpack_decoder_check_huffman_padding);
+    UNIT_TEST(test_hpack_decoder_check_eos_symbol);
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
     UNIT_TEST(test_decode_huffman_word);
     UNIT_TEST(test_decode_huffman_string);
