@@ -201,7 +201,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
     /*Set huffman bool*/
     encoded_string[0] |= 128;
 
-    for (int i = 0; i < encoded_word_byte_length; i++) {
+    for (uint32_t i = 0; i < encoded_word_byte_length; i++) {
         encoded_string[i + encoded_word_length_size] = encoded_buffer[i];
     }
 
