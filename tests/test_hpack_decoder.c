@@ -277,7 +277,7 @@ void test_hpack_decoder_hpack_decoder_check_errors(void)
 
     /*Integer exceed implementations limits in dynamic table size update*/
     encoded_header.preamble = DYNAMIC_TABLE_SIZE_UPDATE;
-    encoded_header.dynamic_table_size = 2 * HPACK_MAXIMUM_INTEGER_SIZE;
+    encoded_header.dynamic_table_size = 2 * HPACK_MAXIMUM_INTEGER;
     rc = hpack_decoder_check_errors(&encoded_header);
     TEST_ASSERT_EQUAL(-1, rc);
 
@@ -289,7 +289,7 @@ void test_hpack_decoder_hpack_decoder_check_errors(void)
 
     /*Test an ok DYNAMIC TABLE SIZE*/
     encoded_header.preamble = DYNAMIC_TABLE_SIZE_UPDATE;
-    encoded_header.dynamic_table_size = HPACK_MAXIMUM_INTEGER_SIZE;
+    encoded_header.dynamic_table_size = HPACK_MAXIMUM_INTEGER;
     rc = hpack_decoder_check_errors(&encoded_header);
     TEST_ASSERT_EQUAL(0, rc);
 
@@ -327,7 +327,7 @@ void test_hpack_decoder_hpack_decoder_check_errors(void)
 void test_parse_encoded_header_test1(void)
 {
     //Literal Header Field Representation
-    //Never indexed
+    //with incremental indexing
     //No huffman encoding - Header name as string literal
     uint8_t header_block_size = 26;
     uint8_t header_block_name_literal[] = { 0x40,
@@ -480,6 +480,62 @@ void test_parse_encoded_header_test3(void)
     TEST_ASSERT_EQUAL(141, encoded_header.dynamic_table_size);
 
 }
+
+void test_hpack_decoder_parse_encoded_header_error(void){
+    //Literal Header Field Representation
+    //with incremental indexing
+    //No huffman encoding - Header name as string literal
+    uint8_t header_block_size = 26;
+    uint8_t header_block_name_literal[] = { 0x40,
+                                            0x0a,
+                                            0x63,
+                                            0x75,
+                                            0x73,
+                                            0x74,
+                                            0x6f,
+                                            0x6d,
+                                            0x2d,
+                                            0x6b,
+                                            0x65,
+                                            0x79,
+                                            0x0d,
+                                            0x63,
+                                            0x75,
+                                            0x73,
+                                            0x74,
+                                            0x6f,
+                                            0x6d,
+                                            0x2d,
+                                            0x68,
+                                            0x65,
+                                            0x61,
+                                            0x64,
+                                            0x65,
+                                            0x72 };
+    hpack_encoded_header_t encoded_header;
+    char *expected_name = "custom-key";
+    char *expected_value = "custom-header";
+
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+
+    hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)64;
+    hpack_utils_find_prefix_size_fake.return_val = 6;
+    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal);
+    TEST_ASSERT_EQUAL(header_block_size, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(0, encoded_header.index);
+    TEST_ASSERT_EQUAL(10, encoded_header.name_length);
+    TEST_ASSERT_EQUAL(13, encoded_header.value_length);
+    TEST_ASSERT_EQUAL(0, encoded_header.huffman_bit_of_name);
+    TEST_ASSERT_EQUAL(0, encoded_header.huffman_bit_of_value);
+    for (uint8_t i = 0; i < strlen(expected_name); i++) {
+        TEST_ASSERT_EQUAL(expected_name[i], encoded_header.name_string[i]);
+    }
+    for (uint8_t i = 0; i < strlen(expected_value); i++) {
+        TEST_ASSERT_EQUAL(expected_value[i], encoded_header.value_string[i]);
+    }
+}
+
 #if HPACK_INCLUDE_DYNAMIC_TABLE
 void test_decode_header_block_literal_with_incremental_indexing(void)
 {
