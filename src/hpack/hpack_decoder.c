@@ -531,6 +531,7 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
             return rc;
         }
     }
+
     if (encoded_header->value_length >= 4) {
         /*Check if it's the EOS Symbol in value_string*/
         int rc = hpack_check_eos_symbol(encoded_header->value_string, encoded_header->value_length);
