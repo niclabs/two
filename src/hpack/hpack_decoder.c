@@ -26,8 +26,13 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     p = p << (8 - prefix);
     p = p >> (8 - prefix);
     if (b0 != p) {
-        //TODO: border case, if MAXIMUM INTEGER SIZE var is less than 256 it will fail!!!!
-        return (int32_t)b0;
+        /*Special case, when HPACK_MAXIMUM_INTEGER is less than 256
+         * it will evaluate whether b0 is within limits*/
+        if(HPACK_MAXIMUM_INTEGER > 256 || b0 < HPACK_MAXIMUM_INTEGER) {
+            return (int32_t)b0;
+        } else {
+            return -1;
+        }
     }
     else {
         uint32_t integer = (uint32_t)p;
@@ -36,7 +41,7 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
             uint8_t bi = bytes[pointer + i];
             if (!(bi & (uint8_t)128)) {
                 integer += (uint32_t)bi * ((uint32_t)1 << depth);
-                if (integer > HPACK_MAXIMUM_INTEGER_SIZE) {
+                if (integer > HPACK_MAXIMUM_INTEGER) {
                     DEBUG("Integer is %d:", integer);
                     return -1;
                 }
@@ -514,7 +519,7 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
     }
 
     /*Integer exceed implementations limits*/
-    if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE && encoded_header->dynamic_table_size > HPACK_MAXIMUM_INTEGER_SIZE) {
+    if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE && encoded_header->dynamic_table_size > HPACK_MAXIMUM_INTEGER) {
         ERROR("Integer exceeds implementations limits");
         return PROTOCOL_ERROR;
     }
