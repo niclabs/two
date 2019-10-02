@@ -14,7 +14,7 @@ typedef struct {
     cbuf_t buf_out[1];                      // Circular buffer out
     void* state;                            // The client's state
     sock_t* socket;                         // The client's socket
-    net_Callback cb;                        // Next callback to execute
+    callback_t cb;                        // Next callback to execute
 } Client;
 
 /*
@@ -30,11 +30,13 @@ void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state
     memset(p_client->state, 0, client_state_size);
 
     p_client->socket = NULL;
-    p_client->cb = NULL;
+    callback_t null_cb = {NULL, NULL};
+    p_client->cb = null_cb;
+
 }
 
 /*
- * Reads from a client's socket into it's in circular buffer, 
+ * Reads from a client's socket into it's in circular buffer,
  * if data is available.
  */
 NetReturnCode read_from_socket(Client* p_client, int available_data)
@@ -67,7 +69,7 @@ NetReturnCode read_from_socket(Client* p_client, int available_data)
 }
 
 /*
- * Writes into a client's socket from it's out circular buffer, 
+ * Writes into a client's socket from it's out circular buffer,
  * if data is available.
  */
 NetReturnCode write_to_socket(Client* p_client)
@@ -100,7 +102,7 @@ NetReturnCode write_to_socket(Client* p_client)
     return Ok;
 }
 
-NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size)
+NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size)
 {
     // Socket error return codes go here
     int sock_rc = 0;
@@ -116,7 +118,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
     for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
     {
         Client client = clients[i];
-        
+
         client.buf_in_data = buffers_in[i];
         client.buf_out_data = buffers_out[i];
         client.state = states[i];
@@ -157,7 +159,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
             int available_data = 0;
 
             // If the client is connected and has data
-            if (client.cb != NULL && (available_data=sock_poll(client.socket)) != 0)
+            if (client.cb.func != NULL && (available_data=sock_poll(client.socket)) != 0)
             {
                 // Reads from the socket into the client's buffers
                 rc = read_from_socket(&client, available_data);
@@ -166,7 +168,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
 
                 // The callback does stuff
                 DEBUG("Executing callback");
-                net_Callback cb = (net_Callback) client.cb(client.buf_in, client.buf_out, client.state);
+                callback_t cb = client.cb.func(client.buf_in, client.buf_out, client.state);
 
                 // Writes to the socket from the client's buffers
                 rc = write_to_socket(&client);
@@ -174,7 +176,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
                     break;
 
                 // If client should be disconnected
-                if (cb == NULL)
+                if (cb.func == NULL)
                 {
                     INFO("Disconnecting client from slot %i\n", i);
                     sock_rc = sock_destroy(client.socket);
@@ -211,7 +213,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
 
                     // The default callback does stuff
                     DEBUG("Executing callback");
-                    net_Callback cb = (net_Callback) default_callback(client.buf_in, client.buf_out, client.state);
+                    callback_t cb = default_callback.func(client.buf_in, client.buf_out, client.state);
 
                     // Writes to the socket from the client's buffers
                     rc = write_to_socket(&client);
@@ -219,7 +221,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
                         break;
 
                     // If client should be disconnected
-                    if (cb == NULL)
+                    if (cb.func == NULL)
                     {
                         INFO("Disconnecting client from slot %i\n", i);
                         sock_rc = sock_destroy(client.socket);
@@ -246,7 +248,7 @@ NetReturnCode net_server_loop(unsigned int port, net_Callback default_callback, 
     {
         Client client = clients[i];
 
-        if (client.cb != NULL)
+        if (client.cb.func != NULL)
         {
             INFO("Disconnecting client from slot %i\n", i);
             sock_rc = sock_destroy(client.socket);
