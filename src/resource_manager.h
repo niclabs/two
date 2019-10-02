@@ -17,12 +17,6 @@
  #else
  #define HTTP_MAX_RESPONSE_SIZE (128)
  #endif
-
- #ifdef HTTP_CONF_MAX_PATH_SIZE
- #define HTTP_MAX_PATH_SIZE (HTTP_CONF_MAX_PATH_SIZE)
- #else
- #define HTTP_MAX_PATH_SIZE (32)
- #endif
 //
 
 
