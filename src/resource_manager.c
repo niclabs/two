@@ -25,7 +25,6 @@
 /**
  * Parse URI into path and query parameters
  *
- * TODO: This function should probably be an API function
  * TODO: improve according to https://tools.ietf.org/html/rfc3986
  */
 int parse_uri(char *uri, char *path, char *query_params)
