@@ -73,63 +73,59 @@ int has_method_support(char *method)
 /**
  * Get received data
  *
- * @param    data_in         Struct with data information
- * @param    data_buffer      Buffer for data received
+ * @param    data_in             Buffer with data information
+ * @param    data_in_buff_size   Buffer size
+ * @param    data_buffer         Buffer for data received
  *
- * @return                    Data lengt
+ * @return                       Data lengt
  */
-uint32_t get_data(data_t *data_in, uint8_t *data_buffer, size_t size)
+uint32_t get_data(uint8_t *data_in_buff, uint32_t data_in_buff_size, uint8_t *data_buffer, size_t size)
 {
-    int copysize = MIN(data_in->size, size);
+    int copysize = MIN(data_in_buff_size, size);
 
-    memcpy(data_buffer, data_in->buf, copysize);
+    memcpy(data_buffer, data_in_buff, copysize);
     return copysize;
 }
 
 /*
  * Add data to be sent to data lists
  *
- * @param    data_buf   Struct with data information
- * @param    data       Data
- * @param    data_size  Size of data
+ * @param    data_buff           Struct with data information
+ * @param    data_in_buff_size   Buffer size
+ * @param    data                Data
+ * @param    data_size           Size of data
  *
- * @return   0          Successfully added data
- * @return   -1         There was an error in the process
+ * @return   0                   Successfully added data
+ * @return   -1                  There was an error in the process
  */
-int set_data(data_t *data_buf, uint8_t *data, int data_size)
+int set_data(uint8_t *data_buff, uint8_t *data, int data_size)
 {
-    if (HTTP_MAX_DATA_SIZE == data_buf->size) {
-        ERROR("Data buffer full");
+    if (data_size <= 0) {
+        ERROR("Data size can't be negative");
         return -1;
     }
-    if (data_size <= 0 || data_size > 128) {
-        ERROR("Data too large for buffer size");
-        return -1;
-    }
-    data_buf->size = data_size;
-    memcpy(data_buf->buf, data, data_size);
+    memcpy(data_buff, data, data_size);
     return 0;
 }
 
 /*
  * Clean data buffer
  *
- * @param    data_buf   Struct with data information
+ * @param    data_buff   Struct with data information
  *
  * @return   0          Successfully cleaned data buffer
  * @return   -1         There was an error in the process
  */
-int clean_data(data_t *data_buf)
+int clean_data(uint8_t *data_buff)
 {
-    data_buf->size = 0;
-    memset(data_buf->buf, 0, sizeof(*data_buf->buf));
+    memset(data_buff, 0, sizeof(*data_buff));
     return 0;
 }
 
 /**
  * Send an http error with the given code and message
  */
-int error(data_t *data_buff, headers_t *headers_buff, int code, char *msg)
+int error(uint8_t *data_buff, headers_t *headers_buff, int code, char *msg)
 {
     // Set status code
     char strCode[4];
@@ -255,7 +251,7 @@ int res_manager_server_register_resource(resource_list_t *res_list, char *method
 /**
  * Perform request for the given method and uri
  */
-int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *uri)
+int do_request(uint8_t *data_buff, headers_t *headers_buff, char *method, char *uri)
 {
     // parse URI removing query parameters
     char path[HTTP_MAX_PATH_SIZE];
@@ -268,7 +264,6 @@ int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *u
         return error(data_buff, headers_buff, 404, "Not Found");
     }
 
-    // TODO: response pointer should be pointer to hs->data_out
     uint8_t response[HTTP_MAX_RESPONSE_SIZE];
     int len;
     if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
@@ -291,7 +286,7 @@ int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *u
 }
 
 
-int res_manager_server_response(data_t *data_buff, headers_t *headers_buff)
+int res_manager_server_response(uint8_t *data_buff, headers_t *headers_buff)
 {
     // Get the method, path and scheme from headers
     char *method = headers_get(headers_buff, ":method");
@@ -332,16 +327,16 @@ int send_client_request(headers_t *headers_buff, char *method, char *uri, char *
 }
 
 
-int process_server_response(data_t *data_buff, headers_t *headers_buff, char *method, uint8_t *response, size_t *size)
+int process_server_response(uint8_t *data_buff, uint32_t data_buff_size, headers_t *headers_buff, char *method, uint8_t *response, size_t *size)
 {
     //If it is a GET request, wait for the server response data
     if (strncmp("GET", method, 8) == 0) {
-        if (!data_buff->size) {
+        if (!data_buff_size) {
             DEBUG("Server response hasn't data");
         }
-        else if (data_buff->size > 0) {
+        else if (data_buff_size > 0) {
             // Get response data (TODO: should we just copy the pointer?)
-            *size = get_data(data_buff, response, *size);
+            *size = get_data(data_buff, data_buff_size, response, *size);
         }
     }
 

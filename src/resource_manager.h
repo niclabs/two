@@ -25,17 +25,6 @@
  #endif
 //
 
- #ifdef HTTP_CONF_MAX_DATA_SIZE
- #define HTTP_MAX_DATA_SIZE (HTTP_CONF_MAX_DATA_SIZE)
- #else
- #define HTTP_MAX_DATA_SIZE (16384)
- #endif
-
-typedef struct {
-    uint32_t size;
-    uint8_t buf[HTTP_MAX_DATA_SIZE];
-} data_t;
-
 
 /***********************************************
 * Aplication resources structs
@@ -77,7 +66,7 @@ typedef struct {
  * @param headers_buff headers data structure
  * @return 0 if ok -1 if an error ocurred
  */
-int res_manager_server_response(data_t *data_buff, headers_t *headers_buff);
+int res_manager_server_response(uint8_t *data_buff, headers_t *headers_buff);
 
 /**
  * Set callback to handle an http resource
