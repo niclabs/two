@@ -192,7 +192,7 @@ http_resource_handler_t get_resource_handler(char *method, char *path)
 }
 
 
-int http_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler)
+int res_manager_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler)
 {
     // TODO: Verify that resource_list_t is not empty
     if (method == NULL || path == NULL || handler == NULL) {
@@ -291,7 +291,7 @@ int do_request(data_t *data_buff, headers_t *headers_buff, char *method, char *u
 }
 
 
-int http_server_response(data_t *data_buff, headers_t *headers_buff)
+int res_manager_server_response(data_t *data_buff, headers_t *headers_buff)
 {
     // Get the method, path and scheme from headers
     char *method = headers_get(headers_buff, ":method");
@@ -352,7 +352,7 @@ int process_server_response(data_t *data_buff, headers_t *headers_buff, char *me
 }
 
 
-int http_get(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
+int res_manager_get(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
 {
     (void)response;
     (void)size;
@@ -360,7 +360,7 @@ int http_get(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size
 }
 
 
-int http_head(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
+int res_manager_head(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
 {
     (void)response;
     (void)size;
