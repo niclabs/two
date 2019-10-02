@@ -1,6 +1,6 @@
 #ifndef HTTP2_V2_H
 #define HTTP2_V2_H
-
+#endif
 #define HTTP2_MAX_HBF_BUFFER 16384
 
 typedef enum {
@@ -44,9 +44,6 @@ typedef struct HTTP2_STATES {
     hpack_states_t hpack_states;
 } h2states_t;
 
-typedef struct CALLBACK {
-  struct CALLBACK (* func)(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
-  void* debug_info; // just in case
-} callback_t ;
+
 
 callback_t h2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
