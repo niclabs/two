@@ -1,3 +1,10 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include "cbuf.h"
+#include "config.h"
+
+
 #ifndef HTTP2_V2_H
 #define HTTP2_V2_H
 #endif
