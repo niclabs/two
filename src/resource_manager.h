@@ -44,11 +44,6 @@ typedef struct {
     http_resource_handler_t handler;
 } http_resource_t;
 
-typedef struct {
-    http_resource_t resource_list[HTTP_MAX_RESOURCES];
-    uint8_t resource_list_size;
-} resource_list_t;
-
 /***********************************************
 * Server API methods
 ***********************************************/

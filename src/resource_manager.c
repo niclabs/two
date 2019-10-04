@@ -12,10 +12,18 @@
 #include "resource_manager.h"
 #include "logging.h"
 
-
 #ifndef MIN
 #define MIN(n, m)   (((n) < (m)) ? (n) : (m))
 #endif
+
+/***********************************************
+* Aplication resources structs
+***********************************************/
+
+typedef struct {
+    http_resource_t resource_list[HTTP_MAX_RESOURCES];
+    uint8_t resource_list_size;
+} resource_list_t;
 
 static resource_list_t app_resources[1];
 
