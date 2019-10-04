@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "cbuf.h"
 #include "config.h"
+#include "frames.h"
+
 
 
 #ifndef HTTP2_V2_H
@@ -49,6 +51,8 @@ typedef struct HTTP2_STATES {
     uint8_t debug_size;             // TODO not implemented yet
     //Hpack dynamic table
     hpack_states_t hpack_states;
+
+    frame_header_t header;
 } h2states_t;
 
 
