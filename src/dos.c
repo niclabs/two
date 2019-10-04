@@ -15,6 +15,19 @@
 #include "logging.h"
 
 
+int two_server_start(unsigned int port)
+{
+    callback_t default_callback;
+    int *stop_flag;
+    size_t data_buffer_size;
+    size_t client_state_size;
+
+    int status = (int) net_server_loop(port, default_callback, stop_flag, data_buffer_size, client_state_size);
+
+    return status;
+}
+
+
 int two_register_resource(char *method, char *path, http_resource_handler_t handler)
 {
     return res_manager_server_register_resource(method, path, handler);
