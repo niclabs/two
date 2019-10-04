@@ -17,7 +17,6 @@
  */
 int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
 {
-    int pointer = 0;
     uint8_t b0 = bytes[0];
 
     b0 = b0 << (8 - prefix);
@@ -38,7 +37,7 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
         uint32_t integer = (uint32_t)p;
         uint32_t depth = 0;
         for (uint32_t i = 1;; i++) {
-            uint8_t bi = bytes[pointer + i];
+            uint8_t bi = bytes[i];
             if (!(bi & (uint8_t)128)) {
                 integer += (uint32_t)bi * ((uint32_t)1 << depth);
                 if (integer > HPACK_MAXIMUM_INTEGER) {
