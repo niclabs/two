@@ -18,7 +18,7 @@ extern int hpack_encoder_encode_literal_header_field_indexed_name(char *value_st
 extern int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer);
 extern int hpack_encoder_encode_indexed_header_field(hpack_states_t *states, char *name, char *value, uint8_t *encoded_buffer);
 extern int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer);
-
+extern int hpack_encoder_encode_v2(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer);
 #ifndef INCLUDE_HUFFMAN_COMPRESSION
 typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_encode_fake when huffman_compression is not included*/
 #endif
@@ -591,6 +591,7 @@ void test_hpack_encoder_encode_test1(void)
     char name[] = ":method";
     char value[] = "GET";
     uint8_t encoded_buffer[] = { 0 };
+    uint8_t encoded_buffer2[] = { 0 };
 
     hpack_tables_find_index_fake.custom_fake = hpack_tables_find_index_fake_method_get;
     hpack_utils_find_prefix_size_fake.return_val = 7;
@@ -599,6 +600,13 @@ void test_hpack_encoder_encode_test1(void)
     int rc = hpack_encoder_encode(NULL, name, value, encoded_buffer);
     TEST_ASSERT_EQUAL(1, rc);
     TEST_ASSERT_EQUAL(expected_encoding[0], encoded_buffer[0]);
+
+    //TODO: change all encode_v2 to encode when it's working
+    hpack_states_t states;
+    int rc2 = hpack_encoder_encode_v2(&states, name, value, encoded_buffer2);
+    TEST_ASSERT_EQUAL(1, rc2);
+    TEST_ASSERT_EQUAL(expected_encoding[0], encoded_buffer2[0]);
+    
 }
 
 void test_hpack_encoder_encode_test2(void)
@@ -607,6 +615,7 @@ void test_hpack_encoder_encode_test2(void)
     char value_string[] = "val";
     char name_string[] = "name";
     uint8_t encoded_buffer[64];
+    //uint8_t encoded_buffer2[64];
     uint8_t expected_encoded_bytes[] = {
         16,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=0
         4,              //name_length
@@ -643,6 +652,17 @@ void test_hpack_encoder_encode_test2(void)
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
     }
+   /* 
+    hpack_states_t states;
+    int rc2 = hpack_encoder_encode_v2(&states, name_string, value_string, encoded_buffer2);
+    TEST_ASSERT_EQUAL(10, rc2);
+    TEST_ASSERT_EQUAL_STRING(name_string, hpack_tables_dynamic_table_add_entry_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(value_string, hpack_tables_dynamic_table_add_entry_fake.arg2_val);
+    
+    for (int i = 0; i < rc; i++) {
+        TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer2[i]);
+    }*/
+
 }
 
 void test_hpack_encoder_encode_test3(void)
