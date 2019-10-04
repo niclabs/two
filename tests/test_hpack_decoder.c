@@ -484,10 +484,10 @@ void test_parse_encoded_header_test3(void)
 void test_hpack_decoder_parse_encoded_header_error(void){
     //Literal Header Field Representation
     //with incremental indexing
-    //No huffman encoding - Header name as string literal
+    //No huffman encoding
 
     /*Encoded a 4097*/
-    uint8_t header_block_name_literal[] = { 0x7f,//63
+    uint8_t header_block_name1[] = { 0x7f,//63
                                             0xc2, //194
                                             0x1f,//31
                                             };
@@ -500,23 +500,110 @@ void test_hpack_decoder_parse_encoded_header_error(void){
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)64;
     hpack_utils_find_prefix_size_fake.return_val = 6;
 
-    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal, header_size);
+    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name1, header_size);
     TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
 
     /*Test a header block size smaller than needed*/
-    /*Encoded a 4093*/
-    uint8_t header_block_name_literal2[] = { 0x7f,//63
+    /*Encoded a 4093 index*/
+    uint8_t header_block_name2[] = { 0x7f,//63
                                             0xbe, //190
                                             0x1f,//31
     };
-    hpack_utils_encoded_integer_size_fake.return_val = 3;
-    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal2, header_size);
+    hpack_utils_encoded_integer_size_fake.return_val = 4;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name2, header_size);
 
     TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
     TEST_ASSERT_EQUAL(4093, encoded_header.index);
 
+    /*Test a header block with name length greater than 4096*/
+    /*Encoding a name length of 4097*/
+    uint8_t header_block_name3[] = {0x40,//32
+                                            0x7f,//127
+                                            0x82, //130
+                                            0x1f,//31
+    };
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    header_size = 4;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name3, header_size);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(0, encoded_header.index);
+    /*Test a header block with less bytes than needed*/
+    /*Encoding a name length of 4096*/
+    uint8_t header_block_name4[] = {0x40,//32
+                                            0x7f,//127
+                                            0x81, //129
+                                            0x1f,//31
+    };
+    header_size = 1;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name4, header_size);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(0, encoded_header.index);
+    TEST_ASSERT_EQUAL(4096, encoded_header.name_length);
+    /*Test a header block with less bytes than needed in name_length*/
+    /*Encoding a name length of 4096 same as before*/
+    uint8_t header_block_name5[] = {0x40,//32
+                                            0x7f,//127
+                                            0x81, //129
+                                            0x1f,//31
+    };
+    header_size = 2;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name5, header_size);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(0, encoded_header.index);
+    TEST_ASSERT_EQUAL(4096, encoded_header.name_length);
+    /*Test with value*/
+    /*Test a header block with value length greater than 4096*/
+    /*Encoding a value length of 4097*/
+    uint8_t header_block_value1[] = {0x41,//33, index = 1
+                                    0x7f,//127
+                                    0x82, //130
+                                    0x1f,//31
+    };
+    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    header_size = 4;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_value1, header_size);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(1, encoded_header.index);
+
+    /*Test a header block with less bytes than needed*/
+    /*Encoding a value length of 4096*/
+    uint8_t header_block_value2[] = {0x41,//33, index = 1
+                                            0x7f,//127
+                                            0x81, //129
+                                            0x1f,//31
+    };
+    header_size = 1;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_value2, header_size);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(1, encoded_header.index);
+    TEST_ASSERT_EQUAL(4096, encoded_header.value_length);
+
+    /*Test a header block with less bytes than needed in name_length*/
+    /*Encoding a value length of 4096 same as before*/
+    uint8_t header_block_value3[] = {0x41,//33, index = 1
+                                            0x7f,//127
+                                            0x81, //129
+                                            0x1f,//31
+    };
+    header_size = 2;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_value3, header_size);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(1, encoded_header.index);
+    TEST_ASSERT_EQUAL(4096, encoded_header.value_length);
 }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
