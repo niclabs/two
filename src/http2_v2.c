@@ -1,4 +1,5 @@
 #include "http2_v2.h"
+#include "logging.h"
 #include <string.h>
 
 callback_t h2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
@@ -26,12 +27,14 @@ int init_variables_h2s(h2states_t * h2s, uint8_t is_server){
   h2s->incoming_window.window_used = 0;
   h2s->outgoing_window.window_size = DEFAULT_INITIAL_WINDOW_SIZE;
   h2s->outgoing_window.window_used = 0;
+  //h2s->header = NULL;
   hpack_init_states(&(h2s->hpack_states), DEFAULT_HEADER_TABLE_SIZE);
+  return 0;
 }
 
 callback_t h2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* state){
   if(cbuf_len(buf_in) < 24){
-    callback_t ret = {h2_server_init_connection};
+    callback_t ret = {h2_server_init_connection, NULL};
     return ret;
   }
   int rc;
@@ -50,7 +53,39 @@ callback_t h2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* stat
       return ret_null;
   }
   h2states_t *h2s = (h2states_t*) state;
+  // send connection settings
   rc = init_variables_h2s(h2s, 1);
   callback_t ret_null = {NULL, NULL};
   return ret_null;
+}
+
+
+callback_t receive_header(cbuf_t* buf_in, cbuf_t* buf_out, void* state){
+  h2states_t *h2s = (h2states_t*) state;
+  frame_header_t header;
+  uint8_t buff_read_header[9];
+  int rc = cbuf_pop(buf_in, buff_read_header, 9);
+  if(rc != 9){
+    WARN("READ %d BYTES FROM SOCKET", rc);
+    callback_t ret_null = {NULL, NULL};
+    return ret_null;
+  }
+  rc = bytes_to_frame_header(buff_read_header, 9, &header);
+  if(rc){
+      ERROR("Error coding bytes to frame header. INTERNAL_ERROR");
+      send_connection_error(st, HTTP2_INTERNAL_ERROR);
+      callback_t ret_null = {NULL, NULL};
+      return ret_null;
+  }
+  if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
+      ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
+      send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
+      callback_t ret_null = {NULL, NULL};
+      return ret_null;
+  }
+  // save header type
+  h2s->header = header;
+
+  callback_t ret = {receive_payload, NULL};
+  return ret;
 }
