@@ -11,3 +11,8 @@
 
 #include "dos.h"
 #include "logging.h"
+
+int two_register_resource(char *method, char *path, http_resource_handler_t handler)
+{
+    return res_manager_server_register_resource(method, path, handler);
+}
