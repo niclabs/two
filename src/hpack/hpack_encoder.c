@@ -309,6 +309,62 @@ int hpack_encoder_encode_indexed_header_field(hpack_states_t *states, char *name
 }
 
 /*
+ * Function: hpack_encoder_pack_header
+ * Prepares an hpack_encoded_header to send it, it maintains all the logic of chosing which header to use
+ * Input:
+ *      -> *states: Pointer to hpack_states struct
+ *      -> *name_string: string of the name of the entry to pack
+ *      -> *value_string: string of the value of the entry to pack
+ * Output:
+ *
+ */
+void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *value_string)
+{
+
+    //first search if the name-value entry is already in the dynamic table
+    int index = hpack_tables_find_index(&states->dynamic_table, name_string, value_string);
+
+    //if index exists
+    if (index > 0) {
+        //make indexed header field
+        DEBUG("Encoding an indexed header field")
+        states->encoded_header.preamble = INDEXED_HEADER_FIELD;
+        states->encoded_header.index = index;
+    }
+    else {
+        //check if the name of entry is already in the dynamic table
+        index = hpack_tables_find_index_name(&states->dynamic_table, name_string);
+
+        if (index < 0) {
+            //entry doesn't exist in the dynamic table
+            states->encoded_header.index = 0;
+        }
+        else {
+            states->encoded_header.index = index;
+        }
+
+        #if HPACK_INCLUDE_DYNAMIC_TABLE
+        int8_t added = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, name_string, value_string);
+        if (added < 0) {
+            DEBUG("Couldn't add to dynamic table");
+            states->encoded_header.preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+            DEBUG("Encoding a literal header field never indexed");
+        }
+        else {
+            //Successfully added to the dynamic table
+            DEBUG("Encoding a literal header field with incremental indexing");
+            states->encoded_header.preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
+        }
+        #else
+        //No dynamic table, encode the string withouth index
+        states->encoded_header.preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+        DEBUG("Encoding a literal header field never indexed");
+        #endif
+    }
+    return;
+
+}
+/*
  * Function: hpack_encoder_encode
  * Encodes a header field
  * Input:
