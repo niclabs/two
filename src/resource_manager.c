@@ -197,7 +197,6 @@ http_resource_handler_t get_resource_handler(char *method, char *path)
 
 int res_manager_server_register_resource(char *method, char *path, http_resource_handler_t handler)
 {
-    // TODO: Verify that resource_list_t is not empty
     if (method == NULL || path == NULL || handler == NULL) {
         errno = EINVAL;
         ERROR("ERROR found %d", errno );
@@ -220,6 +219,13 @@ int res_manager_server_register_resource(char *method, char *path, http_resource
         errno = EINVAL;
         ERROR("Path length is larger than max supported size (%d). Try updating HTTP_CONF_MAX_PATH_SIZE", HTTP_MAX_PATH_SIZE);
         return -1;
+    }
+
+    // Checks if the app_resources variable is initialized
+    static uint8_t inited_app_resources = 0;
+    if(!inited_app_resources) {
+      memset(&app_resources, 0, sizeof(resource_list_t));
+      inited = 1;
     }
 
     // Checks if the path and method already exist
