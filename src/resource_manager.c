@@ -109,7 +109,7 @@ uint32_t get_data(uint8_t *data_in_buff, uint32_t data_in_buff_size, uint8_t *da
 int set_data(uint8_t *data_buff, uint8_t *data, int data_size)
 {
     if (data_size <= 0) {
-        ERROR("Data size can't be negative");
+        ERROR("Data size can't be negative or zero");
         return -1;
     }
     memcpy(data_buff, data, data_size);
