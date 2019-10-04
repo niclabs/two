@@ -19,7 +19,7 @@ extern int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
 extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
 extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
 //extern int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
-extern int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block);
+extern int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size);
 extern int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length);
 extern int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header);
 extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size);
@@ -364,7 +364,7 @@ void test_parse_encoded_header_test1(void)
 
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)64;
     hpack_utils_find_prefix_size_fake.return_val = 6;
-    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal);
+    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal, header_block_size);
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
     TEST_ASSERT_EQUAL(0, encoded_header.index);
@@ -408,7 +408,7 @@ void test_parse_encoded_header_test2(void)
 
     hpack_encoded_header_t encoded_header;
 
-    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal);
+    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal, header_block_size);
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_NEVER_INDEXED, encoded_header.preamble);
     TEST_ASSERT_EQUAL(0, encoded_header.index);
@@ -434,7 +434,7 @@ void test_parse_encoded_header_test2(void)
         'l'
     };
     expected_value = "val";
-    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_indexed);
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_indexed, header_block_size);
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_NEVER_INDEXED, encoded_header.preamble);
     TEST_ASSERT_EQUAL(1, encoded_header.index);
@@ -460,7 +460,7 @@ void test_parse_encoded_header_test3(void)
 
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)128;
 
-    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_literal);
+    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_literal, header_block_size);
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(INDEXED_HEADER_FIELD, encoded_header.preamble);
     TEST_ASSERT_EQUAL(2, encoded_header.index);
@@ -474,7 +474,7 @@ void test_parse_encoded_header_test3(void)
 
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)32;
 
-    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_literal2);
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_literal2, header_block_size);
     TEST_ASSERT_EQUAL(header_block_size, rc);
     TEST_ASSERT_EQUAL(DYNAMIC_TABLE_SIZE_UPDATE, encoded_header.preamble);
     TEST_ASSERT_EQUAL(141, encoded_header.dynamic_table_size);
@@ -485,55 +485,38 @@ void test_hpack_decoder_parse_encoded_header_error(void){
     //Literal Header Field Representation
     //with incremental indexing
     //No huffman encoding - Header name as string literal
-    uint8_t header_block_size = 26;
-    uint8_t header_block_name_literal[] = { 0x40,
-                                            0x0a,
-                                            0x63,
-                                            0x75,
-                                            0x73,
-                                            0x74,
-                                            0x6f,
-                                            0x6d,
-                                            0x2d,
-                                            0x6b,
-                                            0x65,
-                                            0x79,
-                                            0x0d,
-                                            0x63,
-                                            0x75,
-                                            0x73,
-                                            0x74,
-                                            0x6f,
-                                            0x6d,
-                                            0x2d,
-                                            0x68,
-                                            0x65,
-                                            0x61,
-                                            0x64,
-                                            0x65,
-                                            0x72 };
-    hpack_encoded_header_t encoded_header;
-    char *expected_name = "custom-key";
-    char *expected_value = "custom-header";
 
-    hpack_utils_encoded_integer_size_fake.return_val = 1;
+    /*Encoded a 4097*/
+    uint8_t header_block_name_literal[] = { 0x7f,//63
+                                            0xc2, //194
+                                            0x1f,//31
+                                            };
+    hpack_encoded_header_t encoded_header;
+    uint8_t header_size = 3;
+    hpack_utils_get_preamble_fake.return_val = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
+
+    hpack_utils_encoded_integer_size_fake.return_val = 3;
 
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)64;
     hpack_utils_find_prefix_size_fake.return_val = 6;
-    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal);
-    TEST_ASSERT_EQUAL(header_block_size, rc);
+
+    int8_t rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal, header_size);
+    TEST_ASSERT_EQUAL(-1, rc);
     TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
-    TEST_ASSERT_EQUAL(0, encoded_header.index);
-    TEST_ASSERT_EQUAL(10, encoded_header.name_length);
-    TEST_ASSERT_EQUAL(13, encoded_header.value_length);
-    TEST_ASSERT_EQUAL(0, encoded_header.huffman_bit_of_name);
-    TEST_ASSERT_EQUAL(0, encoded_header.huffman_bit_of_value);
-    for (uint8_t i = 0; i < strlen(expected_name); i++) {
-        TEST_ASSERT_EQUAL(expected_name[i], encoded_header.name_string[i]);
-    }
-    for (uint8_t i = 0; i < strlen(expected_value); i++) {
-        TEST_ASSERT_EQUAL(expected_value[i], encoded_header.value_string[i]);
-    }
+
+    /*Test a header block size smaller than needed*/
+    /*Encoded a 4093*/
+    uint8_t header_block_name_literal2[] = { 0x7f,//63
+                                            0xbe, //190
+                                            0x1f,//31
+    };
+    hpack_utils_encoded_integer_size_fake.return_val = 3;
+    rc = hpack_decoder_parse_encoded_header(&encoded_header, header_block_name_literal2, header_size);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING, encoded_header.preamble);
+    TEST_ASSERT_EQUAL(4093, encoded_header.index);
+
 }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
@@ -1076,6 +1059,7 @@ int main(void)
     UNIT_TEST(test_parse_encoded_header_test1);
     UNIT_TEST(test_parse_encoded_header_test2);
     UNIT_TEST(test_parse_encoded_header_test3);
+    UNIT_TEST(test_hpack_decoder_parse_encoded_header_error);
     UNIT_TEST(test_hpack_decoder_check_huffman_padding);
     UNIT_TEST(test_hpack_decoder_check_eos_symbol);
     UNIT_TEST(test_hpack_decoder_hpack_decoder_check_errors);
