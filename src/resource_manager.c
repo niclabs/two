@@ -224,8 +224,8 @@ int res_manager_server_register_resource(char *method, char *path, http_resource
 
     // Checks if the path and method already exist
     http_resource_t *res;
-    for (int i = 0; i < app_resources->resource_list_size; i++) {
-        res = &app_resources->resource_list[i];
+    for (int i = 0; i < app_resources[0]->resource_list_size; i++) {
+        res = &app_resources[0]->resource_list[i];
         //If it does, replaces the resource
         if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
             res->handler = handler;
@@ -234,13 +234,13 @@ int res_manager_server_register_resource(char *method, char *path, http_resource
     }
 
     // Checks if the list is full
-    if (app_resources->resource_list_size >= HTTP_MAX_RESOURCES) {
+    if (app_resources[0]->resource_list_size >= HTTP_MAX_RESOURCES) {
         ERROR("HTTP resource limit (%d) reached. Try changing value for HTTP_CONF_MAX_RESOURCES", HTTP_MAX_RESOURCES);
         return -1;
     }
 
     // Adds the resource to the list
-    res = &app_resources->resource_list[app_resources->resource_list_size++];
+    res = &app_resources[0]->resource_list[app_resources[0]->resource_list_size++];
 
     // Sets values
     strncpy(res->method, method, 8);
