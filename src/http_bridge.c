@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 #include "http_bridge.h"
-#include "http.h"
+#include "http_old.h"
 #include "http2.h"
 #include "logging.h"
 
