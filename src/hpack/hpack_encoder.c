@@ -25,7 +25,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
         sum += encoded_words[i].length;
     }
 
-    uint8_t required_bytes = sum % 8 ? (sum / 8) + 1 : sum / 8;
+    uint8_t required_bytes = (sum % 8) ? (sum / 8) + 1 : sum / 8;
 
     if (required_bytes > buffer_size) {
         ERROR("Buffer size is less than the required amount in hpack_encoder_pack_encoded_words_to_bytes");
@@ -180,7 +180,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
 
     uint32_t encoded_word_bit_length = hpack_encoder_encode_huffman_word(str, str_length, encoded_words);
 
-    uint32_t encoded_word_byte_length = encoded_word_bit_length % 8 ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
+    uint32_t encoded_word_byte_length = (encoded_word_bit_length % 8) ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
     int encoded_word_length_size = hpack_encoder_encode_integer(encoded_word_byte_length, 7, encoded_string);
 
     if (encoded_word_length_size < 0) {
@@ -453,9 +453,9 @@ int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_
     //PATCH
 
     int index = hpack_tables_find_index(&states->dynamic_table, name_string, value_string);
-    int pointer = 0;
 
     if (index < 0) {
+        int pointer = 0;
         index = hpack_tables_find_index_name(&states->dynamic_table, name_string);
         #if HPACK_INCLUDE_DYNAMIC_TABLE
         hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
