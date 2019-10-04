@@ -364,6 +364,68 @@ void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *
     return;
 
 }
+
+/*
+ * Function: hpack_encoder_encode_header
+ * Encodes an already prepared header into the encoded buffer to send
+ * Input:
+ *      -> *encoded_header: Pointer to hpack_encoded_header struct to encode
+ *      -> *name_string: string of the name of the entry to pack
+ *      -> *value_string: string of the value of the entry to pack
+ *      -> *encoded_buffer: buffer to encode and send
+ * Output:
+ *      Returns the number of bytes written in encoded_buffer
+ */
+int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *name_string, char *value_string, uint8_t *encoded_buffer)
+{
+
+    int pointer = 0;
+    uint8_t prefix = hpack_utils_find_prefix_size(encoded_header->preamble);
+    int rc;
+
+    if (encoded_header->index == 0) {
+        //new name and value
+        encoded_buffer[0] = 0;
+        pointer += 1;
+        //try to encode name
+        rc = hpack_encoder_encode_string(name_string, encoded_buffer + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to encode name string");
+            return rc;
+        }
+        pointer += rc;
+        //try to encode value
+        rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer);
+        if (rc < 0) {
+            ERROR("Error while trying to encode value string");
+            return rc;
+        }
+        pointer += rc;
+    }
+    else {
+        //entry name is already indexed
+        rc = hpack_encoder_encode_integer(encoded_header->index, prefix, encoded_buffer + pointer);
+        if (rc < 0) {
+            ERROR("Integer exceeds implementation limits");
+            return PROTOCOL_ERROR; //TODO: Check this return of function hpack_pack_header
+        }
+        pointer += rc;
+
+        //If header is indexed_header field, nothing else is left to be done
+        if (encoded_header->preamble != INDEXED_HEADER_FIELD) {
+            //the value has to be written
+            rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer);
+            if (rc < 0) {
+                ERROR("Error while trying to encode value string");
+                return rc;
+            }
+            pointer += rc;
+        }
+    }
+    //attach the preamble to the first byte of the buffer
+    encoded_buffer[0] |= encoded_header->preamble;
+    return pointer;
+}
 /*
  * Function: hpack_encoder_encode
  * Encodes a header field
