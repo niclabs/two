@@ -30,5 +30,5 @@ int two_server_start(unsigned int port)
 
 int two_register_resource(char *method, char *path, http_resource_handler_t handler)
 {
-    return res_manager_server_register_resource(method, path, handler);
+    return resource_handler_set(method, path, handler);
 }
