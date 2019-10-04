@@ -1,23 +1,8 @@
 /*
    This API contains the methods in Resource Manager layer
  */
-#ifndef RESOURCE_MANAGER_H
-#define RESOURCE_MANAGER_H
-
-#include "headers.h"
-
-
-/***********************************************
-* Data buffer struct
-***********************************************/
-
-//Revisar
- #ifdef HTTP_CONF_MAX_RESPONSE_SIZE
- #define HTTP_MAX_RESPONSE_SIZE (HTTP_CONF_MAX_RESPONSE_SIZE)
- #else
- #define HTTP_MAX_RESPONSE_SIZE (128)
- #endif
-//
+#ifndef RESOURCE_HANDLER_H
+#define RESOURCE_HANDLER_H
 
 
 /***********************************************
@@ -45,17 +30,15 @@ typedef struct {
 } http_resource_t;
 
 /***********************************************
-* Server API methods
+* API methods
 ***********************************************/
 
 /**
- * Generate a response from server to each client request
+ * Get a resource handler for the given path
  *
- * @param data_buff data structure
- * @param headers_buff headers data structure
- * @return 0 if ok -1 if an error ocurred
+ * @return resource handler if ok, NULL if other case
  */
-int res_manager_server_response(uint8_t *data_buff, headers_t *headers_buff);
+http_resource_handler_t resource_handler_get(char *method, char *path);
 
 /**
  * Set callback to handle an http resource
@@ -74,7 +57,7 @@ int res_manager_server_response(uint8_t *data_buff, headers_t *headers_buff);
  *
  * @return 0 if ok, -1 if error
  */
-int res_manager_server_register_resource(char *method, char *path, http_resource_handler_t handler);
+int resource_handler_set(char *method, char *path, http_resource_handler_t handler);
 
 
 #endif /* RESOURCE_MANAGER_H */
