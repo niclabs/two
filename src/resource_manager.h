@@ -79,7 +79,7 @@ int res_manager_server_response(uint8_t *data_buff, headers_t *headers_buff);
  *
  * @return 0 if ok, -1 if error
  */
-int res_manager_server_register_resource(resource_list_t *res_list, char *method, char *path, http_resource_handler_t handler);
+int res_manager_server_register_resource(char *method, char *path, http_resource_handler_t handler);
 
 
 #endif /* RESOURCE_MANAGER_H */
