@@ -7,6 +7,7 @@ callback_t receive_header(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 callback_t receive_payload(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 callback_t receive_payload_wait_settings_ack(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 callback_t receive_payload_goaway(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
+int check_incoming_condition(frame_header_t* header);
 
 /*
 *
@@ -63,7 +64,7 @@ callback_t h2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* stat
 callback_t receive_header(cbuf_t* buf_in, cbuf_t* buf_out, void* state){
   h2states_t *h2s = (h2states_t*) state;
   frame_header_t header;
-  uint8_t buff_read_header[9];
+  uint8_t buff_read_header[10];
   int rc = cbuf_pop(buf_in, buff_read_header, 9);
   if(rc != 9){
     WARN("READ %d BYTES FROM SOCKET", rc);
@@ -86,6 +87,31 @@ callback_t receive_header(cbuf_t* buf_in, cbuf_t* buf_out, void* state){
   // save header type
   h2s->header = header;
 
+  // TODO: check conditions and handle errors (goaways and others)
+  rc = check_incoming_condition(&h2s->header);
+
+
   callback_t ret = {receive_payload, NULL};
   return ret;
+}
+
+callback_t receive_payload(cbuf_t* buf_in, cbuf_t* buf_out, void* state){
+  h2states_t *h2s = (h2states_t*) state;
+  if(cbuf_len(buf_in) < h2s->header.length){
+    callback_t ret = {receive_payload, NULL};
+    return ret;
+  }
+  uint8_t buff_read_payload[HTTP2_MAX_BUFFER_SIZE];
+  int rc = cbuf_pop(buf_in, buff_read_payload, h2s->header.length);
+  if(rc != h2s->header.length){
+      ERROR("Error reading bytes of payload, read %d bytes", rc);
+      callback_t ret_null = {NULL, NULL};
+      return ret_null;
+  }
+
+  // read_type_payload from buff_read_payload
+
+  // placeholder
+  callback_t ret_null = {NULL, NULL};
+  return ret_null;
 }
