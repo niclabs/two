@@ -22,7 +22,7 @@
 typedef void* (*net_Callback) (cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 
 /*
-* Enum for possible error cases within a connection looṕ.
+* Enum for possible error cases within a connection loop.
 */
 typedef enum
 {
