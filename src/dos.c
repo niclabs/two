@@ -10,7 +10,10 @@
 //#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 
 #include "dos.h"
+#include "http2_v2.h"
+#include "net.h"
 #include "logging.h"
+
 
 int two_register_resource(char *method, char *path, http_resource_handler_t handler)
 {
