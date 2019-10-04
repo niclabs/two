@@ -7,7 +7,9 @@ callback_t receive_header(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 callback_t receive_payload(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 callback_t receive_payload_wait_settings_ack(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 callback_t receive_payload_goaway(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
-int check_incoming_condition(frame_header_t* header);
+int check_incoming_condition(h2states_t* h2s);
+int check_incoming_data_condition(h2states_t* h2s);
+
 
 /*
 *
@@ -88,7 +90,7 @@ callback_t receive_header(cbuf_t* buf_in, cbuf_t* buf_out, void* state){
   h2s->header = header;
 
   // TODO: check conditions and handle errors (goaways and others)
-  rc = check_incoming_condition(&h2s->header);
+  rc = check_incoming_condition(h2s);
 
 
   callback_t ret = {receive_payload, NULL};
@@ -114,4 +116,54 @@ callback_t receive_payload(cbuf_t* buf_in, cbuf_t* buf_out, void* state){
   // placeholder
   callback_t ret_null = {NULL, NULL};
   return ret_null;
+}
+
+int check_incoming_condition(h2states_t* h2s){
+  int rc;
+  switch (h2s->header.type) {
+    case DATA_TYPE:{
+      rc = check_incoming_data_condition(h2s);
+      return rc;
+    }
+    case HEADERS_TYPE:{
+      return -1;
+
+    }
+    case PRIORITY_TYPE://Priority
+      WARN("TODO: Priority Frame. Not implemented yet.");
+      return -1;
+
+    case RST_STREAM_TYPE://RST_STREAM
+      WARN("TODO: Reset Stream Frame. Not implemented yet.");
+      return -1;
+
+    case SETTINGS_TYPE:{
+
+    }
+    case PUSH_PROMISE_TYPE://Push promise
+      WARN("TODO: Push promise frame. Not implemented yet.");
+      return -1;
+
+    case PING_TYPE://Ping
+      WARN("TODO: Ping frame. Not implemented yet.");
+      return -1;
+
+    case GOAWAY_TYPE:{
+      return -1;
+
+    }
+    case WINDOW_UPDATE_TYPE: {
+      return -1;
+
+    }
+    case CONTINUATION_TYPE:{
+      rc = check_incoming_continuation_condition(h2s);
+      return rc;
+    }
+    default:{
+      WARN("Error: Type not found");
+      return -1;
+
+    }
+  }
 }
