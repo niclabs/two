@@ -1,5 +1,6 @@
 #include "cbuf.h"
 #include "config.h"
+#include <stdio.h>
 
 #ifndef NET_H
 #define NET_H
