@@ -7,9 +7,12 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_wait_settings_ack(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_goaway(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
-int check_incoming_condition(h2states_t *h2s);
-int check_incoming_data_condition(h2states_t *h2s);
-
+int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s);
+int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s);
+int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s);
+int check_incoming_settings_condition(cbuf_t *buf_out, h2states_t *h2s);
+int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s);
+int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s);
 
 /*
  *
@@ -121,7 +124,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     h2s->header = header;
 
     // TODO: check conditions and handle errors (goaways and others)
-    rc = check_incoming_condition(h2s);
+    rc = check_incoming_condition(buf_out, h2s);
 
 
     callback_t ret = { receive_payload, NULL };
@@ -131,9 +134,10 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 {
     h2states_t *h2s = (h2states_t *)state;
+
     if (cbuf_len(buf_in) < h2s->header.length) {
-      callback_t ret = { receive_payload, NULL };
-      return ret;
+        callback_t ret = { receive_payload, NULL };
+        return ret;
     }
 
     uint8_t buff_read_payload[HTTP2_MAX_BUFFER_SIZE];
@@ -151,17 +155,18 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     return ret_null;
 }
 
-int check_incoming_condition(h2states_t *h2s)
+int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
     int rc;
 
     switch (h2s->header.type) {
         case DATA_TYPE: {
-            rc = check_incoming_data_condition(h2s);
+            rc = check_incoming_data_condition(buf_out, h2s);
             return rc;
         }
         case HEADERS_TYPE: {
-            return -1;
+            rc = check_incoming_headers_condition(buf_out, h2s);
+            return rc;
 
         }
         case PRIORITY_TYPE://Priority
@@ -172,7 +177,10 @@ int check_incoming_condition(h2states_t *h2s)
             WARN("TODO: Reset Stream Frame. Not implemented yet.");
             return -1;
 
-        case SETTINGS_TYPE: {}
+        case SETTINGS_TYPE: {
+            rc = check_incoming_settings_condition(buf_out, h2s);
+            return rc;
+        }
         case PUSH_PROMISE_TYPE://Push promise
             WARN("TODO: Push promise frame. Not implemented yet.");
             return -1;
@@ -182,15 +190,14 @@ int check_incoming_condition(h2states_t *h2s)
             return -1;
 
         case GOAWAY_TYPE: {
-            return -1;
-
+            rc = check_incoming_goaway_condition(buf_out, h2s);
+            return rc;
         }
         case WINDOW_UPDATE_TYPE: {
-            return -1;
-
+            return 0;
         }
         case CONTINUATION_TYPE: {
-            rc = check_incoming_continuation_condition(h2s);
+            rc = check_incoming_continuation_condition(buf_out, h2s);
             return rc;
         }
         default: {
