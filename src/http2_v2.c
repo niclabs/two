@@ -134,7 +134,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 }
 
 callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
-{
+{   (void) buf_out;
     h2states_t *h2s = (h2states_t *)state;
 
     if (cbuf_len(buf_in) < h2s->header.length) {

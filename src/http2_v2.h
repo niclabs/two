@@ -75,10 +75,11 @@ typedef struct HTTP2_WINDOW_MANAGER {
 
 /*Struct for storing HTTP2 states*/
 typedef struct HTTP2_STATES {
+    uint8_t is_server;
     uint32_t remote_settings[6];
     uint32_t local_settings[6];
     /*uint32_t local_cache[6]; Could be implemented*/
-    //uint8_t wait_setting_ack;
+    uint8_t wait_setting_ack;
     h2_stream_t current_stream;
     uint32_t last_open_stream_id;
     uint8_t header_block_fragments[HTTP2_MAX_HBF_BUFFER];
@@ -87,8 +88,8 @@ typedef struct HTTP2_STATES {
     //uint8_t received_end_stream;
     h2_window_manager_t incoming_window;
     h2_window_manager_t outgoing_window;
-    //uint8_t sent_goaway;
-    //uint8_t received_goaway;        // bool
+    uint8_t sent_goaway;
+    uint8_t received_goaway;        // bool
     uint8_t debug_data_buffer[0];   // TODO not implemented yet
     uint8_t debug_size;             // TODO not implemented yet
     //Hpack dynamic table
