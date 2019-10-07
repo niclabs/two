@@ -9,9 +9,40 @@
 
 #ifndef HTTP2_V2_H
 #define HTTP2_V2_H
-#endif
-#define HTTP2_MAX_HBF_BUFFER 16384
 
+/*Definition of max headers frame buffer size*/
+#define HTTP2_MAX_HBF_BUFFER 16384
+/*Definition of max buffer size*/
+#define HTTP2_MAX_BUFFER_SIZE 16384
+
+
+/*Default settings values*/
+#define DEFAULT_HEADER_TABLE_SIZE 4096
+#define DEFAULT_ENABLE_PUSH 0
+#define DEFAULT_MAX_CONCURRENT_STREAMS 1
+#define DEFAULT_INITIAL_WINDOW_SIZE 65535
+#define DEFAULT_MAX_FRAME_SIZE 16384
+#define DEFAULT_MAX_HEADER_LIST_SIZE 99999
+
+/*Error codes*/
+typedef enum{
+  HTTP2_NO_ERROR = (uint32_t) 0x0,
+  HTTP2_PROTOCOL_ERROR = (uint32_t) 0x1,
+  HTTP2_INTERNAL_ERROR = (uint32_t) 0x2,
+  HTTP2_FLOW_CONTROL_ERROR = (uint32_t) 0x3,
+  HTTP2_SETTINGS_TIMEOUT = (uint32_t) 0x4,
+  HTTP2_STREAM_CLOSED = (uint32_t) 0x5,
+  HTTP2_FRAME_SIZE_ERROR = (uint32_t) 0x6,
+  HTTP2_REFUSED_STREAM = (uint32_t) 0x7,
+  HTTP2_CANCEL = (uint32_t) 0x8,
+  HTTP2_COMPRESSION_ERROR = (uint32_t) 0x9,
+  HTTP2_CONNECT_ERROR = (uint32_t) 0xa,
+  HTTP2_ENHANCE_YOUR_CALM = (uint32_t) 0xb,
+  HTTP2_INADEQUATE_SECURITY = (uint32_t) 0xc,
+  HTTP2_HTTP_1_1_REQUIRED = (uint32_t) 0xd
+}h2_error_code_t;
+
+/*Enumerator for stream states*/
 typedef enum {
     STREAM_IDLE,
     STREAM_OPEN,
@@ -20,6 +51,17 @@ typedef enum {
     STREAM_CLOSED
 } h2_stream_state_t;
 
+/*Enumerator for settings parameters*/
+typedef enum SettingsParameters{
+  HEADER_TABLE_SIZE = (uint16_t) 0x1,
+  ENABLE_PUSH = (uint16_t) 0x2,
+  MAX_CONCURRENT_STREAMS = (uint16_t) 0x3,
+  INITIAL_WINDOW_SIZE = (uint16_t) 0x4,
+  MAX_FRAME_SIZE = (uint16_t) 0x5,
+  MAX_HEADER_LIST_SIZE = (uint16_t) 0x6
+}sett_param_t;
+
+/*Struct for HTTP2 Stream*/
 typedef struct HTTP2_STREAM {
     uint32_t stream_id;
     h2_stream_state_t state;
@@ -58,3 +100,4 @@ typedef struct HTTP2_STATES {
 
 
 callback_t h2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
+#endif
