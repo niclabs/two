@@ -1,6 +1,8 @@
 #include "http2_v2.h"
 #include "logging.h"
 #include <string.h>
+#include "http2utils_v2.h"
+
 
 callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
