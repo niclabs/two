@@ -27,11 +27,15 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     if (b0 != p) {
         /*Special case, when HPACK_MAXIMUM_INTEGER is less than 256
          * it will evaluate whether b0 is within limits*/
-        if(HPACK_MAXIMUM_INTEGER > 256 || b0 < HPACK_MAXIMUM_INTEGER) {
+#if(HPACK_MAXIMUM_INTEGER < 256)
+        if( b0 < HPACK_MAXIMUM_INTEGER) {
             return (int32_t)b0;
         } else {
             return -1;
         }
+#else
+        return (int32_t)b0;
+#endif
     }
     else {
         uint32_t integer = (uint32_t)p;
