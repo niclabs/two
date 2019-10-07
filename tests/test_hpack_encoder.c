@@ -631,10 +631,6 @@ void test_hpack_encoder_encode_test2(void)
 
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 2 * HTTP2_MAX_HBF_BUFFER, 1, 2 * HTTP2_MAX_HBF_BUFFER, 1 };
 
-    #if !HPACK_INCLUDE_DYNAMIC_TABLE
-    //TODO: Fix test hpack encoder encode test 2 no dynamic table mode
-    TEST_IGNORE();
-    #endif
 
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 4);
 
@@ -646,9 +642,11 @@ void test_hpack_encoder_encode_test2(void)
     int rc = hpack_encoder_encode(&states, name_string, value_string, encoded_buffer);
 
     TEST_ASSERT_EQUAL(10, rc);
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
     TEST_ASSERT_EQUAL_STRING(name_string, hpack_tables_dynamic_table_add_entry_fake.arg1_val);
     TEST_ASSERT_EQUAL_STRING(value_string, hpack_tables_dynamic_table_add_entry_fake.arg2_val);
-
+#endif
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
     }
@@ -663,33 +661,32 @@ void test_hpack_encoder_encode_test3(void)
     /*Test new name*/
     char value_string[] = "val";
     char name_string[] = ":authority";
-    uint8_t encoded_buffer[64];
+    uint8_t encoded_buffer[5];
+    memset(encoded_buffer, 0 ,5);
     hpack_states_t states;
     uint8_t expected_encoded_bytes[] = {
-        65,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=1
+        17,             //LITERAL_HEADER_FIELD_NEVER_INDEXED, index=1
         3,              //value_length
         (uint8_t)'v',
         (uint8_t)'a',
         (uint8_t)'l'
     };
 
-    #if !HPACK_INCLUDE_DYNAMIC_TABLE
-    //TODO: Fix test hpack encoder encode test 3 no dynamic table mode
-    TEST_IGNORE();
-    #endif
 
     hpack_utils_find_prefix_size_fake.return_val = 4;
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = { 1, 2 * HTTP2_MAX_HBF_BUFFER, 1 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 3);
     hpack_tables_find_index_fake.return_val = -1;
     hpack_tables_find_index_name_fake.return_val = 1;
+    hpack_tables_dynamic_table_add_entry_fake.return_val = -1;
 
     int rc = hpack_encoder_encode(&states, name_string, value_string, encoded_buffer);
 
     TEST_ASSERT_EQUAL(5, rc);
+#if HPACK_INCLUDE_DYNAMIC_TABLE
     TEST_ASSERT_EQUAL_STRING(name_string, hpack_tables_dynamic_table_add_entry_fake.arg1_val);
     TEST_ASSERT_EQUAL_STRING(value_string, hpack_tables_dynamic_table_add_entry_fake.arg2_val);
-
+#endif
     for (int i = 0; i < rc; i++) {
         TEST_ASSERT_EQUAL(expected_encoded_bytes[i], encoded_buffer[i]);
     }
