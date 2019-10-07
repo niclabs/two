@@ -13,15 +13,6 @@
 #endif
 
 /*
-* Signature of a callback
-*
-* buf_in:       has size NET_CLIENT_BUFFER_SIZE, net writes into it
-* buf_out:      has size NET_CLIENT_BUFFER_SIZE, net reads from it
-* state:        has size NET_CLIENT_STATE_SIZE, net doesn't touch it. inits to 0
-*/
-typedef void* (*net_Callback) (cbuf_t* buf_in, cbuf_t* buf_out, void* state);
-
-/*
 * Enum for possible error cases within a connection loop.
 */
 typedef enum
