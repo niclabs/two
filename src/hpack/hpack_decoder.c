@@ -60,7 +60,7 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
 
 
 
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * Function: hpack_decoder_decode_huffman_word
  * Given the bit position from where to start to read, tries to decode de bits using
@@ -157,7 +157,7 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
     }
 }
 
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
 
 /*
  * Function: hpack_decoder_decode_huffman_string
@@ -220,7 +220,7 @@ int32_t hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_stri
 int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit)
 {
     if (huffman_bit) {
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
         return hpack_decoder_decode_huffman_string(str, encoded_buffer, length);
 #else
         ERROR("Not implemented: Cannot decode a huffman compressed header");

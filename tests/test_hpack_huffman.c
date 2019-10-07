@@ -6,7 +6,7 @@
 #include "fff.h"
 #include "hpack_huffman.h"
 
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
 extern const hpack_huffman_tree_t huffman_tree;
 #endif
 DEFINE_FFF_GLOBALS;
@@ -32,7 +32,7 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
 void test_hpack_huffman_encode_random(void)
 {
     int8_t rs = -1;
@@ -220,7 +220,7 @@ void test_hpack_huffman_encode_then_decode(void)
 int main(void)
 {
     UNITY_BEGIN();
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
     UNIT_TEST(test_hpack_huffman_encode_random);
     UNIT_TEST(test_hpack_huffman_encode_unique);
     UNIT_TEST(test_hpack_huffman_encode_twice);
