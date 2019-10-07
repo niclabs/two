@@ -236,77 +236,6 @@ int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
 #endif
 }
 
-/*
- * Function: hpack_encoder_encode_literal_header_field_new_name
- * Encodes a name and a value
- * Input:
- *      -> *name_string: name of the header field to encode
- *      -> *value_string: value of the header field to encode
- *      -> *encoded_buffer: Buffer to store the result of the encoding process
- *  Output:
- *      Returns the number of bytes used to encode name and value, or -1 if an error occurs while encoding
- */
-int hpack_encoder_encode_literal_header_field_new_name(char *name_string, char *value_string, uint8_t *encoded_buffer)
-{
-    int pointer = 0;
-
-    int rc = hpack_encoder_encode_string(name_string, encoded_buffer + pointer);
-
-    if (rc < 0) {
-        ERROR("Error while trying to encode name in encode_literal_header_field_new_name");
-        return rc;
-    }
-    pointer += rc;
-    rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer);
-    if (rc < 0) {
-        ERROR("Error while trying to encode value in encode_literal_header_field_new_name");
-        return rc;
-    }
-    pointer += rc;
-    return pointer;
-}
-
-/*
- * Function: hpack_encoder_encode_literal_header_field_indexed_name
- * Encodes a value
- * Input:
- *      -> *value_string: value of the header field to encode
- *      -> *encoded_buffer: Buffer to store the result of the encoding process
- * Output:
- *      Returns the number of bytes used to encde the value, or -1 if an error occurs while encoding
- */
-int hpack_encoder_encode_literal_header_field_indexed_name(char *value_string, uint8_t *encoded_buffer)
-{
-    int rc = hpack_encoder_encode_string(value_string, encoded_buffer);
-
-    if (rc < 0) {
-        ERROR("Error while trying to encode value in encode_literal_header_field_indexed_name");
-        return rc;
-    }
-    return rc;
-}
-
-/*
- * Function: hpack_encoder_encode_indexed_header_field
- * Encodes an indexed indexed header field
- * Input:
- *      -> *dynamic_table: Dynamic table to find name and value
- *      -> *name: Buffer containing name of the header
- *      -> *value: Buffer containing value of the header
- * Output:
- *      Returns the number of octets used to encode the given name and value, or -1 if it fails.
- */
-int hpack_encoder_encode_indexed_header_field(hpack_states_t *states, char *name, char *value, uint8_t *encoded_buffer)
-{
-    int rc = hpack_tables_find_index(&states->dynamic_table, name, value);
-
-    if (rc < 0) {
-        return rc;
-    }
-    uint8_t prefix = hpack_utils_find_prefix_size(INDEXED_HEADER_FIELD);
-    int pointer = hpack_encoder_encode_integer(rc, prefix, encoded_buffer);
-    return pointer;
-}
 
 /*
  * Function: hpack_encoder_pack_header
@@ -382,10 +311,10 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
     int pointer = 0;
     uint8_t prefix = hpack_utils_find_prefix_size(encoded_header->preamble);
     int rc;
+    //initializes first byte
+    encoded_buffer[0] = 0;
 
     if (encoded_header->index == 0) {
-        //new name and value
-        encoded_buffer[0] = 0;
         pointer += 1;
         //try to encode name
         rc = hpack_encoder_encode_string(name_string, encoded_buffer + pointer);
@@ -428,20 +357,11 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
 }
 
 
-//POSSIBLE REFACTOR
-int hpack_encoder_encode_v2(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
-{
-    //this gets the info required to encode into the encoded_header, also decides which header type to use
-    hpack_encoder_pack_header(states, name_string, value_string);
-    //finally encode header into buffer
-    return hpack_encoder_encode_header(&states->encoded_header, name_string, value_string, encoded_buffer);
-}
-
 /*
  * Function: hpack_encoder_encode
  * Encodes a header field
  * Input:
- *      -> *dynamic_table: Dynamic table of the encoder
+ *      -> *states: Hpack states of the encoder
  *      -> *name_string: name of the header field to encode
  *      -> *value_string: value of the header field to encode
  *      -> *encoded_buffer: Buffer to store the result of the encoding process
@@ -450,74 +370,14 @@ int hpack_encoder_encode_v2(hpack_states_t *states, char *name_string, char *val
  */
 int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
 {
-    //PATCH
-
-    int index = hpack_tables_find_index(&states->dynamic_table, name_string, value_string);
-
-    if (index < 0) {
-        int pointer = 0;
-        index = hpack_tables_find_index_name(&states->dynamic_table, name_string);
-        #if HPACK_INCLUDE_DYNAMIC_TABLE
-        hpack_preamble_t preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
-        DEBUG("Encoding a literal header field with incremental indexing");
-        int8_t res = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, name_string, value_string);
-
-        if (res < 0) {
-            DEBUG("Couldn't add to dynamic table");
-            preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
-            DEBUG("Encoding a literal header field never indexed");
-        }
-
-        #else
-        hpack_preamble_t preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
-        DEBUG("Encoding a literal header field never indexed");
-        #endif
-        uint8_t prefix = hpack_utils_find_prefix_size(preamble);
-        if (index < 0) {
-            //NEW NAME
-            encoded_buffer[0] = 0;     //Set up name not indexed;
-            pointer += 1;
-            int rc = hpack_encoder_encode_literal_header_field_new_name(name_string, value_string, encoded_buffer + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to encode");
-                return rc;
-            }
-            pointer += rc;
-        }
-        else {
-            //INDEXED NAME
-            int encoded_length_size = hpack_encoder_encode_integer(index, prefix, encoded_buffer + pointer);
-
-            if (encoded_length_size < 0) {
-                ERROR("Integer exceeds implementations limits");
-                return -1;
-            }
-            pointer += encoded_length_size;
-
-            int rc = hpack_encoder_encode_literal_header_field_indexed_name(value_string, encoded_buffer + pointer);
-            if (rc < 0) {
-                ERROR("Error while trying to encode");
-                return rc;
-            }
-            pointer += rc;
-        }
-        encoded_buffer[0] |= preamble;                          //set first bits
-        return pointer;
-    }
-    else {
-        //INDEXED HEADER FIELD
-        DEBUG("Encoding an indexed header field");
-        hpack_preamble_t preamble = INDEXED_HEADER_FIELD;
-        int rc = hpack_encoder_encode_indexed_header_field(states, name_string, value_string, encoded_buffer);
-        if (rc < 0) {
-            ERROR("Error while trying to encode");
-            return rc;
-        }
-        encoded_buffer[0] |= preamble;                          //set first bits
-        return rc;
-    }
-
+    //this gets the info required to encode into the encoded_header, also decides which header type to use
+    hpack_encoder_pack_header(states, 
+                              name_string, 
+                              value_string);
+    //finally encode header into buffer
+    return hpack_encoder_encode_header(&states->encoded_header, name_string, value_string, encoded_buffer);
 }
+
 
 /*
  * Function: hpack_encoder_encode_dynamic_size_update
