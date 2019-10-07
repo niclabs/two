@@ -134,6 +134,10 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     h2s->header = header;
     // If errors are found, internal logic will handle them.
     rc = check_incoming_condition(buf_out, h2s);
+    if(rc < 0){
+      DEBUG("Error was found during incoming condition checking");
+      return null_callback();
+    }
     callback_t ret = { receive_payload, NULL };
     return ret;
 }
