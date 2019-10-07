@@ -16,6 +16,13 @@ int check_incoming_settings_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s);
 void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
+int handle_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_data_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_headers_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_settings_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_goaway_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_window_update_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_continuation_payload(cbuf_t *buf_out, h2states_t *h2s);
 /*
  *
  *
@@ -157,7 +164,7 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         ERROR("Error reading bytes of payload, read %d bytes", rc);
         return null_callback();
     }
-
+    rc = handle_payload(buf_out, h2s);
     // todo: read_type_payload from buff_read_payload
 
     // placeholder
@@ -214,6 +221,58 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
             WARN("Error: Type not found");
             return -1;
 
+        }
+    }
+}
+
+int handle_payload(cbuf_t *buf_out, h2states_t *h2s)
+{
+    int rc;
+
+    switch (h2s->header.type) {
+        case DATA_TYPE: {
+            rc = handle_data_payload(buf_out, h2s);
+            return rc;
+        }
+        case HEADERS_TYPE: {
+            rc = handle_headers_payload(buf_out, h2s);
+            return rc;
+
+        }
+        case PRIORITY_TYPE://Priority
+            WARN("TODO: Priority Frame. Not implemented yet.");
+            return -1;
+
+        case RST_STREAM_TYPE://RST_STREAM
+            WARN("TODO: Reset Stream Frame. Not implemented yet.");
+            return -1;
+
+        case SETTINGS_TYPE: {
+            rc = handle_settings_payload(buf_out, h2s);
+            return rc;
+        }
+        case PUSH_PROMISE_TYPE://Push promise
+            WARN("TODO: Push promise frame. Not implemented yet.");
+            return -1;
+
+        case PING_TYPE://Ping
+            WARN("TODO: Ping frame. Not implemented yet.");
+            return -1;
+
+        case GOAWAY_TYPE: {
+            rc = handle_goaway_payload(buf_out, h2s);
+            return rc;
+        }
+        case WINDOW_UPDATE_TYPE: {
+            return 0;
+        }
+        case CONTINUATION_TYPE: {
+            rc = handle_continuation_payload(buf_out, h2s);
+            return rc;
+        }
+        default: {
+            WARN("Error: Type not found");
+            return -1;
         }
     }
 }
