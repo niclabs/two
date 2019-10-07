@@ -54,13 +54,13 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
         return ret_null;
     }
     preface_buff[24] = '\0';
+    h2states_t *h2s = (h2states_t *)state;
     if (strcmp(preface, (char *)preface_buff) != 0) {
         ERROR("Error in preface receiving");
-        send_connection_error(st, HTTP2_PROTOCOL_ERROR);
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
         callback_t ret_null = { NULL, NULL };
         return ret_null;
     }
-    h2states_t *h2s = (h2states_t *)state;
     // send connection settings
     rc = init_variables_h2s(h2s, 1);
     callback_t ret_null = { NULL, NULL };
@@ -69,7 +69,7 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
 
 int validate_pseudoheaders(header_t* pseudoheaders)
 {
-    
+
     if (headers_get(pseudoheaders, ":method") == NULL)
     {
         ERROR("\":method\" pseudoheader was missing.");
@@ -110,13 +110,13 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     rc = bytes_to_frame_header(buff_read_header, 9, &header);
     if (rc) {
         ERROR("Error coding bytes to frame header. INTERNAL_ERROR");
-        send_connection_error(st, HTTP2_INTERNAL_ERROR);
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         callback_t ret_null = { NULL, NULL };
         return ret_null;
     }
     if (header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)) {
         ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
-        send_connection_error(h2s, HTTP2_FRAME_SIZE_ERROR);
+        send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
         callback_t ret_null = { NULL, NULL };
         return ret_null;
     }
