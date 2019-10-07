@@ -1,6 +1,5 @@
 #ifndef CONFIG_H
 #define CONFIG_H
-#endif
 
 /*
 * Signature of a callback, wrapped in a stuct
@@ -13,3 +12,5 @@ typedef struct CALLBACK {
   struct CALLBACK (* func)(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
   void* debug_info; // just in case
 } callback_t ;
+
+#endif
