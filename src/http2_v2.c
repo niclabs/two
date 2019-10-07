@@ -20,6 +20,11 @@ void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s
  *
  *
  */
+callback_t null_callback(void){
+  callback_t null_ret = {NULL, NULL};
+  return null_ret;
+}
+
 int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
 {
     h2s->is_server = is_server;
@@ -59,16 +64,15 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
     char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
     rc = cbuf_pop(buf_in, preface_buff, 24);
     if (rc != 24) {
-        callback_t ret_null = { NULL, NULL };
-        return ret_null;
+        DEBUG("Error during cbuf_pop operation");
+        return null_callback();
     }
     preface_buff[24] = '\0';
     h2states_t *h2s = (h2states_t *)state;
     if (strcmp(preface, (char *)preface_buff) != 0) {
-        ERROR("Error in preface receiving");
+        ERROR("Error in preface received");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        callback_t ret_null = { NULL, NULL };
-        return ret_null;
+        return null_callback();
     }
     // send connection settings
     rc = init_variables_h2s(h2s, 1);
@@ -113,29 +117,23 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 
     if (rc != 9) {
         WARN("READ %d BYTES FROM SOCKET", rc);
-        callback_t ret_null = { NULL, NULL };
-        return ret_null;
+        return null_callback();
     }
     rc = bytes_to_frame_header(buff_read_header, 9, &header);
     if (rc) {
         ERROR("Error coding bytes to frame header. INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        callback_t ret_null = { NULL, NULL };
-        return ret_null;
+        return null_callback();
     }
     if (header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)) {
         ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
-        callback_t ret_null = { NULL, NULL };
-        return ret_null;
+        return null_callback();
     }
     // save header type
     h2s->header = header;
-
-    // TODO: check conditions and handle errors (goaways and others)
+    // If errors are found, internal logic will handle them.
     rc = check_incoming_condition(buf_out, h2s);
-
-
     callback_t ret = { receive_payload, NULL };
     return ret;
 }
@@ -153,8 +151,7 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     int rc = cbuf_pop(buf_in, buff_read_payload, h2s->header.length);
     if (rc != h2s->header.length) {
         ERROR("Error reading bytes of payload, read %d bytes", rc);
-        callback_t ret_null = { NULL, NULL };
-        return ret_null;
+        return null_callback();
     }
 
     // todo: read_type_payload from buff_read_payload
