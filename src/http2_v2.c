@@ -84,7 +84,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         callback_t ret_null = { NULL, NULL };
         return ret_null;
     }
-    if (header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)) {
+    if (header.length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)) {
         ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
         send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
         callback_t ret_null = { NULL, NULL };
