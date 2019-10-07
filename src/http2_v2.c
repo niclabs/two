@@ -22,20 +22,27 @@ void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s
  */
 int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
 {
+    h2s->is_server = is_server;
     h2s->remote_settings[0] = h2s->local_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
     h2s->remote_settings[1] = h2s->local_settings[1] = DEFAULT_ENABLE_PUSH;
     h2s->remote_settings[2] = h2s->local_settings[2] = DEFAULT_MAX_CONCURRENT_STREAMS;
     h2s->remote_settings[3] = h2s->local_settings[3] = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->remote_settings[4] = h2s->local_settings[4] = DEFAULT_MAX_FRAME_SIZE;
     h2s->remote_settings[5] = h2s->local_settings[5] = DEFAULT_MAX_HEADER_LIST_SIZE;
+    h2s->wait_setting_ack = 0;
     h2s->current_stream.stream_id = is_server ? 2 : 3;
     h2s->current_stream.state = STREAM_IDLE;
     h2s->last_open_stream_id = 1;
     h2s->header_block_fragments_pointer = 0;
+    h2s->waiting_for_end_headers_flag = 0;
+    h2s->received_end_stream = 0;
     h2s->incoming_window.window_size = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->incoming_window.window_used = 0;
     h2s->outgoing_window.window_size = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->outgoing_window.window_used = 0;
+    h2s->sent_goaway = 0;
+    h2s->received_goaway = 0;
+    h2s->debug_size = 0;
     //h2s->header = NULL;
     hpack_init_states(&(h2s->hpack_states), DEFAULT_HEADER_TABLE_SIZE);
     return 0;
