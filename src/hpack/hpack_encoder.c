@@ -4,7 +4,7 @@
 #include "hpack_huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
 #include "logging.h"            /* for ERROR */
 
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * Function: hpack_encoder_pack_encoded_words_to_bytes
  * Writes bits from 'code' (the representation in huffman)
@@ -137,7 +137,7 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
     return str_length + encoded_string_length_size;
 }
 
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * Function: hpack_encoder_encode_huffman_word
  * Encodes an Array of char using huffman tree compression
@@ -162,7 +162,7 @@ uint32_t hpack_encoder_encode_huffman_word(char *str, int str_length, huffman_en
 }
 #endif
 
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * Function: hpack_encoder_encode_huffman_string
  * Encodes an Array of char using huffman tree compression
@@ -221,7 +221,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
  */
 int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
 {
-#ifdef INCLUDE_HUFFMAN_COMPRESSION
+#if(INCLUDE_HUFFMAN_COMPRESSION)
     int rc = hpack_encoder_encode_huffman_string(str, encoded_string);
 
     if (rc < 0) {
