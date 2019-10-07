@@ -13,7 +13,7 @@ int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_settings_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s);
-
+void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
 /*
  *
  *
@@ -253,3 +253,18 @@ int send_goaway(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s){//, uint8
 
 }
 
+/*
+* Function: send_connection_error
+* Send a connection error to endpoint with a specified error code. It implements
+* the behaviour suggested in RFC 7540, secion 5.4.1
+* Input: -> st: hstates_t pointer where connetion variables are stored
+*        -> error_code: error code that will be used to shutdown the connection
+* Output: void
+*/
+
+void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s){
+  int rc = send_goaway(buf_out, error_code, h2s);
+  if(rc < 0){
+    WARN("Error sending GOAWAY frame to endpoint.");
+  }
+}
