@@ -67,6 +67,10 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
 
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 {
+    if (cbuf_len(buf_in) < 9) {
+        callback_t ret = { receive_header, NULL };
+        return ret;
+    }
     h2states_t *h2s = (h2states_t *)state;
     frame_header_t header;
     uint8_t buff_read_header[10];
@@ -84,9 +88,9 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         callback_t ret_null = { NULL, NULL };
         return ret_null;
     }
-    if (header.length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)) {
+    if (header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)) {
         ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
-        send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
+        send_connection_error(h2s, HTTP2_FRAME_SIZE_ERROR);
         callback_t ret_null = { NULL, NULL };
         return ret_null;
     }
@@ -104,11 +108,11 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 {
     h2states_t *h2s = (h2states_t *)state;
-
     if (cbuf_len(buf_in) < h2s->header.length) {
-        callback_t ret = { receive_payload, NULL };
-        return ret;
+      callback_t ret = { receive_payload, NULL };
+      return ret;
     }
+
     uint8_t buff_read_payload[HTTP2_MAX_BUFFER_SIZE];
     int rc = cbuf_pop(buf_in, buff_read_payload, h2s->header.length);
     if (rc != h2s->header.length) {
