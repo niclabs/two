@@ -49,7 +49,7 @@ typedef struct {
 //size: 10 bytes in params + size of buffer
 typedef
     #if HPACK_INCLUDE_DYNAMIC_TABLE
-    struct hpack_dynamic_table {
+    struct {
     uint16_t max_size;
     uint16_t first;
     uint16_t next;
