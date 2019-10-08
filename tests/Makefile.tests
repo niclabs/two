@@ -22,10 +22,10 @@ IGNORE = $(shell grep -s IGNORE $(TEST_BUILD)/*.txt)
 IGNORE_COUNT = $(words $(IGNORE))
 
 # Ignore the following files
-TEST_SRC_IGNORE = hpack.c
+TEST_SRC_IGNORE = hpack/hpack.c
 
 # We need a test for each library source
-RESULTS = $(patsubst %.c,$(TEST_BUILD)/test_%.txt,$(filter-out $(TEST_SRC_IGNORE),$(LIBRARY_SOURCES)))
+RESULTS = $(patsubst %.c,$(TEST_BUILD)/test_%.txt,$(subst /,_,$(filter-out $(TEST_SRC_IGNORE),$(LIBRARY_SOURCES))))
 
 test: $(RESULTS)
 	@echo -e "-----------------------\nIGNORES: $(IGNORE_COUNT)\n-----------------------"
