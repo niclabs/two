@@ -115,7 +115,7 @@ int check_frame_errors(uint8_t type, uint32_t length){
             return -1;
         case SETTINGS_TYPE: {
             if (length % 6 != 0) {
-                printf("Error: length not divisible by 6, %d", length);
+                ERROR("Length not divisible by 6, %d", length);
                 return -1;
             } else {
                 return 0;
@@ -123,7 +123,7 @@ int check_frame_errors(uint8_t type, uint32_t length){
         }
         case GOAWAY_TYPE: {
             if (length < 8) {
-                printf("Error: length < 8, %d", length);
+                ERROR("length < 8, %d", length);
                 return -1;
             } else {
                 return 0;
@@ -131,7 +131,7 @@ int check_frame_errors(uint8_t type, uint32_t length){
         }
         case WINDOW_UPDATE_TYPE: {
             if (length != 4) {
-                printf("Error: length != 4, %d", length);
+                ERROR("length != 4, %d", length);
                 return -1;
             } else {
                 return 0;
@@ -640,6 +640,30 @@ int create_window_update_frame(frame_header_t *frame_header, window_update_paylo
     return 0;
 }
 
+<<<<<<< HEAD
+=======
+/*
+ * Function: window_update_payload_to_bytes
+ * Passes a window_update payload to a byte array
+ * Input: frame_header, window_update_payload pointer, array to save the bytes
+ * Output: size of the array of bytes, -1 if error
+ */
+int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array)
+{
+    if (frame_header->length != 4) {
+        ERROR("Length != 4, FRAME_SIZE_ERROR");
+        return -1;
+    }
+    byte_array[0] = 0;
+    int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, byte_array);
+    if (rc < 0) {
+        ERROR("while passing uint32_31 to byte_array");
+        return -1;
+    }
+    return 4;//bytes
+}
+
+>>>>>>> Change printf to Error in frames
 
 /*
  * Function: read_window_update_payload
