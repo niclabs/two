@@ -103,6 +103,16 @@ typedef enum {
 }data_flag_t;
 
 
+/*PING FRAME*/
+typedef struct {
+    uint8_t* opaque_data;
+}ping_payload_t; //32 bits -> 4 bytes
+
+typedef enum {
+    PING_ACK_FLAG = (uint8_t) 0x1
+}ping_flag_t;
+
+
 /*WINDOW_UPDATE FRAME*/
 typedef struct {
     uint8_t reserved : 1;
@@ -194,6 +204,8 @@ int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t
 //int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
+/*ping payload methods*/
+int ping_payload_to_bytes(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t *byte_array);
 /*
    void* byteToPayloadDispatcher[10];
    byteToPayloadDispatcher[SETTINGS_TYPE] = &bytesToSettingsPayload;

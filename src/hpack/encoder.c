@@ -5,7 +5,7 @@
 #include "hpack/encoder.h"
 #include "logging.h"            /* for ERROR */
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * Function: hpack_encoder_pack_encoded_words_to_bytes
  * Writes bits from 'code' (the representation in huffman)
@@ -138,7 +138,7 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
     return str_length + encoded_string_length_size;
 }
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * Function: hpack_encoder_encode_huffman_word
  * Encodes an Array of char using huffman tree compression
@@ -163,7 +163,7 @@ uint32_t hpack_encoder_encode_huffman_word(char *str, int str_length, huffman_en
 }
 #endif
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * Function: hpack_encoder_encode_huffman_string
  * Encodes an Array of char using huffman tree compression
@@ -222,7 +222,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
  */
 int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
 {
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
     int rc = hpack_encoder_encode_huffman_string(str, encoded_string);
 
     if (rc < 0) {
@@ -312,6 +312,7 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
     int pointer = 0;
     uint8_t prefix = hpack_utils_find_prefix_size(encoded_header->preamble);
     int rc;
+
     //initializes first byte
     encoded_buffer[0] = 0;
 
@@ -372,8 +373,8 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
 int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
 {
     //this gets the info required to encode into the encoded_header, also decides which header type to use
-    hpack_encoder_pack_header(states, 
-                              name_string, 
+    hpack_encoder_pack_header(states,
+                              name_string,
                               value_string);
     //finally encode header into buffer
     return hpack_encoder_encode_header(&states->encoded_header, name_string, value_string, encoded_buffer);
