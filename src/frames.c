@@ -104,7 +104,7 @@ int settings_frame_to_bytes(settings_payload_t *settings_payload, uint32_t count
 int bytes_to_settings_payload(uint8_t *bytes, int size, settings_payload_t *settings_payload, settings_pair_t *pairs)
 {
     if (size % 6 != 0) {
-        printf("ERROR: settings payload wrong size\n");
+        ERROR("ERROR: settings payload wrong size\n");
         return -1;
     }
     int count = size / 6;
@@ -151,16 +151,16 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
             return new_size;
         }
         case 0x2: {//Priority
-            printf("TODO: Priority Frame. Not implemented yet.");
+            ERROR("Priority Frame. Not implemented yet.");
             return -1;
         }
         case 0x3: {//RST_STREAM
-            printf("TODO: Reset Stream Frame. Not implemented yet.");
+            ERROR("Reset Stream Frame. Not implemented yet.");
             return -1;
         }
         case 0x4: {//Settings
             if (length % 6 != 0) {
-                printf("Error: length not divisible by 6, %d", length);
+                ERROR("Length not divisible by 6, %d", length);
                 return -1;
             }
 
@@ -179,16 +179,16 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
             return new_size;
         }
         case 0x5: {//Push promise
-            printf("TODO: Push promise frame. Not implemented yet.");
+            ERROR("Push promise frame. Not implemented yet.");
             return -1;
         }
         case 0x6: {//Ping
-            printf("TODO: Ping frame. Not implemented yet.");
+            ERROR("Ping frame. Not implemented yet.");
             return -1;
         }
-        case 0x7: {//Go Avaw
+        case 0x7: {//Go Away
             if (length < 8) {
-                printf("Error: length < 8, %d", length);
+                ERROR("length < 8, %d", length);
                 return -1;
             }
             uint8_t frame_header_bytes[9];
@@ -201,7 +201,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
         }
         case 0x8: {//Window update
             if (length != 4) {
-                printf("Error: length != 4, %d", length);
+                ERROR("length != 4, %d", length);
                 return -1;
             }
             uint8_t frame_header_bytes[9];
@@ -223,7 +223,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
             return new_size;
         }
         default:
-            printf("Error: Type not found");
+            ERROR("Error: Type not found");
             return -1;
     }
 
@@ -621,7 +621,7 @@ int data_payload_to_bytes(frame_header_t *frame_header, data_payload_t *data_pay
     }
     int rc = buffer_copy(byte_array, data_payload->data, length);
     if (rc < 0) {
-        ERROR("error copying buffer");
+        ERROR("can't copy buffer");
         return -1;
     }
     return rc;
@@ -688,7 +688,7 @@ int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_p
     byte_array[0] = 0;
     int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, byte_array);
     if (rc < 0) {
-        ERROR("error while passing uint32_31 to byte_array");
+        ERROR("while passing uint32_31 to byte_array");
         return -1;
     }
     return 4;//bytes
