@@ -27,10 +27,11 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
     if (b0 != p) {
         /*Special case, when HPACK_MAXIMUM_INTEGER is less than 256
          * it will evaluate whether b0 is within limits*/
-#if(HPACK_MAXIMUM_INTEGER < 256)
-        if( b0 < HPACK_MAXIMUM_INTEGER) {
+#if (HPACK_MAXIMUM_INTEGER < 256)
+        if (b0 < HPACK_MAXIMUM_INTEGER) {
             return (int32_t)b0;
-        } else {
+        }
+        else {
             return -1;
         }
 #else
@@ -161,7 +162,7 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *enco
     }
 }
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
 
 /*
  * Function: hpack_decoder_decode_huffman_string
@@ -224,7 +225,7 @@ int32_t hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_stri
 int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit)
 {
     if (huffman_bit) {
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
         return hpack_decoder_decode_huffman_string(str, encoded_buffer, length);
 #else
         ERROR("Not implemented: Cannot decode a huffman compressed header");
@@ -279,9 +280,9 @@ int hpack_decoder_decode_literal_header_field(hpack_states_t *states)
         DEBUG("Decoding a new name compressed header");
         int32_t rc =
             hpack_decoder_decode_string(states->tmp_name,
-                                           states->encoded_header.name_string,
-                                           states->encoded_header.name_length,
-                                           states->encoded_header.huffman_bit_of_name);
+                                        states->encoded_header.name_string,
+                                        states->encoded_header.name_length,
+                                        states->encoded_header.huffman_bit_of_name);
         if (rc < 0) {
             DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
             return rc;

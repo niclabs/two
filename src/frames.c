@@ -130,7 +130,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
     frame_header_t *frame_header = frame->frame_header;
     uint32_t length = frame_header->length;
     frame_type_t type = frame_header->type;
-
+    DEBUG("Type of frame %d" ,type);
     switch (type) {
         case DATA_TYPE: {//Data 0x0
             uint8_t frame_header_bytes[9];
@@ -163,17 +163,10 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
                 ERROR("Length not divisible by 6, %d", length);
                 return -1;
             }
-
             uint8_t frame_header_bytes[9];
-
-
             int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-
             settings_payload_t *settings_payload = ((settings_payload_t *)(frame->payload));
-
-
             uint8_t settings_bytes[length];
-
             int size = settings_frame_to_bytes(settings_payload, length / 6, settings_bytes);
             int new_size = append_byte_arrays(bytes, frame_header_bytes, settings_bytes, frame_header_bytes_size, size);
             return new_size;
@@ -183,8 +176,19 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
             return -1;
         }
         case PING_TYPE: {//Ping 0x6
-            ERROR("Ping frame. Not implemented yet.");
-            return -1;
+            //ERROR("Ping frame. Not implemented yet.");
+            if(length != 8){
+                ERROR("PING frame has length %d, different than 8 octets",length);
+                return -1;
+            }
+            uint8_t frame_header_bytes[9];
+            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
+            ping_payload_t *ping_payload = ((ping_payload_t *)(frame->payload));
+            uint8_t ping_bytes[length];
+            int size = ping_payload_to_bytes(frame_header, ping_payload, ping_bytes);
+            int new_size = append_byte_arrays(bytes, frame_header_bytes, ping_bytes, frame_header_bytes_size, size);
+            return new_size;
+            //return -1;
         }
         case GOAWAY_TYPE: {//Go Away 0x7
             if (length < 8) {
@@ -413,6 +417,18 @@ int continuation_payload_to_bytes(frame_header_t *frame_header, continuation_pay
     return rc;
 }
 
+/*
+ * Function: ping_payload_to_bytes
+ * Passes a ping payload to a byte array
+ * Input: frame_header, ping_payload pointer, array to save the bytes
+ * Output: size of the array of bytes, -1 if error
+ */
+int ping_payload_to_bytes(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t *byte_array)
+{
+    int rc = buffer_copy(byte_array, ping_payload->opaque_data, frame_header->length);
+
+    return rc;
+}
 /*
  * Function: compress_headers
  * given a set of headers, it comprisses them and save them in a bytes array

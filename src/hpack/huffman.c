@@ -3,7 +3,7 @@
 //
 #include "hpack/huffman.h"
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * This is a implementation of a compact huffman tree using the algorithm in
  * Compact Data Structures A Practical Approach(2016) By G. Navarro

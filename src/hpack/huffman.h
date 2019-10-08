@@ -20,7 +20,7 @@
 #define INCLUDE_HUFFMAN_COMPRESSION (1)
 #endif
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
+#if (INCLUDE_HUFFMAN_COMPRESSION)
 typedef struct {
     uint32_t code;
     uint8_t length;
