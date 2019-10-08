@@ -640,30 +640,6 @@ int create_window_update_frame(frame_header_t *frame_header, window_update_paylo
     return 0;
 }
 
-<<<<<<< HEAD
-=======
-/*
- * Function: window_update_payload_to_bytes
- * Passes a window_update payload to a byte array
- * Input: frame_header, window_update_payload pointer, array to save the bytes
- * Output: size of the array of bytes, -1 if error
- */
-int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array)
-{
-    if (frame_header->length != 4) {
-        ERROR("Length != 4, FRAME_SIZE_ERROR");
-        return -1;
-    }
-    byte_array[0] = 0;
-    int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, byte_array);
-    if (rc < 0) {
-        ERROR("while passing uint32_31 to byte_array");
-        return -1;
-    }
-    return 4;//bytes
-}
-
->>>>>>> Change printf to Error in frames
 
 /*
  * Function: read_window_update_payload
