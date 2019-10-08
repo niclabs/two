@@ -1,7 +1,8 @@
-#include "hpack_encoder.h"
 #include <stdint.h>             /*for int8_t, int32_t  */
 #include <string.h>             /* for strlen, memset    */
-#include "hpack_huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
+
+#include "hpack/huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
+#include "hpack/encoder.h"
 #include "logging.h"            /* for ERROR */
 
 #if(INCLUDE_HUFFMAN_COMPRESSION)

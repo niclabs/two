@@ -1,7 +1,7 @@
 //
 // Created by Gabriel Norambuena on 18-07-19.
 //
-#include "hpack_huffman.h"
+#include "hpack/huffman.h"
 
 #if(INCLUDE_HUFFMAN_COMPRESSION)
 /*

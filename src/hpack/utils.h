@@ -1,7 +1,7 @@
 #ifndef TWO_HPACK_UTILS_H
 #define TWO_HPACK_UTILS_H
 
-#include "hpack_structs.h"
+#include "hpack/structs.h"
 
 
 uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer);

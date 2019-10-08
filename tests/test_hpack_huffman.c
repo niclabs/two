@@ -4,7 +4,7 @@
 
 #include "unit.h"
 #include "fff.h"
-#include "hpack_huffman.h"
+#include "hpack/huffman.h"
 
 #if(INCLUDE_HUFFMAN_COMPRESSION)
 extern const hpack_huffman_tree_t huffman_tree;

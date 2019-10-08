@@ -3,10 +3,10 @@
 #include "fff.h"
 #include "logging.h"
 #include "hpack.h"
-#include "hpack_huffman.h"
-#include "hpack_tables.h"
-#include "hpack_decoder.h"
-#include "hpack_utils.h"
+#include "hpack/huffman.h"
+#include "hpack/tables.h"
+#include "hpack/decoder.h"
+#include "hpack/utils.h"
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
 extern int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length);

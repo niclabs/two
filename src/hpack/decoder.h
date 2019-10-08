@@ -3,8 +3,8 @@
 
 #include <stdint.h>             /* for uint8_t */
 #include "headers.h"            /* for headers_t */
-#include "hpack_tables.h"       /* for hpack_dynamic_table_t */
-#include "hpack_utils.h"        /* for hpack_states*/
+#include "hpack/tables.h"       /* for hpack_dynamic_table_t */
+#include "hpack/utils.h"        /* for hpack_states*/
 
 
 
