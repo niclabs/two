@@ -49,7 +49,7 @@ endef
 uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
 
 # Path for objects and dependencies
-SRC = src
+SRC = $(call QUALIFY_PATH,${TWO},src)
 OBJECTDIR = $(BUILD_DIR)/obj
 
 # Path for test builds
@@ -75,11 +75,11 @@ $(DIRS):
 
 # Library module configuration (under src/)
 # One big module under src for now
-MODULES += .
+MODULES := . $(MODULES)
 
 MODULEDIRS = $(call QUALIFY_PATH,${TWO},$(call CANONICAL_PATH,$(addprefix $(SRC)/,$(MODULES))))
 UNIQUEMODULES = $(call uniq,$(MODULEDIRS))
-MODULES_SOURCES = $(foreach d, $(UNIQUEMODULES), ${subst ${d}/,,${wildcard $(d)/*.c}})
+MODULES_SOURCES = $(foreach d, $(UNIQUEMODULES), ${subst ${SRC}/,,${wildcard $(d)/*.c}})
 
 # Update library sources
 LIBRARY_SOURCES += $(MODULES_SOURCES)
@@ -98,7 +98,16 @@ include $(MODULES_INCLUDED_FIRST_PASS)
 # Only works with one level of nested module inclusion.
 include $(filter-out $(MODULES_INCLUDED_FIRST_PASS),$(MODULES_INCLUDES))
 
+define SET_SOURCE_FOR_TARGET
+$$(subst /,_,$$(basename ${1})) := ${1}
+endef
+
+define GET_SOURCE_FOR_TARGET
+$(if ${${1}},$(basename ${${1}}),${1})
+endef
+
 # Test configurations
+$(foreach s,${LIBRARY_SOURCES},$(eval $(call SET_SOURCE_FOR_TARGET,${s})))
 
 define INCLUDE_TEST
     TEST_SUBDIRS :=
@@ -187,6 +196,7 @@ release: al
 
 # Build regular objects
 $(OBJECTDIR)/%.o: %.c | $(OBJECTDIR)
+	@mkdir -p $(dir $@)
 	$(TRACE_CC)
 	$(Q)$(strip $(CC) $(CFLAGS) -MMD -c $< -o $@)
 	@$(FINALIZE_DEPENDENCY)
@@ -197,8 +207,9 @@ $(TEST_BUILD)/test_%.o: test_%.c | $(TEST_BUILD)
 	$(TRACE_CC)
 	$(Q)$(strip $(CC) $(CFLAGS) -c $< -o $@)
 
-# Build source object for testing
+
 $(TEST_BUILD)/%.o: %.c | $(TEST_BUILD)
+	@mkdir -p $(dir $@)
 	$(TRACE_CC)
 	$(Q)$(strip $(CC) $(CFLAGS) $(TEST_SRC_CFLAGS) -g -DNDEBUG -MMD -c $< -o $@)
 	@$(FINALIZE_DEPENDENCY)
@@ -213,13 +224,6 @@ $(LIBRARY): $(LIBRARY_OBJECTS)
 
 # Build target rule
 $(TARGET_DIR)/%: %.o $(OBJECTS) $(LIBRARY) | $(TARGET_DIR)
-	$(TRACE_LD)
-	$(Q)$(strip $(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS))
-
-# Build tests rule
-$(TEST_BUILD)/test_%: LDFLAGS += $(TEST_LDFLAGS)
-$(TEST_BUILD)/test_%: LDLIBS += $(TEST_LDLIBS)
-$(TEST_BUILD)/test_%: $(TEST_BUILD)/test_%.o $(TEST_BUILD)/%.o $(TEST_PREREQS)
 	$(TRACE_LD)
 	$(Q)$(strip $(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS))
 
@@ -239,3 +243,11 @@ test_%: $(TEST_BUILD)/test_%
 # command in order to be a rule, not just a prerequisite.
 %: $(TARGET_DIR)/%
 	@
+	
+.SECONDEXPANSION:
+# Build tests rule
+$(TEST_BUILD)/test_%: LDFLAGS += $(TEST_LDFLAGS)
+$(TEST_BUILD)/test_%: LDLIBS += $(TEST_LDLIBS)
+$(TEST_BUILD)/test_%: $(TEST_BUILD)/test_%.o $(TEST_BUILD)/$$(call GET_SOURCE_FOR_TARGET,%).o $(TEST_PREREQS)
+	$(TRACE_LD)
+	$(Q)$(strip $(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS))
