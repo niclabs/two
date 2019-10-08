@@ -1,7 +1,8 @@
 #include "hpack.h"
-#include "hpack_decoder.h"
-#include "hpack_encoder.h"
-#include "hpack_tables.h"
+
+#include "hpack/decoder.h"
+#include "hpack/encoder.h"
+#include "hpack/tables.h"
 
 
 /*

@@ -1,6 +1,6 @@
 #include "unit.h"
 #include "fff.h"
-#include "hpack_tables.h"
+#include "hpack/tables.h"
 #include "headers.h"
 
 extern int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value);

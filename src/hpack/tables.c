@@ -1,4 +1,4 @@
-#include "hpack_tables.h"
+#include "hpack/tables.h"
 #include "headers.h"                                    /* for MAX_HEADER_NAME_LEN, MAX_HEADER_VALUE_LEN  */
 #include "logging.h"                                    /* for ERROR*/
 #include <string.h>                                     /* for strlen, strncmp, memset*/

@@ -1,10 +1,10 @@
-
-#include "hpack_decoder.h"
-#include "hpack_utils.h"
-#include "hpack_huffman.h"
 #include <stdint.h>             /* for int8_t, int32_t*/
 #include <string.h>             /* for memset, NULL*/
+
 #include "logging.h"            /* for ERROR */
+#include "hpack/decoder.h"
+#include "hpack/utils.h"
+#include "hpack/huffman.h"
 
 /*
  * Function: hpack_decoder_decode_integer
