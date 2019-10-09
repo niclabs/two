@@ -517,7 +517,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 *        ->error_code: error code for GOAWAY FRAME (RFC 7540 section 7)
 * Output: 0 if no errors were found, -1 if not
 */
-int send_goaway(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s){//, uint8_t *debug_data_buff, uint8_t debug_size){
+int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s){//, uint8_t *debug_data_buff, uint8_t debug_size){
   int rc;
   frame_t frame;
   frame_header_t header;
@@ -559,7 +559,7 @@ int send_goaway(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s){//, uint8
 */
 
 void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s){
-  int rc = send_goaway(buf_out, error_code, h2s);
+  int rc = send_goaway(error_code, buf_out, h2s);
   if(rc < 0){
     WARN("Error sending GOAWAY frame to endpoint.");
   }
