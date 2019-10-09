@@ -24,8 +24,8 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
 int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_t *buf_out, h2states_t *h2s);
 int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t *h2s);
 int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states_t *h2s);
+int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, cbuf_t *buf_out, h2states_t *h2s);
 int handle_window_update_payload(cbuf_t *buf_out, h2states_t *h2s);
-int handle_continuation_payload(cbuf_t *buf_out, h2states_t *h2s);
 /*
  *
  *
@@ -419,9 +419,9 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 
 /*
 * Function: change_stream_state_end_stream_flag
-* Given an hstates_t struct and a boolean, change the state of the current stream
+* Given an h2states_t struct and a boolean, change the state of the current stream
 * when a END_STREAM_FLAG is sent or received.
-* Input: ->st: pointer to hstates_t struct where connection variables are stored
+* Input: ->st: pointer to h2states_t struct where connection variables are stored
 *        ->sending: boolean like uint8_t that indicates if current flag is sent or received
 * Output: 0 if no errors were found, -1 if not
 */
@@ -499,7 +499,7 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
 * Does all the operations related to an incoming HEADERS FRAME.
 * Input: -> header: pointer to the headers frame header (frame_header_t)
 *        -> hpl: pointer to the headers payload (headers_payload_t)
-*        -> st: pointer to hstates_t struct where connection variables are stored
+*        -> st: pointer to h2states_t struct where connection variables are stored
 * Output: 0 if no error was found, -1 if not.
 */
 int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_t *buf_out, h2states_t *h2s){
@@ -605,7 +605,7 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s){
 * Updates the specified table of settings with a given settings payload.
 * Input: -> spl: settings_payload_t pointer where settings values are stored
 *        -> place: must be LOCAL or REMOTE. It indicates which table to update.
--> st: pointer to hstates_t struct where settings table are stored.
+-> st: pointer to h2states_t struct where settings table are stored.
 * Output: 0 if update was successfull, -1 if not
 */
 int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s){
@@ -664,7 +664,7 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_ou
         -> header: pointer to a frameheader_t structure already built with frame info
         -> spl: pointer to settings_payload_t struct where data is gonna be written
         -> pairs: pointer to settings_pair_t array where data is gonna be written
-        -> st: pointer to hstates_t struct where connection variables are stored
+        -> st: pointer to h2states_t struct where connection variables are stored
 * Output: 0 if operations are done successfully, -1 if not.
 */
 int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t *h2s){
@@ -682,7 +682,7 @@ int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t
 * Function: handle_goaway_payload
 * Handles go away payload.
 * Input: ->goaway_pl: goaway_payload_t pointer to goaway frame payload
-*        ->st: pointer hstates_t struct where connection variables are stored
+*        ->st: pointer h2states_t struct where connection variables are stored
 * IMPORTANT: this implementation doesn't check the correctness of the last stream
 * id sent by the endpoint. That is, if a previous GOAWAY was received with an n
 * last_stream_id, it assumes that the next value received is going to be the same.
@@ -715,6 +715,66 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
       ERROR("Error sending GOAWAY FRAME"); // TODO shutdown_connection
       return rc;
     }
+  }
+  return 0;
+}
+
+/*
+* Function: handle_continuation_payload
+* Does all the operations related to an incoming CONTINUATION FRAME.
+* Input: -> header: pointer to the continuation frame header (frame_header_t)
+*        -> hpl: pointer to the continuation payload (continuation_payload_t)
+*        -> st: pointer to h2states_t struct where connection variables are stored
+* Output: 0 if no error was found, -1 if not.
+*/
+int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, cbuf_t *buf_out, h2states_t *h2s){
+  int rc;
+  //We check if payload fits on buffer
+  if(header->length >= HTTP2_MAX_HBF_BUFFER - h2s->header_block_fragments_pointer){
+    ERROR("Continuation Header block fragments doesnt fit on buffer (not enough space allocated). INTERNAL ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return -1;
+  }
+  //receive fragments and save those on the h2s->header_block_fragments buffer
+  rc = buffer_copy(h2s->header_block_fragments + h2s->header_block_fragments_pointer, contpl->header_block_fragment, header->length);
+  if(rc < 1){
+    ERROR("Continuation block fragment was not written or payload was empty");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return -1;
+  }
+  h2s->header_block_fragments_pointer += rc;
+  if(is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)){
+      //return number of headers written on header_list, so http2 can update header_list_count
+      rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer,&h2s->headers, &h2s->hpack_states); //TODO check this: rc is the byte read from the header
+
+      if(rc < 0){
+        ERROR("Error was found receiving header_block");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+      }
+      if(rc!= h2s->header_block_fragments_pointer){
+          ERROR("ERROR still exists fragments to receive.");
+          send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+          return -1;
+      }
+      else{//all fragments already received.
+          h2s->header_block_fragments_pointer = 0;
+      }
+      //st->hd_lists.header_list_count_in = rc;
+      h2s->waiting_for_end_headers_flag = 0;
+      if(h2s->received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
+          h2s->current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+          h2s->received_end_stream = 0;//RESET TO 0
+          /*TODO: Call Resource Manager for message handling */
+      }
+      uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
+      uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
+      if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
+        WARN("Header list size greater than max allowed. Send HTTP 431");
+        //TODO send error and finish stream
+        return 0;
+      }
+
   }
   return 0;
 }
@@ -801,7 +861,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             return -1;
 
         case GOAWAY_TYPE: {
-            DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD");
+            DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD");
             uint16_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
             uint8_t debug_data[max_frame_size - 8];
             goaway_payload_t goaway_pl;
@@ -815,15 +875,29 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
               ERROR("Error during goaway handling");
               return -1;
             }
-            DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD OK");
+            DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD OK");
             return 0;
         }
         case WINDOW_UPDATE_TYPE: {
             return 0;
         }
         case CONTINUATION_TYPE: {
-            rc = handle_continuation_payload(buf_out, h2s);
-            return rc;
+            DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD");
+            continuation_payload_t contpl;
+            uint8_t continuation_block_fragment[HTTP2_MAX_HBF_BUFFER - h2s->header_block_fragments_pointer];
+            rc = read_continuation_payload(buff_read, &h2s->header, &contpl, continuation_block_fragment);
+            if(rc < 0){
+              ERROR("Error in continuation payload reading");
+              send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+              return -1;
+            }
+            rc = handle_continuation_payload(&h2s->header, &contpl, buf_out, h2s);
+            if(rc < 0){
+              ERROR("Error was found during continuatin payload handling");
+              return -1;
+            }
+            DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD OK");
+            return 0;
         }
         default: {
             WARN("Error: Type not found");
@@ -834,14 +908,14 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 
 /*
 * Function: send_goaway
-* Given an hstates_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
+* Given an h2states_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
 * If additional debug data (opaque data) is included it must be written on the
-* given hstates_t.h2s.debug_data_buffer buffer with its corresponding size on the
-* hstates_t.h2s.debug_size variable.
+* given h2states_t.h2s.debug_data_buffer buffer with its corresponding size on the
+* h2states_t.h2s.debug_size variable.
 * IMPORTANT: RFC 7540 section 6.8 indicates that a gracefully shutdown should have
 * an 2^31-1 value on the last_stream_id field and wait at least one RTT before sending
 * a goaway frame with the last stream id. This implementation doesn't.
-* Input: ->st: pointer to hstates_t struct where connection variables are stored
+* Input: ->st: pointer to h2states_t struct where connection variables are stored
 *        ->error_code: error code for GOAWAY FRAME (RFC 7540 section 7)
 * Output: 0 if no errors were found, -1 if not
 */
@@ -881,7 +955,7 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s){//, uint8
 * Function: send_connection_error
 * Send a connection error to endpoint with a specified error code. It implements
 * the behaviour suggested in RFC 7540, secion 5.4.1
-* Input: -> st: hstates_t pointer where connetion variables are stored
+* Input: -> st: h2states_t pointer where connetion variables are stored
 *        -> error_code: error code that will be used to shutdown the connection
 * Output: void
 */
