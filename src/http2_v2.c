@@ -145,6 +145,10 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
       DEBUG("Error was found during incoming condition checking");
       return null_callback();
     }
+    else if(rc == 1){
+      callback_t ret = {receive_header, NULL};
+      return ret;
+    }
     callback_t ret = { receive_payload, NULL };
     return ret;
 }
