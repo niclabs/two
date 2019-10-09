@@ -102,6 +102,7 @@ typedef struct HTTP2_STATES {
     hpack_states_t hpack_states;
 
     frame_header_t header;
+    http2_data_t data;
 } h2states_t;
 
 
