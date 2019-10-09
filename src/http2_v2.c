@@ -2,7 +2,8 @@
 #include "logging.h"
 #include <string.h>
 #include "http2utils_v2.h"
-
+#include "http2_flowcontrol_v2.h"
+#include "utils.h"
 
 callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
@@ -18,6 +19,7 @@ int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s);
 void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
 int handle_payload(cbuf_t *buf_out, h2states_t *h2s);
 int handle_data_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
 int handle_headers_payload(cbuf_t *buf_out, h2states_t *h2s);
 int handle_settings_payload(cbuf_t *buf_out, h2states_t *h2s);
 int handle_goaway_payload(cbuf_t *buf_out, h2states_t *h2s);
@@ -415,6 +417,30 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 }
 
 int handle_payload(cbuf_t *buf_out, h2states_t *h2s)
+int change_stream_state_end_stream_flag(h2states_t *st, uint8_t sending); /* PLACEHOLDER, implement method */
+
+int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s) {
+    uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
+    /*check flow control*/
+    int rc = flow_control_receive_data(h2s, data_length);
+    if(rc < 0){
+        send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
+        return -1;
+    }
+    buffer_copy(h2s->data.buf + h2s->data.size, data_payload->data, data_length);
+    h2s->data.size += data_length;
+    if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
+        h2s->received_end_stream = 1;
+        /*TODO: Call Resource Manager for message handling */
+    }
+    // Stream state handling for end stream flag
+    if(h2s->received_end_stream == 1){
+        change_stream_state_end_stream_flag(h2s, 0); // 0 is for receiving
+        h2s->received_end_stream = 0;
+    }
+    return 0;
+}
+
 {
     int rc;
 
