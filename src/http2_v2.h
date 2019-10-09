@@ -72,6 +72,12 @@ typedef struct HTTP2_WINDOW_MANAGER {
     uint32_t window_used;
 } h2_window_manager_t;
 
+typedef struct HTTP2_DATA {
+    uint32_t size;
+    uint8_t buf[DEFAULT_INITIAL_WINDOW_SIZE]; /*Placeholder*/
+    uint32_t processed;
+} http2_data_t;
+
 
 /*Struct for storing HTTP2 states*/
 typedef struct HTTP2_STATES {
