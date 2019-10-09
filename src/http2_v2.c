@@ -17,8 +17,8 @@ int check_incoming_settings_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s);
 void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
-int handle_payload(cbuf_t *buf_out, h2states_t *h2s);
-int handle_data_payload(cbuf_t *buf_out, h2states_t *h2s);
+
+int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s);
 int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
 int handle_headers_payload(cbuf_t *buf_out, h2states_t *h2s);
 int handle_settings_payload(cbuf_t *buf_out, h2states_t *h2s);
@@ -170,7 +170,7 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         ERROR("Error reading bytes of payload, read %d bytes", rc);
         return null_callback();
     }
-    rc = handle_payload(buf_out, h2s);
+    rc = handle_payload(buff_read_payload, buf_out, h2s);
     // todo: read_type_payload from buff_read_payload
 
     // placeholder
@@ -416,7 +416,6 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
     }
 }
 
-int handle_payload(cbuf_t *buf_out, h2states_t *h2s)
 int change_stream_state_end_stream_flag(h2states_t *st, uint8_t sending); /* PLACEHOLDER, implement method */
 
 int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s) {
@@ -441,13 +440,26 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
     return 0;
 }
 
+int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 {
     int rc;
 
     switch (h2s->header.type) {
         case DATA_TYPE: {
-            rc = handle_data_payload(buf_out, h2s);
-            return rc;
+            DEBUG("handle_payload: RECEIVED DATA PAYLOAD");
+            data_payload_t data_payload;
+            uint8_t data[h2s->header.length];
+            rc = read_data_payload(buff_read, &(h2s->header), &data_payload, data);
+            if(rc < 0){
+                ERROR("ERROR reading data payload");
+                return -1;
+            }
+            rc = handle_data_payload(&(h2s->header), &data_payload, buf_out, h2s);
+            if(rc < 0){
+                ERROR("ERROR in handle receive data");
+                return -1;
+            }
+            return 0;
         }
         case HEADERS_TYPE: {
             rc = handle_headers_payload(buf_out, h2s);
