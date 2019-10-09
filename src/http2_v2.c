@@ -212,6 +212,64 @@ int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s)
     return 0;
 }
 
+
+int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s)
+{
+  // Check if stream is not created or previous one is closed
+  if(h2s->waiting_for_end_headers_flag){
+    //protocol error
+    ERROR("CONTINUATION frame was expected. PROTOCOL ERROR");
+    send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+    return -1;
+  }
+  if(h2s->header.stream_id == 0){
+    ERROR("Invalid stream id: 0. PROTOCOL ERROR");
+    send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+    return -1;
+  }
+  if(h2s->header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)){
+    ERROR("Frame exceeds the MAX_FRAME_SIZE. FRAME SIZE ERROR");
+    send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+    return -1;
+  }
+  if(h2s->current_stream.state == STREAM_IDLE){
+      if(h2s->header.stream_id < h2s->last_open_stream_id){
+        ERROR("Invalid stream id: not bigger than last open. PROTOCOL ERROR");
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        return -1;
+      }
+      if(h2s->header.stream_id%2 != h2s->is_server){
+        INFO("Incoming stream id: %u", h2s->header.stream_id);
+        ERROR("Invalid stream id parity. PROTOCOL ERROR");
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        return -1;
+      }
+      else{ // Open a new stream, update last_open and last_peer stream
+        h2s->current_stream.stream_id = h2s->header.stream_id;
+        h2s->current_stream.state = STREAM_OPEN;
+        h2s->last_open_stream_id = h2s->current_stream.stream_id;
+        return 0;
+      }
+  }
+  else if(h2s->current_stream.state != STREAM_OPEN &&
+          h2s->current_stream.state != STREAM_HALF_CLOSED_LOCAL){
+        //stream closed error
+        ERROR("Current stream is not open. STREAM CLOSED ERROR");
+        send_connection_error(buf_out, HTTP2_STREAM_CLOSED, h2s);
+        return -1;
+  }
+  else if(h2s->header.stream_id != h2s->current_stream.stream_id){
+      //protocol error
+      ERROR("Stream ids do not match. PROTOCOL ERROR");
+      send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+      return -1;
+  }
+  else{
+    return 0;
+  }
+}
+
+
 int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
     int rc;
