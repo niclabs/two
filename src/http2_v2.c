@@ -571,6 +571,63 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
 }
 
 /*
+* Function: update_settings_table
+* Updates the specified table of settings with a given settings payload.
+* Input: -> spl: settings_payload_t pointer where settings values are stored
+*        -> place: must be LOCAL or REMOTE. It indicates which table to update.
+-> st: pointer to hstates_t struct where settings table are stored.
+* Output: 0 if update was successfull, -1 if not
+*/
+int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s){
+  uint8_t i;
+  uint16_t id;
+  uint32_t value;
+  for(i = 0; i < spl->count; i++){
+    id = spl->pairs[i].identifier;
+    value = spl->pairs[i].value;
+    if(id < 1 || id > 6){
+      continue;
+    }
+    switch(id){
+      case ENABLE_PUSH:
+        if(value != 0 && value != 1){
+          ERROR("Invalid value in ENABLE_PUSH settings. Protocol Error");
+          send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+          return -1;
+        }
+        break;
+      case INITIAL_WINDOW_SIZE:
+        if(value > 2147483647){
+          ERROR("Invalid value in INITIAL_WINDOW_SIZE settings. Protocol Error");
+          send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
+          return -1;
+        }
+        break;
+      case MAX_FRAME_SIZE:
+        if(value > 16777215 || value < 16384){
+          ERROR("Invalid value in MAX_FRAME_SIZE settings. Protocol Error");
+          send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+          return -1;
+        }
+        break;
+      default:
+        break;
+    }
+    if(place == REMOTE){
+      h2s->remote_settings[--id] = spl->pairs[i].value;
+    }
+    else if(place == LOCAL){
+      h2s->local_settings[--id] = spl->pairs[i].value;
+    }
+    else{
+      WARN("Invalid table");
+      break;
+    }
+  }
+  return 0;
+}
+
+/*
 * Function: handle_settings_payload
 * Reads a settings payload from buffer and works with it.
 * Input: -> buff_read: buffer where payload's data is written
