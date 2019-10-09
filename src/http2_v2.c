@@ -269,6 +269,40 @@ int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s)
   }
 }
 
+int check_incoming_settings_condition(cbuf_t *buf_out, h2states_t *h2s)
+{
+  if(h2s->header.stream_id != 0){
+      ERROR("Settings frame stream id is not zero. PROTOCOL ERROR");
+      send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+      return -1;
+  }
+  else if(h2s->header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)){
+    ERROR("Settings payload bigger than allowed. MAX_FRAME_SIZE ERROR");
+    send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+    return -1;
+  }
+  /*Check if ACK is set*/
+  if(is_flag_set(h2s->header.flags, SETTINGS_ACK_FLAG)){
+      if(h2s->header.length != 0){
+          ERROR("Settings payload size is not zero. FRAME SIZE ERROR");
+          send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+          return -1;
+      }
+      else{
+          if(h2s->wait_setting_ack){
+              h2s->wait_setting_ack = 0;
+              return 1;
+          }
+          else{
+              WARN("ACK received but not expected");
+              return 1;
+          }
+      }
+  }
+  else{
+      return 0;
+  }
+}
 
 int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
