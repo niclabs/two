@@ -21,7 +21,7 @@ void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s
 
 int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s);
 int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
-int handle_headers_payload(cbuf_t *buf_out, h2states_t *h2s);
+int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_t *buf_out, h2states_t *h2s);
 int handle_settings_payload(cbuf_t *buf_out, h2states_t *h2s);
 int handle_goaway_payload(cbuf_t *buf_out, h2states_t *h2s);
 int handle_window_update_payload(cbuf_t *buf_out, h2states_t *h2s);
@@ -467,6 +467,11 @@ int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2stat
   }
 }
 
+/*
+*
+*
+*
+*/
 int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s) {
     uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
     /*check flow control*/
@@ -479,16 +484,97 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
     h2s->data.size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
         h2s->received_end_stream = 1;
-        /*TODO: Call Resource Manager for message handling */
     }
     // Stream state handling for end stream flag
     if(h2s->received_end_stream == 1){
         change_stream_state_end_stream_flag(0, buf_out, h2s); // 0 is for receiving
         h2s->received_end_stream = 0;
+        /*TODO: Call Resource Manager for message handling */
     }
     return 0;
 }
 
+/*
+* Function: handle_headers_payload
+* Does all the operations related to an incoming HEADERS FRAME.
+* Input: -> header: pointer to the headers frame header (frame_header_t)
+*        -> hpl: pointer to the headers payload (headers_payload_t)
+*        -> st: pointer to hstates_t struct where connection variables are stored
+* Output: 0 if no error was found, -1 if not.
+*/
+int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_t *buf_out, h2states_t *h2s){
+  // we receive a headers, so it could be continuation frames
+  int rc;
+  h2s->waiting_for_end_headers_flag = 1;
+  int hbf_size = get_header_block_fragment_size(header, hpl);
+  // We are reading a new header frame, so previous fragments are useless
+  if(h2s->header_block_fragments_pointer != 0){
+    h2s->header_block_fragments_pointer = 0;
+  }
+  // We check if hbf fits on buffer
+  if(hbf_size >= HTTP2_MAX_HBF_BUFFER){
+    ERROR("Header block fragments too big (not enough space allocated). INTERNAL_ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return -1;
+  }
+  //first we receive fragments, so we save those on the h2s->header_block_fragments buffer
+  rc = buffer_copy(h2s->header_block_fragments + h2s->header_block_fragments_pointer, hpl->header_block_fragment, hbf_size);
+  if(rc < 1){
+    ERROR("Headers' header block fragment were not written or paylaod was empty. rc = %d",rc);
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return -1;
+  }
+  h2s->header_block_fragments_pointer += rc;
+  //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
+  if(is_flag_set(header->flags, HEADERS_END_STREAM_FLAG)){
+      h2s->received_end_stream = 1;
+  }
+  //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
+  if(is_flag_set(header->flags,HEADERS_END_HEADERS_FLAG)){
+      //return bytes read.
+      rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer, &h2s->headers, &h2s->hpack_states);
+      if(rc < 0){
+        if(rc==-1){
+          ERROR("Error was found receiving header_block. COMPRESSION ERROR");
+          send_connection_error(buf_out, HTTP2_COMPRESSION_ERROR, h2s);
+        }
+        else if(rc==-2){
+          ERROR("Error was found receiving header_block. INTERNAL ERROR");
+          send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        }
+        return -1;
+      }
+      if(rc!= h2s->header_block_fragments_pointer){
+          ERROR("ERROR still exists fragments to receive. Read %d bytes of %d bytes", rc, h2s->header_block_fragments_pointer);
+          send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+          return -1;
+      }
+      else{//all fragments already received.
+          h2s->header_block_fragments_pointer = 0;
+      }
+      //st->hd_lists.header_list_count_in = rc;
+      h2s->waiting_for_end_headers_flag = 0;//RESET TO 0
+      if(h2s->received_end_stream == 1){
+          change_stream_state_end_stream_flag(0, buf_out, h2s); //0 is for receiving
+          h2s->received_end_stream = 0;//RESET TO 0
+          /*TODO: Call Resource Manager for message handling */
+      }
+      uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
+      uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
+      if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
+        ERROR("Header list size greater than max allowed. Send HTTP 431");
+        //TODO send error and finish stream
+        return 0;
+      }
+  }
+  return 0;
+}
+
+/*
+*
+*
+*
+*/
 int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 {
     int rc;
@@ -508,11 +594,26 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
                 ERROR("ERROR in handle receive data");
                 return -1;
             }
+            DEBUG("handle_payload: RECEIVED DATA PAYLOAD OK");
             return 0;
         }
         case HEADERS_TYPE: {
-            rc = handle_headers_payload(buf_out, h2s);
-            return rc;
+            DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD");
+            headers_payload_t hpl;
+            uint8_t headers_block_fragment[HTTP2_MAX_HBF_BUFFER];
+            uint8_t padding[32];
+            rc = read_headers_payload(buff_read, &(h2s->header), &hpl, headers_block_fragment, padding);
+            if(rc < 0){
+                ERROR("ERROR reading headers payload");
+                return rc;
+            }
+            rc = handle_headers_payload(&(h2s->header), &hpl, buf_out, h2s);
+            if(rc < 0){
+                ERROR("ERROR in handle receive data");
+                return -1;
+            }
+            DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD OK");
+            return 0;
 
         }
         case PRIORITY_TYPE://Priority
