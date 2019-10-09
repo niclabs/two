@@ -801,8 +801,22 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             return -1;
 
         case GOAWAY_TYPE: {
-            rc = handle_goaway_payload(buf_out, h2s);
-            return rc;
+            DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD");
+            uint16_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+            uint8_t debug_data[max_frame_size - 8];
+            goaway_payload_t goaway_pl;
+            rc = read_goaway_payload(buff_read, &h2s->header, &goaway_pl, debug_data);
+            if(rc < 0){
+              ERROR("Error in reading goaway payload");
+              return -1;
+            }
+            rc = handle_goaway_payload(&goaway_pl, buf_out, h2s);
+            if(rc < 0){
+              ERROR("Error during goaway handling");
+              return -1;
+            }
+            DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD OK");
+            return 0;
         }
         case WINDOW_UPDATE_TYPE: {
             return 0;
