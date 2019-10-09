@@ -431,7 +431,7 @@ void test_settings_frame_to_bytes(void)
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
 
     uint8_t byte_array[6 * count];
-    int rc = settings_frame_to_bytes(&settings_payload, count, byte_array);
+    int rc = settings_payload_to_bytes(&settings_payload, count, byte_array);
     TEST_ASSERT_EQUAL(6 * count, rc);
     uint8_t expected_bytes[] = { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
     TEST_ASSERT_EQUAL(count, uint16_to_byte_array_fake.call_count);
@@ -451,7 +451,7 @@ uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
     return (uint32_t)bytes[3];
 }
 
-void test_bytes_to_settings_payload(void)
+void test_read_settings_payload(void)
 {
     uint8_t bytes[] = { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
 
@@ -475,13 +475,14 @@ void test_bytes_to_settings_payload(void)
 
     settings_payload_t result_settings_payload;
     settings_pair_t result_setting_pairs[count];
+    frame_header_t header;
+    header.length = count * 6 + 1;
 
-    int rc = bytes_to_settings_payload(bytes, count * 6 + 1, &result_settings_payload, result_setting_pairs);
+    int rc = read_settings_payload(bytes, &header, &result_settings_payload, result_setting_pairs);
     TEST_ASSERT_EQUAL(-1, rc);
 
-    bytes_to_settings_payload(bytes, count * 6, &result_settings_payload, result_setting_pairs);
-
-
+    header.length = count * 6 ;
+    read_settings_payload(bytes, &header, &result_settings_payload, result_setting_pairs);
 
     TEST_ASSERT_EQUAL(count, bytes_to_uint16_fake.call_count);
     TEST_ASSERT_EQUAL(count, bytes_to_uint32_fake.call_count);
@@ -491,9 +492,9 @@ void test_bytes_to_settings_payload(void)
         TEST_ASSERT_EQUAL(ids[i], result_setting_pairs[i].identifier);
         TEST_ASSERT_EQUAL(values[i], result_setting_pairs[i].value);
     }
-
-
 }
+
+
 void test_create_settings_ack_frame(void)
 {
     frame_t frame;
@@ -1129,7 +1130,7 @@ int main(void)
     UNIT_TEST(test_create_settings_frame);
     UNIT_TEST(test_setting_to_bytes);
     UNIT_TEST(test_settings_frame_to_bytes);
-    UNIT_TEST(test_bytes_to_settings_payload);
+    UNIT_TEST(test_read_settings_payload);
 
     UNIT_TEST(test_create_settings_ack_frame);
     UNIT_TEST(test_frame_to_bytes_settings);
