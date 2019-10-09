@@ -733,8 +733,22 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             return -1;
 
         case SETTINGS_TYPE: {
-            rc = handle_settings_payload(buf_out, h2s);
-            return rc;
+            DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD");
+            settings_payload_t spl;
+            settings_pair_t pairs[h2s->header.length/6];
+            rc = bytes_to_settings_payload(buff_read, h2s->header.length, &spl, pairs);
+            if(rc < 0){
+              // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
+              send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+              return rc;
+            }
+            rc = handle_settings_payload(&spl, buf_out, h2s);
+            if(rc < 0){
+                ERROR("ERROR in handle settings payload!");
+                return -1;
+            }
+            DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD OK");
+            return 0;
         }
         case PUSH_PROMISE_TYPE://Push promise
             WARN("TODO: Push promise frame. Not implemented yet.");
