@@ -323,6 +323,43 @@ int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s)
   return 0;
 }
 
+int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s)
+{
+  if(!h2s->waiting_for_end_headers_flag){
+    ERROR("Continuation must be preceded by a HEADERS frame. PROTOCOL ERROR");
+    send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+    return -1;
+  }
+  if(h2s->header.stream_id == 0x0 ||
+    h2s->header.stream_id != h2s->current_stream.stream_id){
+    ERROR("Continuation received on invalid stream. PROTOCOL ERROR");
+    send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+    return -1;
+  }
+  if(h2s->header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)){
+    ERROR("Frame exceeds the MAX_FRAME_SIZE. FRAME SIZE ERROR");
+    send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+    return -1;
+  }
+  if(h2s->current_stream.state == STREAM_IDLE){
+    ERROR("Continuation received on idle stream. PROTOCOL ERROR");
+    send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+    return -1;
+  }
+  else if(h2s->current_stream.state != STREAM_OPEN){
+    ERROR("Continuation received on closed stream. STREAM CLOSED");
+    send_connection_error(buf_out, HTTP2_STREAM_CLOSED, h2s);
+    // TODO: send STREAM_CLOSED_ERROR to endpoint.
+    return -1;
+  }
+  if(h2s->header.length >= HTTP2_MAX_HBF_BUFFER - h2s->header_block_fragments_pointer){
+    ERROR("Error block fragments too big (not enough space allocated). INTERNAL ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return -1;
+  }
+  return 0;
+}
+
 
 int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
