@@ -4,6 +4,7 @@
 #include "cbuf.h"
 #include "config.h"
 #include "frames.h"
+#include "headers.h"
 
 
 
@@ -103,6 +104,7 @@ typedef struct HTTP2_STATES {
 
     frame_header_t header;
     http2_data_t data;
+    headers_t headers;
 } h2states_t;
 
 
