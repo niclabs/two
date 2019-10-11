@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-#include "http.h"
+#include "http_old.h"
 #include "logging.h"
 
 hstates_t http_client_state;
