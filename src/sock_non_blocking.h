@@ -11,6 +11,14 @@ Returns 0   if Ok
 int sock_create(sock_t* socket);
 
 /*
+Destroys a non blocking socket.
+
+Returns 0   if Ok
+        -1  if Error
+*/
+int sock_destroy(sock_t* socket);
+
+/*
 Sets a socket to listen mode.
 
 Returns 0   if Ok
@@ -23,7 +31,7 @@ Checks if there's new data to be read from the socket.
 
 Returns >=0 the amount of data available
 */
-int sock_poll(sock_t* socket);
+unsigned int sock_poll(sock_t* socket);
 
 /*
 Reads from a socket without blocking.
@@ -31,7 +39,7 @@ Reads from a socket without blocking.
 Returns -1  if Error
         >=0 the amount of bytes read
 */
-int sock_read(sock_t* socket, char * buffer, unsigned int buffer_length);
+int sock_read(sock_t* socket, uint8_t * buffer, unsigned int buffer_length);
 
 /*
 Writes into a socket without blocking.
@@ -39,7 +47,7 @@ Writes into a socket without blocking.
 Returns -1  if Error
         >=0 the amount of bytes written
 */
-int sock_write(sock_t* socket, char * buffer, unsigned int buffer_length);
+int sock_write(sock_t* socket, uint8_t * buffer, unsigned int buffer_length);
 
 /*
 Accepts a client into a socket without blocking.

@@ -8,8 +8,8 @@
 * Per-client struct.
 */
 typedef struct {
-    unsigned char* buf_in_data;             // In buffer's memory
-    unsigned char* buf_out_data;            // Out buffer's memory
+    uint8_t* buf_in_data;             // In buffer's memory
+    uint8_t* buf_out_data;            // Out buffer's memory
     cbuf_t buf_in[1];                       // Circular buffer in
     cbuf_t buf_out[1];                      // Circular buffer out
     void* state;                            // The client's state
@@ -39,14 +39,14 @@ void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state
  * Reads from a client's socket into it's in circular buffer,
  * if data is available.
  */
-NetReturnCode read_from_socket(Client* p_client, int available_data)
+NetReturnCode read_from_socket(Client* p_client, unsigned int available_data)
 {
     unsigned int available_in_space = cbuf_maxlen(p_client->buf_in)-cbuf_len(p_client->buf_in);
     unsigned int readable_data = (available_data <= available_in_space) ? available_data : available_in_space;
 
     if (readable_data > 0)
     {
-        unsigned char buf_aux[readable_data];
+        uint8_t buf_aux[readable_data];
 
         // Data is read
         DEBUG("Received data from client %i", i);
@@ -79,7 +79,7 @@ NetReturnCode write_to_socket(Client* p_client)
     // Data is written if available
     if (writable_data > 0)
     {
-        unsigned char buf_aux[writable_data];
+        uint8_t buf_aux[writable_data];
 
         cbuf_peek(p_client->buf_out, buf_aux, writable_data);
 
@@ -91,10 +91,14 @@ NetReturnCode write_to_socket(Client* p_client)
             return WriteError;
         }
 
-        if (write_rc < writable_data)
+        if ((unsigned int)write_rc < writable_data)
+        {
             WARN("Could only write %i out of %i bytes into socket", write_rc, writable_data);
+        }
         else
+        {
             DEBUG("Wrote %i bytes into socket", write_rc);
+        }
 
         cbuf_pop(p_client->buf_out, buf_aux, write_rc);
     }
@@ -110,9 +114,9 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
 
     // Allocation ofr memory for the clients
     Client clients[NET_MAX_CLIENTS];
-    unsigned char buffers_in[NET_MAX_CLIENTS][data_buffer_size];
-    unsigned char buffers_out[NET_MAX_CLIENTS][data_buffer_size];
-    unsigned char states[NET_MAX_CLIENTS][client_state_size];
+    uint8_t buffers_in[NET_MAX_CLIENTS][data_buffer_size];
+    uint8_t buffers_out[NET_MAX_CLIENTS][data_buffer_size];
+    uint8_t states[NET_MAX_CLIENTS][client_state_size];
 
     // Client initialization
     for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
@@ -127,7 +131,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
     }
 
     // Server socket setup
-    sock_t* server_socket;
+    sock_t* server_socket = NULL;
     sock_rc = sock_create(server_socket);
     if (sock_rc != 0)
     {
@@ -156,7 +160,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
             if (rc != Ok)
                 break;
 
-            int available_data = 0;
+            unsigned int available_data = 0;
 
             // If the client is connected and has data
             if (client.cb.func != NULL && (available_data=sock_poll(client.socket)) != 0)
@@ -259,7 +263,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
             }
             INFO("Client disconnected");
 
-            clean_client(&client);
+            reset_client(&client, data_buffer_size, client_state_size);
         }
     }
 

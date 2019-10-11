@@ -57,8 +57,8 @@ http_resource_handler_t resource_handler_get(char *method, char *path)
 {
     http_resource_t res;
 
-       for (int i = 0; i < app_resources; i++) {
-        res = app_resources[i];
+       for (int i = 0; i < app_resources.resource_list_size; i++) {
+        res = app_resources.resource_list[i];
         if (strncmp(res.path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res.method, method) == 0) {
             return res.handler;
         }
@@ -98,13 +98,13 @@ int resource_handler_set(char *method, char *path, http_resource_handler_t handl
     static uint8_t inited_app_resources = 0;
     if(!inited_app_resources) {
       memset(&app_resources, 0, sizeof(resource_list_t));
-      inited = 1;
+      inited_app_resources = 1;
     }
 
     // Checks if the path and method already exist
     http_resource_t *res;
-    for (int i = 0; i < app_resources->resource_list_size; i++) {
-        res = &app_resources->resource_list[i];
+    for (int i = 0; i < app_resources.resource_list_size; i++) {
+        res = &app_resources.resource_list[i];
         //If it does, replaces the resource
         if (strncmp(res->path, path, HTTP_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
             res->handler = handler;
@@ -113,13 +113,13 @@ int resource_handler_set(char *method, char *path, http_resource_handler_t handl
     }
 
     // Checks if the list is full
-    if (app_resources->resource_list_size >= HTTP_MAX_RESOURCES) {
+    if (app_resources.resource_list_size >= HTTP_MAX_RESOURCES) {
         ERROR("HTTP resource limit (%d) reached. Try changing value for HTTP_CONF_MAX_RESOURCES", HTTP_MAX_RESOURCES);
         return -1;
     }
 
     // Adds the resource to the list
-    res = &app_resources->resource_list[app_resources->resource_list_size++];
+    res = &app_resources.resource_list[app_resources.resource_list_size++];
 
     // Sets values
     strncpy(res->method, method, 8);

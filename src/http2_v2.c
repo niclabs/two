@@ -90,7 +90,7 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
     return ret_null;
 }
 
-int validate_pseudoheaders(header_t* pseudoheaders)
+int validate_pseudoheaders(headers_t* pseudoheaders)
 {
 
     if (headers_get(pseudoheaders, ":method") == NULL)

@@ -277,6 +277,28 @@ int ignore_unsupported_data_frames(hstates_t *hs)
     return -1;
 }
 
+int http_client_disconnect(hstates_t *hs){
+    if (hs->socket_state) {
+        if (hs->connection_state) {
+            if (h2_graceful_connection_shutdown(hs) < 0) {
+                WARN("Client will disconnect without a successful goaway");
+            }
+        }
+
+        if (sock_destroy(&hs->socket) < 0) {
+            DEBUG("Error in client disconnection");
+            return -1;
+        }
+
+        INFO("Client disconnected\n");
+    }
+
+    hs->socket_state = 0;
+    hs->connection_state = 0;
+
+    return 0;
+}
+
 /************************************
 * Server API methods
 ************************************/
@@ -591,26 +613,4 @@ int http_get(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 int http_head(hstates_t *hs, char *uri, uint8_t *response, size_t *size)
 {
     return send_client_request(hs, "HEAD", uri, response, size);
-}
-
-int http_client_disconnect(hstates_t *hs){
-    if (hs->socket_state) {
-        if (hs->connection_state) {
-            if (h2_graceful_connection_shutdown(hs) < 0) {
-                WARN("Client will disconnect without a successful goaway");
-            }
-        }
-
-        if (sock_destroy(&hs->socket) < 0) {
-            DEBUG("Error in client disconnection");
-            return -1;
-        }
-
-        INFO("Client disconnected\n");
-    }
-
-    hs->socket_state = 0;
-    hs->connection_state = 0;
-
-    return 0;
 }

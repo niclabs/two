@@ -1,4 +1,4 @@
-#include "http2_flowcontrol.h"
+#include "http2_flowcontrol_v2.h"
 #include "logging.h"
 
 /*
@@ -60,7 +60,7 @@ int flow_control_receive_data(h2states_t *h2s, uint32_t length){
 *        -> data_sent: the size of the outgoing data.
 * Output: 0 if window increment was successfull. -1 if not
 */
-int flow_control_send_data(hstates_t *h2s, uint32_t data_sent){
+int flow_control_send_data(h2states_t *h2s, uint32_t data_sent){
   if(data_sent > get_window_available_size(h2s->outgoing_window)){
     ERROR("Trying to send more data than allowed by window.");
     return -1;
@@ -90,10 +90,11 @@ int flow_control_receive_window_update(h2states_t *h2s, uint32_t window_size_inc
 
 uint32_t get_size_data_to_send(h2states_t *h2s){
     uint32_t available_window = get_window_available_size(h2s->outgoing_window);
-    if( available_window <= h2s->data_out.size - h2s->data_out.processed){
+    if( available_window <= h2s->data.size - h2s->data.processed){
         return available_window;
     }
     else{
-        return h2s->data_out.size - h2s->data_out.processed;
+        return h2s->data.size - h2s->data.processed;
     }
+    return 0;
 }

@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 /*
    This API contains the methods in Resource Manager layer
  */
