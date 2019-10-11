@@ -3,6 +3,7 @@
 #include <string.h>
 #include "http2utils_v2.h"
 #include "http2_flowcontrol_v2.h"
+#include "http.h"
 #include "utils.h"
 
 callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
