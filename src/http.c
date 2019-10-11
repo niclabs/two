@@ -90,20 +90,24 @@ uint32_t get_data(uint8_t *data_in_buff, uint32_t data_in_buff_size, uint8_t *da
  * Add data to be sent to data lists
  *
  * @param    data_buff           Struct with data information
- * @param    data_in_buff_size   Buffer size
+ * @param    data_buff_size   Buffer size
  * @param    data                Data
  * @param    data_size           Size of data
  *
  * @return   0                   Successfully added data
  * @return   -1                  There was an error in the process
  */
-int set_data(uint8_t *data_buff, uint8_t *data, int data_size)
+int set_data(uint8_t *data_buff, int *data_buff_size, uint8_t *data, int data_size)
 {
     if (data_size <= 0) {
         ERROR("Data size can't be negative or zero");
         return -1;
     }
-    memcpy(data_buff, data, data_size);
+    int max = data_size;
+    if (*data_buff_size > data_size){
+      max = data_buff_size;
+    }
+    memcpy(data_buff, data, max);
     return 0;
 }
 
@@ -152,7 +156,7 @@ int error(uint8_t *data_buff, headers_t *headers_buff, int code, char *msg)
 /**
  * Perform request for the given method and uri
  */
-int do_request(uint8_t *data_buff, headers_t *headers_buff, char *method, char *uri)
+int do_request(uint8_t *data_buff, int *data_size, headers_t *headers_buff, char *method, char *uri)
 {
     // parse URI removing query parameters
     char path[HTTP_MAX_PATH_SIZE];
@@ -174,7 +178,7 @@ int do_request(uint8_t *data_buff, headers_t *headers_buff, char *method, char *
     // If it is GET method Prepare response for callback
     else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
         clean_data(data_buff);
-        set_data(data_buff, response, len);
+        set_data(data_buff, data_size, response, len);
     }
 
     // Clean header list
@@ -187,7 +191,7 @@ int do_request(uint8_t *data_buff, headers_t *headers_buff, char *method, char *
 }
 
 
-int http_server_response(uint8_t *data_buff, headers_t *headers_buff)
+int http_server_response(uint8_t *data_buff, int *data_size, headers_t *headers_buff)
 {
     // Get the method, path and scheme from headers
     char *method = headers_get(headers_buff, ":method");
@@ -202,7 +206,7 @@ int http_server_response(uint8_t *data_buff, headers_t *headers_buff)
     // TODO: read data (if POST)
 
     // Process the http request
-    return do_request(data_buff, headers_buff, method, path);
+    return do_request(data_buff, data_size, headers_buff, method, path);
 }
 
 

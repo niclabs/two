@@ -26,11 +26,12 @@
 /**
  * Generate a response from server to each client request
  *
- * @param data_buff data structure
+ * @param data_buff data buffer
+ * @param data_size data buffer size
  * @param headers_buff headers data structure
  * @return 0 if ok -1 if an error ocurred
  */
-int http_server_response(uint8_t *data_buff, headers_t *headers_buff);
+int http_server_response(uint8_t *data_buff, int *data_size, headers_t *headers_buff);
 
 /**
  * Utility function to check for method support
