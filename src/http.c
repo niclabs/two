@@ -103,11 +103,12 @@ int set_data(uint8_t *data_buff, int *data_buff_size, uint8_t *data, int data_si
         ERROR("Data size can't be negative or zero");
         return -1;
     }
-    int max = data_size;
+    int min = data_buff_size;
     if (*data_buff_size > data_size){
-      max = data_buff_size;
+      min = data_size;
+      data_buff_size = data_size;
     }
-    memcpy(data_buff, data, max);
+    memcpy(data_buff, data, min);
     return 0;
 }
 
