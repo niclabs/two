@@ -30,7 +30,7 @@
  * @param headers_buff headers data structure
  * @return 0 if ok -1 if an error ocurred
  */
-int res_manager_server_response(uint8_t *data_buff, headers_t *headers_buff);
+int http_server_response(uint8_t *data_buff, headers_t *headers_buff);
 
 /**
  * Utility function to check for method support

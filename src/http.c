@@ -187,7 +187,7 @@ int do_request(uint8_t *data_buff, headers_t *headers_buff, char *method, char *
 }
 
 
-int res_manager_server_response(uint8_t *data_buff, headers_t *headers_buff)
+int http_server_response(uint8_t *data_buff, headers_t *headers_buff)
 {
     // Get the method, path and scheme from headers
     char *method = headers_get(headers_buff, ":method");
