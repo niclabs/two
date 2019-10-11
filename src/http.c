@@ -97,16 +97,16 @@ uint32_t get_data(uint8_t *data_in_buff, uint32_t data_in_buff_size, uint8_t *da
  * @return   0                   Successfully added data
  * @return   -1                  There was an error in the process
  */
-int set_data(uint8_t *data_buff, int *data_buff_size, uint8_t *data, int data_size)
+int set_data(uint8_t *data_buff, uint32_t *data_buff_size, uint8_t *data, int data_size)
 {
     if (data_size <= 0) {
         ERROR("Data size can't be negative or zero");
         return -1;
     }
-    int min = data_buff_size;
-    if (*data_buff_size > data_size){
-      min = data_size;
-      data_buff_size = data_size;
+    uint32_t min = *data_buff_size;
+    if (*data_buff_size > (uint32_t) data_size){
+      min = (uint32_t) data_size;
+      *data_buff_size = (uint32_t) data_size;
     }
     memcpy(data_buff, data, min);
     return 0;
@@ -157,7 +157,7 @@ int error(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, int 
 /**
  * Perform request for the given method and uri
  */
-int do_request(uint8_t *data_buff, int *data_size, headers_t *headers_buff, char *method, char *uri)
+int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, char *method, char *uri)
 {
     // parse URI removing query parameters
     char path[HTTP_MAX_PATH_SIZE];
@@ -192,7 +192,7 @@ int do_request(uint8_t *data_buff, int *data_size, headers_t *headers_buff, char
 }
 
 
-int http_server_response(uint8_t *data_buff, int *data_size, headers_t *headers_buff)
+int http_server_response(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff)
 {
     // Get the method, path and scheme from headers
     char *method = headers_get(headers_buff, ":method");
