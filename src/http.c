@@ -129,7 +129,7 @@ int clean_data(uint8_t *data_buff)
 /**
  * Send an http error with the given code and message
  */
-int error(uint8_t *data_buff, headers_t *headers_buff, int code, char *msg)
+int error(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, int code, char *msg)
 {
     // Set status code
     char strCode[4];
@@ -142,7 +142,7 @@ int error(uint8_t *data_buff, headers_t *headers_buff, int code, char *msg)
     // Set error message
     if (msg != NULL) {
         clean_data(data_buff);
-        set_data(data_buff, (uint8_t *)msg, strlen(msg));
+        set_data(data_buff, data_size, (uint8_t *)msg, strlen(msg));
     }
 
     DEBUG("Error with status code %d", code);
@@ -167,14 +167,14 @@ int do_request(uint8_t *data_buff, int *data_size, headers_t *headers_buff, char
     // find callback for resource
     http_resource_handler_t handle_uri;
     if ((handle_uri = resource_handler_get(method, path)) == NULL) {
-        return error(data_buff, headers_buff, 404, "Not Found");
+        return error(data_buff, data_size, headers_buff, 404, "Not Found");
     }
 
     uint8_t response[HTTP_MAX_RESPONSE_SIZE];
     int len;
     if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
         // if the handler returns
-        return error(data_buff, headers_buff, 500, "Server Error");
+        return error(data_buff, data_size, headers_buff, 500, "Server Error");
     }
     // If it is GET method Prepare response for callback
     else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
@@ -200,7 +200,7 @@ int http_server_response(uint8_t *data_buff, int *data_size, headers_t *headers_
 
     DEBUG("Received %s request", method);
     if (!http_has_method_support(method)) {
-        error(data_buff, headers_buff, 501, "Not Implemented");
+        error(data_buff, data_size, headers_buff, 501, "Not Implemented");
         return 0;
     }
 
