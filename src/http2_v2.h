@@ -15,6 +15,8 @@
 #define HTTP2_MAX_HBF_BUFFER 16384
 /*Definition of max buffer size*/
 #define HTTP2_MAX_BUFFER_SIZE 16384
+/*Define max count of headers*/
+#define HTTP2_MAX_HEADER_COUNT 256
 
 
 /*Default settings values*/
@@ -104,6 +106,7 @@ typedef struct HTTP2_STATES {
 
     frame_header_t header;
     http2_data_t data;
+    header_t headers_buf[HTTP2_MAX_HEADER_COUNT]; /*TODO: remove this and make it dinamic*/
     headers_t headers;
 } h2states_t;
 
