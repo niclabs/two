@@ -494,7 +494,7 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
     if(h2s->received_end_stream == 1){
         change_stream_state_end_stream_flag(0, buf_out, h2s); // 0 is for receiving
         h2s->received_end_stream = 0;
-        res_manager_server_response(h2s->data.buf, *h2s->data.size, h2s->headers);
+        http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
     }
     return 0;
 }
@@ -562,7 +562,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
       if(h2s->received_end_stream == 1){
           change_stream_state_end_stream_flag(0, buf_out, h2s); //0 is for receiving
           h2s->received_end_stream = 0;//RESET TO 0
-          res_manager_server_response(h2s->data.buf, *h2s->data.size, h2s->headers);
+          http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
       }
       uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
@@ -770,7 +770,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
       if(h2s->received_end_stream == 1){ //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
           h2s->current_stream.state = STREAM_HALF_CLOSED_REMOTE;
           h2s->received_end_stream = 0;//RESET TO 0
-          res_manager_server_response(h2s->data.buf, *h2s->data.size, h2s->headers);
+          http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
       }
       uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
