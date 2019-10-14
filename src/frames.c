@@ -36,7 +36,6 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 }
 
 
-
 /*
  * Function: setting_to_bytes
  * Pass a settingPair to bytes
