@@ -36,22 +36,17 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 
 /*
  * Function: bytes_to_frame_header
- * Transforms bytes to a FrameHeader
+ * Transforms bytes to a FrameHeader, it assumes byte_array size of minimum 9 bytes.
  * Input:  array of bytes, size ob bytes to read,pointer to frameheader
- * Output: 0 if bytes were written correctly, -1 if byte size is <9
+ * Output: (void)
  */
-int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header)
+void bytes_to_frame_header(uint8_t *byte_array, frame_header_t *frame_header)
 {
-    if (size < 9) {
-        ERROR("frameHeader size too small, %d\n", size);
-        return -1;
-    }
     frame_header->length = bytes_to_uint32_24(byte_array);
     frame_header->type = (uint8_t)(byte_array[3]);
     frame_header->flags = (uint8_t)(byte_array[4]);
     frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
     frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
-    return 0;
 }
 
 /*

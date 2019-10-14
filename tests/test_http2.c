@@ -102,7 +102,7 @@ FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t *);
 FAKE_VALUE_FUNC(int, frame_to_bytes, frame_t *, uint8_t *);
 FAKE_VALUE_FUNC(int, is_flag_set, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, bytes_to_settings_payload, uint8_t *, int, settings_payload_t *, settings_pair_t *);
-FAKE_VALUE_FUNC(int, bytes_to_frame_header, uint8_t *, int, frame_header_t *);
+FAKE_VOID_FUNC(bytes_to_frame_header, uint8_t *, frame_header_t *);
 FAKE_VALUE_FUNC(int, create_settings_frame, uint16_t *, uint32_t *, int, frame_t *, frame_header_t *, settings_payload_t *, settings_pair_t *);
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size, frame_header_t *, headers_payload_t *);
@@ -203,9 +203,9 @@ int frame_bytes_return_45(frame_t *f, uint8_t *u)
 {
     return 45;
 }
-int bytes_frame_return_zero(uint8_t *u, int uu, frame_header_t *fh)
+void bytes_frame_return_void(uint8_t *u, frame_header_t *fh)
 {
-    return 0;
+    return;
 }
 int bytes_settings_payload_return_24(uint8_t *u, int uu, settings_payload_t *sp, settings_pair_t *spp)
 {
@@ -482,7 +482,7 @@ void test_read_frame(void)
     init_variables(&hst);
     frame_header_t header = { 36, 0x4, 0x0, 0x0, 0 };
     uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
-    bytes_to_frame_header_fake.custom_fake = bytes_frame_return_zero;
+    bytes_to_frame_header_fake.custom_fake = bytes_frame_return_void;
     /*We write 200 zeros for future reading*/
     uint32_t read_setting_from_returns[1] = { 1024 };
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
@@ -505,8 +505,6 @@ void test_read_frame_errors(void)
     frame_header_t good_header = { 200, 0x4, 0x0, 0x0, 0 };
     uint8_t bf[HTTP2_MAX_BUFFER_SIZE] = { 0 };
     // Second error, bytes_to_frame_header return
-    int bytes_return[2] = { -1, 0 };
-    SET_RETURN_SEQ(bytes_to_frame_header, bytes_return, 2);
     uint32_t read_setting_from_returns[1] = { 1024 };
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     int frame_to_bytes_return[1] = { 1000 };
@@ -522,7 +520,7 @@ void test_read_frame_errors(void)
     // Third error, payload size too big
     rc = read_frame(bf, &bad_header, &hst);
     TEST_ASSERT_MESSAGE(rc == -1, "RC must be -1 (payload size error)");
-    TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 2, "bytes to frame header must be called once");
+    TEST_ASSERT_MESSAGE(bytes_to_frame_header_fake.call_count == 1, "bytes to frame header must be called once");
     // Fourth error, read_n_bytes payload reading error
     clean_buffer();
     rc = read_frame(bf, &good_header, &hst);
@@ -1446,17 +1444,14 @@ void test_handle_data_payload(void)
     }
 }
 
-int bytes_to_frame_header_fake_custom(uint8_t *bytes, int size, frame_header_t *frame_header)
+void bytes_to_frame_header_fake_custom(uint8_t *bytes, frame_header_t *frame_header)
 {
-    if (size != 9) {
-        return -1;
-    }
     frame_header->length = bytes[2];
     frame_header->type = bytes[3];
     frame_header->flags = bytes[4];
     frame_header->stream_id = bytes[8];
     frame_header->reserved = 0;
-    return 0;
+    return;
 }
 
 

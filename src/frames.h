@@ -133,7 +133,7 @@ typedef struct {
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
-int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header);
+void bytes_to_frame_header(uint8_t *byte_array, frame_header_t *frame_header);
 
 int read_headers_payload(uint8_t *read_buffer, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t *padding);
 uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload);

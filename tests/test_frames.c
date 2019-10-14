@@ -280,18 +280,13 @@ void test_bytes_to_frame_header(void)
 
 
     frame_header_t decoder_frame_header;
-    int rc = bytes_to_frame_header(bytes + 1, 8, &decoder_frame_header);
-
-    TEST_ASSERT_EQUAL(-1, rc);
-
-
-
+   
 
     bytes_to_uint32_24_fake.return_val = length;
     bytes_to_uint32_31_fake.return_val = stream_id;
 
 
-    bytes_to_frame_header(bytes, 9, &decoder_frame_header);
+    bytes_to_frame_header(bytes, &decoder_frame_header);
 
     TEST_ASSERT_EQUAL_MESSAGE(length, decoder_frame_header.length, "wrong length.");
     TEST_ASSERT_EQUAL_MESSAGE(flags, decoder_frame_header.flags, "wrong flag.");

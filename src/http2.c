@@ -74,13 +74,8 @@ int read_frame(uint8_t *buff_read, frame_header_t *header, hstates_t *st){
         WARN("Read %d bytes from socket", rc);
         return -1;
     }
-    /*Must be 0*/
-    rc = bytes_to_frame_header(buff_read, 9, header);
-    if(rc){
-        ERROR("Error coding bytes to frame header. INTERNAL_ERROR");
-        send_connection_error(st, HTTP2_INTERNAL_ERROR);
-        return -1;
-    }
+    /*Must be 9 bytes or more the size of buff_read*/
+    bytes_to_frame_header(buff_read, header);
     if(header->length > read_setting_from(st, LOCAL, MAX_FRAME_SIZE)){
         ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
         send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
