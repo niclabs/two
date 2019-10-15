@@ -8,7 +8,7 @@
 #include <errno.h>
 
 /*Import of functions not declared in resource_handler.h */
-extern int is_valid_path(char *path);
+extern void resource_handler_reset(void);
 
 
 DEFINE_FFF_GLOBALS;
@@ -52,6 +52,8 @@ int send_bye(char *method, char *uri, uint8_t *response, int maxlen)
 void test_resource_handler_get_success(void)
 {
     http_has_method_support_fake.return_val = 1;
+    // Set context for the perform
+    resource_handler_reset();
     resource_handler_set("GET", "/index", &send_hello);
 
     http_resource_handler_t get = resource_handler_get("GET", "/index");
@@ -62,6 +64,8 @@ void test_resource_handler_get_success(void)
 
 void test_resource_handler_get_fail_no_resource_found(void)
 {
+    // Set context for the perform
+    resource_handler_reset();
     http_resource_handler_t get = resource_handler_get("HEAD", "/index");
 
     TEST_ASSERT_EQUAL(NULL, get);
@@ -72,6 +76,8 @@ void test_resource_handler_set_success(void)
 {
     http_has_method_support_fake.return_val = 1;
 
+    // Set context for the perform
+    resource_handler_reset();
     int res = resource_handler_set("GET", "/index", &send_hello);
 
     TEST_ASSERT_EQUAL(0, res);
@@ -86,6 +92,11 @@ void test_resource_handler_set_success_replaced_resource(void)
 {
     http_has_method_support_fake.return_val = 1;
 
+    // Set context for the perform
+    resource_handler_reset();
+    resource_handler_set("GET", "/index", &send_hello);
+    resource_handler_set("HEAD", "/index", &send_hello);
+    resource_handler_set("GET", "/home", &send_hello);
     int res = resource_handler_set("GET", "/index", &send_bye);
 
     TEST_ASSERT_EQUAL(0, res);
@@ -100,6 +111,9 @@ void test_resource_handler_set_fail_invalid_input(void)
 {
     http_has_method_support_fake.return_val = 1;
 
+    // Set context for the perform
+    resource_handler_reset();
+    resource_handler_set("GET", "/index", &send_hello);
     int res = resource_handler_set("GET", "/index", NULL);
 
     TEST_ASSERT_EQUAL(-1, res);
@@ -110,6 +124,8 @@ void test_resource_handler_set_fail_invalid_path(void)
 {
     http_has_method_support_fake.return_val = 1;
 
+    // Set context for the perform
+    resource_handler_reset();
     int res = resource_handler_set("GET", "index", &send_hello);
 
     TEST_ASSERT_EQUAL(-1, res);
@@ -119,6 +135,9 @@ void test_resource_handler_set_fail_invalid_path(void)
 void test_resource_handler_set_fail_null_path(void)
 {
     http_has_method_support_fake.return_val = 1;
+
+    // Set context for the perform
+    resource_handler_reset();
 
     int res = resource_handler_set("GET", NULL, &send_hello);
 
