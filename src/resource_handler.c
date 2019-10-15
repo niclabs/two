@@ -49,7 +49,16 @@ int is_valid_path(char *path)
 }
 
 
-/**
+/*
+ * Resets the resource list by setting the index to 0
+ */
+void resource_handler_reset(void)
+{
+  app_resources.resource_list_size = 0;
+}
+
+
+/*
  * Get a resource handler for the given path
  */
 http_resource_handler_t resource_handler_get(char *method, char *path)
