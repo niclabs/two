@@ -30,7 +30,7 @@ void setUp()
 }
 
 /************************************
-* Utils
+* UTILS
 ************************************/
 
 int send_hello(char *method, char *uri, uint8_t *response, int maxlen)
@@ -51,13 +51,18 @@ int send_bye(char *method, char *uri, uint8_t *response, int maxlen)
 
 void test_resource_handler_get_success(void)
 {
+    // Set auxiliary functions response
     http_has_method_support_fake.return_val = 1;
+
     // Set context for the perform
     resource_handler_reset();
     resource_handler_set("GET", "/index", &send_hello);
+    resource_handler_set("HEAD", "/index", &send_bye);
 
+    // Perform get
     http_resource_handler_t get = resource_handler_get("GET", "/index");
 
+    // Return value should be send_hello resource
     TEST_ASSERT_EQUAL(&send_hello, get);
 }
 
@@ -66,30 +71,38 @@ void test_resource_handler_get_fail_no_resource_found(void)
 {
     // Set context for the perform
     resource_handler_reset();
+
+    // Perform get
     http_resource_handler_t get = resource_handler_get("HEAD", "/index");
 
+    // Return value should be NULL
     TEST_ASSERT_EQUAL(NULL, get);
 }
 
 
 void test_resource_handler_set_success(void)
 {
+    // Set auxiliary functions response
     http_has_method_support_fake.return_val = 1;
 
     // Set context for the perform
     resource_handler_reset();
+
+    // Perform set
     int res = resource_handler_set("GET", "/index", &send_hello);
 
+    // Return value should be 0
     TEST_ASSERT_EQUAL(0, res);
 
+    // Check if, in fact, the resource was set
     http_resource_handler_t get = resource_handler_get("GET", "/index");
-
     TEST_ASSERT_EQUAL(&send_hello, get);
 }
 
 
 void test_resource_handler_set_success_replaced_resource(void)
 {
+    // Set auxiliary functions response
     http_has_method_support_fake.return_val = 1;
 
     // Set context for the perform
@@ -97,50 +110,68 @@ void test_resource_handler_set_success_replaced_resource(void)
     resource_handler_set("GET", "/index", &send_hello);
     resource_handler_set("HEAD", "/index", &send_hello);
     resource_handler_set("GET", "/home", &send_hello);
+
+    // Perform set
     int res = resource_handler_set("GET", "/index", &send_bye);
 
+    // Return value should be 0
     TEST_ASSERT_EQUAL(0, res);
 
+    // Check if, in fact, the resource was replaced
     http_resource_handler_t get = resource_handler_get("GET", "/index");
-
     TEST_ASSERT_EQUAL(&send_bye, get);
 }
 
 
 void test_resource_handler_set_fail_invalid_input(void)
 {
+    // Set auxiliary functions response
     http_has_method_support_fake.return_val = 1;
 
     // Set context for the perform
     resource_handler_reset();
     resource_handler_set("GET", "/index", &send_hello);
+
+    // Perform set
     int res = resource_handler_set("GET", "/index", NULL);
 
+    // Return value should be -1
     TEST_ASSERT_EQUAL(-1, res);
+
+    // Check if, in fact, the resource wasn't added
+    http_resource_handler_t get = resource_handler_get("GET", "/index");
+    TEST_ASSERT_EQUAL(&send_hello, get);
 }
 
 
 void test_resource_handler_set_fail_invalid_path(void)
 {
+    // Set auxiliary functions response
     http_has_method_support_fake.return_val = 1;
 
     // Set context for the perform
     resource_handler_reset();
+
+    // Perform set
     int res = resource_handler_set("GET", "index", &send_hello);
 
+    // Return value should be -1
     TEST_ASSERT_EQUAL(-1, res);
 }
 
 
 void test_resource_handler_set_fail_null_path(void)
 {
+    // Set auxiliary functions response
     http_has_method_support_fake.return_val = 1;
 
     // Set context for the perform
     resource_handler_reset();
 
+    // Perform set
     int res = resource_handler_set("GET", NULL, &send_hello);
 
+    // Return value should be -1
     TEST_ASSERT_EQUAL(-1, res);
 }
 
