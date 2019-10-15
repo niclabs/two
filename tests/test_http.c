@@ -70,28 +70,35 @@ int send_hello(char *method, char *uri, uint8_t *response, int maxlen)
 
 void test_get_data_success(void)
 {
+    // Create function parameters
     uint8_t data[10];
-
     memcpy(data, (uint8_t *)"test", 4);
     uint32_t data_size = 4;
-
     uint8_t buf[10];
+
+    // Perform get
     int gd = get_data((uint8_t *) &data, data_size,(uint8_t *) buf, sizeof(buf));
 
+    // Return value should be 4
     TEST_ASSERT_EQUAL( 4, gd);
 
+    // Check if the data and buf have the same content
     TEST_ASSERT_EQUAL( 0, memcmp(&buf, data, 4));
 }
 
 void test_set_data_success(void)
 {
+    // Create function parameters
     uint8_t data[10];
     uint32_t data_size = (uint32_t)sizeof(data);
 
+    // Perform set
     int sd = set_data((uint8_t *) &data, &data_size, (uint8_t *)"test", 4);
 
+    // Return value should be 0
     TEST_ASSERT_EQUAL( 0, sd);
 
+    // Check if the data and data_size have the correct content
     TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"test", 4));
     TEST_ASSERT_EQUAL( 4, data_size);
 }
@@ -99,11 +106,14 @@ void test_set_data_success(void)
 
 void test_set_data_fail_zero_size(void)
 {
+    // Create function parameters
     uint8_t data[10];
     uint32_t data_size = (uint32_t)sizeof(data);
 
+    // Perform set
     int sd = set_data((uint8_t *) &data, &data_size, (uint8_t *)"", 0);
 
+    // Return value should be -1
     TEST_ASSERT_EQUAL( -1, sd);
 }
 
@@ -114,7 +124,7 @@ void test_do_request_success(void)
     resource_handler_get_fake.return_val = &send_hello;
     headers_set_fake.custom_fake = headers_set_custom_fake;
 
-    //Created function parameters
+    // Create function parameters
     uint8_t data[10];
     uint32_t data_size = (uint32_t)sizeof(data);
     headers_t headers_buff[1];
@@ -141,7 +151,7 @@ void test_do_request_fail_resource_handler_get(void)
     resource_handler_get_fake.return_val = NULL;
     headers_set_fake.custom_fake = headers_set_custom_fake;
 
-    //Created function parameters
+    // Create function parameters
     uint8_t data[10];
     uint32_t data_size = (uint32_t)sizeof(data);
     headers_t headers_buff[1];
