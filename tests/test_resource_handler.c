@@ -56,6 +56,26 @@ int send_bye(char *method, char *uri, uint8_t *response, int maxlen)
 /************************************
 * TESTS
 ************************************/
+
+void test_resource_handler_get_success(void)
+{
+    http_has_method_support_fake.return_val = 1;
+    resource_handler_set("GET", "/index", &send_hello);
+
+    http_resource_handler_t get = resource_handler_get("GET", "/index");
+
+    TEST_ASSERT_EQUAL(&send_hello, get);
+}
+
+
+void test_resource_handler_get_fail_no_resource_found(void)
+{
+    http_resource_handler_t get = resource_handler_get("HEAD", "/index");
+
+    TEST_ASSERT_EQUAL(NULL, get);
+}
+
+
 void test_resource_handler_set_success(void)
 {
     http_has_method_support_fake.return_val = 1;
@@ -73,8 +93,6 @@ void test_resource_handler_set_success(void)
 void test_resource_handler_set_success_replaced_resource(void)
 {
     http_has_method_support_fake.return_val = 1;
-
-    resource_handler_set("GET", "/index", &send_hello);
 
     int res = resource_handler_set("GET", "/index", &send_bye);
 
@@ -119,6 +137,9 @@ void test_resource_handler_set_fail_null_path(void)
 int main(void)
 {
     UNITY_BEGIN();
+
+    UNIT_TEST(test_resource_handler_get_success);
+    UNIT_TEST(test_resource_handler_get_fail_no_resource_found);
 
     UNIT_TEST(test_resource_handler_set_success);
     UNIT_TEST(test_resource_handler_set_success_replaced_resource);
