@@ -1,16 +1,8 @@
 #include "unit.h"
 
-#include "sock.h"
-
 #include "fff.h"
 #include "resource_handler.h"
-#include "headers.h"
 
-
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <stdint.h>
 
 #include <errno.h>
