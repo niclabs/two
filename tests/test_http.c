@@ -139,10 +139,17 @@ void test_do_request_success(void)
     // Check that auxiliary functions was called only once
     TEST_ASSERT_EQUAL(1, resource_handler_get_fake.call_count);
     TEST_ASSERT_EQUAL(1, headers_clean_fake.call_count);
+
     // Check that headers_set was called with the correct parameters
     TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
     TEST_ASSERT_EQUAL_STRING(":status", header_name);
     TEST_ASSERT_EQUAL_STRING("200", header_value);
+
+    // Check if the data and data_size have the correct content
+    uint32_t final_data_size = MIN((uint32_t)sizeof(data), (uint32_t) 16);
+    TEST_ASSERT_EQUAL(final_data_size, data_size);
+    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"hello world!!!!", 10));
+
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(0, res);
@@ -166,10 +173,17 @@ void test_do_request_fail_resource_handler_get(void)
     // Check that auxiliary functions was called only once
     TEST_ASSERT_EQUAL(1, resource_handler_get_fake.call_count);
     TEST_ASSERT_EQUAL(1, headers_clean_fake.call_count);
-    // Check that headers_set was called with the correct parameters
     TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+
+    // Check that headers_set was called with the correct parameters
     TEST_ASSERT_EQUAL_STRING(":status", header_name);
     TEST_ASSERT_EQUAL_STRING("404", header_value);
+
+    // Check if the data and data_size have the correct content
+    uint32_t final_data_size = MIN((uint32_t)sizeof(data), (uint32_t)strlen("Not Found"));
+    TEST_ASSERT_EQUAL( final_data_size, data_size);
+    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"Not Found", 9));
+
 
     // Return value should be 0
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if error response is sent");
