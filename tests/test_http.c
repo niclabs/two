@@ -29,7 +29,8 @@ FAKE_VALUE_FUNC(http_resource_handler_t, resource_handler_get, char *, char *);
 #define FFF_FAKES_LIST(FAKE)              \
     FAKE(headers_clean)                   \
     FAKE(headers_set)                     \
-    FAKE(headers_get)
+    FAKE(headers_get)                     \
+    FAKE(resource_handler_get)
 
 
 void setUp()
@@ -43,8 +44,30 @@ void setUp()
 
 
 /************************************
+* UTILS
+************************************/
+
+char header_name[10];
+char header_value[10];
+int headers_set_custom_fake(headers_t * headers, const char * head, const char * val)
+{
+    (void) headers;
+    memcpy(header_name, head, strlen(head));
+    memcpy(header_value, val, strlen(val));
+    return 0;
+}
+
+
+int send_hello(char *method, char *uri, uint8_t *response, int maxlen)
+{
+    memcpy(response, "hello world!!!!", 16);
+    return 16;
+}
+
+/************************************
 * TESTS
 ************************************/
+
 void test_get_data_success(void)
 {
     uint8_t data[10];
@@ -85,6 +108,59 @@ void test_set_data_fail_zero_size(void)
 }
 
 
+void test_do_request_success(void)
+{
+    // Set auxiliary functions response
+    resource_handler_get_fake.return_val = &send_hello;
+    headers_set_fake.custom_fake = headers_set_custom_fake;
+
+    //Created function parameters
+    uint8_t data[10];
+    uint32_t data_size = (uint32_t)sizeof(data);
+    headers_t headers_buff[1];
+
+    // Perform request
+    int res = do_request((uint8_t *) &data, &data_size, (headers_t *) &headers_buff, "GET", "/index");
+
+    // Check that auxiliary functions was called only once
+    TEST_ASSERT_EQUAL(1, resource_handler_get_fake.call_count);
+    TEST_ASSERT_EQUAL(1, headers_clean_fake.call_count);
+    // Check that headers_set was called with the correct parameters
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", header_name);
+    TEST_ASSERT_EQUAL_STRING("200", header_value);
+
+    // Return value should be 0
+    TEST_ASSERT_EQUAL(0, res);
+}
+
+
+void test_do_request_fail_resource_handler_get(void)
+{
+    // Set auxiliary functions response
+    resource_handler_get_fake.return_val = NULL;
+    headers_set_fake.custom_fake = headers_set_custom_fake;
+
+    //Created function parameters
+    uint8_t data[10];
+    uint32_t data_size = (uint32_t)sizeof(data);
+    headers_t headers_buff[1];
+
+    // Perform request
+    int res = do_request((uint8_t *) &data, &data_size, (headers_t *) &headers_buff, "GET", "/index");
+
+    // Check that auxiliary functions was called only once
+    TEST_ASSERT_EQUAL(1, resource_handler_get_fake.call_count);
+    TEST_ASSERT_EQUAL(1, headers_clean_fake.call_count);
+    // Check that headers_set was called with the correct parameters
+    TEST_ASSERT_EQUAL(1, headers_set_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(":status", header_name);
+    TEST_ASSERT_EQUAL_STRING("404", header_value);
+
+    // Return value should be 0
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "do_request should return 0 even if error response is sent");
+}
+
 
 int main(void)
 {
@@ -94,6 +170,9 @@ int main(void)
 
     UNIT_TEST(test_set_data_success);
     UNIT_TEST(test_set_data_fail_zero_size);
+
+    UNIT_TEST(test_do_request_success);
+    UNIT_TEST(test_do_request_fail_resource_handler_get);
 
     return UNITY_END();
 }
