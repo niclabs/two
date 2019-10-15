@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 /*
-   This API contains the methods in Resource Manager layer
+   This API contains the methods in Resource Handler layer
  */
 #ifndef RESOURCE_HANDLER_H
 #define RESOURCE_HANDLER_H
