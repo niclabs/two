@@ -3,26 +3,27 @@
 #include "fff.h"
 #include "http.h"
 #include "headers.h"
+#include "resource_handler.h"
 
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <stdint.h>
 
 #include <errno.h>
 
 /*Import of functions not declared in http.h */
-extern uint32_t get_data(http_data_t *data_in, uint8_t *data_buffer);
-extern int set_data(http_data_t *data_out, uint8_t *data, int data_size);
-extern int do_request(hstates_t *hs, char * method, char * uri);
-extern int send_client_request(hstates_t *hs, char *method, char *uri, uint8_t *response, size_t *size);
+extern uint32_t get_data(uint8_t *data_in_buff, uint32_t data_in_buff_size, uint8_t *data_buffer, size_t size);
+extern int set_data(uint8_t *data_buff, uint32_t *data_buff_size, uint8_t *data, int data_size);
+extern int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, char *method, char *uri);
+extern int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host);
 
 DEFINE_FFF_GLOBALS;
-FAKE_VALUE_FUNC(int, headers_clean, hstates_t *);
+FAKE_VALUE_FUNC(int, headers_clean, headers_t *);
 FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
 FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
+FAKE_VALUE_FUNC(http_resource_handler_t, resource_handler_get, char *, char *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)              \
@@ -52,7 +53,7 @@ void test_get_data_success(void)
     uint32_t data_size = 4;
 
     uint8_t buf[10];
-    int gd = get_data(&data, data_size, buf, sizeof(buf));
+    int gd = get_data((uint8_t *) &data, data_size,(uint8_t *) buf, sizeof(buf));
 
     TEST_ASSERT_EQUAL( 4, gd);
 
@@ -62,20 +63,23 @@ void test_get_data_success(void)
 void test_set_data_success(void)
 {
     uint8_t data[10];
+    uint32_t data_size = (uint32_t)sizeof(data);
 
-    int sd = set_data(&dout, (uint8_t *)"test", 4);
+    int sd = set_data((uint8_t *) &data, &data_size, (uint8_t *)"test", 4);
 
     TEST_ASSERT_EQUAL( 0, sd);
 
-    TEST_ASSERT_EQUAL( 0, memcmp(&dout.buf, (uint8_t *)"test", 4));
+    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"test", 4));
+    TEST_ASSERT_EQUAL( 4, data_size);
 }
 
 
 void test_set_data_fail_zero_size(void)
 {
     uint8_t data[10];
+    uint32_t data_size = (uint32_t)sizeof(data);
 
-    int sd = set_data(&data, (uint8_t *)"", 0);
+    int sd = set_data((uint8_t *) &data, &data_size, (uint8_t *)"", 0);
 
     TEST_ASSERT_EQUAL( -1, sd);
 }
