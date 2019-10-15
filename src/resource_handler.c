@@ -12,10 +12,6 @@
 #include "http.h"
 #include "logging.h"
 
-#ifndef MIN
-#define MIN(n, m)   (((n) < (m)) ? (n) : (m))
-#endif
-
 /***********************************************
 * Aplication resources structs
 ***********************************************/
