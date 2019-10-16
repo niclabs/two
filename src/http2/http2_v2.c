@@ -206,42 +206,35 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 }
 
 
-
 /*
-*
-*
-*
+* Function: send_settings_ack
+* Sends an ACK settings frame to endpoint
+* Input: -> st: pointer to hstates struct where http and http2 connection info is
+* stored
+* Output: 0 if sent was successfully made, -1 if not.
 */
-int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s) {
-    uint32_t data_length = frame_header->length;//padding not implemented(-data_payload->pad_length-1 if pad_flag_set)
-    /*check flow control*/
-    int rc = flow_control_receive_data(h2s, data_length);
+int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s){
+    frame_t ack_frame;
+    frame_header_t ack_frame_header;
+    int rc;
+    rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
     if(rc < 0){
-        send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
+        ERROR("Error in Settings ACK creation!");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return -1;
     }
-    buffer_copy(h2s->data.buf + h2s->data.size, data_payload->data, data_length);
-    h2s->data.size += data_length;
-    if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)){
-        h2s->received_end_stream = 1;
-    }
-    // Stream state handling for end stream flag
-    if(h2s->received_end_stream == 1){
-        change_stream_state_end_stream_flag(0, buf_out, h2s); // 0 is for receiving
-        h2s->received_end_stream = 0;
-        rc = validate_pseudoheaders(&h2s->headers);
-        if(rc < 0){
-          ERROR("handle_continuation_payload: Malformed request received");
-          send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-          return -1;
-        }
-        http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
-        /*Send data and headers to endpoint*/
+    uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
+    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
+    // We write the ACK to NET
+    rc = cbuf_push(buf_out, byte_ack, size_byte_ack);
+    INFO("Sending settings ACK");
+    if(rc != size_byte_ack){
+        ERROR("Error in Settings ACK sending");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
     }
     return 0;
 }
-
-
 
 /*
 *
