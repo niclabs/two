@@ -37,17 +37,8 @@ FAKE_VALUE_FUNC(int, cbuf_maxlen, cbuf_t*);
     FAKE(cbuf_len)                      \
     FAKE(cbuf_maxlen)
 
-void setUp()
-{
-    /* Register resets */
-    FFF_FAKES_LIST(RESET_FAKE);
-
-    /* reset common FFF internal structures */
-    FFF_RESET_HISTORY();
-}
-
 /*
-================ CBUF WRAPPERS ================
+==================== CBUF WRAPPERS ====================
 */
 
 #ifndef MIN
@@ -163,7 +154,28 @@ int cbuf_maxlen_custom_fake(cbuf_t * cbuf)
 }
 
 /*
-================ FAKES ================
+==================== SETUP ====================
+*/
+
+void setUp()
+{
+    /* Register resets */
+    FFF_FAKES_LIST(RESET_FAKE);
+
+    /* reset common FFF internal structures */
+    FFF_RESET_HISTORY();
+
+    /* Set the cbuf functions up */
+    cbuf_init_fake.custom_fake = cbuf_init_custom_fake;
+    cbuf_push_fake.custom_fake = cbuf_push_custom_fake;
+    cbuf_pop_fake.custom_fake = cbuf_pop_custom_fake;
+    cbuf_peek_fake.custom_fake = cbuf_peek_custom_fake;
+    cbuf_len_fake.custom_fake = cbuf_len_custom_fake;
+    cbuf_maxlen_fake.custom_fake = cbuf_maxlen_custom_fake;
+}
+
+/*
+==================== FAKES ====================
 */
 
 int fake_stop_flag = 0;
@@ -230,13 +242,6 @@ void test_net_server_loop_connect(void)
     fake_stop_flag = 0;
     size_t data_buffer_size = 13;
     size_t client_state_size = 4;
-
-    cbuf_init_fake.custom_fake = cbuf_init_custom_fake;
-    cbuf_push_fake.custom_fake = cbuf_push_custom_fake;
-    cbuf_pop_fake.custom_fake = cbuf_pop_custom_fake;
-    cbuf_peek_fake.custom_fake = cbuf_peek_custom_fake;
-    cbuf_len_fake.custom_fake = cbuf_len_custom_fake;
-    cbuf_maxlen_fake.custom_fake = cbuf_maxlen_custom_fake;
 
     sock_accept_fake.custom_fake = sock_accept_custom_fake;
     sock_poll_fake.custom_fake = sock_poll_custom_fake;
