@@ -116,13 +116,15 @@ int set_data(uint8_t *data_buff, uint32_t *data_buff_size, uint8_t *data, int da
  * Clean data buffer
  *
  * @param    data_buff   Struct with data information
+ * @param    data_size   Pointer to buffer size
  *
  * @return   0          Successfully cleaned data buffer
  * @return   -1         There was an error in the process
  */
-int clean_data(uint8_t *data_buff)
+int clean_data(uint8_t *data_buff, uint32_t *data_size)
 {
     memset(data_buff, 0, sizeof(*data_buff));
+    *data_size = (uint32_t) 0;
     return 0;
 }
 
