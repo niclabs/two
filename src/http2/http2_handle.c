@@ -4,6 +4,8 @@
 #include "frames.h"
 #include "http2_send.h"
 #include "http2_utils_v2.h"
+#include "logging.h"
+#include "http.h"
 
 int validate_pseudoheaders(headers_t* pseudoheaders)
 {
