@@ -60,3 +60,53 @@ callback_t null_callback(void){
   callback_t null_ret = {NULL, NULL};
   return null_ret;
 }
+
+/*
+* Function: change_stream_state_end_stream_flag
+* Given an h2states_t struct and a boolean, change the state of the current stream
+* when a END_STREAM_FLAG is sent or received.
+* Input: ->st: pointer to h2states_t struct where connection variables are stored
+*        ->sending: boolean like uint8_t that indicates if current flag is sent or received
+* Output: 0 if no errors were found, -1 if not
+*/
+int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2states_t *h2s){
+  int rc = 0;
+  if(sending){ // Change stream status if end stream flag is sending
+    if(h2s->current_stream.state == STREAM_OPEN){
+      h2s->current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+    }
+    else if(h2s->current_stream.state == STREAM_HALF_CLOSED_REMOTE){
+      h2s->current_stream.state = STREAM_CLOSED;
+      if(h2s->received_goaway){
+        rc = send_goaway(HTTP2_NO_ERROR, buf_out, h2s);
+        if(rc < 0){
+          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          return rc;
+        }
+      }
+      else{
+        rc = prepare_new_stream(h2s);
+      }
+    }
+    return rc;
+  }
+  else{ // Change stream status if send stream flag is received
+    if(h2s->current_stream.state == STREAM_OPEN){
+      h2s->current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    }
+    else if(h2s->current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+      h2s->current_stream.state = STREAM_CLOSED;
+      if(h2s->received_goaway){
+        rc = send_goaway(HTTP2_NO_ERROR, buf_out, h2s);
+        if(rc < 0){
+          ERROR("Error in GOAWAY sending. INTERNAL ERROR");
+          return rc;
+        }
+      }
+      else{
+        rc = prepare_new_stream(h2s);
+      }
+    }
+    return rc;
+  }
+}
