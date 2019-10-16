@@ -22,9 +22,6 @@ typedef struct {
 */
 void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state_size)
 {
-    printf("Resetting a client\n");
-    fflush(stdout);
-
     memset(p_client->buf_in_data, 0, data_buffer_size);
     cbuf_init(p_client->buf_in, p_client->buf_in_data, data_buffer_size);
     memset(p_client->buf_out_data, 0, data_buffer_size);
@@ -36,12 +33,6 @@ void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state
     p_client->cb.func = NULL;
     p_client->cb.debug_info = NULL;
     
-    if ((*p_client).cb.func != NULL)
-    {
-        printf("OH SHIIT\n");
-        fflush(stdout);
-    }
-
     return;
 }
 
@@ -128,9 +119,6 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
     uint8_t buffers_out[NET_MAX_CLIENTS][data_buffer_size];
     uint8_t states[NET_MAX_CLIENTS][client_state_size];
 
-    printf("Inited memory\n");
-    fflush(stdout);
-
     // Client initialization
     for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
     {
@@ -143,9 +131,6 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
         reset_client(p_client, data_buffer_size, client_state_size);
     }
     
-    printf("Inited clients\n");
-    fflush(stdout);
-
     // Server socket setup
     sock_t* server_socket = NULL;
     sock_rc = sock_create(server_socket);
@@ -161,49 +146,26 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
         return SocketError;
     }
 
-    printf("Inited server\n");
-    fflush(stdout);
-
     // Function return code
     NetReturnCode rc = Ok;
 
     // Main loop
     while (!*stop_flag)
     {
-
-        printf("Looping\n");
-        fflush(stdout);
-
         // For every client
         for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
         {
-
-            printf("Clienting\n");
-            fflush(stdout);
-
             Client* p_client = clients+i;
 
             rc = write_to_socket(p_client);
             if (rc != Ok)
                 break;
 
-            printf("Wrote some\n");
-            fflush(stdout);
-
             unsigned int available_data = 0;
-
-            if (p_client->cb.func != NULL)
-            {
-                printf("OH SHIIT\n");
-                fflush(stdout);
-            }
 
             // If the client is connected and has data
             if (p_client->cb.func != NULL && (available_data=sock_poll(p_client->socket)) != 0)
             {
-                printf("Found client\n");
-                fflush(stdout);
-
                 // Reads from the socket into the client's buffers
                 rc = read_from_socket(p_client, available_data);
                 if (rc != Ok)
@@ -240,9 +202,6 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
             // If the client slot is available
             else
             {
-                printf("Accepting\n");
-                fflush(stdout);
-
                 // Accept any clients left waiting by the OS
                 sock_rc = sock_accept(server_socket, p_client->socket);
                 if (sock_rc < 0)
@@ -286,6 +245,9 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                     p_client->cb = cb;
                 }
             }
+
+            if (*stop_flag)
+                break;
         }
     }
 
