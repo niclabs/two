@@ -254,3 +254,43 @@ void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s
     WARN("Error sending GOAWAY frame to endpoint.");
   }
 }
+
+/*
+* Function: send_continuation_frame
+* Sends a single continuation frame to endpoint. It reads the data from the
+* buff_read buffer given as parameter.
+* Input: ->st: hstates_t struct where connection variables are stored.
+         ->buff_read: buffer where continuation frame payload is stored
+         ->size: number of bytes to read from buff_read and to store in payload
+         ->stream_id: stream id to write in continuation payload's header
+         ->end_stream: boolean that indicates if END_HEADERS_FLAG must be set
+* Output: 0 if no errors were found during the creation or sending, -1 if not
+*/
+
+int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
+  int rc;
+  frame_t frame;
+  frame_header_t frame_header;
+  continuation_payload_t continuation_payload;
+  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
+  rc = create_continuation_frame(buff_read, size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+  if(rc < 0){
+    ERROR("Error creating continuation frame. INTERNAL ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return rc;
+  }
+  if(end_stream){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+  }
+  frame.frame_header = &frame_header;
+  frame.payload = (void*)&continuation_payload;
+  int bytes_size = frame_to_bytes(&frame, buff_read);
+  rc = cbuf_push(buf_out, buff_read, bytes_size);
+  INFO("Sending continuation");
+  if(rc != bytes_size){
+    ERROR("Error writting continuation frame. INTERNAL ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return rc;
+  }
+  return 0;
+}
