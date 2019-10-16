@@ -33,7 +33,6 @@ typedef struct FRAME_HEADER {
     uint32_t stream_id : 31;
     int (* callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *bytes);
     int (* payload_callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *byte_array);
-
 }frame_header_t; //72 bits-> 9 bytes
 
 /*FRAME*/
@@ -192,10 +191,15 @@ int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
 
 /*Window_update frame methods*/
 int create_window_update_frame(frame_header_t *frame_header, window_update_payload_t *window_update_payload, int window_size_increment, uint32_t stream_id);
+<<<<<<< HEAD
 int window_update_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);
 
 
 //int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
+=======
+int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array);
+int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *buff_read);
+>>>>>>> Starting implementation of callbacks in frames
 
 
 /*goaway payload methods*/
