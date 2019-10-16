@@ -14,13 +14,6 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_wait_settings_ack(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_goaway(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s);
-/*
-int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s);
-int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s);
-int check_incoming_settings_condition(cbuf_t *buf_out, h2states_t *h2s);
-int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s);
-int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s);
-*/
 int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s);
 void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
 
