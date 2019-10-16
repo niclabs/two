@@ -383,27 +383,6 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_ou
 }
 
 /*
-* Function: handle_settings_payload
-* Reads a settings payload from buffer and works with it.
-* Input: -> buff_read: buffer where payload's data is written
-        -> header: pointer to a frameheader_t structure already built with frame info
-        -> spl: pointer to settings_payload_t struct where data is gonna be written
-        -> pairs: pointer to settings_pair_t array where data is gonna be written
-        -> st: pointer to h2states_t struct where connection variables are stored
-* Output: 0 if operations are done successfully, -1 if not.
-*/
-int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t *h2s){
-    // update_settings_table checks for possible errors in the incoming settings
-    if(!update_settings_table(spl, REMOTE, buf_out, h2s)){
-        send_settings_ack(buf_out, h2s);
-        return 0;
-    }
-    else{
-        return -1;
-    }
-}
-
-/*
 *
 *
 *
