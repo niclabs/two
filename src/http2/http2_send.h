@@ -10,6 +10,7 @@
 
 int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s);
 int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s);
+int send_local_settings(cbuf_t *buf_out, h2states_t *h2s);
 int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s);
 
 int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_t *h2s);

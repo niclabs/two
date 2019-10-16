@@ -267,6 +267,41 @@ int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s){
 }
 
 /*
+* Function: send_local_settings
+* Sends local settings to endpoint.
+* Input: -> st: pointer to hstates_t struct where local settings are stored
+* Output: 0 if settings were sent. -1 if not.
+*/
+int send_local_settings(cbuf_t *buf_out, h2states_t *h2s){
+    int rc;
+    uint16_t ids[6] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
+    frame_t mysettingframe;
+    frame_header_t mysettingframeheader;
+    settings_payload_t mysettings;
+    settings_pair_t mypairs[6];
+    /*rc must be 0*/
+    rc = create_settings_frame(ids, h2s->local_settings, 6, &mysettingframe,
+                               &mysettingframeheader, &mysettings, mypairs);
+    if(rc){
+        ERROR("Error in Settings Frame creation");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    uint8_t byte_mysettings[9+6*6]; /*header: 9 bytes + 6 * setting: 6 bytes */
+    int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
+    rc = cbuf_push(buf_out, byte_mysettings, size_byte_mysettings);
+    INFO("Sending settings");
+    if(rc != size_byte_mysettings){
+        ERROR("Error in local settings writing");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    /*Settings were sent, so we expect an ack*/
+    h2s->wait_setting_ack = 1;
+    return 0;
+}
+
+/*
 * Function: send_connection_error
 * Send a connection error to endpoint with a specified error code. It implements
 * the behaviour suggested in RFC 7540, secion 5.4.1
