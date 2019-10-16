@@ -1271,7 +1271,7 @@ int h2_receive_frame(hstates_t *st){
         case WINDOW_UPDATE_TYPE: {//Window update
             INFO("h2_receive_frame: WINDOW UPDATE");
             window_update_payload_t window_update_payload;
-            int rc = read_window_update_payload(buff_read, &header, &window_update_payload);
+            int rc = header.callback(&header, &window_update_payload, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
                 send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);

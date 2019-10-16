@@ -1,6 +1,7 @@
 #ifndef FRAMES_H
 #define FRAMES_H
 
+
 #include <stdint.h>
 #include "headers.h"
 #include "hpack.h"
@@ -24,12 +25,13 @@ typedef enum {
 }frame_type_t;
 
 /*FRAME HEADER*/
-typedef struct {
+typedef struct FRAME_HEADER {
     uint32_t length : 24;
     frame_type_t type;
     uint8_t flags;
     uint8_t reserved : 1;
     uint32_t stream_id : 31;
+    int (* callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *buff_read);
 }frame_header_t; //72 bits-> 9 bytes
 
 /*FRAME*/
@@ -177,7 +179,7 @@ int read_data_payload(uint8_t *buff_read, frame_header_t *frame_header, data_pay
 /*Window_update frame methods*/
 int create_window_update_frame(frame_header_t *frame_header, window_update_payload_t *window_update_payload, int window_size_increment, uint32_t stream_id);
 int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array);
-int read_window_update_payload(uint8_t *buff_read, frame_header_t *frame_header, window_update_payload_t *window_update_payload);
+int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *buff_read);
 
 
 /*goaway payload methods*/

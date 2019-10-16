@@ -51,6 +51,11 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_h
     frame_header->flags = (uint8_t)(byte_array[4]);
     frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
     frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
+    //TODO: Change this if for switch to implement callbacks in frames
+    if(frame_header->type == WINDOW_UPDATE_TYPE){
+        frame_header->callback = read_window_update_payload;
+    }
+
     return 0;
 }
 
@@ -701,8 +706,9 @@ int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_p
  * Input: byte_array, frame_header, window_update_payload
  * Output: bytes read or -1 if error
  */
-int read_window_update_payload(uint8_t *buff_read, frame_header_t *frame_header, window_update_payload_t *window_update_payload)
+int read_window_update_payload(frame_header_t *frame_header,void *payload,  uint8_t *buff_read)
 {
+    window_update_payload_t *window_update_payload = (window_update_payload_t *) payload;
     if (frame_header->length != 4) {
         ERROR("Length != 4, FRAME_SIZE_ERROR");
         return -1;
