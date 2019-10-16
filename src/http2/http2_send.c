@@ -294,3 +294,48 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
   }
   return 0;
 }
+
+/*
+* Function: send_headers_frame
+* Send a single headers frame to endpoint. It read the data from the buff_read
+* buffer given as parameter.
+* Input: ->st: hstates_t struct where connection variables are stored
+*        ->buff_read: buffer where headers frame payload is stored
+*        ->size: number of bytes to read from buff_read and to store in payload
+*        ->stream_id: stream id to write on headers frame header
+*        ->end_headers: boolean that indicates if END_HEADERS_FLAG must be set
+*        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
+* Output: 0 if no errors were found during frame creation/sending, -1 if not
+*/
+
+int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
+  int rc;
+  frame_t frame;
+  frame_header_t frame_header;
+  headers_payload_t headers_payload;
+  uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
+  // We create the headers frame
+  rc = create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+  if(rc < 0){
+    ERROR("Error creating headers frame. INTERNAL ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return rc;
+  }
+  if(end_headers){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
+  }
+  if(end_stream){
+    frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
+  }
+  frame.frame_header = &frame_header;
+  frame.payload = (void*)&headers_payload;
+  int bytes_size = frame_to_bytes(&frame, buff_read);
+  rc = cbuf_push(buf_out, buff_read, bytes_size);
+  INFO("Sending headers");
+  if(rc != bytes_size){
+    ERROR("Error writting headers frame. INTERNAL ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return rc;
+  }
+  return 0;
+}
