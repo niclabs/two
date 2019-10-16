@@ -85,30 +85,6 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
     return ret_null;
 }
 
-int validate_pseudoheaders(headers_t* pseudoheaders)
-{
-
-    if (headers_get(pseudoheaders, ":method") == NULL)
-    {
-        ERROR("\":method\" pseudoheader was missing.");
-        return -1;
-    }
-
-    if (headers_get(pseudoheaders, ":scheme") == NULL)
-    {
-        ERROR("\":scheme\" pseudoheader was missing.");
-        return -1;
-    }
-
-    if (headers_get(pseudoheaders, ":path") == NULL)
-    {
-        ERROR("\":path\" pseudoheader was missing.");
-        return -1;
-    }
-
-    return headers_validate(pseudoheaders);
-}
-
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 {
     if (cbuf_len(buf_in) < 9) {
