@@ -366,3 +366,78 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
   }
   return 0;
 }
+
+/*
+* Function: send_headers
+* Given an hstates struct, builds and sends a message to endpoint. The message
+* is a sequence of a HEADER FRAME followed by 0 or more CONTINUATION FRAMES.
+* Input: -> st: hstates_t struct where headers are written
+        -> end_stream: boolean that indicates if end_stream flag needs to be set
+* Output: 0 if process was made successfully, -1 if not.
+*/
+int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
+  if(h2s->received_goaway){
+    ERROR("GOAWAY was received. Current process must not open a new stream");
+    return -1;
+  }
+  if(h2s->headers.count == 0){
+    ERROR("There are no headers to send");
+    return -1;
+  }
+  uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
+  int size = compress_headers(&h2s->headers, encoded_bytes, &h2s->hpack_states);
+  if(size < 0){
+    ERROR("Error was found compressing headers. INTERNAL ERROR");
+    send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+    return -1;
+  }
+  if(send_headers_stream_verification(buf_out, h2s) < 0){
+    ERROR("Stream error during the headers sending. INTERNAL ERROR"); // error already handled
+    return -1;
+  }
+  uint32_t stream_id = h2s->current_stream.stream_id;
+  uint16_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+  int rc;
+  //not being considered dependencies nor padding.
+  if(size <= max_frame_size){ //if headers can be send in only one frame
+      //only send 1 header
+      rc = send_headers_frame(encoded_bytes, size, stream_id, 1, end_stream, buf_out, h2s);
+      if(rc < 0){
+        ERROR("Error found sending headers frame");
+        return rc;
+      }
+      if(end_stream){
+        change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+      }
+      return rc;
+  }
+  else{//if headers must be send with one or more continuation frames
+      int remaining = size;
+      //send Header Frame
+      rc = send_headers_frame(encoded_bytes, max_frame_size, stream_id, 0, end_stream, buf_out, h2s);
+      if(rc < 0){
+        ERROR("Error found sending headers frame");
+        return rc;
+      }
+      remaining -= max_frame_size;
+      //Send continuation Frames
+      while(remaining > max_frame_size){
+          rc = send_continuation_frame(encoded_bytes + (size - remaining), max_frame_size, stream_id, 0, buf_out, h2s);
+          if(rc < 0){
+            ERROR("Error found sending continuation frame");
+            return rc;
+          }
+          remaining -= max_frame_size;
+      }
+      //send last continuation frame
+      rc = send_continuation_frame(encoded_bytes + (size - remaining), remaining, stream_id, 1, buf_out, h2s);
+      if(rc < 0){
+        ERROR("Error found sending continuation frame");
+        return rc;
+      }
+      if(end_stream){
+        change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+      }
+      return rc;
+  }
+}
