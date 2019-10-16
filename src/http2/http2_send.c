@@ -56,6 +56,72 @@ int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2stat
 }
 
 /*
+* Function: send_data
+* Sends a data frame with the current data written in the given hstates_t struct.
+* The data is expected to be written in the http_data_t.data_out.buf, and its
+* corresponding size indicated in the http_data_t.data_out.size variable.
+* Input: ->st: hstates_t struct where connection variables are stored
+         ->end_stream: indicates if the data frame to be sent must have the
+                      END_STREAM_FLAG set.
+* Output: 0 if no error were found in the process, -1 if not
+*
+*/
+int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
+    if(h2s->data.size<=0){
+        ERROR("No data to be sent. INTERNAL_ERROR");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    h2_stream_state_t state = h2s->current_stream.state;
+    if(state!=STREAM_OPEN && state!=STREAM_HALF_CLOSED_REMOTE){
+        ERROR("Wrong state for sending DATA. INTERNAL_ERROR");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    uint32_t stream_id = h2s->current_stream.stream_id;
+    uint8_t count_data_to_send = get_size_data_to_send(h2s);
+    frame_t frame;
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    uint8_t data[count_data_to_send];
+    int rc = create_data_frame(&frame_header, &data_payload, data, h2s->data.buf + h2s->data.processed, count_data_to_send, stream_id);
+    if(rc<0){
+        ERROR("Error creating data frame. INTERNAL_ERROR");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    if(end_stream) {
+        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
+    }
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&data_payload;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    INFO("Sending DATA");
+    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    if(rc != bytes_size){
+        ERROR("Error writting data frame. INTERNAL ERROR");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return rc;
+    }
+    rc = flow_control_send_data(h2s, count_data_to_send);
+    if(rc < 0){
+      send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+      return -1;
+    }
+    if(end_stream){
+      change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+    }
+    h2s->data.processed += count_data_to_send;
+    if(h2s->data.size == h2s->data.processed) {
+        h2s->data.size = 0;
+        h2s->data.processed = 0;
+    }
+    return 0;
+}
+
+
+/*
 * Function: send_settings_ack
 * Sends an ACK settings frame to endpoint
 * Input: -> st: pointer to hstates struct where http and http2 connection info is
@@ -84,6 +150,7 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s){
     }
     return 0;
 }
+
 /*
 * Function: send_goaway
 * Given an h2states_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
