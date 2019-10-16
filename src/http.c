@@ -89,19 +89,26 @@ uint32_t get_data(uint8_t *data_in_buff, uint32_t data_in_buff_size, uint8_t *da
  * Add data to be sent to data lists
  *
  * @param    data_buff           Struct with data information
- * @param    data_buff_size   Buffer size
+ * @param    data_buff_size      Pointer to size of data in buffer
+ * @param    max_data_buff_size  Buffer size
  * @param    data                Data
  * @param    data_size           Size of data
  *
  * @return   0                   Successfully added data
  * @return   -1                  There was an error in the process
  */
-int set_data(uint8_t *data_buff, uint32_t *data_buff_size, uint8_t *data, int data_size)
+int set_data(uint8_t *data_buff, uint32_t *data_buff_size, int max_data_buff_size, uint8_t *data, int data_size)
 {
     if (data_size <= 0) {
         ERROR("Data size can't be negative or zero");
         return -1;
     }
+
+    if (data_size > max_data_buff_size) {
+        ERROR("Data is too big for the data buffer");
+        return -1;
+    }
+
     uint32_t min = *data_buff_size;
     if (*data_buff_size > (uint32_t) data_size){
       min = (uint32_t) data_size;
@@ -142,7 +149,7 @@ int error(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, int 
 
     // Set error message
     if (msg != NULL) {
-        set_data(data_buff, data_size, (uint8_t *)msg, strlen(msg));
+        set_data(data_buff, data_size, HTTP_MAX_RESPONSE_SIZE, (uint8_t *)msg, strlen(msg));
     }
 
     DEBUG("Error with status code %d", code);
@@ -181,7 +188,7 @@ int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff,
     }
     // If it is GET method Prepare response for callback
     else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
-        set_data(data_buff, data_size, response, len);
+      set_data(data_buff, data_size, HTTP_MAX_RESPONSE_SIZE, response, len);
     }
 
     // Clean header list
