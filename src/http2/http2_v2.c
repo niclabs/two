@@ -27,14 +27,6 @@ int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t
 int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states_t *h2s);
 int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, cbuf_t *buf_out, h2states_t *h2s);
 int handle_window_update_payload(cbuf_t *buf_out, h2states_t *h2s);
-/*
- *
- *
- */
-callback_t null_callback(void){
-  callback_t null_ret = {NULL, NULL};
-  return null_ret;
-}
 
 int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
 {

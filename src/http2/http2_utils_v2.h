@@ -32,4 +32,6 @@ uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param);
 
 
 int buffer_copy(uint8_t* dest, uint8_t* orig, int size);
+
+callback_t null_callback(void);
 #endif

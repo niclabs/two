@@ -51,3 +51,12 @@ int buffer_copy(uint8_t* dest, uint8_t* orig, int size){
     }
     return size;
 }
+
+/*
+ *
+ *
+ */
+callback_t null_callback(void){
+  callback_t null_ret = {NULL, NULL};
+  return null_ret;
+}
