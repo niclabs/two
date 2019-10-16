@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include "http2_v2.h"
 
-#ifndef HTTP2UTILS_V2_H
-#define HTTP2UTILS_V2_H
+#ifndef HTTP2_UTILS_V2_H
+#define HTTP2_UTILS_V2_H
 
 
 /*Macros for table update*/
