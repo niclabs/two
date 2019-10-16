@@ -11,6 +11,7 @@
 
 #include "dos.h"
 #include "http2/http2_v2.h"
+#include "http2/http2_structs.h"
 #include "net.h"
 #include "logging.h"
 
