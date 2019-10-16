@@ -55,6 +55,9 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_h
     if(frame_header->type == WINDOW_UPDATE_TYPE){
         frame_header->callback = read_window_update_payload;
     }
+    if(frame_header->type == DATA_TYPE){
+        frame_header->callback = read_data_payload;
+    }
 
     return 0;
 }
@@ -639,8 +642,9 @@ int data_payload_to_bytes(frame_header_t *frame_header, data_payload_t *data_pay
  * Input: byte_array, frame_header, data_payload, data array
  * Output: byteget_header_block_fragment_sizes read or -1 if error
  */
-int read_data_payload(uint8_t *buff_read, frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data)
+int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
+    data_payload_t *data_payload = (data_payload_t *) payload;
     uint8_t flags = frame_header->flags;
     int length = frame_header->length;
 
@@ -649,8 +653,7 @@ int read_data_payload(uint8_t *buff_read, frame_header_t *frame_header, data_pay
         ERROR("Padding not implemented yet");
         return -1;
     }
-    buffer_copy(data, buff_read, length);
-    data_payload->data = data;
+    buffer_copy(data_payload->data, bytes, length);
     return length;
 }
 
@@ -684,14 +687,14 @@ int create_window_update_frame(frame_header_t *frame_header, window_update_paylo
  * Input: frame_header, window_update_payload pointer, array to save the bytes
  * Output: size of the array of bytes, -1 if error
  */
-int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array)
+int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *bytes)
 {
     if (frame_header->length != 4) {
         ERROR("Length != 4, FRAME_SIZE_ERROR");
         return -1;
     }
-    byte_array[0] = 0;
-    int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, byte_array);
+    bytes[0] = 0;
+    int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, bytes);
     if (rc < 0) {
         ERROR("error while passing uint32_31 to byte_array");
         return -1;

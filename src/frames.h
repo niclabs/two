@@ -31,7 +31,7 @@ typedef struct FRAME_HEADER {
     uint8_t flags;
     uint8_t reserved : 1;
     uint32_t stream_id : 31;
-    int (* callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *buff_read);
+    int (* callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *bytes);
 }frame_header_t; //72 bits-> 9 bytes
 
 /*FRAME*/
@@ -173,13 +173,13 @@ int compress_headers(headers_t *headers_out,  uint8_t *compressed_headers, hpack
 /*Data frame methods*/
 int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data, uint8_t *data_to_send, int length, uint32_t stream_id);
 int data_payload_to_bytes(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *byte_array);
-int read_data_payload(uint8_t *buff_read, frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data);
+int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
 /*Window_update frame methods*/
 int create_window_update_frame(frame_header_t *frame_header, window_update_payload_t *window_update_payload, int window_size_increment, uint32_t stream_id);
 int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array);
-int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *buff_read);
+int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
 /*goaway payload methods*/

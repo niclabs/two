@@ -1167,7 +1167,8 @@ int h2_receive_frame(hstates_t *st){
             }
             data_payload_t data_payload;
             uint8_t data[header.length];
-            int rc = read_data_payload(buff_read, &header, &data_payload, data);
+            data_payload.data = data;
+            int rc = header.callback(&header, &data_payload, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading data payload");
                 return -1;
