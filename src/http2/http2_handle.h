@@ -1,5 +1,8 @@
 #include "http2_structs.h"
 
+
+#ifndef HTTP2_HANDLE_H
+#define HTTP2_HANDLE_H
 int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
 
 /*
@@ -45,3 +48,4 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
 * Output: 0 if no error was found, -1 if not.
 */
 int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, cbuf_t *buf_out, h2states_t *h2s);
+#endif
