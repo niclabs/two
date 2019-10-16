@@ -4,6 +4,31 @@
 #include "frames.h"
 #include "http2_send.h"
 #include "http2_utils_v2.h"
+
+int validate_pseudoheaders(headers_t* pseudoheaders)
+{
+
+    if (headers_get(pseudoheaders, ":method") == NULL)
+    {
+        ERROR("\":method\" pseudoheader was missing.");
+        return -1;
+    }
+
+    if (headers_get(pseudoheaders, ":scheme") == NULL)
+    {
+        ERROR("\":scheme\" pseudoheader was missing.");
+        return -1;
+    }
+
+    if (headers_get(pseudoheaders, ":path") == NULL)
+    {
+        ERROR("\":path\" pseudoheader was missing.");
+        return -1;
+    }
+
+    return headers_validate(pseudoheaders);
+}
+
 /*
 *
 *
