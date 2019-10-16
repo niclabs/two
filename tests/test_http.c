@@ -64,8 +64,9 @@ int headers_set_custom_fake(headers_t * headers, const char * head, const char *
 
 int send_hello(char *method, char *uri, uint8_t *response, int maxlen)
 {
-    memcpy(response, "hello world!!!!", 16);
-    return 16;
+    int len = (int) sizeof("hello world!!!!");
+    memcpy(response, "hello world!!!!", len);
+    return len;
 }
 
 /************************************
@@ -97,7 +98,7 @@ void test_set_data_success(void)
     uint32_t data_size = (uint32_t)sizeof(data);
 
     // Perform set
-    int sd = set_data((uint8_t *) &data, &data_size, HTTP_MAX_RESPONSE_SIZE, (uint8_t *)"test", 4);
+    int sd = set_data((uint8_t *) &data, &data_size, 10, (uint8_t *)"test", 4);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL( 0, sd);
@@ -111,11 +112,25 @@ void test_set_data_success(void)
 void test_set_data_fail_zero_size(void)
 {
     // Create function parameters
-    uint8_t data[10];
+    uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
 
     // Perform set
-    int sd = set_data((uint8_t *) &data, &data_size, HTTP_MAX_RESPONSE_SIZE, (uint8_t *)"", 0);
+    int sd = set_data((uint8_t *) &data, &data_size, 20, (uint8_t *)"", 0);
+
+    // Return value should be -1
+    TEST_ASSERT_EQUAL( -1, sd);
+}
+
+
+void test_set_data_fail_data_too_large(void)
+{
+    // Create function parameters
+    uint8_t data[20];
+    uint32_t data_size = (uint32_t)sizeof(data);
+
+    // Perform set
+    int sd = set_data((uint8_t *) &data, &data_size, 20, (uint8_t *)"", 0);
 
     // Return value should be -1
     TEST_ASSERT_EQUAL( -1, sd);
@@ -129,7 +144,7 @@ void test_do_request_success(void)
     headers_set_fake.custom_fake = headers_set_custom_fake;
 
     // Create function parameters
-    uint8_t data[10];
+    uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
     headers_t headers_buff[1];
 
@@ -146,9 +161,8 @@ void test_do_request_success(void)
     TEST_ASSERT_EQUAL_STRING("200", header_value);
 
     // Check if the data and data_size have the correct content
-    uint32_t final_data_size = MIN((uint32_t)sizeof(data), (uint32_t) 16);
-    TEST_ASSERT_EQUAL(final_data_size, data_size);
-    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"hello world!!!!", 10));
+    TEST_ASSERT_EQUAL((uint32_t) sizeof("hello world!!!!"), data_size);
+    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"hello world!!!!", (uint32_t) sizeof("hello world!!!!")));
 
 
     // Return value should be 0
@@ -163,7 +177,7 @@ void test_do_request_fail_resource_handler_get(void)
     headers_set_fake.custom_fake = headers_set_custom_fake;
 
     // Create function parameters
-    uint8_t data[10];
+    uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
     headers_t headers_buff[1];
 
@@ -180,9 +194,9 @@ void test_do_request_fail_resource_handler_get(void)
     TEST_ASSERT_EQUAL_STRING("404", header_value);
 
     // Check if the data and data_size have the correct content
-    uint32_t final_data_size = MIN((uint32_t)sizeof(data), (uint32_t)strlen("Not Found"));
+    uint32_t final_data_size = (uint32_t)strlen("Not Found");
     TEST_ASSERT_EQUAL( final_data_size, data_size);
-    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"Not Found", 9));
+    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"Not Found", final_data_size));
 
 
     // Return value should be 0
@@ -198,7 +212,7 @@ void test_http_server_response_success(void)
     resource_handler_get_fake.return_val = &send_hello;
 
     // Create function parameters
-    uint8_t data[10];
+    uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
     headers_t headers_buff[1];
 
@@ -223,7 +237,7 @@ void test_http_server_response_fail_method_not_supported(void)
     headers_set_fake.custom_fake = headers_set_custom_fake;
 
     // Create function parameters
-    uint8_t data[10];
+    uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
     headers_t headers_buff[1];
 
@@ -238,9 +252,9 @@ void test_http_server_response_fail_method_not_supported(void)
     TEST_ASSERT_EQUAL_STRING("501", header_value);
 
     // Check if the data and data_size have the correct content
-    uint32_t final_data_size = MIN((uint32_t)sizeof(data), (uint32_t)strlen("Not Implemented"));
+    uint32_t final_data_size = (uint32_t)strlen("Not Implemented");
     TEST_ASSERT_EQUAL( final_data_size, data_size);
-    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"Not Implemented", 10));
+    TEST_ASSERT_EQUAL( 0, memcmp(&data, (uint8_t *)"Not Implemented", final_data_size));
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(0, res);

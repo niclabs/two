@@ -105,16 +105,12 @@ int set_data(uint8_t *data_buff, uint32_t *data_buff_size, int max_data_buff_siz
     }
 
     if (data_size > max_data_buff_size) {
-        ERROR("Data is too big for the data buffer");
+        ERROR("Data is too large for the data buffer");
         return -1;
     }
 
-    uint32_t min = *data_buff_size;
-    if (*data_buff_size > (uint32_t) data_size){
-      min = (uint32_t) data_size;
-      *data_buff_size = (uint32_t) data_size;
-    }
-    memcpy(data_buff, data, min);
+    *data_buff_size = (uint32_t) data_size;
+    memcpy(data_buff, data, (int) *data_buff_size);
     return 0;
 }
 
