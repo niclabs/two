@@ -3,6 +3,36 @@
 #include "headers.h"
 #include "logging.h"
 
+
+/*
+* Function: send_settings_ack
+* Sends an ACK settings frame to endpoint
+* Input: -> st: pointer to hstates struct where http and http2 connection info is
+* stored
+* Output: 0 if sent was successfully made, -1 if not.
+*/
+int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s){
+    frame_t ack_frame;
+    frame_header_t ack_frame_header;
+    int rc;
+    rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
+    if(rc < 0){
+        ERROR("Error in Settings ACK creation!");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
+    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
+    // We write the ACK to NET
+    rc = cbuf_push(buf_out, byte_ack, size_byte_ack);
+    INFO("Sending settings ACK");
+    if(rc != size_byte_ack){
+        ERROR("Error in Settings ACK sending");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    return 0;
+}
 /*
 * Function: send_goaway
 * Given an h2states_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
