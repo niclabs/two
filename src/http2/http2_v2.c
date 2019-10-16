@@ -549,8 +549,8 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         case DATA_TYPE: {
             DEBUG("handle_payload: RECEIVED DATA PAYLOAD");
             data_payload_t data_payload;
-            uint8_t data[h2s->header.length];
-            rc = read_data_payload(buff_read, &(h2s->header), &data_payload, data);
+            //uint8_t data[h2s->header.length]; CHECK WITH HPACK PEOPLE
+            rc = read_data_payload(&(h2s->header), &data_payload, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading data payload");
                 return -1;
@@ -637,7 +637,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         case WINDOW_UPDATE_TYPE: {
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD");
             window_update_payload_t window_update_payload;
-            int rc = read_window_update_payload(buff_read, &h2s->header, &window_update_payload);
+            int rc = read_window_update_payload(&h2s->header, &window_update_payload, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
                 send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
