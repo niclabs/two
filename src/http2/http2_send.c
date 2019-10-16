@@ -198,6 +198,48 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s){//, uint8
 }
 
 /*
+* Function: send_window_update
+* Sends connection window update to endpoint.
+* Input: -> st: hstates_t struct pointer where connection variables are stored
+*        -> window_size_increment: increment to put on window_update frame
+* Output: 0 if no errors were found, -1 if not.
+*/
+int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_t *h2s){
+    frame_t frame;
+    frame_header_t frame_header;
+    window_update_payload_t window_update_payload;
+    int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment,0);
+    if(rc<0){
+        ERROR("error creating window_update frame");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return -1;
+    }
+    if(window_size_increment > h2s->incoming_window.window_used){
+        ERROR("Trying to send window increment greater than used");
+        return -1;
+    }
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&window_update_payload;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+
+    INFO("Sending WINDOW UPDATE");
+
+    if(rc != bytes_size){
+        ERROR("Error writting window_update frame. INTERNAL ERROR");
+        return rc;
+    }
+    rc = flow_control_send_window_update(h2s, window_size_increment);
+    if(rc!=0){
+        ERROR("ERROR in flow control when sending WU");
+        return -1;
+    }
+    return 0;
+}
+
+
+/*
 * Function: send_connection_error
 * Send a connection error to endpoint with a specified error code. It implements
 * the behaviour suggested in RFC 7540, secion 5.4.1
