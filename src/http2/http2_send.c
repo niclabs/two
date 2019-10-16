@@ -238,6 +238,33 @@ int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_
     return 0;
 }
 
+/*
+* Function: send_headers_stream_verification
+* Given an hstates struct, checks the current stream and uses it, creates
+* a new one or reports an error. The stream that will be used is stored in
+* st->h2s.current_stream.stream_id .
+* Input: ->st: hstates_t struct where current stream is stored
+* Output: 0 if no errors were found, -1 if not
+*/
+int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s){
+  if(h2s->current_stream.state == STREAM_CLOSED ||
+      h2s->current_stream.state == STREAM_HALF_CLOSED_LOCAL){
+      ERROR("Current stream was closed! Send request error. INTERNAL_ERROR");
+      send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+      return -1;
+  }
+  else if(h2s->current_stream.state == STREAM_IDLE){
+    if(h2s->is_server){ // server must use even numbers
+        h2s->last_open_stream_id += h2s->last_open_stream_id%2 ? 1 : 2;
+    }
+    else{ //stream is closed and id is not zero
+        h2s->last_open_stream_id += h2s->last_open_stream_id%2 ? 2 : 1;
+    }
+    h2s->current_stream.state = STREAM_OPEN;
+    h2s->current_stream.stream_id = h2s->last_open_stream_id;
+  }
+  return 0;
+}
 
 /*
 * Function: send_connection_error
