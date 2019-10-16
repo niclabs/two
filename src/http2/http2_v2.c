@@ -404,47 +404,6 @@ int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t
 }
 
 /*
-* Function: handle_goaway_payload
-* Handles go away payload.
-* Input: ->goaway_pl: goaway_payload_t pointer to goaway frame payload
-*        ->st: pointer h2states_t struct where connection variables are stored
-* IMPORTANT: this implementation doesn't check the correctness of the last stream
-* id sent by the endpoint. That is, if a previous GOAWAY was received with an n
-* last_stream_id, it assumes that the next value received is going to be the same.
-* Output: 0 if no error were found during the handling, 1 if not
-*/
-int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states_t *h2s){
-  if(goaway_pl->error_code != HTTP2_NO_ERROR){
-    INFO("Received GOAWAY with ERROR");
-    // i guess that is closed on the other side, are you?
-    return -1;
-  }
-  if(h2s->sent_goaway == 1){ // received answer to goaway
-    INFO("Connection CLOSED");
-    // Return -1 to close connection
-    return -1;
-  }
-  if(h2s->received_goaway == 1){
-    INFO("Another GOAWAY has been received before, just info");
-  }
-  else { // never has been seen a goaway before in this connection life
-    h2s->received_goaway = 1; // receiver must not open additional streams
-  }
-  if(h2s->current_stream.stream_id > goaway_pl->last_stream_id){
-    if(h2s->current_stream.state != STREAM_IDLE){
-      h2s->current_stream.state = STREAM_CLOSED;
-      INFO("Current stream closed");
-    }
-    int rc = send_goaway(HTTP2_NO_ERROR, buf_out, h2s); // We send a goaway to close the connection
-    if(rc < 0){
-      ERROR("Error sending GOAWAY FRAME"); // TODO shutdown_connection
-      return rc;
-    }
-  }
-  return 0;
-}
-
-/*
 *
 *
 *
