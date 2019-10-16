@@ -494,7 +494,14 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
     if(h2s->received_end_stream == 1){
         change_stream_state_end_stream_flag(0, buf_out, h2s); // 0 is for receiving
         h2s->received_end_stream = 0;
+        rc = validate_pseudoheaders(&h2s->headers);
+        if(rc < 0){
+          ERROR("handle_continuation_payload: Malformed request received");
+          send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+          return -1;
+        }
         http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
+        /*Send data and headers to endpoint*/
     }
     return 0;
 }
