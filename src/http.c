@@ -1,7 +1,6 @@
 /*
-   This API contains the Resource Manager methods to be used by
-   HTTP/2
- */
+   This API contains the http methods
+*/
 
 #include <errno.h>
 #include <strings.h>
