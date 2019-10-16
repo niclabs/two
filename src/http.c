@@ -143,7 +143,6 @@ int error(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, int 
 
     // Set error message
     if (msg != NULL) {
-        clean_data(data_buff);
         set_data(data_buff, data_size, (uint8_t *)msg, strlen(msg));
     }
 
@@ -172,6 +171,9 @@ int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff,
         return error(data_buff, data_size, headers_buff, 404, "Not Found");
     }
 
+    // Clear data buffer in order to prepare response
+    clean_data(data_buff, data_size);
+
     uint8_t response[HTTP_MAX_RESPONSE_SIZE];
     int len;
     if ((len = handle_uri(method, uri, response, HTTP_MAX_RESPONSE_SIZE)) < 0) {
@@ -180,7 +182,6 @@ int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff,
     }
     // If it is GET method Prepare response for callback
     else if ((len > 0) && (strncmp("GET", method, 8) == 0)) {
-        clean_data(data_buff);
         set_data(data_buff, data_size, response, len);
     }
 
