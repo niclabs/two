@@ -41,4 +41,4 @@ int http_server_response(uint8_t *data_buff, uint32_t *data_size, headers_t *hea
 int http_has_method_support(char *method);
 
 
-#endif /* RESOURCE_MANAGER_H */
+#endif /* HTTP_H */

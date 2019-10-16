@@ -62,4 +62,4 @@ http_resource_handler_t resource_handler_get(char *method, char *path);
 int resource_handler_set(char *method, char *path, http_resource_handler_t handler);
 
 
-#endif /* RESOURCE_MANAGER_H */
+#endif /* RESOURCE_HANDLER_H */
