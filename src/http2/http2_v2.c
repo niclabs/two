@@ -14,9 +14,10 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_wait_settings_ack(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_goaway(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s);
+/*
 int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s);
 void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
-
+*/
 int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s);
 int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
 int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_t *buf_out, h2states_t *h2s);
@@ -395,35 +396,6 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
   return 0;
 }
 
-/*
-* Function: send_settings_ack
-* Sends an ACK settings frame to endpoint
-* Input: -> st: pointer to hstates struct where http and http2 connection info is
-* stored
-* Output: 0 if sent was successfully made, -1 if not.
-*/
-int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s){
-    frame_t ack_frame;
-    frame_header_t ack_frame_header;
-    int rc;
-    rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
-    if(rc < 0){
-        ERROR("Error in Settings ACK creation!");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
-    }
-    uint8_t byte_ack[9+0]; /*Settings ACK frame only has a header*/
-    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
-    // We write the ACK to NET
-    rc = cbuf_push(buf_out, byte_ack, size_byte_ack);
-    INFO("Sending settings ACK");
-    if(rc != size_byte_ack){
-        ERROR("Error in Settings ACK sending");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
-    }
-    return 0;
-}
 
 /*
 * Function: update_settings_table
