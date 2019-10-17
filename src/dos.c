@@ -18,12 +18,12 @@
 
 int two_server_start(unsigned int port)
 {
-    callback_t default_callback;
+    callback_t d_c = {&h2_server_init_connection, ""};
     int stop_flag = 0;
     size_t data_buffer_size = 1024*4;
     size_t client_state_size = sizeof(h2states_t);
 
-    int status = (int) net_server_loop(port, default_callback, &stop_flag, data_buffer_size, client_state_size);
+    int status = (int) net_server_loop(port, d_c, &stop_flag, data_buffer_size, client_state_size);
 
     return status;
 }
