@@ -476,3 +476,44 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
       return rc;
   }
 }
+
+/*
+ * Function: send_response
+ * Given a set of headers and, in some cases, data, generates an http2 message
+ * to be send to endpoint. The message is a response, so it must be sent through
+ * an existent stream, closing the current stream.
+ *
+ * @param    buf_out   pointer to hstates_t struct where headers are stored
+ * @param    h2s       pointer to hstates_t struct where headers are stored
+ *
+ * @return   0         Successfully generation and sent of the message
+ * @return   -1        There was an error in the process
+ */
+int send_response(cbuf_t *buf_out, h2states_t *h2s)
+{
+    if (h2s->headers.count == 0) {
+        ERROR("There were no headers to write");
+        return -1;
+    }
+    int rc;
+    if (h2s->data.size > 0) {
+        rc = send_headers(0, buf_out, h2s);
+        if (rc < 0) {
+            ERROR("Error was found sending headers on response");
+            return rc;
+        }
+        rc = send_data(1, buf_out, h2s);
+        if (rc < 0) {
+            ERROR("Error was found sending data on response");
+            return rc;
+        }
+    }
+    else {
+        rc = send_headers(1, buf_out, h2s);
+        if (rc < 0) {
+            ERROR("Error was found sending headers on response");
+            return rc;
+        }
+    }
+    return 0;
+}
