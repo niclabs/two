@@ -130,7 +130,7 @@ void test_set_data_fail_data_too_large(void)
     uint32_t data_size = (uint32_t)sizeof(data);
 
     // Perform set
-    int sd = set_data((uint8_t *) &data, &data_size, 20, (uint8_t *)"", 0);
+    int sd = set_data((uint8_t *) &data, &data_size, 20, (uint8_t *)"test", 21);
 
     // Return value should be -1
     TEST_ASSERT_EQUAL( -1, sd);
@@ -269,6 +269,7 @@ int main(void)
 
     UNIT_TEST(test_set_data_success);
     UNIT_TEST(test_set_data_fail_zero_size);
+    UNIT_TEST(test_set_data_fail_data_too_large);
 
     UNIT_TEST(test_do_request_success);
     UNIT_TEST(test_do_request_fail_resource_handler_get);
