@@ -61,6 +61,9 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
         }
         http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
         /*Send data and headers to endpoint*/
+
+        // Generate http2 response using http response
+        return send_response(buf_out, h2s);
     }
     return 0;
 }
@@ -136,6 +139,9 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
           }
           http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
           /*TODO: Send headers and data to endpoint*/
+
+          // Generate http2 response using http response
+          return send_response(buf_out, h2s);
       }
       uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
@@ -321,6 +327,8 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
           }
           http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
           /*TODO: Send headers and data*/
+          // Generate http2 response using http response
+          return send_response(buf_out, h2s);
       }
       uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
       uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
