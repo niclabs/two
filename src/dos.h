@@ -8,6 +8,16 @@
 
 
 
+/*
+ * Given a port number, this function start a server
+ *
+ * @param    port       Port number
+ *
+ * @return   0          Server was successfully performance
+ * @return   -1         An error occurred while the server was running
+ */
+int two_server_start(unsigned int port);
+
 /**
  * Set callback to handle an http resource
  *
