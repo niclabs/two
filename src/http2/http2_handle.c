@@ -59,8 +59,12 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
           send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
           return -1;
         }
-        http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
-        /*Send data and headers to endpoint*/
+        // Generate response through http layer
+        rc = http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
+        if(rc < 0){
+          DEBUG("An error occurred during http layer response generation");
+          return rc;
+        }
 
         // Generate http2 response using http response
         return send_response(buf_out, h2s);
@@ -137,8 +141,12 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
             return -1;
           }
-          http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
-          /*TODO: Send headers and data to endpoint*/
+          // Generate response through http layer
+          rc = http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
+          if(rc < 0){
+            DEBUG("An error occurred during http layer response generation");
+            return rc;
+          }
 
           // Generate http2 response using http response
           return send_response(buf_out, h2s);
@@ -325,8 +333,13 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
             return -1;
           }
-          http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
-          /*TODO: Send headers and data*/
+          // Generate response through http layer
+          rc = http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
+          if(rc < 0){
+            DEBUG("An error occurred during http layer response generation");
+            return rc;
+          }
+
           // Generate http2 response using http response
           return send_response(buf_out, h2s);
       }
