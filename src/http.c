@@ -143,12 +143,13 @@ int error(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, int 
     headers_clean(headers_buff);
     headers_set(headers_buff, ":status", strCode);
 
+    DEBUG("Error with status code %d", code);
+
     // Set error message
     if (msg != NULL) {
-        set_data(data_buff, data_size, HTTP_MAX_RESPONSE_SIZE, (uint8_t *)msg, strlen(msg));
+        return set_data(data_buff, data_size, HTTP_MAX_RESPONSE_SIZE, (uint8_t *)msg, strlen(msg));
     }
 
-    DEBUG("Error with status code %d", code);
     return 0;
 }
 
