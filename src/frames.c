@@ -5,6 +5,7 @@
 
 #include "frames.h"
 #include "utils.h"
+#include "http2/http2_utils_v2.h"
 #include "logging.h"
 #include "hpack.h"
 #include "config.h"
@@ -137,7 +138,7 @@ int check_frame_errors(uint8_t type, uint32_t length){
             }
         }
         default:
-            ERROR("Frame type &d not found", type);
+            ERROR("Frame type %d not found", type);
             return -1;
     }
 }
