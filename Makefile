@@ -2,12 +2,12 @@ TWO = .
 CFLAGS = -std=c99 -Wall -Wextra 
 DEBUG_FLAGS = -DENABLE_DEBUG
 
-TARGETDIRS = examples/client/ examples/server/
+TARGETDIRS = examples/server/
 TESTDIRS = tests/
 
 MODULES	+= hpack http2
 
-all: client server
+all: server
 
 PORT=8888
 server.pid: ./bin/server
