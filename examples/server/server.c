@@ -40,13 +40,13 @@ int main(int argc, char **argv)
     }
 
     else {
-        rc = http_server_register_resource(&http_server_state, "GET", "/index", &send_text);
+        int rc = two_register_resource("GET", "/index", &send_text);
         if (rc < 0) {
-            ERROR("in http_register_resource");
+            ERROR("in two_register_resource");
         }
         else {
 
-            int rc = two_server_start(port);
+            rc = two_server_start(port);
             if (rc < 0) {
                 ERROR("in start server");
             }
