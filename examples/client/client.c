@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -5,7 +6,7 @@
 
 #include "http_old.h"
 #include "logging.h"
-
+/*
 hstates_t http_client_state;
 
 void cleanup(int signal)
@@ -16,10 +17,11 @@ void cleanup(int signal)
     http_client_disconnect(&http_client_state);
     http_server_destroy(&http_client_state);
 }
-
+*/
 
 int main(int argc, char **argv)
 {
+    /*
     if (argc < 3) {
         PRINTF("Usage: %s <addr> <port>\n", argv[0]);
         return 1;
@@ -57,5 +59,6 @@ int main(int argc, char **argv)
         ERROR("Server responded with status %d", status);
     }
     http_client_disconnect(&http_client_state);
+     */
     return 0;
 }

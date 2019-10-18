@@ -38,7 +38,7 @@ int main(int argc, char **argv)
         PRINTF("Invalid port given");
         return 1;
     }
-
+/*
     int rc = http_server_create(&http_server_state, port);
 
     if (rc < 0) {
@@ -57,4 +57,5 @@ int main(int argc, char **argv)
             }
         }
     }
+    */
 }

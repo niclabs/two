@@ -324,8 +324,9 @@ int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_
  * Input: frame_header, header_payload pointer, array to save the bytes
  * Output: size of the array of bytes, -1 if error
  */
-int headers_payload_to_bytes(frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *byte_array)
+int headers_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_t *byte_array)
 {
+    headers_payload_t *headers_payload = (headers_payload_t *) payload;
     int pointer = 0;
 
     //not implemented yet!
@@ -357,6 +358,21 @@ int headers_payload_to_bytes(frame_header_t *frame_header, headers_payload_t *he
 
 
 /*
+ * Function: continuation_payload_to_bytes
+ * Passes a continuation payload to a byte array
+ * Input: frame_header, continuation_payload pointer, array to save the bytes
+ * Output: size of the array of bytes, -1 if error
+ */
+int continuation_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    continuation_payload_t *continuation_payload = (continuation_payload_t *) payload;
+    int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
+
+    return rc;
+}
+
+
+/*
  * Function: create_continuation_frame
  * Creates a continuation frame, with no flags set, and with the given header block fragment atached
  * Input: header_block_fragment, its, size, streamid, pointer to the frame_header, pointer to the continuation_payload, pointer to the header_block_fragment that will be inside the frame
@@ -373,6 +389,7 @@ int create_continuation_frame(uint8_t *headers_block, int headers_block_size, ui
     frame_header->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
+    frame_header->payload_callback = continuation_payload_to_bytes;
 
     buffer_copy(header_block_fragment, headers_block, headers_block_size);
     continuation_payload->header_block_fragment = header_block_fragment;
@@ -380,19 +397,6 @@ int create_continuation_frame(uint8_t *headers_block, int headers_block_size, ui
     return 0;
 }
 
-
-/*
- * Function: continuation_payload_to_bytes
- * Passes a continuation payload to a byte array
- * Input: frame_header, continuation_payload pointer, array to save the bytes
- * Output: size of the array of bytes, -1 if error
- */
-int continuation_payload_to_bytes(frame_header_t *frame_header, continuation_payload_t *continuation_payload, uint8_t *byte_array)
-{
-    int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
-
-    return rc;
-}
 
 /*
  * Function: compress_headers
@@ -558,8 +562,30 @@ int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8
     return rc;
 }
 
+/*
+ * Function: data_payload_to_bytes
+ * Passes a data payload to a byte array
+ * Input: frame_header, data_payload pointer, array to save the bytes
+ * Output: size of the array of bytes, -1 if error
+ */
+int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    data_payload_t *data_payload = (data_payload_t *) payload;
+    int length = frame_header->length;
+    uint8_t flags = frame_header->flags;
 
-
+    if (is_flag_set(flags, DATA_PADDED_FLAG)) {
+        //TODO handle padding
+        ERROR("Padding not implemented yet");
+        return -1;
+    }
+    int rc = buffer_copy(byte_array, data_payload->data, length);
+    if (rc < 0) {
+        ERROR("error copying buffer");
+        return -1;
+    }
+    return rc;
+}
 
 /*
  * Function: create_data_frame
@@ -579,33 +605,10 @@ int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload
     frame_header->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
+    frame_header->payload_callback = data_payload_to_bytes;
     buffer_copy(data, data_to_send, length);
     data_payload->data = data; //not duplicating info
     return 0;
-}
-
-/*
- * Function: data_payload_to_bytes
- * Passes a data payload to a byte array
- * Input: frame_header, data_payload pointer, array to save the bytes
- * Output: size of the array of bytes, -1 if error
- */
-int data_payload_to_bytes(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *byte_array)
-{
-    int length = frame_header->length;
-    uint8_t flags = frame_header->flags;
-
-    if (is_flag_set(flags, DATA_PADDED_FLAG)) {
-        //TODO handle padding
-        ERROR("Padding not implemented yet");
-        return -1;
-    }
-    int rc = buffer_copy(byte_array, data_payload->data, length);
-    if (rc < 0) {
-        ERROR("error copying buffer");
-        return -1;
-    }
-    return rc;
 }
 
 
@@ -632,6 +635,28 @@ int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *byte
 
 
 /*
+ * Function: window_update_payload_to_bytes
+ * Passes a window_update payload to a byte array
+ * Input: frame_header, window_update_payload pointer, array to save the bytes
+ * Output: size of the array of bytes, -1 if error
+ */
+int window_update_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    window_update_payload_t *window_update_payload = (window_update_payload_t *) payload;
+    if (frame_header->length != 4) {
+        ERROR("Length != 4, FRAME_SIZE_ERROR");
+        return -1;
+    }
+    byte_array[0] = 0;
+    int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, byte_array);
+    if (rc < 0) {
+        ERROR("error while passing uint32_31 to byte_array");
+        return -1;
+    }
+    return 4;//bytes
+}
+
+/*
  * Function: create_window_update_frame
  * Creates a window_update frame
  * Input: frame_header, window_update_payload, window_size_increment, stream_id
@@ -644,6 +669,7 @@ int create_window_update_frame(frame_header_t *frame_header, window_update_paylo
     frame_header->length = 4;
     frame_header->reserved = 0;
     frame_header->flags = 0;
+    frame_header->payload_callback = window_update_payload_to_bytes;
 
     window_update_payload->reserved = 0;
     if (window_size_increment == 0) {
@@ -652,27 +678,6 @@ int create_window_update_frame(frame_header_t *frame_header, window_update_paylo
     }
     window_update_payload->window_size_increment = window_size_increment;
     return 0;
-}
-
-/*
- * Function: window_update_payload_to_bytes
- * Passes a window_update payload to a byte array
- * Input: frame_header, window_update_payload pointer, array to save the bytes
- * Output: size of the array of bytes, -1 if error
- */
-int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *bytes)
-{
-    if (frame_header->length != 4) {
-        ERROR("Length != 4, FRAME_SIZE_ERROR");
-        return -1;
-    }
-    bytes[0] = 0;
-    int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, bytes);
-    if (rc < 0) {
-        ERROR("error while passing uint32_31 to byte_array");
-        return -1;
-    }
-    return 4;//bytes
 }
 
 
@@ -695,34 +700,14 @@ int read_window_update_payload(frame_header_t *frame_header,void *payload,  uint
 }
 
 /*
- * Function: create_goaway_frame
- * Create a GOAWAY Frame
- * Input: frame_header, goaway_payload, pointer to space for additional debug data, last stream id, error code, additional debug data, and its size.
- * Output: 0, or -1 if any error
- */
-int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data_buffer, uint32_t last_stream_id, uint32_t error_code,  uint8_t *additional_debug_data, uint8_t additional_debug_data_size)
-{
-    frame_header->stream_id = 0;
-    frame_header->type = GOAWAY_TYPE;
-    frame_header->length = 8 + additional_debug_data_size;
-    frame_header->flags = 0;
-    frame_header->reserved = 0;
-
-    goaway_payload->last_stream_id = last_stream_id;
-    goaway_payload->error_code = error_code;
-    buffer_copy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
-    goaway_payload->additional_debug_data = additional_debug_data_buffer;
-    return 0;
-
-}
-/*
  * Function: goaway_payload_to_bytes
  * Passes a GOAWAY payload to a byte array
  * Input: frame_header, GOAWAY_payload pointer, array to save the bytes
  * Output: size of the array of bytes, -1 if error
  */
-int goaway_payload_to_bytes(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *byte_array)
+int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
+    goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
     if (frame_header->length < 4) {
         ERROR("Length< 4, FRAME_SIZE_ERROR");
         return -1;
@@ -749,6 +734,30 @@ int goaway_payload_to_bytes(frame_header_t *frame_header, goaway_payload_t *goaw
     pointer += rc;
     return pointer;
 }
+
+/*
+ * Function: create_goaway_frame
+ * Create a GOAWAY Frame
+ * Input: frame_header, goaway_payload, pointer to space for additional debug data, last stream id, error code, additional debug data, and its size.
+ * Output: 0, or -1 if any error
+ */
+int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data_buffer, uint32_t last_stream_id, uint32_t error_code,  uint8_t *additional_debug_data, uint8_t additional_debug_data_size)
+{
+    frame_header->stream_id = 0;
+    frame_header->type = GOAWAY_TYPE;
+    frame_header->length = 8 + additional_debug_data_size;
+    frame_header->flags = 0;
+    frame_header->reserved = 0;
+    frame_header->payload_callback = goaway_payload_to_bytes;
+
+    goaway_payload->last_stream_id = last_stream_id;
+    goaway_payload->error_code = error_code;
+    buffer_copy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
+    goaway_payload->additional_debug_data = additional_debug_data_buffer;
+    return 0;
+
+}
+
 /*
  * Function: read_goaway_payload
  * given a byte array, get the goaway payload encoded in it
