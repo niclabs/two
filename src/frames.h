@@ -122,17 +122,18 @@ typedef struct {
     uint8_t *additional_debug_data;
 }goaway_payload_t;
 
+//TODO: Clean frames.h after refactoring. Delete callback funcs
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
 int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header);
 
-int read_headers_payload(uint8_t *read_buffer, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t *padding);
+//int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload);
 int receive_header_block(uint8_t *header_block_fragments, int header_block_fragments_pointer, headers_t *headers, hpack_states_t *hpack_states);
 
 /*frame continuation methods*/
-int read_continuation_payload(uint8_t *buff_read, frame_header_t *frame_header, continuation_payload_t *continuation_payload, uint8_t *continuation_block_fragment);
+//int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
 /*flags methods*/
@@ -149,7 +150,7 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *f
 int setting_to_bytes(settings_pair_t *setting, uint8_t *byte_array);
 int settings_frame_to_bytes(settings_payload_t *settings_frame, uint32_t count, uint8_t *byte_array);
 
-int bytes_to_settings_payload(uint8_t *bytes, int size, settings_payload_t *settings_frame, settings_pair_t *pairs);
+//int bytes_to_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header);
 
@@ -173,19 +174,19 @@ int compress_headers(headers_t *headers_out,  uint8_t *compressed_headers, hpack
 /*Data frame methods*/
 int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data, uint8_t *data_to_send, int length, uint32_t stream_id);
 int data_payload_to_bytes(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *byte_array);
-int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
+//int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
 /*Window_update frame methods*/
 int create_window_update_frame(frame_header_t *frame_header, window_update_payload_t *window_update_payload, int window_size_increment, uint32_t stream_id);
 int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array);
-int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
+//int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
 /*goaway payload methods*/
 int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data_buffer, uint32_t last_stream_id, uint32_t error_code,  uint8_t *additional_debug_data, uint8_t additional_debug_data_size);
 int goaway_payload_to_bytes(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *byte_array);
-int read_goaway_payload(uint8_t *buff_read, frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data);
+//int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
 /*
