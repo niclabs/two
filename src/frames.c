@@ -194,7 +194,7 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *f
                           settings_payload_t *settings_payload, settings_pair_t *pairs)
 {
     frame_header->length = count * 6;
-    frame_header->type = 0x4;//settings;
+    frame_header->type = SETTINGS_TYPE;//settings;
     frame_header->flags = 0x0;
     frame_header->reserved = 0x0;
     frame_header->stream_id = 0;
@@ -215,7 +215,7 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *f
 int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
 {
     frame_header->length = 0;
-    frame_header->type = 0x4;//settings;
+    frame_header->type = SETTINGS_TYPE;//settings;
     frame_header->flags = set_flag(0x0, SETTINGS_ACK_FLAG);
     frame_header->reserved = 0x0;
     frame_header->stream_id = 0;
