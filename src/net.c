@@ -32,7 +32,7 @@ void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state
     p_client->socket = NULL;
     p_client->cb.func = NULL;
     p_client->cb.debug_info = NULL;
-    
+
     return;
 }
 
@@ -50,7 +50,6 @@ NetReturnCode read_from_socket(Client* p_client, unsigned int available_data)
         uint8_t buf_aux[readable_data];
 
         // Data is read
-        DEBUG("Received data from client %i", i);
         int read_rc = sock_read(p_client->socket, buf_aux, readable_data);
         if (read_rc < 0)
         {
@@ -63,7 +62,7 @@ NetReturnCode read_from_socket(Client* p_client, unsigned int available_data)
     }
     else
     {
-        WARN("Buffer in is full for client %i", i);
+        WARN("Buffer in is full for client");
     }
 
     return Ok;
@@ -84,7 +83,6 @@ NetReturnCode write_to_socket(Client* p_client)
 
         cbuf_peek(p_client->buf_out, buf_aux, writable_data);
 
-        DEBUG("Writing data for client %i", i);
         int write_rc = sock_write(p_client->socket, buf_aux, writable_data);
         if (write_rc < 0)
         {
@@ -130,7 +128,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
 
         reset_client(p_client, data_buffer_size, client_state_size);
     }
-    
+
     // Server socket setup
     sock_t* server_socket = NULL;
     sock_rc = sock_create(server_socket);
@@ -157,7 +155,9 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
         {
             Client* p_client = clients+i;
 
+            DEBUG("Writing data for client %i", i);
             rc = write_to_socket(p_client);
+
             if (rc != Ok)
                 break;
 
@@ -167,6 +167,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
             if (p_client->cb.func != NULL && (available_data=sock_poll(p_client->socket)) != 0)
             {
                 // Reads from the socket into the client's buffers
+                DEBUG("Received data from client %i", i);
                 rc = read_from_socket(p_client, available_data);
                 if (rc != Ok)
                     break;
@@ -176,6 +177,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 callback_t cb = p_client->cb.func(p_client->buf_in, p_client->buf_out, p_client->state);
 
                 // Writes to the socket from the client's buffers
+                DEBUG("Writing data for client %i", i);
                 rc = write_to_socket(p_client);
                 if (rc != Ok)
                     break;
@@ -221,6 +223,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                     callback_t cb = default_callback.func(p_client->buf_in, p_client->buf_out, p_client->state);
 
                     // Writes to the socket from the client's buffers
+                    DEBUG("Writing data for client %i", i);
                     rc = write_to_socket(p_client);
                     if (rc != Ok)
                         break;
