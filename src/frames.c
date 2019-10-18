@@ -167,7 +167,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
             printf("TODO: Ping frame. Not implemented yet.");
             return -1;
         }
-        case 0x7: {//Go Avaw
+        case 0x7: {//Go Away
             if (length < 8) {
                 printf("Error: length < 8, %d", length);
                 return -1;
@@ -312,6 +312,8 @@ int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_
     frame_header->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
+    frame_header->payload_callback = headers_payload_to_bytes;
+
     buffer_copy(header_block_fragment, headers_block, headers_block_size);
     headers_payload->header_block_fragment = header_block_fragment;
     return 0;
@@ -606,6 +608,7 @@ int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
     frame_header->payload_callback = data_payload_to_bytes;
+
     buffer_copy(data, data_to_send, length);
     data_payload->data = data; //not duplicating info
     return 0;

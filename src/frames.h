@@ -33,6 +33,7 @@ typedef struct FRAME_HEADER {
     uint32_t stream_id : 31;
     int (* callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *bytes);
     int (* payload_callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *byte_array);
+
 }frame_header_t; //72 bits-> 9 bytes
 
 /*FRAME*/
