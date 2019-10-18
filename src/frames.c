@@ -83,20 +83,19 @@ int settings_frame_to_bytes(settings_payload_t *settings_payload, uint32_t count
  * Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
  * Output: size of written bytes
  */
-int bytes_to_settings_payload(uint8_t *bytes, int size, settings_payload_t *settings_payload, settings_pair_t *pairs)
+int bytes_to_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
-    if (size % 6 != 0) {
+    settings_payload_t *settings_payload = (settings_payload_t *) payload;
+    if (frame_header->length % 6 != 0) {
         printf("ERROR: settings payload wrong size\n");
         return -1;
     }
-    int count = size / 6;
+    int count = frame_header->length / 6;
 
     for (int i = 0; i < count; i++) {
-        pairs[i].identifier = bytes_to_uint16(bytes + (i * 6));
-        pairs[i].value = bytes_to_uint32(bytes + (i * 6) + 2);
+        settings_payload->pairs[i].identifier = bytes_to_uint16(bytes + (i * 6));
+        settings_payload->pairs[i].value = bytes_to_uint32(bytes + (i * 6) + 2);
     }
-
-    settings_payload->pairs = pairs;
     settings_payload->count = count;
     return (6 * count);
 }
@@ -443,8 +442,10 @@ int compress_headers(headers_t *headers_out, uint8_t *compressed_headers, hpack_
  * padding and dependencies not implemented
  * Output: bytes read or -1 if error
  */
-int read_headers_payload(uint8_t *read_buffer, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *headers_block_fragment, uint8_t *padding)
+int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
+    headers_payload_t *headers_payload = (headers_payload_t *) payload;
+
     uint8_t pad_length = 0;             // only if padded flag is set
     uint8_t exclusive_dependency = 0;   // only if priority flag is set
     uint32_t stream_dependency = 0;     // only if priority flag is set
@@ -454,7 +455,7 @@ int read_headers_payload(uint8_t *read_buffer, frame_header_t *frame_header, hea
     (void)exclusive_dependency;
     (void)stream_dependency;
     (void)weight;
-    (void)padding;
+    //(void)padding;
     //uint8_t header_block_fragment[64]; // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
     //uint8_t padding[32]; //only if padded flag is set. Size = pad_length
 
@@ -483,7 +484,7 @@ int read_headers_payload(uint8_t *read_buffer, frame_header_t *frame_header, hea
         ERROR("Header block fragment size longer than the space given.");
         return -1;
     }
-    int rc = buffer_copy(headers_block_fragment, read_buffer + pointer, header_block_fragment_size);
+    int rc = buffer_copy(headers_payload->header_block_fragment, bytes + pointer, header_block_fragment_size);
     pointer += rc;
 
     //not implemented yet!
@@ -500,7 +501,6 @@ int read_headers_payload(uint8_t *read_buffer, frame_header_t *frame_header, hea
     //headers_payload->exclusive_dependency = exclusive_dependency;//not implemented yet!
     //headers_payload->stream_dependency = stream_dependency;//not implemented yet!
     //headers_payload->weight = weight;//not implemented yet!
-    headers_payload->header_block_fragment = headers_block_fragment;
     //headers_payload->padding = padding;//not implemented yet!
     return pointer;
 }
@@ -551,11 +551,10 @@ int receive_header_block(uint8_t *header_block_fragments, int header_block_fragm
  * Input: byte_array, frame_header, continuation_payload, block_fragment array
  * Output: bytes read or -1 if error
  */
-int read_continuation_payload(uint8_t *buff_read, frame_header_t *frame_header, continuation_payload_t *continuation_payload, uint8_t *continuation_block_fragment)
+int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
-    int rc = buffer_copy(continuation_block_fragment, buff_read, frame_header->length);
-
-    continuation_payload->header_block_fragment = continuation_block_fragment;
+    continuation_payload_t *continuation_payload = (continuation_payload_t *) payload;
+    int rc = buffer_copy(continuation_payload->header_block_fragment, bytes, frame_header->length);
     return rc;
 }
 
@@ -756,22 +755,23 @@ int goaway_payload_to_bytes(frame_header_t *frame_header, goaway_payload_t *goaw
  * Input: byte_array, frame_header, goaway_payload
  * Output: bytes read or -1 if error
  */
-int read_goaway_payload(uint8_t *buff_read, frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data)
-{
+int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
+{   
+    goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
     if (frame_header->length < 4) {
         ERROR("Length < 4, FRAME_SIZE_ERROR");
         return -1;
     }
     int pointer = 0;
-    uint32_t last_stream_id = bytes_to_uint32_31(buff_read + pointer);
+    uint32_t last_stream_id = bytes_to_uint32_31(bytes + pointer);
     pointer += 4;
     goaway_payload->last_stream_id = last_stream_id;
-    uint32_t error_code = bytes_to_uint32(buff_read + pointer);
+    uint32_t error_code = bytes_to_uint32(bytes + pointer);
     goaway_payload->error_code = error_code;
     pointer += 4;
 
     uint32_t additional_debug_data_size = frame_header->length - 8;
-    int rc = buffer_copy(additional_debug_data, buff_read + pointer, additional_debug_data_size);
+    int rc = buffer_copy(goaway_payload->additional_debug_data, bytes + pointer, additional_debug_data_size);
     if (rc < 0) {
         ERROR("error in buffer copy");
         return -1;
