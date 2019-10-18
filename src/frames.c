@@ -34,33 +34,7 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
     return 9;
 }
 
-/*
- * Function: bytes_to_frame_header
- * Transforms bytes to a FrameHeader
- * Input:  array of bytes, size ob bytes to read,pointer to frameheader
- * Output: 0 if bytes were written correctly, -1 if byte size is <9
- */
-int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header)
-{
-    if (size < 9) {
-        ERROR("frameHeader size too small, %d\n", size);
-        return -1;
-    }
-    frame_header->length = bytes_to_uint32_24(byte_array);
-    frame_header->type = (uint8_t)(byte_array[3]);
-    frame_header->flags = (uint8_t)(byte_array[4]);
-    frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
-    frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
-    //TODO: Change this if for switch to implement callbacks in frames
-    if(frame_header->type == WINDOW_UPDATE_TYPE){
-        frame_header->callback = read_window_update_payload;
-    }
-    if(frame_header->type == DATA_TYPE){
-        frame_header->callback = read_data_payload;
-    }
 
-    return 0;
-}
 
 /*
  * Function: setting_to_bytes
@@ -803,4 +777,47 @@ int read_goaway_payload(uint8_t *buff_read, frame_header_t *frame_header, goaway
         return -1;
     }
     return frame_header->length;
+}
+
+/*
+ * Function: bytes_to_frame_header
+ * Transforms bytes to a FrameHeader
+ * Input:  array of bytes, size ob bytes to read,pointer to frameheader
+ * Output: 0 if bytes were written correctly, -1 if byte size is <9
+ */
+int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header)
+{
+    if (size < 9) {
+        ERROR("frameHeader size too small, %d\n", size);
+        return -1;
+    }
+    frame_header->length = bytes_to_uint32_24(byte_array);
+    frame_header->type = (uint8_t)(byte_array[3]);
+    frame_header->flags = (uint8_t)(byte_array[4]);
+    frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
+    frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
+
+    //TODO: Change this if for switch to implement callbacks in frames
+
+    if(frame_header->type == WINDOW_UPDATE_TYPE){
+        frame_header->callback = read_window_update_payload;
+    }
+    if(frame_header->type == DATA_TYPE){
+        frame_header->callback = read_data_payload;
+    }
+    if(frame_header->type == GOAWAY_TYPE){
+        frame_header->callback = read_goaway_payload;
+    }
+    if(frame_header->type == SETTINGS_TYPE){
+        frame_header->callback = bytes_to_settings_payload;
+    }
+    if(frame_header->type == CONTINUATION_TYPE){
+        frame_header->callback = read_continuation_payload;
+    }
+    if(frame_header->type == HEADERS_TYPE){
+        frame_header->callback = read_headers_payload;
+    }
+    
+
+    return 0;
 }
