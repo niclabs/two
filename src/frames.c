@@ -785,6 +785,5 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_h
         frame_header->callback = read_headers_payload;
     }
 
-
     return 0;
 }
