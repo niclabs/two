@@ -185,30 +185,18 @@ int compress_headers(headers_t *headers_out,  uint8_t *compressed_headers, hpack
 
 /*Data frame methods*/
 int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data, uint8_t *data_to_send, int length, uint32_t stream_id);
-<<<<<<< HEAD
 int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);
-//int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
-=======
-int data_payload_to_bytes(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *byte_array);
 int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
->>>>>>> Seudo-implemented callback in window_update & data_payload
+//int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
 
 /*Window_update frame methods*/
 int create_window_update_frame(frame_header_t *frame_header, window_update_payload_t *window_update_payload, int window_size_increment, uint32_t stream_id);
-<<<<<<< HEAD
 int window_update_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);
 
 
 //int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
-=======
-int window_update_payload_to_bytes(frame_header_t *frame_header, window_update_payload_t *window_update_payload, uint8_t *byte_array);
-<<<<<<< HEAD
 int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *buff_read);
->>>>>>> Starting implementation of callbacks in frames
-=======
-int read_window_update_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
->>>>>>> Seudo-implemented callback in window_update & data_payload
 
 
 /*goaway payload methods*/
