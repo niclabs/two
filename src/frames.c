@@ -723,7 +723,7 @@ int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_p
  * Output: bytes read or -1 if error
  */
 int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
-{   
+{
     goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
     if (frame_header->length < 4) {
         ERROR("Length < 4, FRAME_SIZE_ERROR");
