@@ -100,6 +100,47 @@ int bytes_to_settings_payload(frame_header_t *frame_header, void *payload, uint8
     return (6 * count);
 }
 
+
+int check_frame_errors(uint8_t type, uint32_t length){
+    switch (type) {
+        case DATA_TYPE:
+        case HEADERS_TYPE:
+        case CONTINUATION_TYPE:
+            return 0;
+        case PRIORITY_TYPE: //NOT IMPLEMENTED YET
+        case RST_STREAM_TYPE:
+        case PUSH_PROMISE_TYPE:
+        case PING_TYPE:
+            return -1;
+        case SETTINGS_TYPE: {
+            if (length % 6 != 0) {
+                printf("Error: length not divisible by 6, %d", length);
+                return -1;
+            } else {
+                return 0;
+            }
+        }
+        case GOAWAY_TYPE: {
+            if (length < 8) {
+                printf("Error: length < 8, %d", length);
+                return -1;
+            } else {
+                return 0;
+            }
+        }
+        case WINDOW_UPDATE_TYPE: {
+            if (length != 4) {
+                printf("Error: length != 4, %d", length);
+                return -1;
+            } else {
+                return 0;
+            }
+        }
+        default:
+            ERROR("Frame type &d not found", type);
+            return -1;
+    }
+}
 /*
  * Function: frame_to_bytes
  * pass a complete Frame(of any type) to bytes
@@ -111,103 +152,18 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
     frame_header_t *frame_header = frame->frame_header;
     uint32_t length = frame_header->length;
     uint8_t type = frame_header->type;
-
-    switch (type) {
-        case 0x0: {//Data
-            uint8_t frame_header_bytes[9];
-            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-            data_payload_t *data_payload = ((data_payload_t *)(frame->payload));
-            uint8_t data_bytes[length];
-            int size = data_payload_to_bytes(frame_header, data_payload, data_bytes);
-            int new_size = append_byte_arrays(bytes, frame_header_bytes, data_bytes, frame_header_bytes_size, size);
-            return new_size;
-        }
-        case 0x1: {//Header
-            uint8_t frame_header_bytes[9];
-            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-            headers_payload_t *headers_payload = ((headers_payload_t *)(frame->payload));
-            uint8_t headers_bytes[length];
-            int size = headers_payload_to_bytes(frame_header, headers_payload, headers_bytes);
-            int new_size = append_byte_arrays(bytes, frame_header_bytes, headers_bytes, frame_header_bytes_size, size);
-            return new_size;
-        }
-        case 0x2: {//Priority
-            printf("TODO: Priority Frame. Not implemented yet.");
-            return -1;
-        }
-        case 0x3: {//RST_STREAM
-            printf("TODO: Reset Stream Frame. Not implemented yet.");
-            return -1;
-        }
-        case 0x4: {//Settings
-            if (length % 6 != 0) {
-                printf("Error: length not divisible by 6, %d", length);
-                return -1;
-            }
-
-            uint8_t frame_header_bytes[9];
-
-
-            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-
-            settings_payload_t *settings_payload = ((settings_payload_t *)(frame->payload));
-
-
-            uint8_t settings_bytes[length];
-
-            int size = settings_frame_to_bytes(settings_payload, length / 6, settings_bytes);
-            int new_size = append_byte_arrays(bytes, frame_header_bytes, settings_bytes, frame_header_bytes_size, size);
-            return new_size;
-        }
-        case 0x5: {//Push promise
-            printf("TODO: Push promise frame. Not implemented yet.");
-            return -1;
-        }
-        case 0x6: {//Ping
-            printf("TODO: Ping frame. Not implemented yet.");
-            return -1;
-        }
-        case 0x7: {//Go Away
-            if (length < 8) {
-                printf("Error: length < 8, %d", length);
-                return -1;
-            }
-            uint8_t frame_header_bytes[9];
-            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-            goaway_payload_t *goaway_payload = ((goaway_payload_t *)(frame->payload));
-            uint8_t goaway_bytes[length];
-            int size = goaway_payload_to_bytes(frame_header, goaway_payload, goaway_bytes);
-            int new_size = append_byte_arrays(bytes, frame_header_bytes, goaway_bytes, frame_header_bytes_size, size);
-            return new_size;
-        }
-        case 0x8: {//Window update
-            if (length != 4) {
-                printf("Error: length != 4, %d", length);
-                return -1;
-            }
-            uint8_t frame_header_bytes[9];
-            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-            window_update_payload_t *window_update_payload = ((window_update_payload_t *)(frame->payload));
-            uint8_t window_update_bytes[length];
-            int size = window_update_payload_to_bytes(frame_header, window_update_payload, window_update_bytes);
-            int new_size = append_byte_arrays(bytes, frame_header_bytes, window_update_bytes, frame_header_bytes_size, size);
-            return new_size;
-        }
-        case 0x9: {//Continuation
-            uint8_t frame_header_bytes[9];
-            int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-            continuation_payload_t *continuation_payload = ((continuation_payload_t *)(frame->payload));
-            uint8_t continuation_bytes[length];
-            int size = continuation_payload_to_bytes(frame_header, continuation_payload, continuation_bytes);
-            int new_size = append_byte_arrays(bytes, frame_header_bytes, continuation_bytes, frame_header_bytes_size,
-                                              size);
-            return new_size;
-        }
-        default:
-            printf("Error: Type not found");
-            return -1;
+    int errors = check_frame_errors(type, length);
+    if(errors < 0){
+        //Error in frame
+        return errors;
     }
 
+    uint8_t frame_header_bytes[9];
+    int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
+    uint8_t bytes_array[length];
+    int size = frame_header->payload_callback(frame_header, frame->payload, bytes_array);
+    int new_size = append_byte_arrays(bytes, frame_header_bytes, bytes_array, frame_header_bytes_size, size);
+    return new_size;
 
 }
 
