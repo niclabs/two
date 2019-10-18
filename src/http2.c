@@ -1190,7 +1190,11 @@ int h2_receive_frame(hstates_t *st){
             headers_payload_t hpl;
             uint8_t headers_block_fragment[HTTP2_MAX_HBF_BUFFER];
             uint8_t padding[32];
-            rc = read_headers_payload(buff_read, &header, &hpl, headers_block_fragment, padding);
+
+            hpl.header_block_fragment = headers_block_fragment;
+            hpl.padding = padding;
+
+            rc = header.callback(&header, &hpl, buff_read);
             if(rc == 0 || rc > header.length){
                 ERROR("Error in headers payload");
                 return rc;
@@ -1222,7 +1226,8 @@ int h2_receive_frame(hstates_t *st){
             }
             settings_payload_t spl;
             settings_pair_t pairs[header.length/6];
-            rc = bytes_to_settings_payload(buff_read, header.length, &spl, pairs);
+            spl.pairs = pairs;
+            rc = header.callback(&header, &spl, buff_read);
             if(rc < 0){
               // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
               send_connection_error(st, HTTP2_FRAME_SIZE_ERROR);
@@ -1257,7 +1262,8 @@ int h2_receive_frame(hstates_t *st){
             }
             uint8_t debug_data[max_frame_size - 8];
             goaway_payload_t goaway_pl;
-            rc = read_goaway_payload(buff_read, &header, &goaway_pl, debug_data);
+            goaway_pl.additional_debug_data = debug_data;
+            rc = header.callback(&header, &goaway_pl, buff_read);
             if(rc < 0){
               ERROR("Error in reading goaway payload");
               return -1;
@@ -1300,12 +1306,13 @@ int h2_receive_frame(hstates_t *st){
             }
             continuation_payload_t contpl;
             uint8_t continuation_block_fragment[64];
+            contpl.header_block_fragment = continuation_block_fragment;
             // We check if header length fits on array, so there is no segmentation fault on read_continuation_payload
             if(header.length >=64){
               ERROR("Error block fragments too big (not enough space allocated). INTERNAL ERROR");
               return -1;
             }
-            rc = read_continuation_payload(buff_read, &header, &contpl, continuation_block_fragment);
+            rc = header.callback(&header, &contpl, buff_read);
             if(rc < 1){
               ERROR("Error in continuation payload reading");
               send_connection_error(st, HTTP2_INTERNAL_ERROR);

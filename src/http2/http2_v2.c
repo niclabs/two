@@ -219,7 +219,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             DEBUG("handle_payload: RECEIVED DATA PAYLOAD");
             data_payload_t data_payload;
             //uint8_t data[h2s->header.length]; CHECK WITH HPACK PEOPLE
-            rc = read_data_payload(&(h2s->header), &data_payload, buff_read);
+            rc = h2s->header.callback(&(h2s->header), &data_payload, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading data payload");
                 return -1;
@@ -234,10 +234,14 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         }
         case HEADERS_TYPE: {
             DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD");
+            
             headers_payload_t hpl;
             uint8_t headers_block_fragment[HTTP2_MAX_HBF_BUFFER];
             uint8_t padding[32];
-            rc = read_headers_payload(buff_read, &(h2s->header), &hpl, headers_block_fragment, padding);
+            hpl.header_block_fragment=headers_block_fragment;
+            hpl.padding = padding;
+
+            rc = h2s->header.callback(&(h2s->header), &hpl, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading headers payload");
                 return rc;
@@ -261,9 +265,12 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 
         case SETTINGS_TYPE: {
             DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD");
+            
             settings_payload_t spl;
             settings_pair_t pairs[h2s->header.length/6];
-            rc = bytes_to_settings_payload(buff_read, h2s->header.length, &spl, pairs);
+            spl.pairs = pairs;
+
+            rc = h2s->header.callback(&(h2s->header), &spl, buff_read);
             if(rc < 0){
               // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
               send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
@@ -287,10 +294,13 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 
         case GOAWAY_TYPE: {
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD");
+            
             uint16_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
             uint8_t debug_data[max_frame_size - 8];
             goaway_payload_t goaway_pl;
-            rc = read_goaway_payload(buff_read, &h2s->header, &goaway_pl, debug_data);
+            goaway_pl.additional_debug_data = debug_data;
+
+            rc = h2s->header.callback(&(h2s->header), &goaway_pl, buff_read);
             if(rc < 0){
               ERROR("Error in reading goaway payload");
               return -1;
@@ -306,7 +316,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         case WINDOW_UPDATE_TYPE: {
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD");
             window_update_payload_t window_update_payload;
-            int rc = read_window_update_payload(&h2s->header, &window_update_payload, buff_read);
+            int rc = h2s->header.callback(&(h2s->header), &window_update_payload, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
                 send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
@@ -328,9 +338,12 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         }
         case CONTINUATION_TYPE: {
             DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD");
+            
             continuation_payload_t contpl;
             uint8_t continuation_block_fragment[HTTP2_MAX_HBF_BUFFER - h2s->header_block_fragments_pointer];
-            rc = read_continuation_payload(buff_read, &h2s->header, &contpl, continuation_block_fragment);
+            contpl.header_block_fragment = continuation_block_fragment;
+
+            rc = h2s->header.callback(&(h2s->header), &contpl, buff_read);
             if(rc < 0){
               ERROR("Error in continuation payload reading");
               send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
