@@ -1,6 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "cbuf.h"
+
+#define HTTP2_MAX_HBF_BUFFER 16384
+
 /*
 * Signature of a callback, wrapped in a stuct
 *

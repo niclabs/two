@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "logging.h"
 #include "hpack.h"
-#include "http_bridge.h"
+#include "config.h"
 
 /*
  * Function: frame_header_to_bytes
@@ -765,7 +765,7 @@ int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_p
  * Output: bytes read or -1 if error
  */
 int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
-{   
+{
     goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
     if (frame_header->length < 4) {
         ERROR("Length < 4, FRAME_SIZE_ERROR");
@@ -826,7 +826,7 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_h
     if(frame_header->type == HEADERS_TYPE){
         frame_header->callback = read_headers_payload;
     }
-    
+
 
     return 0;
 }
