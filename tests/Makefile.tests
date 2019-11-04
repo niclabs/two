@@ -1,8 +1,13 @@
 # General test configuration variables
 TEST_SUBDIRS = unity/
 TEST_PREREQS = unity.o
-TEST_CFLAGS = -Wno-unused-parameter
-TEST_LDFLAGS = --coverage
+TEST_CFLAGS = -Wno-unused-parameter -fdata-sections -ffunction-sections
+
+ifeq (${OS},Darwin)
+TEST_LDFLAGS = --coverage -Wl,-dead_strip
+else
+TEST_LDFLAGS = --coverage -Wl,--gc-sections
+endif
 TEST_SRC_CFLAGS = -fprofile-arcs -ftest-coverage
 
 # Target specific configurations
