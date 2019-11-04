@@ -7,7 +7,7 @@
 
 #include <stdint.h>             /* for uint8_t, uint32_t    */
 #include "hpack.h"
-#include "hpack_tables.h"       /* for hpack_dynamic_table_t    */
+#include "tables.h"       /* for hpack_dynamic_table_t    */
 #include "config.h"
 
 

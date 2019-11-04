@@ -3,6 +3,7 @@
 
 #include "hpack/huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
 #include "hpack/encoder.h"
+#include "hpack/utils.h"
 #include "logging.h"            /* for ERROR */
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
