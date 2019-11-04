@@ -4,6 +4,9 @@ ifndef TWO
   ${error TWO not defined! You must specify where two resides}
 endif
 
+# Find OS
+OS = $(word 1, $(shell uname -m -s))
+
 # Configure output directories
 # Path for final binaries to be stored
 TARGET_DIR ?= $(call QUALIFY_PATH,${TWO},bin)
