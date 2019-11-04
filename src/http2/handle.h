@@ -1,8 +1,11 @@
-#include "http2_structs.h"
-
-
 #ifndef HTTP2_HANDLE_H
 #define HTTP2_HANDLE_H
+
+#include "http2_structs.h"
+#include "cbuf.h"
+
+
+
 int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
 
 /*
