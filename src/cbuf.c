@@ -109,3 +109,7 @@ int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
 int cbuf_len(cbuf_t * cbuf) {
     return cbuf->len;
 }
+
+int cbuf_maxlen(cbuf_t * cbuf) {
+    return cbuf->maxlen;
+}

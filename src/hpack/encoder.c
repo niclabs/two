@@ -3,6 +3,7 @@
 
 #include "hpack/huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
 #include "hpack/encoder.h"
+#include "hpack/utils.h"
 #include "logging.h"            /* for ERROR */
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
@@ -257,7 +258,7 @@ void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *
     //if index exists
     if (index > 0) {
         //make indexed header field
-        DEBUG("Encoding an indexed header field")
+        DEBUG("Encoding an indexed header field");
         states->encoded_header.preamble = INDEXED_HEADER_FIELD;
         states->encoded_header.index = index;
     }

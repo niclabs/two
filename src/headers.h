@@ -17,7 +17,7 @@
 #endif
 
 
-/** 
+/**
  * Data structure to store a single headers
  */
 typedef struct {
@@ -48,9 +48,17 @@ typedef struct {
  */
 int headers_init(headers_t * headers, header_t * hlist, int maxlen);
 
-/** 
- * Add a header to the list, if header already exists, concatenate value 
- * with a ',' as specified in 
+/**
+ *This function will reset header list
+ *
+ * @param headers headers data structure
+ * @return 0 if ok -1 if an error ocurred
+ */
+int headers_clean(headers_t *headers);
+
+/**
+ * Add a header to the list, if header already exists, concatenate value
+ * with a ',' as specified in
  * https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
  *
  * @param headers headers data structure
@@ -71,7 +79,7 @@ int headers_add(headers_t * headers, const char * name, const char * value);
  */
 int headers_set(headers_t * headers, const char * name, const char * value);
 
-/** 
+/**
  * Get a pointere to the value of the header with name 'name'
  *
  * @param headers header list data structure
@@ -82,9 +90,9 @@ char * headers_get(headers_t * headers, const char * name);
 
 /**
  * Cheacks all headers for validity.
- * 
+ *
  * There shouldn't be any ommited values, nor any duplicated ones.
- * 
+ *
  * @param headers headers list data structure
  * @return 0 if ok -1 if validation failed
  * */
@@ -105,7 +113,7 @@ char * headers_get_name_from_index(headers_t * headers, int index);
  */
 char * headers_get_value_from_index(headers_t * headers, int index);
 
-/** 
+/**
  * Calculate size of header list for http/2
  */
 uint32_t headers_get_header_list_size(headers_t* headers);

@@ -54,4 +54,9 @@ int cbuf_peek(cbuf_t * cbuf, void * dst, int len);
  * Return available read size
  */
 int cbuf_len(cbuf_t * cbuf);
+
+/**
+ * Return maximum read size
+ */
+int cbuf_maxlen(cbuf_t * cbuf);
 #endif /* CBUF_H */

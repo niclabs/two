@@ -1,4 +1,4 @@
-#include "http2_flowcontrol.h"
+#include "http2/flowcontrol.h"
 #include "logging.h"
 
 /*
@@ -43,13 +43,13 @@ int decrease_window_used(h2_window_manager_t* window_manager, uint32_t window_si
 *        -> length: the size of the incoming data received
 * Output: 0 if data can be processed. -1 if not
 */
-int flow_control_receive_data(hstates_t* st, uint32_t length){
-    uint32_t window_available = get_window_available_size(st->h2s.incoming_window);
+int flow_control_receive_data(h2states_t *h2s, uint32_t length){
+    uint32_t window_available = get_window_available_size(h2s->incoming_window);
     if(length > window_available){
         ERROR("Available window is smaller than data received. FLOW_CONTROL_ERROR");
         return -1;
     }
-    increase_window_used(&st->h2s.incoming_window, length);
+    increase_window_used(&h2s->incoming_window, length);
     return 0;
 }
 
@@ -60,40 +60,41 @@ int flow_control_receive_data(hstates_t* st, uint32_t length){
 *        -> data_sent: the size of the outgoing data.
 * Output: 0 if window increment was successfull. -1 if not
 */
-int flow_control_send_data(hstates_t *st, uint32_t data_sent){
-  if(data_sent > get_window_available_size(st->h2s.outgoing_window)){
+int flow_control_send_data(h2states_t *h2s, uint32_t data_sent){
+  if(data_sent > get_window_available_size(h2s->outgoing_window)){
     ERROR("Trying to send more data than allowed by window.");
     return -1;
   }
-  increase_window_used(&st->h2s.outgoing_window, data_sent);
+  increase_window_used(&h2s->outgoing_window, data_sent);
   return 0;
 }
 
-int flow_control_send_window_update(hstates_t* st, uint32_t window_size_increment){
-    if(window_size_increment>st->h2s.incoming_window.window_used){
+int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increment){
+    if(window_size_increment>h2s->incoming_window.window_used){
         ERROR("Increment to big. protocol_error");
         return -1;
     }
-    decrease_window_used(&st->h2s.incoming_window,window_size_increment);
+    decrease_window_used(&h2s->incoming_window,window_size_increment);
     return 0;
 }
 
-int flow_control_receive_window_update(hstates_t* st, uint32_t window_size_increment){
-    if(window_size_increment>st->h2s.outgoing_window.window_used){
+int flow_control_receive_window_update(h2states_t *h2s, uint32_t window_size_increment){
+    if(window_size_increment>h2s->outgoing_window.window_used){
         ERROR("Flow control: window increment bigger than window used. PROTOCOL_ERROR");
         return -1;
     }
-    decrease_window_used(&st->h2s.outgoing_window,window_size_increment);
+    decrease_window_used(&h2s->outgoing_window,window_size_increment);
     return 0;
 }
 
 
-uint32_t get_size_data_to_send(hstates_t *st){
-    uint32_t available_window = get_window_available_size(st->h2s.outgoing_window);
-    if( available_window <= st->data_out.size - st->data_out.processed){
+uint32_t get_size_data_to_send(h2states_t *h2s){
+    uint32_t available_window = get_window_available_size(h2s->outgoing_window);
+    if( available_window <= h2s->data.size - h2s->data.processed){
         return available_window;
     }
     else{
-        return st->data_out.size - st->data_out.processed;
+        return h2s->data.size - h2s->data.processed;
     }
+    return 0;
 }
