@@ -1,11 +1,11 @@
+#ifndef HTTP2_UTILS_V2_H
+#define HTTP2_UTILS_V2_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "http2_v2.h"
-#include "http2_structs.h"
-
-#ifndef HTTP2_UTILS_V2_H
-#define HTTP2_UTILS_V2_H
+#include "http2/structs.h"
 
 
 /*Macros for table update*/

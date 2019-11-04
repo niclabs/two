@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "cbuf.h"
-#include "http2_structs.h"
+#include "http2/structs.h"
 
 
 int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s);

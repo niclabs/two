@@ -1,12 +1,12 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include "headers.h"
-#include "frames.h"
-
 #ifndef HTTP2_STRUCTS_H
 #define HTTP2_STRUCTS_H
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+
+#include "headers.h"
+#include "frames.h"
 
 /*Definition of max headers frame buffer size*/
 #define HTTP2_MAX_HBF_BUFFER 16384

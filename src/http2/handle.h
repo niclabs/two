@@ -1,7 +1,7 @@
 #ifndef HTTP2_HANDLE_H
 #define HTTP2_HANDLE_H
 
-#include "http2_structs.h"
+#include "http2/structs.h"
 #include "cbuf.h"
 
 
