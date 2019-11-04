@@ -3,7 +3,7 @@
 #include "http2_utils_v2.h"
 #include "http2_structs.h"
 #include "frames.h"
-#include "http2_send.h"
+#include "http2/send.h"
 #include "http2_utils_v2.h"
 #include "logging.h"
 #include "http.h"
