@@ -1,14 +1,14 @@
 # General test configuration variables
 TEST_SUBDIRS = unity/
 TEST_PREREQS = unity.o
-TEST_CFLAGS = -Wno-unused-parameter -fdata-sections -ffunction-sections
+TEST_CFLAGS = -Wno-unused-parameter
 
 ifeq (${OS},Darwin)
 TEST_LDFLAGS = --coverage -Wl,-dead_strip
 else
 TEST_LDFLAGS = --coverage -Wl,--gc-sections
 endif
-TEST_SRC_CFLAGS = -fprofile-arcs -ftest-coverage
+TEST_SRC_CFLAGS = -fprofile-arcs -ftest-coverage -fdata-sections -ffunction-sections
 
 # Target specific configurations
 $(TEST_BUILD)/test_headers: CFLAGS += -DCONF_MAX_HEADER_NAME_LEN=8 -DCONF_MAX_HEADER_VALUE_LEN=16
