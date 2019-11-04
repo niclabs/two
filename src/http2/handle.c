@@ -1,10 +1,9 @@
 #include "http2/flowcontrol.h"
 #include "http2/handle.h"
-#include "http2_utils_v2.h"
+#include "http2/utils.h"
 #include "http2/structs.h"
 #include "frames.h"
 #include "http2/send.h"
-#include "http2_utils_v2.h"
 #include "logging.h"
 #include "http.h"
 

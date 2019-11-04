@@ -1,6 +1,6 @@
 #include "http2/check.h"
 #include "http2/send.h"
-#include "http2_utils_v2.h"
+#include "http2/utils.h"
 #include "logging.h"
 
 int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s)

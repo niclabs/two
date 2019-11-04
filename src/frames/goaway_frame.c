@@ -4,7 +4,7 @@
 
 #include "goaway_frame.h"
 #include "logging.h"
-#include "http2_utils_v2.h"
+#include "http2/utils.h"
 #include "utils.h"
 
 /*

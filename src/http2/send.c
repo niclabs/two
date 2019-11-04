@@ -2,7 +2,7 @@
 #include "frames.h"
 #include "headers.h"
 #include "logging.h"
-#include "http2_utils_v2.h"
+#include "http2/utils.h"
 #include "http2/flowcontrol.h"
 
 
