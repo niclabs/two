@@ -271,23 +271,6 @@ void test_append_byte_arrays(void){
 
 }
 
-void test_buffer_copy(void){
-
-    uint8_t orig[] = {
-            1,2,3,4,5,6,7,8,9,0
-    };
-    uint8_t dest[10];
-
-    int rc = buffer_copy(dest,orig,10);
-    TEST_ASSERT_EQUAL(10, rc);
-
-    for(int i = 0; i < rc; i++){
-        TEST_ASSERT_EQUAL(orig[i], dest[i]);
-    }
-
-
-}
-
 int main(void)
 {
     UNIT_TESTS_BEGIN();
