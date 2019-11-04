@@ -311,7 +311,5 @@ int main(void)
 
     UNIT_TEST(test_append_byte_arrays);
 
-    UNIT_TEST(test_buffer_copy);
-
     return UNIT_TESTS_END();
 }
