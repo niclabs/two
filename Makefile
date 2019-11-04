@@ -5,7 +5,7 @@ DEBUG_FLAGS = -DENABLE_DEBUG
 TARGETDIRS = examples/server/
 TESTDIRS = tests/
 
-MODULES	+= hpack http2
+MODULES	+= hpack http2 frames
 
 all: server
 
