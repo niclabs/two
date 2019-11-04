@@ -10,7 +10,7 @@
 //#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 
 #include "dos.h"
-#include "http2/http2_v2.h"
+#include "http2/http2.h"
 #include "http2/structs.h"
 #include "net.h"
 #include "logging.h"
