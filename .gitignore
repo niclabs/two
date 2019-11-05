@@ -116,3 +116,7 @@ summary
 
 # Binaries
 two
+
+# Temporary files
+*.log
+*.pid
