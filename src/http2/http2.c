@@ -15,17 +15,7 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_wait_settings_ack(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_goaway(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s);
-/*
-int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s);
-void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
-*/
 int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s);
-int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
-int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_t *buf_out, h2states_t *h2s);
-int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t *h2s);
-int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states_t *h2s);
-int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, cbuf_t *buf_out, h2states_t *h2s);
-int handle_window_update_payload(cbuf_t *buf_out, h2states_t *h2s);
 
 int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
 {
@@ -239,7 +229,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         }
         case HEADERS_TYPE: {
             DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD");
-            
+
             headers_payload_t hpl;
             uint8_t headers_block_fragment[HTTP2_MAX_HBF_BUFFER];
             uint8_t padding[32];
@@ -271,7 +261,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 
         case SETTINGS_TYPE: {
             DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD");
-            
+
             settings_payload_t spl;
             settings_pair_t pairs[h2s->header.length/6];
             spl.pairs = pairs;
@@ -300,7 +290,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 
         case GOAWAY_TYPE: {
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD");
-            
+
             uint16_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
             uint8_t debug_data[max_frame_size - 8];
             goaway_payload_t goaway_pl;
@@ -326,26 +316,19 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             int rc = h2s->header.callback(&(h2s->header), &window_update_payload, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
-                send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+                send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); // TODO: review - always FRAME_SIZE_ERROR ?
                 return -1;
             }
-            uint32_t window_size_increment = window_update_payload.window_size_increment;
-            if(window_size_increment == 0){
-              ERROR("Flow-control window increment is 0. Stream Error. PROTOCOL_ERROR");
-              send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-              return -1;
+            rc = handle_window_update_payload(&window_update_payload, buf_out, h2s);
+            if(rc < 0){
+              ERROR("Error during window_update handling");
             }
-            rc = flow_control_receive_window_update(h2s, window_size_increment);
-                if(rc < 0){
-                    send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
-                    return -1;
-                }
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD OK");
             return 0;
         }
         case CONTINUATION_TYPE: {
             DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD");
-            
+
             continuation_payload_t contpl;
             uint8_t continuation_block_fragment[HTTP2_MAX_HBF_BUFFER - h2s->header_block_fragments_pointer];
             contpl.header_block_fragment = continuation_block_fragment;
