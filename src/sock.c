@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <sys/time.h>
 #include <sys/select.h>
 #include <sys/types.h>
@@ -23,7 +25,7 @@ int sock_create(sock_t *sock)
         return -1;
     }
 
-    sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
+    sock->socket = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (sock->socket < 0) {
         sock->state = SOCK_CLOSED;
         return -1;
@@ -31,6 +33,99 @@ int sock_create(sock_t *sock)
 
     sock->state = SOCK_OPENED;
     return 0;
+}
+
+int sock_destroy(sock_t *sock)
+{
+	if (sock == NULL || sock->state != SOCK_CONNECTED) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (sock->state == SOCK_CLOSED) {
+		errno = EBADF;
+		return -1;
+	}
+
+	struct linger sl;
+	sl.l_onoff = 1;  /* non-zero value enables linger option in kernel */
+	sl.l_linger = 0; /* timeout interval in seconds */
+
+	// Configure socket to wait for data to send before closing
+	setsockopt(sock->socket, SOL_SOCKET, SO_LINGER, &sl, sizeof(sl));
+
+	if (close(sock->socket) < 0) {
+		return -1;
+	}
+
+	sock->socket = -1;
+	sock->state = SOCK_CLOSED;
+	return 0;
+}
+
+unsigned int sock_poll(sock_t * sock)
+{
+    if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // peek socket
+    ssize_t bytes_available;
+    
+    int rc = ioctl(sock->socket, FIONREAD, &bytes_available);
+
+    //bytes_available = recv(sock->socket, NULL, 0, MSG_DONTWAIT | MSG_PEEK | MSG_TRUNC);
+
+    if (bytes_available < 0 || rc < 0) {
+        return -1;
+    }
+
+    return bytes_available;
+}
+
+int sock_read(sock_t *sock, uint8_t *buf, size_t buf_len)
+{
+    if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (buf == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // read from socket
+    ssize_t bytes_read = recv(sock->socket, buf, buf_len, MSG_DONTWAIT);
+    if (bytes_read < 0) {
+        return -1;
+    }
+
+    return bytes_read;
+}
+
+int sock_write(sock_t *sock, uint8_t *buf, size_t buf_len)
+{
+    if (sock == NULL || sock->state != SOCK_CONNECTED) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (buf == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /**
+     * Note that a successful write() may transfer fewer than count bytes.
+     */
+    ssize_t bytes_written = send(sock->socket, buf, buf_len, MSG_DONTWAIT);
+    if (bytes_written < 0) {
+        return -1;
+    }
+
+    return bytes_written;
 }
 
 int sock_listen(sock_t *server, uint16_t port)
@@ -68,6 +163,12 @@ int sock_accept(sock_t *server, sock_t *client)
     if (clifd < 0) {
         return -1;
     }
+
+    int flags = fcntl(clifd, F_GETFL, 0);
+    if (flags == -1) {
+        return -1;
+    }
+    fcntl(clifd, F_SETFL, flags | O_NONBLOCK);
 
     // Only struct values if client is not null
     if (client != NULL) {
@@ -117,104 +218,4 @@ int sock_connect(sock_t *client, char *addr, uint16_t port)
 
     client->state = SOCK_CONNECTED;
     return 0;
-}
-
-int sock_read(sock_t *sock, char *buf, int len, int timeout)
-{
-    if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (buf == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-
-
-    // set timeout
-    if (timeout > 0) {
-        // use select to wait for sock to have reading data
-        fd_set read_fds;
-        FD_ZERO(&read_fds);             // prepare fd_set
-        FD_SET(sock->socket, &read_fds);    // add sock->socket to fd_set
-
-        struct timeval tv;
-        tv.tv_sec = timeout;
-        tv.tv_usec = 0;
-
-        int res = select(sock->socket + 1, &read_fds, NULL, NULL, &tv);
-        if (res == -1) {
-            return -1;
-        }
-        else if (res != 1) { // timeout reached
-            errno = ETIME;
-            return -1;
-        }
-    }
-
-    // read from socket
-    return read(sock->socket, buf, len);
-}
-
-int sock_write(sock_t *sock, char *buf, int len)
-{
-    if (sock == NULL || sock->state != SOCK_CONNECTED) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (buf == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    ssize_t bytes_written;
-    ssize_t bytes_written_total = 0;
-    const char *p = buf;
-
-    /**
-     * Note that a successful write() may transfer fewer than count bytes.
-     * Is expected that when all bytes are transfered, there's no length
-     * left of the message and/or there's no information left in the
-     * buffer.
-     */
-    while (len > 0) {
-        bytes_written = write(sock->socket, p, len);
-        if (bytes_written < 0) {
-            return -1;
-        }
-        p += bytes_written;
-        len -= bytes_written;
-        bytes_written_total += bytes_written;
-    }
-    return bytes_written_total;
-}
-
-int sock_destroy(sock_t *sock)
-{
-	if (sock == NULL || sock->state != SOCK_CONNECTED) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (sock->state == SOCK_CLOSED) {
-		errno = EBADF;
-		return -1;
-	}
-
-	struct linger sl;
-	sl.l_onoff = 1;  /* non-zero value enables linger option in kernel */
-	sl.l_linger = 0; /* timeout interval in seconds */
-
-	// Configure socket to wait for data to send before closing
-	setsockopt(sock->socket, SOL_SOCKET, SO_LINGER, &sl, sizeof(sl));
-
-	if (close(sock->socket) < 0) {
-		return -1;
-	}
-
-	sock->socket = -1;
-	sock->state = SOCK_CLOSED;
-	return 0;
 }
