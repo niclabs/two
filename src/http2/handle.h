@@ -51,4 +51,14 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
 * Output: 0 if no error was found, -1 if not.
 */
 int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, cbuf_t *buf_out, h2states_t *h2s);
+
+/*
+* Function: handle_window_update_payload
+*
+* Input: ->
+*        ->
+*        ->
+* Output: 0 if no error was found, -1 if not.
+*/
+int handle_window_update_payload(window_update_payload_t *wupl, cbuf_t *buf_out, h2states_t *h2s);
 #endif
