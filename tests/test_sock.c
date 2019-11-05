@@ -15,8 +15,11 @@ FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
 FAKE_VALUE_FUNC(int, close, int);
 FAKE_VALUE_FUNC(int, connect, int, const struct sockaddr *, socklen_t);
 FAKE_VALUE_FUNC(int, select, int, fd_set *, fd_set *, fd_set *, struct timeval *);
-FAKE_VALUE_FUNC(ssize_t, read, int, void *, size_t);
-FAKE_VALUE_FUNC(ssize_t, write, int, void *, size_t);
+FAKE_VALUE_FUNC(ssize_t, recv, int, void *, size_t, int);
+FAKE_VALUE_FUNC(ssize_t, send, int, const void *, size_t, int);
+FAKE_VALUE_FUNC(int, setsockopt, int, int, int, const void*, socklen_t);
+FAKE_VALUE_FUNC(int, ioctl, int, unsigned long, ssize_t*);
+FAKE_VALUE_FUNC(int, fcntl, int, int, int);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE) \
@@ -26,9 +29,12 @@ FAKE_VALUE_FUNC(ssize_t, write, int, void *, size_t);
     FAKE(accept)             \
     FAKE(close)              \
     FAKE(select)             \
-    FAKE(read)               \
-    FAKE(write)              \
-    FAKE(connect)
+    FAKE(recv)               \
+    FAKE(send)               \
+    FAKE(connect)            \
+    FAKE(setsockopt)         \
+    FAKE(ioctl)              \
+    FAKE(fcntl)
 
 
 char global_write_buffer[64];
@@ -98,32 +104,37 @@ int select_with_timeout_fake(int nfds, fd_set *readfds, fd_set *writefds,
     return 0;
 }
 
-ssize_t read_ok_fake(int fd, void *buf, size_t count)
+ssize_t recv_ok_fake(int fd, void *buf, size_t count, int flags)
 {
+    (void)flags;
     strncpy(buf, "HELLO WORLD", 12);
     return 12;
 }
 
-ssize_t read_with_error_fake(int fd, void *buf, size_t count)
+ssize_t recv_with_error_fake(int fd, void *buf, size_t count, int flags)
 {
+    (void)flags;
     errno = EAGAIN; // timeout reached
     return -1;
 }
 
-ssize_t read_zero_bytes_fake(int fd, void *buf, size_t count)
+ssize_t recv_zero_bytes_fake(int fd, void *buf, size_t count, int flags)
 {
+    (void)flags;
     return 0;
 }
 
-ssize_t write_ok_fake(int fd, void *buf, size_t count)
+ssize_t send_ok_fake(int fd, const void *buf, size_t count, int flags)
 {
+    (void)flags;
     // write to global buffer
     memcpy(global_write_buffer, buf, count);
     return count;
 }
 
-ssize_t write_with_error_fake(int fd, void *buf, size_t count)
+ssize_t send_with_error_fake(int fd, const void *buf, size_t count, int flags)
 {
+    (void)flags;
     errno = EBADF;
     return -1;
 }
@@ -459,9 +470,9 @@ void test_sock_read_ok(void)
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
 
-    char buf[64];
-    read_fake.custom_fake = read_ok_fake;
-    int res = sock_read(&sock, buf, 64, 0);
+    uint8_t buf[64];
+    recv_fake.custom_fake = recv_ok_fake;
+    int res = sock_read(&sock, buf, 64);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, select_fake.call_count, "select should not be called if timeout is 0");
     TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_read should return 12 bytes");
@@ -480,9 +491,9 @@ void test_sock_read_ok_zero_bytes(void)
     connect_fake.return_val = 0;
     sock_connect(&sock, "::1", 8888);
 
-    char buf[64];
-    read_fake.custom_fake = read_zero_bytes_fake;
-    int res = sock_read(&sock, buf, 64, 0);
+    uint8_t buf[64];
+    recv_fake.custom_fake = recv_zero_bytes_fake;
+    int res = sock_read(&sock, buf, 64);
 
     TEST_ASSERT_EQUAL_MESSAGE(0, select_fake.call_count, "select should not be called if timeout is 0");
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_read should return 0 bytes");
@@ -491,8 +502,8 @@ void test_sock_read_ok_zero_bytes(void)
 
 void test_sock_read_null_socket(void)
 {
-    char buf[64];
-    int res = sock_read(NULL, buf, 64, 0);
+    uint8_t buf[64];
+    int res = sock_read(NULL, buf, 64);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from NULL socket");
     TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set 'invalid parameter' error number");
@@ -507,8 +518,8 @@ void test_sock_read_unconnected_socket(void)
     sock_create(&sock);
 
     // read without performing sock_connect()
-    char buf[64];
-    int res = sock_read(&sock, buf, 64, 0);
+    uint8_t buf[64];
+    int res = sock_read(&sock, buf, 64);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when reading from unconnected socket");
     TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set 'invalid parameter' error number");
@@ -527,105 +538,11 @@ void test_sock_read_null_buffer(void)
     sock_connect(&sock, "::1", 8888);
 
     // read to a null buffer
-    int res = sock_read(&sock, NULL, 0, 0);
+    int res = sock_read(&sock, NULL, 0);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail when passing a null buffer");
     TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "sock_read should set 'invalid parameter' error number");
 }
-
-void test_sock_read_ok_bad_timeout(void)
-{
-    // initialize socket
-    sock_t sock;
-
-    socket_fake.return_val = 123;
-    sock_create(&sock);
-
-    // set socket to connected state
-    connect_fake.return_val = 0;
-    sock_connect(&sock, "::1", 8888);
-
-    // read passing a negative timeout
-    char buf[64];
-    read_fake.custom_fake = read_ok_fake;
-    int res = sock_read(&sock, buf, 64, -13);
-
-    TEST_ASSERT_EQUAL_MESSAGE(0, select_fake.call_count, "select should not be called if timeout is lower than 0");
-    TEST_ASSERT_EQUAL_MESSAGE(1, read_fake.call_count, "read should be called");
-    TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_read should return 12 bytes");
-    TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", buf, "sock_read should write 'HELLO WORLD' to buf");
-}
-
-void test_sock_read_with_select_error(void)
-{
-    // initialize socket
-    sock_t sock;
-
-    socket_fake.return_val = 123;
-    sock_create(&sock);
-
-    // set socket to connected state
-    connect_fake.return_val = 0;
-    sock_connect(&sock, "::1", 8888);
-
-    // read passing a 5 seconds timeout
-    char buf[64];
-    select_fake.custom_fake = select_with_error_fake;
-    int res = sock_read(&sock, buf, 64, 5);
-
-    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called if timeout is set");
-    TEST_ASSERT_EQUAL_MESSAGE(0, read_fake.call_count, "read should not be called if the call to select fails");
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail if select fails");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
-}
-
-void test_sock_read_ok_with_timeout(void)
-{
-    // initialize socket
-    sock_t sock;
-
-    socket_fake.return_val = 123;
-    sock_create(&sock);
-
-    // set socket to connected state
-    connect_fake.return_val = 0;
-    sock_connect(&sock, "::1", 8888);
-
-    // read passing a 5 seconds timeout
-    char buf[64];
-    read_fake.custom_fake = read_ok_fake;
-    select_fake.custom_fake = select_ok_fake;
-    int res = sock_read(&sock, buf, 64, 5);
-
-    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called if timeout is set");
-    TEST_ASSERT_EQUAL_MESSAGE(1, read_fake.call_count, "read should be called for any value of timeout");
-    TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_read should return 12 bytes");
-    TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", buf, "sock_read should write 'HELLO WORLD' to buf");
-}
-
-void test_sock_read_with_select_timeout(void)
-{
-    // initialize socket
-    sock_t sock;
-
-    socket_fake.return_val = 123;
-    sock_create(&sock);
-
-    // set socket to connected state
-    connect_fake.return_val = 0;
-    sock_connect(&sock, "::1", 8888);
-
-    // read passing a 5 seconds timeout
-    char buf[64];
-    select_fake.custom_fake = select_with_timeout_fake;
-    int res = sock_read(&sock, buf, 64, 5);
-
-    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called if timeout is set");
-    TEST_ASSERT_EQUAL_MESSAGE(0, read_fake.call_count, "read should not be called if select times out");
-    TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_read should fail if select times out");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_read should set errno on error");
-}
-
 
 
 /**************************************************************************
@@ -645,10 +562,10 @@ void test_sock_write_ok(void)
     sock_connect(&sock, "::1", 8888);
 
     // write to socket
-    write_fake.custom_fake = write_ok_fake;
+    send_fake.custom_fake = send_ok_fake;
     int res = sock_write(&sock, "HELLO WORLD", 12);
 
-    TEST_ASSERT_GREATER_THAN_MESSAGE(0, write_fake.call_count, "write should be called at least once");
+    TEST_ASSERT_GREATER_THAN_MESSAGE(0, send_fake.call_count, "write should be called at least once");
     TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_write should write 12 bytes");
     TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", global_write_buffer, "sock_write should write 'HELLO WORLD' to socket");
 }
@@ -705,10 +622,10 @@ void test_sock_write_zero_bytes(void)
     sock_connect(&sock, "::1", 8888);
 
     // write to socket
-    write_fake.custom_fake = write_ok_fake;
+    send_fake.custom_fake = send_ok_fake;
     int res = sock_write(&sock, "HELLO WORLD", 0);
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, write_fake.call_count, "write should not be called when writing zero bytes");
+    TEST_ASSERT_EQUAL_MESSAGE(0, send_fake.call_count, "write should not be called when writing zero bytes");
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_write should write 0 bytes");
 }
 
@@ -725,10 +642,10 @@ void test_sock_write_with_error(void)
     sock_connect(&sock, "::1", 8888);
 
     // write to socket
-    write_fake.custom_fake = write_with_error_fake;
+    send_fake.custom_fake = send_with_error_fake;
     int res = sock_write(&sock, "HELLO WORLD", 12);
 
-    TEST_ASSERT_GREATER_THAN_MESSAGE(0, write_fake.call_count, "write should be called at least once");
+    TEST_ASSERT_GREATER_THAN_MESSAGE(0, send_fake.call_count, "write should be called at least once");
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when write returns an error");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
 }
