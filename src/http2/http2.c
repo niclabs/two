@@ -5,6 +5,7 @@
 #include "http2/send.h"
 #include "http2/utils.h"
 #include "http2/flowcontrol.h"
+#include "http2/handle.h"
 #include "http.h"
 
 
