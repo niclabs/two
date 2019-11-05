@@ -148,6 +148,10 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // placeholder
     callback_t ret_null = { NULL, NULL };
     return ret_null;
+    if(rc < 0){
+      ERROR("Error was found while handling payload");
+      return null_callback();
+    }
 }
 
 
