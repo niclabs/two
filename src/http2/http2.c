@@ -226,6 +226,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback(&(h2s->header), &data_payload, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading data payload");
+                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
                 return -1;
             }
             rc = handle_data_payload(&(h2s->header), &data_payload, buf_out, h2s);
@@ -248,6 +249,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback(&(h2s->header), &hpl, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading headers payload");
+                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
                 return rc;
             }
             rc = handle_headers_payload(&(h2s->header), &hpl, buf_out, h2s);
@@ -307,6 +309,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback(&(h2s->header), &goaway_pl, buff_read);
             if(rc < 0){
               ERROR("Error in reading goaway payload");
+              send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
               return -1;
             }
             rc = handle_goaway_payload(&goaway_pl, buf_out, h2s);
