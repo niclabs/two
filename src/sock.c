@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
-#include <fcntl.h>
 #include <sys/time.h>
 #include <sys/select.h>
 #include <sys/types.h>
@@ -20,19 +19,38 @@
 
 int sock_create(sock_t *sock)
 {
-    if (sock == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
+	if (sock == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
 
-    sock->socket = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    if (sock->socket < 0) {
-        sock->state = SOCK_CLOSED;
-        return -1;
-    }
+	sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
+	if (sock->socket < 0) {
+		sock->state = SOCK_CLOSED;
+		return -1;
+	}
 
-    sock->state = SOCK_OPENED;
-    return 0;
+	// Socket options
+	int on = 1;
+
+	// Allow socket descriptor to be reuseable
+	if (setsockopt(sock->socket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) < 0) {
+		close(sock->socket);
+		sock->state = SOCK_CLOSED;
+
+		return -1;
+	}
+
+	// Set socket and child sockets to be non blocking
+	if (ioctl(sock->socket, FIONBIO, (char *)&on) < 0) {
+		close(sock->socket);
+		sock->state = SOCK_CLOSED;
+
+		return -1;
+	}
+
+	sock->state = SOCK_OPENED;
+	return 0;
 }
 
 int sock_destroy(sock_t *sock)
@@ -163,12 +181,6 @@ int sock_accept(sock_t *server, sock_t *client)
     if (clifd < 0) {
         return -1;
     }
-
-    int flags = fcntl(clifd, F_GETFL, 0);
-    if (flags == -1) {
-        return -1;
-    }
-    fcntl(clifd, F_SETFL, flags | O_NONBLOCK);
 
     // Only struct values if client is not null
     if (client != NULL) {
