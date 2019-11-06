@@ -220,7 +220,6 @@ void test_check_incoming_settings_condition_errors(void)
     h2states_t h2s;
     cbuf_t buf_out;
 
-    // init variables
     int i;
 
     for (i = 0; i < 6; i++) {
@@ -231,7 +230,7 @@ void test_check_incoming_settings_condition_errors(void)
     // first error, wrong stream_id
     frame_header_t header_ack_wrong_stream = { 0, 0x4, 0x0 | 0x1, 0x1, 0, NULL, NULL };
     header_ack_wrong_stream.stream_id = 1;
-    // third error, wrong size
+    // second error, wrong size
     frame_header_t header_ack_wrong_size = { 24, 0x4, 0x0 | 0x1, 0x0, 0, NULL, NULL };
 
     int flag_returns[1] = { 1 };
@@ -245,6 +244,8 @@ void test_check_incoming_settings_condition_errors(void)
     h2s.header = header_ack_wrong_size;
     rc = check_incoming_settings_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header length > MAX_FRAME_SIZE)");
+    TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 1, "read_setting_from must be called for the first time");
+    // header length < MAX_FRAME_SIZE, but its 24 != 0
     rc = check_incoming_settings_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header length != 0)");
 }
