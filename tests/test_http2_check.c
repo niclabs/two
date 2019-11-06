@@ -215,11 +215,40 @@ void test_check_incoming_settings_condition(void)
     TEST_ASSERT_MESSAGE(rc == 1, "RC must be 1. ACK flag was setted, but not wait ack flag asigned");
 }
 
+void test_check_incoming_settings_condition_errors(void)
+{
+    h2states_t h2s;
+    cbuf_t buf_out;
+
+    // init variables
+    int i;
+    for (i = 0; i < 6; i++) {
+        h2s.local_settings[i] = 1;
+        h2s.remote_settings[i] = 1;
+    }
+    h2s.wait_setting_ack = 1;
+    // first error, wrong stream_id
+    frame_header_t header_ack_wrong_stream = { 0, 0x4, 0x0 | 0x1, 0x1, 0, NULL, NULL };
+    header_ack_wrong_stream.stream_id = 1;
+    // third error, wrong size
+    frame_header_t header_ack_wrong_size = { 24, 0x4, 0x0 | 0x1, 0x0, 0, NULL, NULL };
+
+    int flag_returns[1] = { 1 };
+    SET_RETURN_SEQ(is_flag_set, flag_returns, 1);
+    uint32_t read_setting_from_returns[2] = { 10, 128 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 2);
+
+    h2s.header = header_ack_wrong_stream;
+    int rc = check_incoming_settings_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (wrong stream)");
+    h2s.header = header_ack_wrong_size;
+    rc = check_incoming_settings_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header length > MAX_FRAME_SIZE)");
+    rc = check_incoming_settings_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header length != 0)");
+}
+
 /*
-   void test_check_incoming_settings_condition_errors(void){
-
-   }
-
    void test_check_incoming_goaway_condition(void){
 
    }
@@ -245,6 +274,7 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
     UNIT_TEST(test_check_incoming_settings_condition);
+    UNIT_TEST(test_check_incoming_settings_condition_errors);
 
 
     return UNIT_TESTS_END();
