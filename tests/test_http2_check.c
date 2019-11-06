@@ -278,11 +278,53 @@ void test_check_incoming_continuation_condition(void)
     TEST_ASSERT_MESSAGE(rc == 0, "return code must be 0");
 }
 
-/*
-   void test_check_incoming_continuation_condition_errors(void){
+void test_check_incoming_continuation_condition_errors(void)
+{
+    frame_header_t head;
+    h2states_t h2s;
+    cbuf_t buf_out;
 
-   }
- */
+    head.stream_id = 0;
+    head.length = 290;
+    h2s.current_stream.stream_id = 440;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.waiting_for_end_headers_flag = 0;
+    h2s.header = head;
+    uint32_t read_setting_from_returns[4] = { 280, 280, 280, DEFAULT_MAX_FRAME_SIZE };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 4);
+
+    int rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (not previous headers)");
+
+    h2s.waiting_for_end_headers_flag = 1;
+    rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (incoming id equals 0 - invalid stream)");
+
+    h2s.header.stream_id = 442;
+    rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (stream mistmatch - invalid stream)");
+
+    h2s.header.stream_id = 440;
+    rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (header length bigger than max - FRAME_SIZE_ERROR)");
+
+    h2s.header.length = 180;
+    h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (strean not open)");
+
+    h2s.current_stream.state = STREAM_IDLE;
+    rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (stream in idle)");
+
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.header_block_fragments_pointer = 128;
+    h2s.header.length = HTTP2_MAX_HBF_BUFFER - 100;
+    rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (block fragments too big)");
+
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -294,6 +336,7 @@ int main(void)
     UNIT_TEST(test_check_incoming_settings_condition);
     UNIT_TEST(test_check_incoming_settings_condition_errors);
     UNIT_TEST(test_check_incoming_continuation_condition);
+    UNIT_TEST(test_check_incoming_continuation_condition_errors);
 
 
     return UNIT_TESTS_END();
