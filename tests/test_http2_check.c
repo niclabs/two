@@ -222,6 +222,7 @@ void test_check_incoming_settings_condition_errors(void)
 
     // init variables
     int i;
+
     for (i = 0; i < 6; i++) {
         h2s.local_settings[i] = 1;
         h2s.remote_settings[i] = 1;
@@ -256,11 +257,28 @@ void test_check_incoming_settings_condition_errors(void)
    void test_check_incoming_goaway_condition_errors(void){
 
    }
+ */
 
-   void test_check_incoming_continuation_condition(void){
+void test_check_incoming_continuation_condition(void)
+{
+    frame_header_t head;
+    h2states_t h2s;
+    cbuf_t buf_out;
 
-   }
+    head.stream_id = 440;
+    head.length = 120;
+    h2s.current_stream.stream_id = 440;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.waiting_for_end_headers_flag = 1;
+    h2s.header = head;
 
+    uint32_t read_setting_from_returns[1] = { 280 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+    int rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 0, "return code must be 0");
+}
+
+/*
    void test_check_incoming_continuation_condition_errors(void){
 
    }
@@ -275,6 +293,7 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
     UNIT_TEST(test_check_incoming_settings_condition);
     UNIT_TEST(test_check_incoming_settings_condition_errors);
+    UNIT_TEST(test_check_incoming_continuation_condition);
 
 
     return UNIT_TESTS_END();
