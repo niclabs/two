@@ -100,7 +100,9 @@ void test_read_continuation_payload(void)
 
     /*result*/
     continuation_payload_t continuation_payload;
-    //int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
+    uint8_t headers_block_fragment[64];
+    continuation_payload.header_block_fragment = (uint8_t*)&headers_block_fragment;
+   // int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 
     int rc = read_continuation_payload(&expected_frame_header, (void*) &continuation_payload, read_buffer);
 
