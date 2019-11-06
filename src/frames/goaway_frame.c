@@ -63,7 +63,6 @@ int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_p
     buffer_copy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
     goaway_payload->additional_debug_data = additional_debug_data_buffer;
     return 0;
-
 }
 
 /*
