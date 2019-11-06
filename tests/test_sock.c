@@ -551,8 +551,6 @@ void test_sock_read_null_buffer(void)
 
 void test_sock_write_ok(void)
 {
-    //TODO: fix test_sock_write_ok
-    TEST_IGNORE();
     // initialize socket
     sock_t sock;
 
@@ -565,7 +563,7 @@ void test_sock_write_ok(void)
 
     // write to socket
     send_fake.custom_fake = send_ok_fake;
-    int res = sock_write(&sock, "HELLO WORLD", 12);
+    int res = sock_write(&sock, (uint8_t *)"HELLO WORLD", 12);
 
     TEST_ASSERT_GREATER_THAN_MESSAGE(0, send_fake.call_count, "write should be called at least once");
     TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_write should write 12 bytes");
@@ -574,7 +572,7 @@ void test_sock_write_ok(void)
 
 void test_sock_write_null_socket(void)
 {
-    int res = sock_write(NULL, "HELLO WORLD", 12);
+    int res = sock_write(NULL,  (uint8_t *)"HELLO WORLD", 12);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when a NULL socket is given");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
@@ -605,7 +603,7 @@ void test_sock_write_unconnected_socket(void)
 
     socket_fake.return_val = 123;
     sock_create(&sock);
-    int res = sock_write(&sock, "Socket says: hello world", 24);
+    int res = sock_write(&sock, (uint8_t *)"Socket says: hello world", 24);
 
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when reading from unconnected socket");
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_write should set errno on error");
@@ -625,9 +623,9 @@ void test_sock_write_zero_bytes(void)
 
     // write to socket
     send_fake.custom_fake = send_ok_fake;
-    int res = sock_write(&sock, "HELLO WORLD", 0);
+    int res = sock_write(&sock,  (uint8_t *)"HELLO WORLD", 0);
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, send_fake.call_count, "write should not be called when writing zero bytes");
+    TEST_ASSERT_EQUAL_MESSAGE(1, send_fake.call_count, "send should be called when writing zero bytes");
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_write should write 0 bytes");
 }
 
@@ -645,7 +643,7 @@ void test_sock_write_with_error(void)
 
     // write to socket
     send_fake.custom_fake = send_with_error_fake;
-    int res = sock_write(&sock, "HELLO WORLD", 12);
+    int res = sock_write(&sock,  (uint8_t *)"HELLO WORLD", 12);
 
     TEST_ASSERT_GREATER_THAN_MESSAGE(0, send_fake.call_count, "write should be called at least once");
     TEST_ASSERT_LESS_THAN_MESSAGE(0, res, "sock_write should fail when write returns an error");
