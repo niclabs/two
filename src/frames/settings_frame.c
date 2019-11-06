@@ -29,20 +29,23 @@ int setting_to_bytes(settings_pair_t *setting, uint8_t *bytes)
     return 6;
 }
 
+//TODO: change the doc of settings_payload_to_bytes
 /*
  * Function: settings_frame_to_bytes
  * pass a settings payload to bytes
  * Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
  * Output: size of written bytes
  */
-int settings_frame_to_bytes(settings_payload_t *settings_payload, uint32_t count, uint8_t *bytes)
+int settings_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_t *byte_array)
 {
+    settings_payload_t *settings_payload = (settings_payload_t*)payload;
+    uint32_t count = settings_payload->count;
     for (uint32_t i = 0; i < count; i++) {
         //printf("%d\n",i);
         uint8_t setting_bytes[6];
         int size = setting_to_bytes(settings_payload->pairs + i, setting_bytes);
         for (int j = 0; j < size; j++) {
-            bytes[i * 6 + j] = setting_bytes[j];
+            byte_array[i * 6 + j] = setting_bytes[j];
         }
     }
     return 6 * count;
@@ -101,10 +104,11 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_head
     frame_header->flags = 0x0;
     frame_header->reserved = 0x0;
     frame_header->stream_id = 0;
+    frame_header->callback_to_bytes = settings_payload_to_bytes;
+
     count = create_list_of_settings_pair(ids, values, count, pairs);
     settings_payload->count = count;
     settings_payload->pairs = pairs;
-
     return 0;
 }
 

@@ -12,6 +12,7 @@
 #include "headers.h"
 
 
+//TODO: add functions of every frame to mocks
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
@@ -130,6 +131,21 @@ int uint32_31_to_byte_array_custom_fake_1(uint32_t num, uint8_t *byte_array)
     byte_array[3] = 1;
     return 1;
 }
+
+int append_byte_arrays_custom_fake(uint8_t *dest, uint8_t *array1, uint8_t *array2, int size1, int size2)
+{
+
+    for (uint8_t i = 0; i < size1; i++) {
+        dest[i] = array1[i];
+    }
+    for (uint8_t i = 0; i < size2; i++) {
+        dest[size1 + i] = array2[i];
+    }
+    //memcpy(total, array1, sizeof(array1));
+    //memcpy(total+sizeof(array1), array2, sizeof(array2));
+    return size1 + size2;
+}
+
 void test_frame_header_to_bytes(void)
 {
     uint32_t length = 6;
@@ -141,7 +157,7 @@ void test_frame_header_to_bytes(void)
     uint32_t stream_id = 0;
     uint32_31_to_byte_array_fake.custom_fake = uint32_31_to_byte_array_custom_fake_0;//stream_id
 
-    frame_header_t frame_header = { length, type, flags, reserved, stream_id };
+    frame_header_t frame_header = { length, type, flags, reserved, stream_id, NULL, NULL};
     uint8_t frame_bytes[9];
     int frame_bytes_size = frame_header_to_bytes(&frame_header, frame_bytes);
 
@@ -175,7 +191,7 @@ void test_frame_header_to_bytes_reserved(void)
     uint32_t stream_id = 0;
     uint32_31_to_byte_array_fake.custom_fake = uint32_31_to_byte_array_custom_fake_0;//stream_id
 
-    frame_header_t frame_header = { length, type, flags, reserved, stream_id };
+    frame_header_t frame_header = { length, type, flags, reserved, stream_id, NULL, NULL };
     uint8_t frame_bytes[9];
     int frame_bytes_size = frame_header_to_bytes(&frame_header, frame_bytes);
 
@@ -212,8 +228,7 @@ void test_bytes_to_frame_header(void)
     bytes_to_uint32_24_fake.return_val = length;
     bytes_to_uint32_31_fake.return_val = stream_id;
 
-
-    bytes_to_frame_header(bytes, &decoder_frame_header);
+    bytes_to_frame_header(bytes, 9, &decoder_frame_header);
 
     TEST_ASSERT_EQUAL_MESSAGE(length, decoder_frame_header.length, "wrong length.");
     TEST_ASSERT_EQUAL_MESSAGE(flags, decoder_frame_header.flags, "wrong flag.");
@@ -265,7 +280,7 @@ int uint16_to_byte_array_custom_fake_num(uint16_t num, uint8_t *byte_array)
     return 0;
 }
 
-void test_settings_frame_to_bytes(void)
+void test_frame_to_bytes_settings(void)
 {
     int count = 2;
     uint16_t ids[count];
@@ -285,7 +300,8 @@ void test_settings_frame_to_bytes(void)
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
 
     uint8_t byte_array[6 * count];
-    int rc = settings_payload_to_bytes(&settings_payload, count, byte_array);
+    frame_header_t frame_header;
+    int rc = settings_payload_to_bytes(&frame_header, (void*)&settings_payload, byte_array);
     TEST_ASSERT_EQUAL(6 * count, rc);
     uint8_t expected_bytes[] = { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
     TEST_ASSERT_EQUAL(count, uint16_to_byte_array_fake.call_count);
@@ -295,47 +311,7 @@ void test_settings_frame_to_bytes(void)
     }
 }
 
-uint16_t bytes_to_uint16_custom_fake_num(uint8_t *bytes)
-{
-    return (uint16_t)bytes[1];
-}
-
-uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
-{
-    return (uint32_t)bytes[3];
-}
-
-void test_create_settings_ack_frame(void)
-{
-    frame_t frame;
-    frame_header_t frame_header;
-
-    create_settings_ack_frame(&frame, &frame_header);
-
-    TEST_ASSERT_EQUAL(SETTINGS_ACK_FLAG, frame.frame_header->flags);
-    TEST_ASSERT_EQUAL(SETTINGS_TYPE, frame.frame_header->type);
-    TEST_ASSERT_EQUAL(0, frame.frame_header->length);
-    TEST_ASSERT_EQUAL(0, frame.frame_header->stream_id);
-    TEST_ASSERT_EQUAL(0, frame.frame_header->reserved);
-}
-
-int append_byte_arrays_custom_fake(uint8_t *dest, uint8_t *array1, uint8_t *array2, int size1, int size2)
-{
-
-    for (uint8_t i = 0; i < size1; i++) {
-        dest[i] = array1[i];
-    }
-    for (uint8_t i = 0; i < size2; i++) {
-        dest[size1 + i] = array2[i];
-    }
-    //memcpy(total, array1, sizeof(array1));
-    //memcpy(total+sizeof(array1), array2, sizeof(array2));
-    return size1 + size2;
-}
-
-
-
-void test_frame_to_bytes_settings(void)
+void test_frame_to_bytes_settings2(void)
 {
     int count = 2;
     uint16_t ids[count];
@@ -348,8 +324,10 @@ void test_frame_to_bytes_settings(void)
     frame_t frame;
     frame_header_t frame_header;
     settings_payload_t settings_payload;
+    frame.frame_header = &frame_header;
+    frame.payload = (void*)&settings_payload;
     settings_pair_t setting_pairs[count];
-    create_settings_frame(ids, values, count, &frame, &frame_header, &settings_payload, setting_pairs);
+    create_settings_frame(ids, values, count, &frame_header, &settings_payload, setting_pairs);
 
 
     uint8_t expected_bytes[] = { 0, 0, 6, SETTINGS_TYPE, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 1, 0, 0, 0, 1 };
@@ -377,7 +355,29 @@ void test_frame_to_bytes_settings(void)
     }
 }
 
+uint16_t bytes_to_uint16_custom_fake_num(uint8_t *bytes)
+{
+    return (uint16_t)bytes[1];
+}
 
+uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
+{
+    return (uint32_t)bytes[3];
+}
+
+void test_create_settings_ack_frame(void)
+{
+    frame_t frame;
+    frame_header_t frame_header;
+
+    create_settings_ack_frame(&frame, &frame_header);
+
+    TEST_ASSERT_EQUAL(SETTINGS_ACK_FLAG, frame.frame_header->flags);
+    TEST_ASSERT_EQUAL(SETTINGS_TYPE, frame.frame_header->type);
+    TEST_ASSERT_EQUAL(0, frame.frame_header->length);
+    TEST_ASSERT_EQUAL(0, frame.frame_header->stream_id);
+    TEST_ASSERT_EQUAL(0, frame.frame_header->reserved);
+}
 
 
 void test_frame_to_bytes_headers(void)
@@ -638,20 +638,21 @@ int main(void)
     UNIT_TEST(test_frame_header_to_bytes);
     UNIT_TEST(test_frame_header_to_bytes_reserved);
     UNIT_TEST(test_bytes_to_frame_header);
-
-    UNIT_TEST(test_settings_frame_to_bytes);
-
     UNIT_TEST(test_create_settings_ack_frame);
+
     UNIT_TEST(test_frame_to_bytes_settings);
     UNIT_TEST(test_frame_to_bytes_headers)
     UNIT_TEST(test_frame_to_bytes_continuation)
+    UNIT_TEST(test_frame_to_bytes_data);
+    UNIT_TEST(test_frame_to_bytes_window_update);
+    UNIT_TEST(test_frame_to_bytes_goaway);
+    UNIT_TEST(test_frame_to_bytes_settings);
+    UNIT_TEST(test_frame_to_bytes_settings2);
+
 
 
     UNIT_TEST(test_compress_headers);
-    UNIT_TEST(test_frame_to_bytes_data);
-    UNIT_TEST(test_frame_to_bytes_window_update);
 
-    UNIT_TEST(test_frame_to_bytes_goaway);
 
 
 
