@@ -139,3 +139,27 @@ int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *b
     return pointer;
 }
 
+/*
+ * Function: get_header_block_fragment_size
+ * Calculates the headers block framgent size of a headers_payload
+ * Input: frame_header, headers_payload
+ * padding and dependencies not implemented
+ * Output: block_fragment_size or -1 if error
+ */
+uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload)
+{
+    int priority_length = 0;
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){
+    //    priority_length = 5;
+    //}
+    int pad_length = 0;
+
+    //not implemented yet!
+    //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) {
+    //    pad_length = headers_payload->pad_length + 1; //plus one for the pad_length byte.
+    //}
+    (void)headers_payload;
+    return frame_header->length - pad_length - priority_length;
+}
+

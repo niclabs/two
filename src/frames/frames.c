@@ -149,31 +149,6 @@ int compress_headers(headers_t *headers_out, uint8_t *compressed_headers, hpack_
 }
 
 /*
- * Function: get_header_block_fragment_size
- * Calculates the headers block framgent size of a headers_payload
- * Input: frame_header, headers_payload
- * padding and dependencies not implemented
- * Output: block_fragment_size or -1 if error
- */
-uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload)
-{
-    int priority_length = 0;
-    //not implemented yet!
-    //if(is_flag_set(frame_header->flags, HEADERS_PRIORITY_FLAG)){
-    //    priority_length = 5;
-    //}
-    int pad_length = 0;
-
-    //not implemented yet!
-    //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) {
-    //    pad_length = headers_payload->pad_length + 1; //plus one for the pad_length byte.
-    //}
-    (void)headers_payload;
-    return frame_header->length - pad_length - priority_length;
-}
-
-
-/*
  * Function: receive_header_block
  * receives the header block and save the headers in the headers_data_list
  * Input: header_block, header_block_size, header_data_list
