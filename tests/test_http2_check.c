@@ -51,12 +51,7 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-<<<<<<< HEAD
-    // Call tests here
-    UNIT_TEST(test_example);
-=======
     UNIT_TEST(test_check_incoming_headers_condition);
->>>>>>> Add test_check_incoming_headers_condition
 
     return UNIT_TESTS_END();
 }
