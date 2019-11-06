@@ -17,7 +17,7 @@ FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
     FAKE(buffer_copy)                 \
-    FAKE(uint32_to_byte_array)     \
+    FAKE(uint32_to_byte_array)        \
     FAKE(uint32_31_to_byte_array)
 
 void setUp(void)
@@ -62,7 +62,13 @@ void test_create_goaway_frame(void)
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    int rc = create_goaway_frame(&frame_header, &goaway_payload, additional_debug_data_buffer, last_stream_id, error_code,  additional_debug_data, additional_debug_data_size);
+    int rc = create_goaway_frame(&frame_header,
+                                 &goaway_payload,
+                                 additional_debug_data_buffer,
+                                 last_stream_id,
+                                 error_code,
+                                 additional_debug_data,
+                                 additional_debug_data_size);
 
     TEST_ASSERT_EQUAL(0, rc);
     TEST_ASSERT_EQUAL(8 + 8, frame_header.length);
@@ -116,7 +122,7 @@ void test_goaway_payload_to_bytes(void)
 int main(void)
 {
     UNIT_TESTS_BEGIN();
-    
+
     // Call tests here
     UNIT_TEST(test_create_goaway_frame);
     UNIT_TEST(test_goaway_payload_to_bytes);
