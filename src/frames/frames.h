@@ -46,6 +46,5 @@ int compress_headers(headers_t *headers_out,  uint8_t *compressed_headers, hpack
 
 //TODO refactor this function to not use frame_t
 int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header);
-int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *frame, frame_header_t *frame_header, settings_payload_t *settings_payload, settings_pair_t *pairs);
 
 #endif /*FRAMES_H*/

@@ -1,11 +1,142 @@
 #include "unit.h"
 #include "logging.h"
+#include "frames/common.h" //Common structs for frames
+#include "settings_frame.h"
+#include "fff.h"
 
-// Include header definitions for file to test 
-// e.g #include "sock.h"
 
-void test_example(void) {
-    TEST_FAIL();
+// Include header definitions for file to test
+// e.g #include "sock_non_blocking.h"
+// Include header definitions for file to test
+DEFINE_FFF_GLOBALS;
+
+FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
+FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t *);
+FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_31, uint8_t *);
+
+
+
+/* List of fakes used by this unit tester */
+#define FFF_FAKES_LIST(FAKE)          \
+    FAKE(buffer_copy)                 \
+    FAKE(bytes_to_uint32_24)          \
+    FAKE(bytes_to_uint32_31)
+
+void setUp(void)
+{
+    /* Register resets */
+    FFF_FAKES_LIST(RESET_FAKE);
+
+    /* reset common FFF internal structures */
+    FFF_RESET_HISTORY();
+}
+
+
+/* Mocks */
+int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
+{
+    for (int i = 0; i < size; i++) {
+        dest[i] = orig[i];
+    }
+    return size;
+}
+
+
+void test_create_list_of_settings_pair(void)
+{
+    //TODO: not implemented yet.
+    int count = 3;
+    uint16_t ids[count];
+    uint32_t values[count];
+
+    for (int i = 0; i < count; i++) {
+        ids[i] = (uint16_t)i;
+        values[i] = (uint32_t)i;
+    }
+    settings_pair_t result_settings_pair[count];
+    create_list_of_settings_pair(ids, values, count, result_settings_pair);
+
+    for (int i = 0; i < count; i++) {
+        TEST_ASSERT_EQUAL(ids[i], result_settings_pair[i].identifier);
+        TEST_ASSERT_EQUAL(values[i], result_settings_pair[i].value);
+    }
+}
+
+
+void test_create_settings_frame(void)
+{
+    int count = 2;
+    uint16_t ids[count];
+    uint32_t values[count];
+
+    for (int i = 0; i < count; i++) {
+        ids[i] = (uint16_t)i;
+        values[i] = (uint32_t)i;
+    }
+    frame_t frame;
+    frame_header_t frame_header;
+    settings_payload_t settings_payload;
+    settings_pair_t setting_pairs[count];
+    create_settings_frame(ids, values, count, &frame, &frame_header, &settings_payload, setting_pairs);
+
+    TEST_ASSERT_EQUAL(count * 6, frame.frame_header->length);
+    TEST_ASSERT_EQUAL(0x0, frame.frame_header->flags);
+    TEST_ASSERT_EQUAL(0x4, frame.frame_header->type);
+    TEST_ASSERT_EQUAL(0x0, frame.frame_header->reserved);
+    TEST_ASSERT_EQUAL(0x0, frame.frame_header->stream_id);
+
+    settings_payload_t *settings_payload_created = (settings_payload_t *)frame.payload;
+
+    TEST_ASSERT_EQUAL(count, settings_payload_created->count);
+
+    settings_pair_t *setting_pairs_created = settings_payload.pairs;
+    for (int i = 0; i < count; i++) {
+        TEST_ASSERT_EQUAL(ids[i], setting_pairs_created[i].identifier);
+        TEST_ASSERT_EQUAL(values[i], setting_pairs_created[i].value);
+    }
+}
+
+void test_read_settings_payload(void)
+{
+    uint8_t bytes[] = { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
+
+    int count = 2;
+    uint16_t ids[count];
+    uint32_t values[count];
+
+    for (int i = 0; i < count; i++) {
+        ids[i] = (uint16_t)i;
+        values[i] = (uint32_t)i;
+    }
+    /*settings_pair_t expected_setting_pairs[count];
+       create_list_of_settings_pair(ids, values, count, expected_setting_pairs);
+       settings_payload_t expected_settings_payload;
+       expected_settings_payload.pairs = expected_setting_pairs;
+       expected_settings_payload.count= count;
+     */
+
+    bytes_to_uint16_fake.custom_fake = bytes_to_uint16_custom_fake_num;
+    bytes_to_uint32_fake.custom_fake = bytes_to_uint32_custom_fake_num;
+
+    settings_payload_t result_settings_payload;
+    settings_pair_t result_setting_pairs[count];
+    frame_header_t header;
+    header.length = count * 6 + 1;
+
+    int rc = read_settings_payload(bytes, &header, &result_settings_payload, result_setting_pairs);
+    TEST_ASSERT_EQUAL(-1, rc);
+
+    header.length = count * 6 ;
+    read_settings_payload(bytes, &header, &result_settings_payload, result_setting_pairs);
+
+    TEST_ASSERT_EQUAL(count, bytes_to_uint16_fake.call_count);
+    TEST_ASSERT_EQUAL(count, bytes_to_uint32_fake.call_count);
+
+    TEST_ASSERT_EQUAL(count, result_settings_payload.count);
+    for (int i = 0; i < count; i++) {
+        TEST_ASSERT_EQUAL(ids[i], result_setting_pairs[i].identifier);
+        TEST_ASSERT_EQUAL(values[i], result_setting_pairs[i].value);
+    }
 }
 
 int main(void)

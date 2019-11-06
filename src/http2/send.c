@@ -278,10 +278,14 @@ int send_local_settings(cbuf_t *buf_out, h2states_t *h2s){
     frame_t mysettingframe;
     frame_header_t mysettingframeheader;
     settings_payload_t mysettings;
+
+    mysettingframe.frame_header = &mysettingframeheader;
+    mysettingframe.payload = (void *)&mysettings;
+
     settings_pair_t mypairs[6];
     /*rc must be 0*/
-    rc = create_settings_frame(ids, h2s->local_settings, 6, &mysettingframe,
-                               &mysettingframeheader, &mysettings, mypairs);
+    rc = create_settings_frame(ids, h2s->local_settings, 6, &mysettingframeheader, &mysettings, mypairs);
+
     if(rc){
         ERROR("Error in Settings Frame creation");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);

@@ -26,6 +26,7 @@ int create_list_of_settings_pair(uint16_t *ids, uint32_t *values, int count, set
 int setting_to_bytes(settings_pair_t *setting, uint8_t *byte_array);
 int settings_frame_to_bytes(settings_payload_t *settings_frame, uint32_t count, uint8_t *byte_array);
 int read_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
-int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_t *frame, frame_header_t *frame_header,
+
+int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_header_t *frame_header,
                           settings_payload_t *settings_payload, settings_pair_t *pairs);
 #endif //TWO_SETTINGS_FRAME_H
