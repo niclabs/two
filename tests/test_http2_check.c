@@ -185,11 +185,37 @@ void test_check_incoming_headers_condition_mismatch(void)
     rc = check_incoming_headers_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (STREAM_CLOSED_ERROR)");
 }
+
+void test_check_incoming_settings_condition(void)
+{
+    h2states_t h2s;
+    cbuf_t buf_out;
+
+    h2s.wait_setting_ack = 1;
+    frame_header_t header_not_ack = { 24, 0x4, 0x0, 0x0, 0, NULL, NULL };
+    frame_header_t header_ack = { 0, 0x4, 0x0 | 0x1, 0x0, 0, NULL, NULL };
+
+    int flag_returns[3] = { 0, 1, 1 };
+    SET_RETURN_SEQ(is_flag_set, flag_returns, 3);
+    uint32_t read_setting_from_returns[1] = { 128 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
+    h2s.header = header_not_ack;
+    int rc = check_incoming_settings_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0. ACK flag is not setted");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 1, "wait must remain in 1");
+
+    h2s.header = header_ack;
+    rc = check_incoming_settings_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(is_flag_set_fake.call_count == 2, "is flag set must be called for second time");
+    TEST_ASSERT_MESSAGE(rc == 1, "RC must be 1. ACK flag was setted and payload size was 0");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait must be changed to 0");
+
+    rc = check_incoming_settings_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 1, "RC must be 1. ACK flag was setted, but not wait ack flag asigned");
+}
+
 /*
-   void test_check_incoming_settings_condition(void){
-
-   }
-
    void test_check_incoming_settings_condition_errors(void){
 
    }
@@ -218,6 +244,7 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_error);
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
+    UNIT_TEST(test_check_incoming_settings_condition);
 
 
     return UNIT_TESTS_END();
