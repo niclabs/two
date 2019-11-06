@@ -14,7 +14,7 @@
  */
 int continuation_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
-    continuation_payload_t *continuation_payload = (continuation_payload_t *) payload;
+    continuation_payload_t *continuation_payload = (continuation_payload_t *)payload;
     int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
 
     return rc;
@@ -55,8 +55,8 @@ int create_continuation_frame(uint8_t *headers_block, int headers_block_size, ui
  */
 int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
-    continuation_payload_t *continuation_payload = (continuation_payload_t *) payload;
+    continuation_payload_t *continuation_payload = (continuation_payload_t *)payload;
     int rc = buffer_copy(continuation_payload->header_block_fragment, bytes, frame_header->length);
+
     return rc;
 }
-
