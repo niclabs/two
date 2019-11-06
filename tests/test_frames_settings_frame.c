@@ -11,16 +11,19 @@
 DEFINE_FFF_GLOBALS;
 
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
-FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t *);
-FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_31, uint8_t *);
-
+FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32, uint8_t *);
+FAKE_VALUE_FUNC(uint16_t, bytes_to_uint16, uint8_t *);
+FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t *);
+FAKE_VALUE_FUNC(int, uint16_to_byte_array, uint16_t, uint8_t *);
 
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
     FAKE(buffer_copy)                 \
-    FAKE(bytes_to_uint32_24)          \
-    FAKE(bytes_to_uint32_31)
+    FAKE(bytes_to_uint32)             \
+    FAKE(bytes_to_uint16)             \
+    FAKE(uint16_to_byte_array)        \
+    FAKE(uint32_to_byte_array)        \
 
 void setUp(void)
 {
@@ -39,6 +42,32 @@ int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
         dest[i] = orig[i];
     }
     return size;
+}
+
+uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
+{
+    return (uint32_t)bytes[3];
+}
+
+uint16_t bytes_to_uint16_custom_fake_num(uint8_t *bytes)
+{
+    return (uint16_t)bytes[1];
+}
+
+int uint32_to_byte_array_custom_fake_300(uint32_t num, uint8_t *byte_array)
+{
+    byte_array[0] = 0;
+    byte_array[1] = 0;
+    byte_array[2] = 1;
+    byte_array[3] = 44;
+    return 0;
+}
+
+int uint16_to_byte_array_custom_fake_300(uint16_t num, uint8_t *byte_array)
+{
+    byte_array[0] = 1;
+    byte_array[1] = 44;
+    return 0;
 }
 
 
@@ -73,21 +102,19 @@ void test_create_settings_frame(void)
         ids[i] = (uint16_t)i;
         values[i] = (uint32_t)i;
     }
-    frame_t frame;
+
     frame_header_t frame_header;
     settings_payload_t settings_payload;
     settings_pair_t setting_pairs[count];
-    create_settings_frame(ids, values, count, &frame, &frame_header, &settings_payload, setting_pairs);
+    create_settings_frame(ids, values, count, &frame_header, &settings_payload, setting_pairs);
 
-    TEST_ASSERT_EQUAL(count * 6, frame.frame_header->length);
-    TEST_ASSERT_EQUAL(0x0, frame.frame_header->flags);
-    TEST_ASSERT_EQUAL(0x4, frame.frame_header->type);
-    TEST_ASSERT_EQUAL(0x0, frame.frame_header->reserved);
-    TEST_ASSERT_EQUAL(0x0, frame.frame_header->stream_id);
+    TEST_ASSERT_EQUAL(count * 6, frame_header.length);
+    TEST_ASSERT_EQUAL(0x0, frame_header.flags);
+    TEST_ASSERT_EQUAL(0x4, frame_header.type);
+    TEST_ASSERT_EQUAL(0x0, frame_header.reserved);
+    TEST_ASSERT_EQUAL(0x0, frame_header.stream_id);
 
-    settings_payload_t *settings_payload_created = (settings_payload_t *)frame.payload;
-
-    TEST_ASSERT_EQUAL(count, settings_payload_created->count);
+    TEST_ASSERT_EQUAL(count, settings_payload.count);
 
     settings_pair_t *setting_pairs_created = settings_payload.pairs;
     for (int i = 0; i < count; i++) {
@@ -120,14 +147,16 @@ void test_read_settings_payload(void)
 
     settings_payload_t result_settings_payload;
     settings_pair_t result_setting_pairs[count];
+    result_settings_payload.pairs = result_setting_pairs;
+
     frame_header_t header;
     header.length = count * 6 + 1;
 
-    int rc = read_settings_payload(bytes, &header, &result_settings_payload, result_setting_pairs);
+    int rc = read_settings_payload(&header, &result_settings_payload, bytes);
     TEST_ASSERT_EQUAL(-1, rc);
 
     header.length = count * 6 ;
-    read_settings_payload(bytes, &header, &result_settings_payload, result_setting_pairs);
+    read_settings_payload(&header, &result_settings_payload, bytes);
 
     TEST_ASSERT_EQUAL(count, bytes_to_uint16_fake.call_count);
     TEST_ASSERT_EQUAL(count, bytes_to_uint32_fake.call_count);
@@ -139,12 +168,37 @@ void test_read_settings_payload(void)
     }
 }
 
+void test_setting_to_bytes(void)
+{
+    uint16_t id = 300;
+    uint32_t value = 300;
+
+    uint16_to_byte_array_fake.custom_fake = uint16_to_byte_array_custom_fake_300;
+    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_300;
+    settings_pair_t settings_pair = { id, value };
+    uint8_t expected_bytes[6] = { 1, 44, 0, 0, 1, 44 };
+    uint8_t byte_array[6];
+
+    int rc = setting_to_bytes(&settings_pair, byte_array);
+
+    TEST_ASSERT_EQUAL(6, rc);
+
+    TEST_ASSERT_EQUAL(1, uint16_to_byte_array_fake.call_count);
+    TEST_ASSERT_EQUAL(1, uint32_to_byte_array_fake.call_count);
+    for (int i = 0; i < 6; i++) {
+        TEST_ASSERT_EQUAL(expected_bytes[i], byte_array[i]);
+    }
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
-    
-    // Call tests here
-    UNIT_TEST(test_example);
 
+    // Call tests here
+    UNIT_TEST(test_create_list_of_settings_pair);
+    UNIT_TEST(test_create_settings_frame);
+    UNIT_TEST(test_read_settings_payload);
+    UNIT_TEST(test_setting_to_bytes);
+    //TODO create settings_payload_to_bytes_test
     return UNIT_TESTS_END();
 }

@@ -231,33 +231,12 @@ int uint32_to_byte_array_custom_fake_300(uint32_t num, uint8_t *byte_array)
     byte_array[3] = 44;
     return 0;
 }
+
 int uint16_to_byte_array_custom_fake_300(uint16_t num, uint8_t *byte_array)
 {
     byte_array[0] = 1;
     byte_array[1] = 44;
     return 0;
-}
-
-void test_setting_to_bytes(void)
-{
-    uint16_t id = 300;
-    uint32_t value = 300;
-
-    uint16_to_byte_array_fake.custom_fake = uint16_to_byte_array_custom_fake_300;
-    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_300;
-    settings_pair_t settings_pair = { id, value };
-    uint8_t expected_bytes[6] = { 1, 44, 0, 0, 1, 44 };
-    uint8_t byte_array[6];
-
-    int rc = setting_to_bytes(&settings_pair, byte_array);
-
-    TEST_ASSERT_EQUAL(6, rc);
-
-    TEST_ASSERT_EQUAL(1, uint16_to_byte_array_fake.call_count);
-    TEST_ASSERT_EQUAL(1, uint32_to_byte_array_fake.call_count);
-    for (int i = 0; i < 6; i++) {
-        TEST_ASSERT_EQUAL(expected_bytes[i], byte_array[i]);
-    }
 }
 
 
@@ -660,11 +639,7 @@ int main(void)
     UNIT_TEST(test_frame_header_to_bytes_reserved);
     UNIT_TEST(test_bytes_to_frame_header);
 
-    UNIT_TEST(test_create_list_of_settings_pair);
-    UNIT_TEST(test_create_settings_frame);
-    UNIT_TEST(test_setting_to_bytes);
     UNIT_TEST(test_settings_frame_to_bytes);
-    UNIT_TEST(test_read_settings_payload);
 
     UNIT_TEST(test_create_settings_ack_frame);
     UNIT_TEST(test_frame_to_bytes_settings);
