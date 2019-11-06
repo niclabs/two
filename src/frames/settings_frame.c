@@ -54,7 +54,7 @@ int settings_frame_to_bytes(settings_payload_t *settings_payload, uint32_t count
  * Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
  * Output: size of written bytes
  */
-int bytes_to_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
+int read_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
     settings_payload_t *settings_payload = (settings_payload_t *) payload;
     if (frame_header->length % 6 != 0) {

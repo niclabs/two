@@ -210,7 +210,7 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_h
         frame_header->callback = read_goaway_payload;
     }
     if(frame_header->type == SETTINGS_TYPE){
-        frame_header->callback = bytes_to_settings_payload;
+        frame_header->callback = read_settings_payload;
     }
     if(frame_header->type == CONTINUATION_TYPE){
         frame_header->callback = read_continuation_payload;
