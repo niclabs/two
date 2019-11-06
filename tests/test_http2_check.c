@@ -26,6 +26,18 @@ void setUp(void)
     FFF_RESET_HISTORY();
 
 }
+
+/* Tests http2/check functions */
+
+/*
+   void test_check_incoming_data_condition(void){
+
+   }
+
+   void test_check_incoming_data_condition_errors(void){
+
+   }
+ */
 void test_check_incoming_headers_condition(void)
 {
     cbuf_t buf_out;
@@ -171,6 +183,31 @@ void test_check_incoming_headers_condition_mismatch(void)
     rc = check_incoming_headers_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (STREAM_CLOSED_ERROR)");
 }
+/*
+   void test_check_incoming_settings_condition(void){
+
+   }
+
+   void test_check_incoming_settings_condition_errors(void){
+
+   }
+
+   void test_check_incoming_goaway_condition(void){
+
+   }
+
+   void test_check_incoming_goaway_condition_errors(void){
+
+   }
+
+   void test_check_incoming_continuation_condition(void){
+
+   }
+
+   void test_check_incoming_continuation_condition_errors(void){
+
+   }
+ */
 int main(void)
 {
     UNIT_TESTS_BEGIN();
