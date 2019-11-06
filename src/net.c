@@ -53,7 +53,7 @@ NetReturnCode read_from_socket(Client* p_client, unsigned int available_data)
         int read_rc = sock_read(p_client->socket, buf_aux, readable_data);
         if (read_rc < 0)
         {
-            ERROR("Error in reading from socket\n");
+            ERROR("Error in reading from socket");
             return ReadError;
         }
         DEBUG("Read %i bytes from socket", read_rc);
@@ -86,7 +86,7 @@ NetReturnCode write_to_socket(Client* p_client)
         int write_rc = sock_write(p_client->socket, buf_aux, writable_data);
         if (write_rc < 0)
         {
-            ERROR("Error in writing to socket\n");
+            ERROR("Error in writing to socket");
             return WriteError;
         }
 
@@ -134,13 +134,13 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
     sock_rc = sock_create(server_socket);
     if (sock_rc != 0)
     {
-        ERROR("Server socket couldn't be created\n");
+        ERROR("Server socket couldn't be created");
         return SocketError;
     }
     sock_rc = sock_listen(server_socket, port);
     if (sock_rc != 0)
     {
-        ERROR("Server socket couldn't be set to listen\n");
+        ERROR("Server socket couldn't be set to listen");
         return SocketError;
     }
 
@@ -185,11 +185,11 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 // If client should be disconnected
                 if (cb.func == NULL)
                 {
-                    INFO("Disconnecting client from slot %i\n", i);
+                    INFO("Disconnecting client from slot %i", i);
                     sock_rc = sock_destroy(p_client->socket);
                     if (sock_rc < 0)
                     {
-                        ERROR("Error in destroying socket\n");
+                        ERROR("Error in destroying socket");
                         rc = SocketError;
                         break;
                     }
@@ -208,7 +208,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 sock_rc = sock_accept(server_socket, p_client->socket);
                 if (sock_rc < 0)
                 {
-                    ERROR("Error in accepting a client\n");
+                    ERROR("Error in accepting a client");
                     rc = SocketError;
                     break;
                 }
@@ -216,7 +216,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 // If one was accepted, set it's callback
                 if (sock_rc > 0)
                 {
-                    INFO("Client connected on slot %i\n", i);
+                    INFO("Client connected on slot %i", i);
 
                     // The default callback does stuff
                     DEBUG("Executing callback");
@@ -231,11 +231,11 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                     // If client should be disconnected
                     if (cb.func == NULL)
                     {
-                        INFO("Disconnecting client from slot %i\n", i);
+                        INFO("Disconnecting client from slot %i", i);
                         sock_rc = sock_destroy(p_client->socket);
                         if (sock_rc < 0)
                         {
-                            ERROR("Error in destroying socket\n");
+                            ERROR("Error in destroying socket");
                             rc = SocketError;
                             break;
                         }
@@ -261,11 +261,11 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
 
         if (p_client->cb.func != NULL)
         {
-            INFO("Disconnecting client from slot %i\n", i);
+            INFO("Disconnecting client from slot %i", i);
             sock_rc = sock_destroy(p_client->socket);
             if (sock_rc < 0)
             {
-                ERROR("Error in destroying socket\n");
+                ERROR("Error in destroying socket");
                 rc = SocketError;
             }
             INFO("Client disconnected");
