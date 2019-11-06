@@ -161,15 +161,6 @@ void test_sock_create_ok(void)
     sock_destroy(&sock);
 }
 
-void test_sock_create_null_sock(void)
-{
-    socket_fake.return_val = -1;
-    int res = sock_create(NULL);
-
-    TEST_ASSERT_EQUAL_MESSAGE(-1, res, "sock_create should return -1 on NULL pointer parameter");
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_create should set errno on error");
-}
-
 void test_sock_create_fail_to_create_socket(void)
 {
     sock_t sock;

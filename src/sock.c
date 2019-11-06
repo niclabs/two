@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <sys/select.h>
 #include <sys/types.h>
+#include <assert.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -19,10 +20,8 @@
 
 int sock_create(sock_t *sock)
 {
-	if (sock == NULL) {
-		errno = EINVAL;
-		return -1;
-	}
+	// Fail if wrong input given
+	assert(sock != NULL);
 
 	sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
 	if (sock->socket < 0) {
