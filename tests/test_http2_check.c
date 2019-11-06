@@ -26,14 +26,37 @@ void setUp(void)
     FFF_RESET_HISTORY();
 
 }
+void test_check_incoming_headers_condition(void)
+{
+    cbuf_t buf_out;
+    frame_header_t head;
+    h2states_t h2s;
+
+    head.stream_id = 2440;
+    head.length = 128;
+    h2s.is_server = 0;
+    h2s.waiting_for_end_headers_flag = 0;
+    h2s.current_stream.stream_id = 2440;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.header = head;
+    uint32_t read_setting_from_returns[1] = { 128 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+    int rc = check_incoming_headers_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
 }
 
 int main(void)
 {
     UNIT_TESTS_BEGIN();
 
+<<<<<<< HEAD
     // Call tests here
     UNIT_TEST(test_example);
+=======
+    UNIT_TEST(test_check_incoming_headers_condition);
+>>>>>>> Add test_check_incoming_headers_condition
 
     return UNIT_TESTS_END();
 }
