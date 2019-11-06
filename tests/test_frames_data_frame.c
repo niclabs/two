@@ -6,7 +6,7 @@
 
 
 // Include header definitions for file to test 
-// e.g #include "sock_non_blocking.h"
+// e.g #include "sock.h"
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 

@@ -2,7 +2,7 @@
 #include "fff.h"
 
 #include "net.h"
-#include "sock_non_blocking.h"
+#include "sock.h"
 #include "cbuf.h"
 
 typedef unsigned int uint;

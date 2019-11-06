@@ -85,37 +85,11 @@ int connect_with_error_fake(int sockfd, const struct sockaddr *addr, socklen_t a
     return -1;
 }
 
-int select_ok_fake(int nfds, fd_set *readfds, fd_set *writefds,
-                   fd_set *exceptfds, struct timeval *timeout)
-{
-    return 1;
-}
-
-int select_with_error_fake(int nfds, fd_set *readfds, fd_set *writefds,
-                           fd_set *exceptfds, struct timeval *timeout)
-{
-    errno = EBADF;
-    return -1;
-}
-
-int select_with_timeout_fake(int nfds, fd_set *readfds, fd_set *writefds,
-                             fd_set *exceptfds, struct timeval *timeout)
-{
-    return 0;
-}
-
 ssize_t recv_ok_fake(int fd, void *buf, size_t count, int flags)
 {
     (void)flags;
     strncpy(buf, "HELLO WORLD", 12);
     return 12;
-}
-
-ssize_t recv_with_error_fake(int fd, void *buf, size_t count, int flags)
-{
-    (void)flags;
-    errno = EAGAIN; // timeout reached
-    return -1;
 }
 
 ssize_t recv_zero_bytes_fake(int fd, void *buf, size_t count, int flags)
@@ -757,15 +731,9 @@ int main(void)
     // sock_read tests
     UNIT_TEST(test_sock_read_ok);
     UNIT_TEST(test_sock_read_ok_zero_bytes);
-    //TODO: fix tests: "test_sock_read_ok_bad_timeout", "test_sock_read_ok_with_timeout"
-    //UNIT_TEST(test_sock_read_ok_bad_timeout);
-    //UNIT_TEST(test_sock_read_ok_with_timeout);
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_unconnected_socket);
     UNIT_TEST(test_sock_read_null_buffer);
-    //TODO: fix tests: "test_sock_read_with_select_error", "test_sock_read_with_select_timeout"
-    //UNIT_TEST(test_sock_read_with_select_error);
-    //UNIT_TEST(test_sock_read_with_select_timeout);
 
     // sock_write tests
     UNIT_TEST(test_sock_write_ok);

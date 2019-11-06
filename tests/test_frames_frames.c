@@ -2,7 +2,7 @@
 #include "logging.h"
 
 // Include header definitions for file to test 
-// e.g #include "sock_non_blocking.h"
+// e.g #include "sock.h"
 
 void test_example(void) {
     TEST_FAIL();
