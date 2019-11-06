@@ -108,6 +108,40 @@ void test_check_incoming_headers_condition_error(void)
     rc = check_incoming_headers_condition(&buf_out, &h2s_parity_c);
     TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id parity is wrong)");
 }
+
+void test_check_incoming_headers_condition_creation_of_stream(void)
+{
+    cbuf_t buf_out;
+    frame_header_t head;
+    h2states_t h2s;
+
+    head.stream_id = 2440;
+    head.length = 128;
+    h2s.is_server = 0;
+    h2s.waiting_for_end_headers_flag = 0;
+    h2s.current_stream.stream_id = 2440;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.last_open_stream_id = 2438;
+    h2s.header = head;
+
+    uint32_t read_setting_from_returns[1] = { 128 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
+    int rc = check_incoming_headers_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
+
+    h2s.current_stream.stream_id = 2438;
+    h2s.current_stream.state = STREAM_IDLE;
+    rc = check_incoming_headers_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
+}
+
 void test_check_incoming_headers_condition_mismatch(void)
 {
     cbuf_t buf_out;
@@ -144,6 +178,8 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition);
     UNIT_TEST(test_check_incoming_headers_condition_error);
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
+    UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
+
 
     return UNIT_TESTS_END();
 }
