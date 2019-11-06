@@ -22,6 +22,9 @@ int sock_create(sock_t *sock)
 {
 	// Fail if wrong input given
 	assert(sock != NULL);
+    
+    // Clean memory
+    memset(sock, 0, sizeof(*sock));
 
 	sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
 	if (sock->socket < 0) {
