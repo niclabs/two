@@ -126,6 +126,7 @@ int main(void)
     // Call tests here
     UNIT_TEST(test_create_goaway_frame);
     UNIT_TEST(test_goaway_payload_to_bytes);
+    //TODO: make test for read_goaway_payload
     //UNIT_TEST(test_read_goaway_payload);
 
     return UNIT_TESTS_END();
