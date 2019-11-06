@@ -28,29 +28,25 @@ int send_text(char * method, char * uri, uint8_t * response, int maxlen)
 
 int main(int argc, char **argv)
 {
-    if (argc < 2) {
-        PRINTF("Usage: %s <port>\n", argv[0]);
-        return 1;
-    }
+	if (argc < 2) {
+		PRINTF("Usage: %s <port>\n", argv[0]);
+		return 1;
+	}
 
-    int port = atoi(argv[1]);
-    if (port < 0) {
-        PRINTF("Invalid port given");
-        return 1;
-    }
+	int port = atoi(argv[1]);
+	if (port < 0) {
+		PRINTF("Invalid port given");
+		return 1;
+	}
 
-    else {
-        int rc = two_register_resource("GET", "/index", &send_text);
-        if (rc < 0) {
-            ERROR("in two_register_resource");
-        }
-        else {
 
-            rc = two_server_start(port);
-            if (rc < 0) {
-                ERROR("in start server");
-            }
-        }
-    }
+	// Register resource
+	if (two_register_resource("GET", "/index", &send_text) < 0) {
+		FATAL("Failed to register resource /index");	
+	}
 
+
+	if (two_server_start(port) < 0) {
+		FATAL("Failed to start server");	
+	}
 }
