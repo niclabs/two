@@ -3,24 +3,15 @@
 #include "frames/common.h" //Common structs for frames
 #include "continuation_frame.h"
 #include "fff.h"
-#include "headers.h"
 
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 
-// Headers functions
-FAKE_VALUE_FUNC(int, headers_count, headers_t *);
-FAKE_VALUE_FUNC(char *, headers_get_name_from_index, headers_t *, int);
-FAKE_VALUE_FUNC(char *, headers_get_value_from_index, headers_t *, int);
-
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)                 \
-    FAKE(headers_count)               \
-    FAKE(headers_get_name_from_index) \
-    FAKE(headers_get_value_from_index)
+    FAKE(buffer_copy)
 
 void setUp(void)
 {
@@ -103,7 +94,7 @@ void test_read_continuation_payload(void)
     expected_frame_header.reserved = 0;
     expected_frame_header.length = 8;
     uint8_t expected_headers_block_fragment[64] = { 0, 12, 34, 5, 234, 7, 34, 98 };
-    
+
     //fill the buffer
     uint8_t read_buffer[20] = { 0, 12, 34, 5, 234, 7, 34, 98, 9, 0, 0, 1, 12 /*payload*/ };
 
