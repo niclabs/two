@@ -730,7 +730,6 @@ int main(void)
     // sock_create tests
     UNIT_TEST(test_sock_create_ok);
     UNIT_TEST(test_sock_create_fail_to_create_socket);
-    UNIT_TEST(test_sock_create_null_sock);
 
     // sock_listen tests
     UNIT_TEST(test_sock_listen_ok);
