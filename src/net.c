@@ -1,6 +1,6 @@
 #include "net.h"
 
-#include "sock_non_blocking.h"
+#include "sock.h"
 #include "logging.h"
 
 
@@ -130,7 +130,8 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
     }
 
     // Server socket setup
-    sock_t* server_socket = NULL;
+    sock_t sock_mem;
+    sock_t * server_socket = &sock_mem;
     sock_rc = sock_create(server_socket);
     if (sock_rc != 0)
     {
