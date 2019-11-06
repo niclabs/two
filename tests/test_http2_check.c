@@ -13,10 +13,12 @@ extern void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
 FAKE_VOID_FUNC(send_connection_error, cbuf_t *, uint32_t, h2states_t *);
+FAKE_VALUE_FUNC(int, is_flag_set, uint8_t, uint8_t);
 
 #define FFF_FAKES_LIST(FAKE)            \
     FAKE(read_setting_from)             \
     FAKE(send_connection_error)         \
+    FAKE(is_flag_set)                   \
 
 void setUp(void)
 {
