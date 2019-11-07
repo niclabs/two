@@ -181,6 +181,9 @@ int sock_accept(sock_t *server, sock_t *client)
 
     int clifd = accept(server->socket, NULL, NULL);
     if (clifd < 0) {
+        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+            return 0;
+        }
         return -1;
     }
 
@@ -189,7 +192,7 @@ int sock_accept(sock_t *server, sock_t *client)
         client->socket = clifd;
         client->state = SOCK_CONNECTED;
     }
-    return 0;
+    return 1;
 }
 
 int sock_connect(sock_t *client, char *addr, uint16_t port)

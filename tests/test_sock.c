@@ -222,7 +222,7 @@ void test_sock_listen_error_in_listen(void)
  * sock_accept tests
  *************************************************************************/
 
-void test_sock_accept_ok(void)
+void test_sock_accept_ok_client_found(void)
 {
     // create socket
     sock_t sock_s;
@@ -240,9 +240,33 @@ void test_sock_accept_ok(void)
     int res = sock_accept(&sock_s, &sock_c);
 
     TEST_ASSERT_EQUAL_MESSAGE(1, accept_fake.call_count, "accept() should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept should return 0 on success");
+    TEST_ASSERT_EQUAL_MESSAGE(1, res, "sock_accept should return 1 on success");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_LISTENING, sock_s.state, "sock_accept should maintain server socket state");
     TEST_ASSERT_EQUAL_MESSAGE(SOCK_CONNECTED, sock_c.state, "sock_accept set client state to CONNECTED");
+}
+
+void test_sock_accept_ok_client_not_found(void)
+{
+    // create socket
+    sock_t sock_s;
+
+    socket_fake.return_val = 123;
+    sock_create(&sock_s);
+
+    // set all return values to OK
+    listen_fake.return_val = 0;
+    sock_listen(&sock_s, 8888);
+    accept_fake.return_val = -1;
+    errno = EWOULDBLOCK;
+    sock_t sock_c = {0, 0};
+
+    // call the function
+    int res = sock_accept(&sock_s, &sock_c);
+
+    TEST_ASSERT_EQUAL_MESSAGE(1, accept_fake.call_count, "accept() should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept should return 0 if errno is EWOULDBLOCK");
+    TEST_ASSERT_EQUAL_MESSAGE(SOCK_LISTENING, sock_s.state, "sock_accept should maintain server socket state");
+    TEST_ASSERT_EQUAL_MESSAGE(0, sock_c.state, "sock_accept should maintain client state");
 }
 
 void test_sock_accept_unitialized_socket(void)
@@ -286,7 +310,7 @@ void test_sock_accept_null_client(void)
     // call accept with null client
     int res = sock_accept(&sock, NULL);
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_accept with null client return ok");
+    TEST_ASSERT_EQUAL_MESSAGE(1, res, "sock_accept with null client return ok");
 }
 
 void test_sock_accept_with_accept_error(void)
@@ -713,7 +737,8 @@ int main(void)
     UNIT_TEST(test_sock_listen_null_socket);
 
     // sock_accept tests
-    UNIT_TEST(test_sock_accept_ok);
+    UNIT_TEST(test_sock_accept_ok_client_found);
+    UNIT_TEST(test_sock_accept_ok_client_not_found);    
     UNIT_TEST(test_sock_accept_unitialized_socket);
     UNIT_TEST(test_sock_accept_without_listen);
     UNIT_TEST(test_sock_accept_null_client);
