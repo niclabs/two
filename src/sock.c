@@ -119,6 +119,9 @@ int sock_read(sock_t *sock, uint8_t *buf, size_t buf_len)
     // read from socket
     ssize_t bytes_read = recv(sock->socket, buf, buf_len, MSG_DONTWAIT);
     if (bytes_read < 0) {
+        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+            return 0;
+        }
         return -1;
     }
 

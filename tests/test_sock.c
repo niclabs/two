@@ -463,7 +463,6 @@ void test_sock_read_ok(void)
     recv_fake.custom_fake = recv_ok_fake;
     int res = sock_read(&sock, buf, 64);
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, select_fake.call_count, "select should not be called if timeout is 0");
     TEST_ASSERT_EQUAL_MESSAGE(12, res, "sock_read should return 12 bytes");
     TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", buf, "sock_read should write 'HELLO WORLD' to buf");
 }
@@ -484,8 +483,28 @@ void test_sock_read_ok_zero_bytes(void)
     recv_fake.custom_fake = recv_zero_bytes_fake;
     int res = sock_read(&sock, buf, 64);
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, select_fake.call_count, "select should not be called if timeout is 0");
     TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_read should return 0 bytes");
+}
+
+
+void test_sock_read_ok_zero_bytes_would_block(void)
+{
+    // initialize socket
+    sock_t sock;
+
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    uint8_t buf[64];
+    recv_fake.return_val = -1;
+    errno = EWOULDBLOCK;
+    int res = sock_read(&sock, buf, 64);
+
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_read should return 0 when socket would block");
 }
 
 
@@ -759,6 +778,7 @@ int main(void)
     UNIT_TEST(test_sock_read_null_socket);
     UNIT_TEST(test_sock_read_unconnected_socket);
     UNIT_TEST(test_sock_read_null_buffer);
+    UNIT_TEST(test_sock_read_ok_zero_bytes_would_block);
 
     // sock_write tests
     UNIT_TEST(test_sock_write_ok);
