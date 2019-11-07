@@ -105,6 +105,61 @@ net_return_code_t write_to_socket(net_client_t* p_client)
     return NET_OK;
 }
 
+/*
+ * Calls a client's default callback on a new connection.
+ */
+void on_new_client(net_client_t* p_client, callback_t default_callback)
+{
+    callback_t cb = default_callback.func(p_client->buf_in, p_client->buf_out, p_client->state);
+
+    // Replaces callback
+    p_client->cb = cb;
+}
+
+/*
+ * Reads data from a client's socket and executes it's callback.
+ */
+net_return_code_t on_new_data(net_client_t* p_client, unsigned int data_size)
+{
+    net_return_code_t rc = NET_OK;
+
+    // Reads from the socket into the client's buffers
+    DEBUG("Received data from client %i", i);
+    rc = read_from_socket(p_client, data_size);
+    
+    // The callback does stuff
+    callback_t cb = p_client->cb.func(p_client->buf_in, p_client->buf_out, p_client->state);
+
+    // Callback is replaced
+    p_client->cb = cb;
+
+    return rc;
+}
+
+/*
+ * Checks if a client needs to be disconnected.
+ * 
+ * If it is, the socket disconnects and the memory resets.
+ */
+net_return_code_t check_client_disconnect(net_client_t* p_client, size_t data_buffer_size, size_t client_state_size)
+{
+    net_return_code_t rc = NET_OK;
+
+    // If client should be disconnected
+    if (p_client->cb.func == NULL)
+    {
+        if (sock_destroy(p_client->socket) < 0)
+        {
+            rc = NET_SOCKET_ERROR;
+        }
+        DEBUG("Client disconnected");
+
+        reset_client(p_client, data_buffer_size, client_state_size);
+    }
+
+    return rc;
+}
+
 net_return_code_t net_server_loop(unsigned int port, callback_t default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size)
 {
     // Socket error return codes go here
@@ -156,26 +211,18 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
         {
             net_client_t* p_client = clients+i;
 
-            DEBUG("Writing data for client %i", i);
-            rc = write_to_socket(p_client);
+            // If the client is connected
+            if (p_client->cb.func != NULL) {
+                
+                unsigned int available_data = 0;
 
-            if (rc != NET_OK)
-                break;
+                if ((available_data=sock_poll(p_client->socket)) != 0)
+                {
+                    rc = on_new_data(p_client, available_data);
 
-            unsigned int available_data = 0;
-
-            // If the client is connected and has data
-            if (p_client->cb.func != NULL && (available_data=sock_poll(p_client->socket)) != 0)
-            {
-                // Reads from the socket into the client's buffers
-                DEBUG("Received data from client %i", i);
-                rc = read_from_socket(p_client, available_data);
-                if (rc != NET_OK)
-                    break;
-
-                // The callback does stuff
-                DEBUG("Executing callback");
-                callback_t cb = p_client->cb.func(p_client->buf_in, p_client->buf_out, p_client->state);
+                    if (rc != NET_OK)
+                        break;
+                }
 
                 // Writes to the socket from the client's buffers
                 DEBUG("Writing data for client %i", i);
@@ -183,24 +230,11 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
                 if (rc != NET_OK)
                     break;
 
-                // If client should be disconnected
-                if (cb.func == NULL)
-                {
-                    INFO("Disconnecting client from slot %i", i);
-                    sock_rc = sock_destroy(p_client->socket);
-                    if (sock_rc < 0)
-                    {
-                        ERROR("Error in destroying socket");
-                        rc = NET_SOCKET_ERROR;
-                        break;
-                    }
-                    INFO("Client disconnected");
-
-                    reset_client(p_client, data_buffer_size, client_state_size);
+                rc = check_client_disconnect(p_client, data_buffer_size, client_state_size);
+                if (rc != NET_OK) {
+                    break;
                 }
 
-                // Callback is replaced
-                p_client->cb = cb;
             }
             // If the client slot is available
             else
@@ -217,36 +251,13 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
                 // If one was accepted, set it's callback
                 if (sock_rc > 0)
                 {
-                    INFO("Client connected on slot %i", i);
+                    DEBUG("Client connected on slot %i", i);
+                    on_new_client(p_client, default_callback);
 
-                    // The default callback does stuff
-                    DEBUG("Executing callback");
-                    callback_t cb = default_callback.func(p_client->buf_in, p_client->buf_out, p_client->state);
-
-                    // Writes to the socket from the client's buffers
-                    DEBUG("Writing data for client %i", i);
-                    rc = write_to_socket(p_client);
-                    if (rc != NET_OK)
+                    rc = check_client_disconnect(p_client, data_buffer_size, client_state_size);
+                    if (rc != NET_OK) {
                         break;
-
-                    // If client should be disconnected
-                    if (cb.func == NULL)
-                    {
-                        INFO("Disconnecting client from slot %i", i);
-                        sock_rc = sock_destroy(p_client->socket);
-                        if (sock_rc < 0)
-                        {
-                            ERROR("Error in destroying socket");
-                            rc = NET_SOCKET_ERROR;
-                            break;
-                        }
-                        INFO("Client disconnected");
-
-                        reset_client(p_client, data_buffer_size, client_state_size);
                     }
-
-                    // Callback is replaced
-                    p_client->cb = cb;
                 }
             }
 
