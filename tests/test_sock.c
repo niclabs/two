@@ -578,6 +578,29 @@ void test_sock_write_ok(void)
     TEST_ASSERT_EQUAL_STRING_MESSAGE("HELLO WORLD", global_write_buffer, "sock_write should write 'HELLO WORLD' to socket");
 }
 
+void test_sock_write_would_block(void)
+{
+    // initialize socket
+    sock_t sock;
+
+    socket_fake.return_val = 123;
+    sock_create(&sock);
+
+    // set socket to connected state
+    connect_fake.return_val = 0;
+    sock_connect(&sock, "::1", 8888);
+
+    // write to socket
+    send_fake.return_val = -1;
+    errno = EWOULDBLOCK;
+
+    int res = sock_write(&sock, (uint8_t *)"HELLO WORLD", 12);
+
+
+    TEST_ASSERT_GREATER_THAN_MESSAGE(0, send_fake.call_count, "write should be called at least once");
+    TEST_ASSERT_EQUAL_MESSAGE(0, res, "sock_write should write 0 bytes if operation would block");
+}
+
 void test_sock_write_null_socket(void)
 {
     int res = sock_write(NULL,  (uint8_t *)"HELLO WORLD", 12);
@@ -782,6 +805,7 @@ int main(void)
 
     // sock_write tests
     UNIT_TEST(test_sock_write_ok);
+    UNIT_TEST(test_sock_write_would_block);
     UNIT_TEST(test_sock_write_null_socket);
     UNIT_TEST(test_sock_write_null_buffer);
     UNIT_TEST(test_sock_write_unconnected_socket);

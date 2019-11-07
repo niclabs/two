@@ -145,6 +145,9 @@ int sock_write(sock_t *sock, uint8_t *buf, size_t buf_len)
      */
     ssize_t bytes_written = send(sock->socket, buf, buf_len, MSG_DONTWAIT);
     if (bytes_written < 0) {
+        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+            return 0;
+        }
         return -1;
     }
 
