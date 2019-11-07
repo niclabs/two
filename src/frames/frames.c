@@ -198,25 +198,30 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_h
     frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
     frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
 
-    //TODO: Change this if for switch to implement callbacks in frames
-
-    if(frame_header->type == WINDOW_UPDATE_TYPE){
+    switch (frame_header->type)
+    {
+    case WINDOW_UPDATE_TYPE:
         frame_header->callback = read_window_update_payload;
-    }
-    if(frame_header->type == DATA_TYPE){
+        break;
+    case DATA_TYPE:
         frame_header->callback = read_data_payload;
-    }
-    if(frame_header->type == GOAWAY_TYPE){
+        break;
+    case GOAWAY_TYPE:
         frame_header->callback = read_goaway_payload;
-    }
-    if(frame_header->type == SETTINGS_TYPE){
+        break;
+    case SETTINGS_TYPE:
         frame_header->callback = read_settings_payload;
-    }
-    if(frame_header->type == CONTINUATION_TYPE){
+        break;
+    case CONTINUATION_TYPE:
         frame_header->callback = read_continuation_payload;
-    }
-    if(frame_header->type == HEADERS_TYPE){
+        break;
+    case HEADERS_TYPE:
         frame_header->callback = read_headers_payload;
+        break;
+    default:
+        ERROR("Frame type %d not found", frame_header->type);
+        return -1;
     }
+
     return 0;
 }
