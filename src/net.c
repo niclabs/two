@@ -253,6 +253,10 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
             if (*stop_flag)
                 break;
         }
+
+        if (rc == SocketError || rc == ReadError || rc == WriteError) {
+            break;
+        }
     }
 
     // For every client
