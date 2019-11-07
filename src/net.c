@@ -7,7 +7,7 @@
 /*
 * Per-client struct.
 */
-typedef struct {
+typedef struct net_client {
     uint8_t* buf_in_data;             // In buffer's memory
     uint8_t* buf_out_data;            // Out buffer's memory
     cbuf_t buf_in[1];                       // Circular buffer in
@@ -15,6 +15,7 @@ typedef struct {
     void* state;                            // The client's state
     sock_t socket;                         // The client's socket
     callback_t cb;                        // Next callback to execute
+    struct net_client * next;
 } net_client_t;
 
 /*
@@ -31,6 +32,8 @@ void reset_client(net_client_t* p_client, size_t data_buffer_size, size_t client
     memset(&p_client->socket, 0, sizeof(sock_t));
     p_client->cb.func = NULL;
     p_client->cb.debug_info = NULL;
+
+    p_client->next = NULL;
 
     return;
 }
@@ -140,29 +143,28 @@ net_return_code_t on_new_data(net_client_t* p_client, unsigned int data_size)
  * 
  * If it is, the socket disconnects and the memory resets.
  */
-net_return_code_t check_client_disconnect(net_client_t* p_client, size_t data_buffer_size, size_t client_state_size)
+net_return_code_t disconnect_client(net_client_t* p_client, size_t data_buffer_size, size_t client_state_size)
 {
     net_return_code_t rc = NET_OK;
 
     // If client should be disconnected
-    if (p_client->cb.func == NULL)
+    
+    if (sock_destroy(&p_client->socket) < 0)
     {
-        if (sock_destroy(&p_client->socket) < 0)
-        {
-            rc = NET_SOCKET_ERROR;
-        }
-        DEBUG("Client disconnected");
-
-        reset_client(p_client, data_buffer_size, client_state_size);
+        rc = NET_SOCKET_ERROR;
     }
+    DEBUG("Client disconnected");
+
+    reset_client(p_client, data_buffer_size, client_state_size);
 
     return rc;
 }
 
-net_return_code_t net_server_loop(unsigned int port, callback_t default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size)
+net_return_code_t net_server_loop(unsigned int port, callback_t default_callback, int *stop_flag, size_t data_buffer_size, size_t client_state_size)
 {
     // Socket error return codes go here
     int sock_rc = 0;
+
     INFO("Initializing server");
 
     // Allocation ofr memory for the clients
@@ -172,29 +174,30 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
     uint8_t states[NET_MAX_CLIENTS][client_state_size];
 
     // Client initialization
-    for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
-    {
-        net_client_t* p_client = clients+i;
+    for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++) {
+        net_client_t *p_client = clients + i;
 
         p_client->buf_in_data = buffers_in[i];
         p_client->buf_out_data = buffers_out[i];
         p_client->state = states[i];
 
         reset_client(p_client, data_buffer_size, client_state_size);
+
+        if (i + 1 != NET_MAX_CLIENTS) {
+            p_client->next = &clients[i + 1];
+        }
     }
 
     // Server socket setup
     sock_t sock_mem;
-    sock_t * server_socket = &sock_mem;
+    sock_t *server_socket = &sock_mem;
     sock_rc = sock_create(server_socket);
-    if (sock_rc != 0)
-    {
+    if (sock_rc != 0) {
         ERROR("Server socket couldn't be created");
         return NET_SOCKET_ERROR;
     }
     sock_rc = sock_listen(server_socket, port);
-    if (sock_rc != 0)
-    {
+    if (sock_rc != 0) {
         ERROR("Server socket couldn't be set to listen");
         return NET_SOCKET_ERROR;
     }
@@ -202,66 +205,90 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
     // Function return code
     net_return_code_t rc = NET_OK;
 
+    net_client_t *first_available = clients;
+    net_client_t *first_connected = NULL;
+
     // Main loop
-    while (!*stop_flag)
-    {
-        // For every client
-        for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
-        {
-            net_client_t* p_client = clients+i;
+    while (!*stop_flag) {
 
-            // If the client is connected
-            if (p_client->cb.func != NULL) {
-                
-                unsigned int available_data = 0;
+        net_client_t *prev_client = first_connected;
+        net_client_t *curr_client = prev_client;
 
-                if ((available_data=sock_poll(&p_client->socket)) != 0)
-                {
-                    rc = on_new_data(p_client, available_data);
+        while (curr_client != NULL) {
 
-                    if (rc != NET_OK)
-                        break;
-                }
+            unsigned int available_data = 0;
 
-                // Writes to the socket from the client's buffers
-                DEBUG("Writing data for client %i", i);
-                rc = write_to_socket(p_client);
-                if (rc != NET_OK)
+            if ((available_data = sock_poll(&curr_client->socket)) != 0) {
+                rc = on_new_data(curr_client, available_data);
+
+                if (rc != NET_OK) {
                     break;
+                }
+            }
 
-                rc = check_client_disconnect(p_client, data_buffer_size, client_state_size);
+            // Writes to the socket from the client's buffers
+            DEBUG("Writing data for client %i", i);
+            rc = write_to_socket(curr_client);
+            if (rc != NET_OK) {
+                break;
+            }
+
+            // If client needs to be disconnected
+            if (curr_client->cb.func == NULL) {
+
+                net_client_t *next = curr_client->next;
+
+                prev_client->next = next;
+
+                rc = disconnect_client(curr_client, data_buffer_size, client_state_size);
                 if (rc != NET_OK) {
                     break;
                 }
 
+                curr_client->next = first_available;
+                first_available = curr_client;
+
+                curr_client = next;
+                continue;
             }
-            // If the client slot is available
-            else
-            {
-                // Accept any clients left waiting by the OS
-                sock_rc = sock_accept(server_socket, &p_client->socket);
-                if (sock_rc < 0)
-                {
-                    ERROR("Error in accepting a client");
-                    rc = NET_SOCKET_ERROR;
-                    break;
-                }
 
-                // If one was accepted, set it's callback
-                if (sock_rc > 0)
-                {
-                    DEBUG("Client connected on slot %i", i);
-                    on_new_client(p_client, default_callback);
+            // Next iteration
+            prev_client = curr_client;
+            curr_client = curr_client->next;
+        }
 
-                    rc = check_client_disconnect(p_client, data_buffer_size, client_state_size);
+        if (first_available != NULL) {
+
+            // Accept any clients left waiting by the OS
+            sock_rc = sock_accept(server_socket, &first_available->socket);
+            if (sock_rc < 0) {
+                ERROR("Error in accepting a client");
+                rc = NET_SOCKET_ERROR;
+                break;
+            }
+
+            // If one was accepted, set it's callback
+            if (sock_rc > 0) {
+                DEBUG("Client connected on slot %i", i);
+
+                on_new_client(first_available, default_callback);
+
+                // If client needs to be disconnected
+                if (first_available->cb.func == NULL) {
+                    rc = disconnect_client(first_available, data_buffer_size, client_state_size);
                     if (rc != NET_OK) {
                         break;
                     }
+                    continue;
                 }
-            }
 
-            if (*stop_flag)
-                break;
+                net_client_t *next = first_available->next;
+
+                first_available->next = first_connected;
+
+                first_connected = first_available;
+                first_available = next;
+            }
         }
 
         if (rc == NET_SOCKET_ERROR || rc == NET_READ_ERROR || rc == NET_WRITE_ERROR) {
@@ -270,16 +297,13 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
     }
 
     // For every client
-    for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
-    {
-        net_client_t* p_client = clients+i;
+    for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++) {
+        net_client_t *p_client = clients + i;
 
-        if (p_client->cb.func != NULL)
-        {
+        if (p_client->cb.func != NULL) {
             INFO("Disconnecting client from slot %i", i);
             sock_rc = sock_destroy(&p_client->socket);
-            if (sock_rc < 0)
-            {
+            if (sock_rc < 0) {
                 ERROR("Error in destroying socket");
                 rc = NET_SOCKET_ERROR;
             }
