@@ -13,7 +13,7 @@ typedef struct {
     cbuf_t buf_in[1];                       // Circular buffer in
     cbuf_t buf_out[1];                      // Circular buffer out
     void* state;                            // The client's state
-    sock_t* socket;                         // The client's socket
+    sock_t socket;                         // The client's socket
     callback_t cb;                        // Next callback to execute
 } net_client_t;
 
@@ -28,8 +28,7 @@ void reset_client(net_client_t* p_client, size_t data_buffer_size, size_t client
     cbuf_init(p_client->buf_out, p_client->buf_out_data, data_buffer_size);
 
     memset(p_client->state, 0, client_state_size);
-
-    p_client->socket = NULL;
+    memset(&p_client->socket, 0, sizeof(sock_t));
     p_client->cb.func = NULL;
     p_client->cb.debug_info = NULL;
 
@@ -50,7 +49,7 @@ net_return_code_t read_from_socket(net_client_t* p_client, unsigned int availabl
         uint8_t buf_aux[readable_data];
 
         // Data is read
-        int read_rc = sock_read(p_client->socket, buf_aux, readable_data);
+        int read_rc = sock_read(&p_client->socket, buf_aux, readable_data);
         if (read_rc < 0)
         {
             ERROR("Error in reading from socket");
@@ -83,7 +82,7 @@ net_return_code_t write_to_socket(net_client_t* p_client)
 
         cbuf_peek(p_client->buf_out, buf_aux, writable_data);
 
-        int write_rc = sock_write(p_client->socket, buf_aux, writable_data);
+        int write_rc = sock_write(&p_client->socket, buf_aux, writable_data);
         if (write_rc < 0)
         {
             ERROR("Error in writing to socket");
@@ -148,7 +147,7 @@ net_return_code_t check_client_disconnect(net_client_t* p_client, size_t data_bu
     // If client should be disconnected
     if (p_client->cb.func == NULL)
     {
-        if (sock_destroy(p_client->socket) < 0)
+        if (sock_destroy(&p_client->socket) < 0)
         {
             rc = NET_SOCKET_ERROR;
         }
@@ -216,7 +215,7 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
                 
                 unsigned int available_data = 0;
 
-                if ((available_data=sock_poll(p_client->socket)) != 0)
+                if ((available_data=sock_poll(&p_client->socket)) != 0)
                 {
                     rc = on_new_data(p_client, available_data);
 
@@ -240,7 +239,7 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
             else
             {
                 // Accept any clients left waiting by the OS
-                sock_rc = sock_accept(server_socket, p_client->socket);
+                sock_rc = sock_accept(server_socket, &p_client->socket);
                 if (sock_rc < 0)
                 {
                     ERROR("Error in accepting a client");
@@ -278,7 +277,7 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
         if (p_client->cb.func != NULL)
         {
             INFO("Disconnecting client from slot %i", i);
-            sock_rc = sock_destroy(p_client->socket);
+            sock_rc = sock_destroy(&p_client->socket);
             if (sock_rc < 0)
             {
                 ERROR("Error in destroying socket");
