@@ -20,70 +20,70 @@
 
 int sock_create(sock_t *sock)
 {
-	// Fail if wrong input given
-	assert(sock != NULL);
-    
+    // Fail if wrong input given
+    assert(sock != NULL);
+
     // Clean memory
     memset(sock, 0, sizeof(*sock));
 
-	sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
-	if (sock->socket < 0) {
-		sock->state = SOCK_CLOSED;
-		return -1;
-	}
+    sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
+    if (sock->socket < 0) {
+        sock->state = SOCK_CLOSED;
+        return -1;
+    }
 
-	// Socket options
-	int on = 1;
+    // Socket options
+    int on = 1;
 
-	// Allow socket descriptor to be reuseable
-	if (setsockopt(sock->socket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) < 0) {
-		close(sock->socket);
-		sock->state = SOCK_CLOSED;
+    // Allow socket descriptor to be reuseable
+    if (setsockopt(sock->socket, SOL_SOCKET,  SO_REUSEADDR, (char *)&on, sizeof(on)) < 0) {
+        close(sock->socket);
+        sock->state = SOCK_CLOSED;
 
-		return -1;
-	}
+        return -1;
+    }
 
-	// Set socket and child sockets to be non blocking
-	if (ioctl(sock->socket, FIONBIO, (char *)&on) < 0) {
-		close(sock->socket);
-		sock->state = SOCK_CLOSED;
+    // Set socket and child sockets to be non blocking
+    if (ioctl(sock->socket, FIONBIO, (char *)&on) < 0) {
+        close(sock->socket);
+        sock->state = SOCK_CLOSED;
 
-		return -1;
-	}
+        return -1;
+    }
 
-	sock->state = SOCK_OPENED;
-	return 0;
+    sock->state = SOCK_OPENED;
+    return 0;
 }
 
 int sock_destroy(sock_t *sock)
 {
-	if (sock == NULL || sock->state != SOCK_CONNECTED) {
-		errno = EINVAL;
-		return -1;
-	}
+    if (sock == NULL || sock->state != SOCK_CONNECTED) {
+        errno = EINVAL;
+        return -1;
+    }
 
-	if (sock->state == SOCK_CLOSED) {
-		errno = EBADF;
-		return -1;
-	}
+    if (sock->state == SOCK_CLOSED) {
+        errno = EBADF;
+        return -1;
+    }
 
-	struct linger sl;
-	sl.l_onoff = 1;  /* non-zero value enables linger option in kernel */
-	sl.l_linger = 0; /* timeout interval in seconds */
+    struct linger sl;
+    sl.l_onoff = 1;     /* non-zero value enables linger option in kernel */
+    sl.l_linger = 0;    /* timeout interval in seconds */
 
-	// Configure socket to wait for data to send before closing
-	setsockopt(sock->socket, SOL_SOCKET, SO_LINGER, &sl, sizeof(sl));
+    // Configure socket to wait for data to send before closing
+    setsockopt(sock->socket, SOL_SOCKET, SO_LINGER, &sl, sizeof(sl));
 
-	if (close(sock->socket) < 0) {
-		return -1;
-	}
+    if (close(sock->socket) < 0) {
+        return -1;
+    }
 
-	sock->socket = -1;
-	sock->state = SOCK_CLOSED;
-	return 0;
+    sock->socket = -1;
+    sock->state = SOCK_CLOSED;
+    return 0;
 }
 
-unsigned int sock_poll(sock_t * sock)
+unsigned int sock_poll(sock_t *sock)
 {
     if (sock == NULL || (sock->state != SOCK_CONNECTED)) {
         errno = EINVAL;
@@ -92,7 +92,7 @@ unsigned int sock_poll(sock_t * sock)
 
     // peek socket
     ssize_t bytes_available;
-    
+
     int rc = ioctl(sock->socket, FIONREAD, &bytes_available);
 
     //bytes_available = recv(sock->socket, NULL, 0, MSG_DONTWAIT | MSG_PEEK | MSG_TRUNC);
