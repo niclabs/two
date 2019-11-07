@@ -5,23 +5,23 @@
 
 
 /*
-* Per-client struct.
-*/
+ * Per-client struct.
+ */
 typedef struct net_client {
-    uint8_t* buf_in_data;             // In buffer's memory
-    uint8_t* buf_out_data;            // Out buffer's memory
-    cbuf_t buf_in[1];                       // Circular buffer in
-    cbuf_t buf_out[1];                      // Circular buffer out
-    void* state;                            // The client's state
-    sock_t socket;                         // The client's socket
-    callback_t cb;                        // Next callback to execute
-    struct net_client * next;
+    uint8_t *buf_in_data;               // In buffer's memory
+    uint8_t *buf_out_data;              // Out buffer's memory
+    cbuf_t buf_in[1];                   // Circular buffer in
+    cbuf_t buf_out[1];                  // Circular buffer out
+    void *state;                        // The client's state
+    sock_t socket;                      // The client's socket
+    callback_t cb;                      // Next callback to execute
+    struct net_client *next;
 } net_client_t;
 
 /*
-* Resets a client to it's default values.
-*/
-void reset_client(net_client_t* p_client, size_t data_buffer_size, size_t client_state_size)
+ * Resets a client to it's default values.
+ */
+void reset_client(net_client_t *p_client, size_t data_buffer_size, size_t client_state_size)
 {
     memset(p_client->buf_in_data, 0, data_buffer_size);
     cbuf_init(p_client->buf_in, p_client->buf_in_data, data_buffer_size);
@@ -42,19 +42,17 @@ void reset_client(net_client_t* p_client, size_t data_buffer_size, size_t client
  * Reads from a client's socket into it's in circular buffer,
  * if data is available.
  */
-net_return_code_t read_from_socket(net_client_t* p_client, unsigned int available_data)
+net_return_code_t read_from_socket(net_client_t *p_client, unsigned int available_data)
 {
-    unsigned int available_in_space = cbuf_maxlen(p_client->buf_in)-cbuf_len(p_client->buf_in);
+    unsigned int available_in_space = cbuf_maxlen(p_client->buf_in) - cbuf_len(p_client->buf_in);
     unsigned int readable_data = (available_data <= available_in_space) ? available_data : available_in_space;
 
-    if (readable_data > 0)
-    {
+    if (readable_data > 0) {
         uint8_t buf_aux[readable_data];
 
         // Data is read
         int read_rc = sock_read(&p_client->socket, buf_aux, readable_data);
-        if (read_rc < 0)
-        {
+        if (read_rc < 0) {
             ERROR("Error in reading from socket");
             return NET_READ_ERROR;
         }
@@ -62,8 +60,7 @@ net_return_code_t read_from_socket(net_client_t* p_client, unsigned int availabl
 
         cbuf_push(p_client->buf_in, buf_aux, read_rc);
     }
-    else
-    {
+    else {
         WARN("Buffer in is full for client");
     }
 
@@ -74,30 +71,26 @@ net_return_code_t read_from_socket(net_client_t* p_client, unsigned int availabl
  * Writes into a client's socket from it's out circular buffer,
  * if data is available.
  */
-net_return_code_t write_to_socket(net_client_t* p_client)
+net_return_code_t write_to_socket(net_client_t *p_client)
 {
     unsigned int writable_data = cbuf_len(p_client->buf_out);
 
     // Data is written if available
-    if (writable_data > 0)
-    {
+    if (writable_data > 0) {
         uint8_t buf_aux[writable_data];
 
         cbuf_peek(p_client->buf_out, buf_aux, writable_data);
 
         int write_rc = sock_write(&p_client->socket, buf_aux, writable_data);
-        if (write_rc < 0)
-        {
+        if (write_rc < 0) {
             ERROR("Error in writing to socket");
             return NET_WRITE_ERROR;
         }
 
-        if ((unsigned int)write_rc < writable_data)
-        {
+        if ((unsigned int)write_rc < writable_data) {
             WARN("Could only write %i out of %i bytes into socket", write_rc, writable_data);
         }
-        else
-        {
+        else {
             DEBUG("Wrote %i bytes into socket", write_rc);
         }
 
@@ -110,7 +103,7 @@ net_return_code_t write_to_socket(net_client_t* p_client)
 /*
  * Calls a client's default callback on a new connection.
  */
-void on_new_client(net_client_t* p_client, callback_t default_callback)
+void on_new_client(net_client_t *p_client, callback_t default_callback)
 {
     callback_t cb = default_callback.func(p_client->buf_in, p_client->buf_out, p_client->state);
 
@@ -121,14 +114,14 @@ void on_new_client(net_client_t* p_client, callback_t default_callback)
 /*
  * Reads data from a client's socket and executes it's callback.
  */
-net_return_code_t on_new_data(net_client_t* p_client, unsigned int data_size)
+net_return_code_t on_new_data(net_client_t *p_client, unsigned int data_size)
 {
     net_return_code_t rc = NET_OK;
 
     // Reads from the socket into the client's buffers
     DEBUG("Received data from client %i", i);
     rc = read_from_socket(p_client, data_size);
-    
+
     // The callback does stuff
     callback_t cb = p_client->cb.func(p_client->buf_in, p_client->buf_out, p_client->state);
 
@@ -140,17 +133,16 @@ net_return_code_t on_new_data(net_client_t* p_client, unsigned int data_size)
 
 /*
  * Checks if a client needs to be disconnected.
- * 
+ *
  * If it is, the socket disconnects and the memory resets.
  */
-net_return_code_t disconnect_client(net_client_t* p_client, size_t data_buffer_size, size_t client_state_size)
+net_return_code_t disconnect_client(net_client_t *p_client, size_t data_buffer_size, size_t client_state_size)
 {
     net_return_code_t rc = NET_OK;
 
     // If client should be disconnected
-    
-    if (sock_destroy(&p_client->socket) < 0)
-    {
+
+    if (sock_destroy(&p_client->socket) < 0) {
         rc = NET_SOCKET_ERROR;
     }
     DEBUG("Client disconnected");
