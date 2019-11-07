@@ -337,9 +337,9 @@ void test_net_server_loop_connect(void)
     sock_poll_fake.custom_fake = sock_poll_custom_fake_connect_once;
     sock_read_fake.custom_fake = sock_read_custon_fake_connect_once;
 
-    NetReturnCode rc = net_server_loop(port, default_callback, &fake_stop_flag, data_buffer_size, client_state_size);
+    net_return_code_t rc = net_server_loop(port, default_callback, &fake_stop_flag, data_buffer_size, client_state_size);
 
-    TEST_ASSERT_EQUAL(Ok, rc);
+    TEST_ASSERT_EQUAL(NET_OK, rc);
 
     TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_listen_fake.call_count);
@@ -372,9 +372,9 @@ void test_net_server_loop_connect_twice(void)
 
 
 
-    NetReturnCode rc = net_server_loop(port, default_callback, &fake_stop_flag, data_buffer_size, client_state_size);
+    net_return_code_t rc = net_server_loop(port, default_callback, &fake_stop_flag, data_buffer_size, client_state_size);
 
-    TEST_ASSERT_EQUAL(Ok, rc);
+    TEST_ASSERT_EQUAL(NET_OK, rc);
 
     TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_listen_fake.call_count);

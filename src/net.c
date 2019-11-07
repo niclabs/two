@@ -15,12 +15,12 @@ typedef struct {
     void* state;                            // The client's state
     sock_t* socket;                         // The client's socket
     callback_t cb;                        // Next callback to execute
-} Client;
+} net_client_t;
 
 /*
 * Resets a client to it's default values.
 */
-void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state_size)
+void reset_client(net_client_t* p_client, size_t data_buffer_size, size_t client_state_size)
 {
     memset(p_client->buf_in_data, 0, data_buffer_size);
     cbuf_init(p_client->buf_in, p_client->buf_in_data, data_buffer_size);
@@ -40,7 +40,7 @@ void reset_client(Client* p_client, size_t data_buffer_size, size_t client_state
  * Reads from a client's socket into it's in circular buffer,
  * if data is available.
  */
-NetReturnCode read_from_socket(Client* p_client, unsigned int available_data)
+net_return_code_t read_from_socket(net_client_t* p_client, unsigned int available_data)
 {
     unsigned int available_in_space = cbuf_maxlen(p_client->buf_in)-cbuf_len(p_client->buf_in);
     unsigned int readable_data = (available_data <= available_in_space) ? available_data : available_in_space;
@@ -54,7 +54,7 @@ NetReturnCode read_from_socket(Client* p_client, unsigned int available_data)
         if (read_rc < 0)
         {
             ERROR("Error in reading from socket");
-            return ReadError;
+            return NET_READ_ERROR;
         }
         DEBUG("Read %i bytes from socket", read_rc);
 
@@ -65,14 +65,14 @@ NetReturnCode read_from_socket(Client* p_client, unsigned int available_data)
         WARN("Buffer in is full for client");
     }
 
-    return Ok;
+    return NET_OK;
 }
 
 /*
  * Writes into a client's socket from it's out circular buffer,
  * if data is available.
  */
-NetReturnCode write_to_socket(Client* p_client)
+net_return_code_t write_to_socket(net_client_t* p_client)
 {
     unsigned int writable_data = cbuf_len(p_client->buf_out);
 
@@ -87,7 +87,7 @@ NetReturnCode write_to_socket(Client* p_client)
         if (write_rc < 0)
         {
             ERROR("Error in writing to socket");
-            return WriteError;
+            return NET_WRITE_ERROR;
         }
 
         if ((unsigned int)write_rc < writable_data)
@@ -102,17 +102,17 @@ NetReturnCode write_to_socket(Client* p_client)
         cbuf_pop(p_client->buf_out, buf_aux, write_rc);
     }
 
-    return Ok;
+    return NET_OK;
 }
 
-NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size)
+net_return_code_t net_server_loop(unsigned int port, callback_t default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size)
 {
     // Socket error return codes go here
     int sock_rc = 0;
     INFO("Initializing server");
 
     // Allocation ofr memory for the clients
-    Client clients[NET_MAX_CLIENTS];
+    net_client_t clients[NET_MAX_CLIENTS];
     uint8_t buffers_in[NET_MAX_CLIENTS][data_buffer_size];
     uint8_t buffers_out[NET_MAX_CLIENTS][data_buffer_size];
     uint8_t states[NET_MAX_CLIENTS][client_state_size];
@@ -120,7 +120,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
     // Client initialization
     for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
     {
-        Client* p_client = clients+i;
+        net_client_t* p_client = clients+i;
 
         p_client->buf_in_data = buffers_in[i];
         p_client->buf_out_data = buffers_out[i];
@@ -136,17 +136,17 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
     if (sock_rc != 0)
     {
         ERROR("Server socket couldn't be created");
-        return SocketError;
+        return NET_SOCKET_ERROR;
     }
     sock_rc = sock_listen(server_socket, port);
     if (sock_rc != 0)
     {
         ERROR("Server socket couldn't be set to listen");
-        return SocketError;
+        return NET_SOCKET_ERROR;
     }
 
     // Function return code
-    NetReturnCode rc = Ok;
+    net_return_code_t rc = NET_OK;
 
     // Main loop
     while (!*stop_flag)
@@ -154,12 +154,12 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
         // For every client
         for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
         {
-            Client* p_client = clients+i;
+            net_client_t* p_client = clients+i;
 
             DEBUG("Writing data for client %i", i);
             rc = write_to_socket(p_client);
 
-            if (rc != Ok)
+            if (rc != NET_OK)
                 break;
 
             unsigned int available_data = 0;
@@ -170,7 +170,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 // Reads from the socket into the client's buffers
                 DEBUG("Received data from client %i", i);
                 rc = read_from_socket(p_client, available_data);
-                if (rc != Ok)
+                if (rc != NET_OK)
                     break;
 
                 // The callback does stuff
@@ -180,7 +180,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 // Writes to the socket from the client's buffers
                 DEBUG("Writing data for client %i", i);
                 rc = write_to_socket(p_client);
-                if (rc != Ok)
+                if (rc != NET_OK)
                     break;
 
                 // If client should be disconnected
@@ -191,7 +191,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                     if (sock_rc < 0)
                     {
                         ERROR("Error in destroying socket");
-                        rc = SocketError;
+                        rc = NET_SOCKET_ERROR;
                         break;
                     }
                     INFO("Client disconnected");
@@ -210,7 +210,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 if (sock_rc < 0)
                 {
                     ERROR("Error in accepting a client");
-                    rc = SocketError;
+                    rc = NET_SOCKET_ERROR;
                     break;
                 }
 
@@ -226,7 +226,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                     // Writes to the socket from the client's buffers
                     DEBUG("Writing data for client %i", i);
                     rc = write_to_socket(p_client);
-                    if (rc != Ok)
+                    if (rc != NET_OK)
                         break;
 
                     // If client should be disconnected
@@ -237,7 +237,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                         if (sock_rc < 0)
                         {
                             ERROR("Error in destroying socket");
-                            rc = SocketError;
+                            rc = NET_SOCKET_ERROR;
                             break;
                         }
                         INFO("Client disconnected");
@@ -254,7 +254,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
                 break;
         }
 
-        if (rc == SocketError || rc == ReadError || rc == WriteError) {
+        if (rc == NET_SOCKET_ERROR || rc == NET_READ_ERROR || rc == NET_WRITE_ERROR) {
             break;
         }
     }
@@ -262,7 +262,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
     // For every client
     for (unsigned int i = 0; i < NET_MAX_CLIENTS; i++)
     {
-        Client* p_client = clients+i;
+        net_client_t* p_client = clients+i;
 
         if (p_client->cb.func != NULL)
         {
@@ -271,7 +271,7 @@ NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, in
             if (sock_rc < 0)
             {
                 ERROR("Error in destroying socket");
-                rc = SocketError;
+                rc = NET_SOCKET_ERROR;
             }
             INFO("Client disconnected");
 

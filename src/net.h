@@ -17,11 +17,11 @@
 */
 typedef enum
 {
-    Ok = 0,
-    SocketError = -1,
-    ReadError = -2,
-    WriteError = -3,
-} NetReturnCode;
+    NET_OK = 0,
+    NET_SOCKET_ERROR = -1,
+    NET_READ_ERROR = -2,
+    NET_WRITE_ERROR = -3,
+} net_return_code_t;
 
 /*
 * Main loop of a server.
@@ -32,6 +32,6 @@ typedef enum
 * data_buffer_size      Size in bytes for the client's in and out buffers
 * client_state_size     Size in bytes to reserve for the client's state.
 */
-NetReturnCode net_server_loop(unsigned int port, callback_t default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size);
+net_return_code_t net_server_loop(unsigned int port, callback_t default_callback, int* stop_flag, size_t data_buffer_size, size_t client_state_size);
 
 #endif
