@@ -38,6 +38,7 @@ int setting_to_bytes(settings_pair_t *setting, uint8_t *bytes)
  */
 int settings_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_t *byte_array)
 {
+    (void)frame_header; //patch to avoid warning of unused variables
     settings_payload_t *settings_payload = (settings_payload_t*)payload;
     uint32_t count = settings_payload->count;
     for (uint32_t i = 0; i < count; i++) {
