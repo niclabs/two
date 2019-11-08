@@ -1,6 +1,7 @@
-#include "http2/http2.h"
-#include "logging.h"
 #include <string.h>
+
+#include "logging.h"
+#include "http2/http2.h"
 #include "http2/check.h"
 #include "http2/send.h"
 #include "http2/utils.h"
