@@ -11,8 +11,8 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, sock_create, sock_t *);
 FAKE_VALUE_FUNC(int, sock_destroy, sock_t *);
 FAKE_VALUE_FUNC(uint, sock_poll, sock_t *);
-FAKE_VALUE_FUNC(int, sock_read, sock_t *, uint8_t *, unsigned int);
-FAKE_VALUE_FUNC(int, sock_write, sock_t *, uint8_t *, unsigned int);
+FAKE_VALUE_FUNC(int, sock_read, sock_t *, uint8_t *, size_t);
+FAKE_VALUE_FUNC(int, sock_write, sock_t *, uint8_t *, size_t);
 FAKE_VALUE_FUNC(int, sock_listen, sock_t *, uint16_t);
 FAKE_VALUE_FUNC(int, sock_accept, sock_t *, sock_t *);
 FAKE_VOID_FUNC(cbuf_init, cbuf_t *, void *, int);
@@ -211,7 +211,7 @@ unsigned int sock_poll_custom_fake_connect_once(sock_t *socket)
     return 13;
 }
 
-int sock_read_custon_fake_connect_once(sock_t *socket, uint8_t *buffer, unsigned int buffer_length)
+int sock_read_custon_fake_connect_once(sock_t *socket, uint8_t *buffer, size_t buffer_length)
 {
     const char *hello_world = "Hello World!";
 
@@ -267,7 +267,7 @@ unsigned int sock_poll_custom_fake_connect_twice(sock_t *socket)
     return 0;
 }
 
-int sock_read_custon_fake_connect_twice(sock_t *socket, uint8_t *buffer, unsigned int buffer_length)
+int sock_read_custon_fake_connect_twice(sock_t *socket, uint8_t *buffer, size_t buffer_length)
 {
     const char *hello = "Hello ";
     const char *world = "World!";
