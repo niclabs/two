@@ -120,3 +120,4 @@ two
 # Temporary files
 *.log
 *.pid
+compile_commands.json
