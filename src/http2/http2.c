@@ -55,23 +55,23 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
         callback_t ret = { http2_server_init_connection, NULL };
         return ret;
     }
-    int rc;
-    uint8_t preface_buff[25];
-    char *preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
-    rc = cbuf_pop(buf_in, preface_buff, 24);
-    if (rc != 24) {
-        DEBUG("Error during cbuf_pop operation");
-        return null_callback();
-    }
-    preface_buff[24] = '\0';
+
+    // Cast h2states from state
     h2states_t *h2s = (h2states_t *)state;
-    if (strcmp(preface, (char *)preface_buff) != 0) {
-        ERROR("Error in preface received");
+
+    // Get preface from input buffer
+    char preface[25];
+    cbuf_pop(buf_in, preface, 24);
+
+    // Check preface
+    if (strncmp(preface, "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", 24) != 0) {
+        ERROR("Bad preface (%s) received from client", preface);
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
         return null_callback();
     }
-    // send connection settings
-    rc = init_variables_h2s(h2s, 1);
+
+    // Initialize http2 state
+    init_variables_h2s(h2s, 1);
     callback_t ret_null = { NULL, NULL };
 
     // TODO: http2_server_init never sends settings
