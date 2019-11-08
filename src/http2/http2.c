@@ -73,6 +73,10 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
     // send connection settings
     rc = init_variables_h2s(h2s, 1);
     callback_t ret_null = { NULL, NULL };
+
+    // TODO: h2_server_init_connection never sends settings
+    // and it does not go to next state
+
     return ret_null;
 }
 
