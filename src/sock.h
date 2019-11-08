@@ -6,6 +6,7 @@
 #ifndef SOCK_H
 #define SOCK_H
 
+#include <stdlib.h>
 #include <stdint.h>
 
 #ifdef WITH_CONTIKI
