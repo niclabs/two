@@ -9,7 +9,6 @@
 #include "http.h"
 
 
-callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
 callback_t receive_payload_wait_settings_ack(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
@@ -49,10 +48,10 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
     return 0;
 }
 
-callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
+callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 {
     if (cbuf_len(buf_in) < 24) {
-        callback_t ret = { h2_server_init_connection, NULL };
+        callback_t ret = { http2_server_init_connection, NULL };
         return ret;
     }
     int rc;
@@ -74,7 +73,7 @@ callback_t h2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *stat
     rc = init_variables_h2s(h2s, 1);
     callback_t ret_null = { NULL, NULL };
 
-    // TODO: h2_server_init_connection never sends settings
+    // TODO: http2_server_init never sends settings
     // and it does not go to next state
 
     return ret_null;

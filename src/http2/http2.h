@@ -11,5 +11,5 @@
 #ifndef HTTP2_V2_H
 #define HTTP2_V2_H
 
-callback_t h2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
+callback_t http2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
 #endif

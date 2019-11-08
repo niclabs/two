@@ -18,7 +18,7 @@
 
 int two_server_start(unsigned int port)
 {
-    callback_t d_c = {&h2_server_init_connection, ""};
+    callback_t d_c = {&http2_server_init_connection, ""};
     int stop_flag = 0;
     size_t data_buffer_size = 1024*4;
     size_t client_state_size = sizeof(h2states_t);
