@@ -1,6 +1,5 @@
-
-#ifndef DOS_H
-#define DOS_H
+#ifndef TWO_H
+#define TWO_H
 
 #include <stdint.h>
 
@@ -38,4 +37,4 @@ int two_server_start(unsigned int port);
 int two_register_resource(char *method, char *path, http_resource_handler_t handler);
 
 
-#endif /* DOS_H */
+#endif /* TWO_H */

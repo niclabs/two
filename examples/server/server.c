@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-#include "dos.h"
+#include "two.h"
 #include "logging.h"
 
 
