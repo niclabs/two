@@ -18,13 +18,20 @@
  * queue of pending connections for sockfd may grow. */
 #define SOCK_LISTEN_BACKLOG 1
 
-int sock_create(sock_t *sock)
-{
+int sock_init(sock_t * sock) {
     // Fail if wrong input given
     assert(sock != NULL);
 
     // Clean memory
-    memset(sock, 0, sizeof(*sock));
+    memset(sock, 0, sizeof(sock_t));
+
+    return 0;
+}
+
+int sock_create(sock_t *sock)
+{
+    // Initialize socket
+    sock_init(sock);
 
     sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
     if (sock->socket < 0) {

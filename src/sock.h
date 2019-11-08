@@ -52,6 +52,17 @@ typedef struct {
 #endif
 } sock_t;
 
+
+/**
+ * Initialize socket memory before using. This function is already called by sock_create
+ * but it is recommended to be called before for client socket given to sock_accept()
+ *
+ * @param sock pointer to socket data structure (defined by the implementation)
+ *
+ * @return 0 if socket was initialized correctly
+ */
+int sock_init(sock_t * sock);
+
 /**
  * Initialize a new socket to act as either a server or a client
  * 
@@ -115,7 +126,7 @@ int sock_read(sock_t * sock, uint8_t * buf, size_t buf_len);
 int sock_write(sock_t * sock, uint8_t * buf, size_t buf_len);
 
 /**
- * Configure provided socket to act as a server in the specified port.
+ * Open and configure provided socket to act as a server in the specified port.
  * 
  * @param   server  pointer to socket data structure (defined by the implementation)
  * @param   port    port to listen for connections

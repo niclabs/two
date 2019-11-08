@@ -151,9 +151,12 @@ void test_sock_create_fail_to_create_socket(void)
  * sock_listen tests
  *************************************************************************/
 
-void test_sock_listen_unitialized_socket(void)
+void test_sock_listen_unopened_socket(void)
 {
     sock_t sock;
+    
+    // We need to initialize the sock memory to ensure that correct initial values are used
+    sock_init(&sock);
 
     listen_fake.return_val = -1;
     int res = sock_listen(&sock, 8888);
@@ -273,6 +276,9 @@ void test_sock_accept_unitialized_socket(void)
 {
     sock_t sock;
 
+    // We need to initialize the sock memory to ensure that correct initial values are used
+    sock_init(&sock);
+
     // call the function with unitialized sock
     int res = sock_accept(&sock, NULL);
 
@@ -368,9 +374,12 @@ void test_sock_connect_null_client(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(0, errno, "sock_connect should set errno on error");
 }
 
-void test_sock_connect_unitialized_client(void)
+void test_sock_connect_unopened_client(void)
 {
     sock_t sock;
+
+    // We need to initialize the sock memory to ensure that correct initial values are used
+    sock_init(&sock);
 
     // call the function with uninitialized client
     int res = sock_connect(&sock, "::1", 0);
@@ -773,7 +782,7 @@ int main(void)
 
     // sock_listen tests
     UNIT_TEST(test_sock_listen_ok);
-    UNIT_TEST(test_sock_listen_unitialized_socket);
+    UNIT_TEST(test_sock_listen_unopened_socket);
     UNIT_TEST(test_sock_listen_error_in_bind);
     UNIT_TEST(test_sock_listen_error_in_listen);
     UNIT_TEST(test_sock_listen_null_socket);
@@ -789,7 +798,7 @@ int main(void)
     // sock_connect tests
     UNIT_TEST(test_sock_connect_ok);
     UNIT_TEST(test_sock_connect_null_client);
-    UNIT_TEST(test_sock_connect_unitialized_client);
+    UNIT_TEST(test_sock_connect_unopened_client);
     UNIT_TEST(test_sock_connect_null_address);
     UNIT_TEST(test_sock_connect_ipv4_address);
     UNIT_TEST(test_sock_connect_bad_address);
