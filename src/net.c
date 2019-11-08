@@ -119,7 +119,7 @@ net_return_code_t on_new_data(net_client_t *p_client, unsigned int data_size)
     net_return_code_t rc = NET_OK;
 
     // Reads from the socket into the client's buffers
-    DEBUG("Received data from client %i", i);
+    DEBUG("Received data from client");
     rc = read_from_socket(p_client, data_size);
 
     // The callback does stuff
@@ -219,7 +219,7 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
             }
 
             // Writes to the socket from the client's buffers
-            DEBUG("Writing data for client %i", i);
+            //DEBUG("Writing data for client");
             rc = write_to_socket(curr_client);
             if (rc != NET_OK) {
                 break;
@@ -261,7 +261,7 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
 
             // If one was accepted, set it's callback
             if (sock_rc > 0) {
-                DEBUG("Client connected on slot %i", i);
+                DEBUG("New client connection");
 
                 on_new_client(first_available, default_callback);
 
