@@ -29,11 +29,10 @@ int setting_to_bytes(settings_pair_t *setting, uint8_t *bytes)
     return 6;
 }
 
-//TODO: change the doc of settings_payload_to_bytes
 /*
- * Function: settings_frame_to_bytes
+ * Function: settings_payload_to_bytes
  * pass a settings payload to bytes
- * Input:  settingPayload pointer, amount of settingspair in payload, pointer to bytes
+ * Input:  frame_header pointer, void* payload (to match callback signature MUST be cast to settings_payload_t*), pointer to bytes
  * Output: size of written bytes
  */
 int settings_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_t *byte_array)
