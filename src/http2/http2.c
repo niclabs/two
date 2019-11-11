@@ -72,12 +72,14 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
 
     // Initialize http2 state
     init_variables_h2s(h2s, 1);
-    callback_t ret_null = { NULL, NULL };
-
-    // TODO: http2_server_init never sends settings
-    // and it does not go to next state
-
-    return ret_null;
+    int rc = send_local_settings(buf_out, h2s);
+    if(rc < 0){
+      DEBUG("Error sending local settings in http2_server_init_connection");
+      return null_callback();
+    }
+    // If no error were found, http2 is ready to receive frames
+    callback_t ret = { receive_header, NULL };
+    return ret;
 }
 
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
