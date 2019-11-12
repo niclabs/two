@@ -5,6 +5,11 @@
 
 #define HTTP2_MAX_HBF_BUFFER 16384
 
+// Logging per module
+#define LOG_LEVEL_NET   (LOG_LEVEL_OFF)
+#define LOG_LEVEL_HTTP2 (LOG_LEVEL_DEBUG)
+
+
 /*
 * Signature of a callback, wrapped in a stuct
 *
