@@ -61,7 +61,7 @@ int read_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *
 {
     settings_payload_t *settings_payload = (settings_payload_t *) payload;
     if (frame_header->length % 6 != 0) {
-        ERROR("settings payload wrong size\n");
+        ERROR("SETTINGS wrong size for payload");
         return -1;
     }
     int count = frame_header->length / 6;
