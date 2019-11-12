@@ -5,6 +5,12 @@
 #ifndef NET_H
 #define NET_H
 
+// Module logging
+#define LOG_MODULE LOG_MODULE_NET
+#ifndef LOG_LEVEL_NET
+#define LOG_LEVEL_NET (LOG_LEVEL_ERROR)
+#endif
+
 /*
 * Amount of clients.
 */
