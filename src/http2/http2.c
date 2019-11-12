@@ -127,18 +127,15 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     h2s->header = header;
 
     // If errors are found, internal logic will handle them.
-    /**
-     * TODO: improve method names, it is not clear on reading the code
-     * what are the conditions checked */
+    // TODO: improve method names, it is not clear on reading the code
+    // what are the conditions checked
     rc = check_incoming_condition(buf_out, h2s);
     if (rc < 0) {
         return null_callback();
     }
 
-    /**
-     * TODO: use more meaningful return values for http2 checks
-     * It is not clear immediately by reading the code what a return value 0 vs return value 1 means
-     */
+    // TODO: use more meaningful return values for http2 checks
+    // It is not clear immediately by reading the code what a return value 0 vs return value 1 means
     if (rc == 1) {
         callback_t ret = { receive_header, NULL };
         return ret;
