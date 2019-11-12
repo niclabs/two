@@ -56,7 +56,7 @@ int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_p
     frame_header->length = 8 + additional_debug_data_size;
     frame_header->flags = 0;
     frame_header->reserved = 0;
-    frame_header->callback_to_bytes = goaway_payload_to_bytes;
+    frame_header->callback_payload_to_bytes = goaway_payload_to_bytes;
 
     goaway_payload->last_stream_id = last_stream_id;
     goaway_payload->error_code = error_code;

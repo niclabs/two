@@ -40,7 +40,7 @@ int create_window_update_frame(frame_header_t *frame_header, window_update_paylo
     frame_header->length = 4;
     frame_header->reserved = 0;
     frame_header->flags = 0;
-    frame_header->callback_to_bytes = window_update_payload_to_bytes;
+    frame_header->callback_payload_to_bytes = window_update_payload_to_bytes;
 
     window_update_payload->reserved = 0;
     if (window_size_increment == 0) {

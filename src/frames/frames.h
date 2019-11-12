@@ -25,7 +25,7 @@ typedef struct {
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
-int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header);
+int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame_header);
 
 //int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload);

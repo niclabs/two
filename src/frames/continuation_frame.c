@@ -38,7 +38,7 @@ int create_continuation_frame(uint8_t *headers_block, int headers_block_size, ui
     frame_header->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
-    frame_header->callback_to_bytes = continuation_payload_to_bytes;
+    frame_header->callback_payload_to_bytes = continuation_payload_to_bytes;
 
     buffer_copy(header_block_fragment, headers_block, headers_block_size);
     continuation_payload->header_block_fragment = header_block_fragment;

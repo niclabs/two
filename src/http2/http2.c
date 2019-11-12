@@ -97,7 +97,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         WARN("READ %d BYTES FROM SOCKET", rc);
         return null_callback();
     }
-    rc = bytes_to_frame_header(buff_read_header, 9, &header);
+    rc = frame_header_from_bytes(buff_read_header, 9, &header);
     if (rc) {
         ERROR("Error coding bytes to frame header. INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
@@ -213,13 +213,12 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 {
     int rc;
-
     switch (h2s->header.type) {
         case DATA_TYPE: {
             DEBUG("handle_payload: RECEIVED DATA PAYLOAD");
             data_payload_t data_payload;
             //uint8_t data[h2s->header.length]; CHECK WITH HPACK PEOPLE
-            rc = h2s->header.callback(&(h2s->header), &data_payload, buff_read);
+            rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &data_payload, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading data payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
@@ -242,7 +241,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             hpl.header_block_fragment=headers_block_fragment;
             hpl.padding = padding;
 
-            rc = h2s->header.callback(&(h2s->header), &hpl, buff_read);
+            rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &hpl, buff_read);
             if(rc < 0){
                 ERROR("ERROR reading headers payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
@@ -272,7 +271,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             settings_pair_t pairs[h2s->header.length/6];
             spl.pairs = pairs;
 
-            rc = h2s->header.callback(&(h2s->header), &spl, buff_read);
+            rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &spl, buff_read);
             if(rc < 0){
               // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
               send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
@@ -302,7 +301,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             goaway_payload_t goaway_pl;
             goaway_pl.additional_debug_data = debug_data;
 
-            rc = h2s->header.callback(&(h2s->header), &goaway_pl, buff_read);
+            rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &goaway_pl, buff_read);
             if(rc < 0){
               ERROR("Error in reading goaway payload");
               send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
@@ -319,7 +318,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         case WINDOW_UPDATE_TYPE: {
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD");
             window_update_payload_t window_update_payload;
-            int rc = h2s->header.callback(&(h2s->header), &window_update_payload, buff_read);
+            int rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &window_update_payload, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
                 send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); // TODO: review - always FRAME_SIZE_ERROR ?
@@ -339,7 +338,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             uint8_t continuation_block_fragment[HTTP2_MAX_HBF_BUFFER - h2s->header_block_fragments_pointer];
             contpl.header_block_fragment = continuation_block_fragment;
 
-            rc = h2s->header.callback(&(h2s->header), &contpl, buff_read);
+            rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &contpl, buff_read);
             if(rc < 0){
               ERROR("Error in continuation payload reading");
               send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);

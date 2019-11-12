@@ -23,7 +23,7 @@ int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_
     frame_header->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
-    frame_header->callback_to_bytes = headers_payload_to_bytes;
+    frame_header->callback_payload_to_bytes = headers_payload_to_bytes;
 
     buffer_copy(header_block_fragment, headers_block, headers_block_size);
     headers_payload->header_block_fragment = header_block_fragment;

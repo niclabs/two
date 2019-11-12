@@ -104,7 +104,7 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_head
     frame_header->flags = 0x0;
     frame_header->reserved = 0x0;
     frame_header->stream_id = 0;
-    frame_header->callback_to_bytes = settings_payload_to_bytes;
+    frame_header->callback_payload_to_bytes = settings_payload_to_bytes;
 
     count = create_list_of_settings_pair(ids, values, count, pairs);
     settings_payload->count = count;

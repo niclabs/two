@@ -49,7 +49,7 @@ int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload
     frame_header->flags = flags;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
-    frame_header->callback_to_bytes = data_payload_to_bytes;
+    frame_header->callback_payload_to_bytes = data_payload_to_bytes;
 
     buffer_copy(data, data_to_send, length);
     data_payload->data = data; //not duplicating info

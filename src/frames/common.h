@@ -27,8 +27,8 @@ typedef struct FRAME_HEADER {
     uint8_t flags;
     uint8_t reserved : 1;
     uint32_t stream_id : 31;
-    int (*callback)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *bytes);
-    int (*callback_to_bytes)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *byte_array);
+    int (*callback_payload_from_bytes)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *bytes);
+    int (*callback_payload_to_bytes)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *byte_array);
 } frame_header_t; //72 bits-> 9 bytes
 
 #endif /*FRAMES_COMMON_H*/

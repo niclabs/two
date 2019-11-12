@@ -97,7 +97,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
     uint8_t frame_header_bytes[9];
     int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
     uint8_t bytes_array[length];
-    int size = frame_header->callback_to_bytes(frame_header, frame->payload, bytes_array);
+    int size = frame_header->callback_payload_to_bytes(frame_header, frame->payload, bytes_array);
     int new_size = append_byte_arrays(bytes, frame_header_bytes, bytes_array, frame_header_bytes_size, size);
     return new_size;
 }
@@ -186,7 +186,7 @@ int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
  * Input:  array of bytes, size ob bytes to read,pointer to frameheader
  * Output: 0 if bytes were written correctly, -1 if byte size is <9
  */
-int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_header)
+int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame_header)
 {
     if (size < 9) {
         ERROR("frameHeader size too small, %d\n", size);
@@ -201,22 +201,22 @@ int bytes_to_frame_header(uint8_t *byte_array, int size, frame_header_t *frame_h
     switch (frame_header->type)
     {
     case WINDOW_UPDATE_TYPE:
-        frame_header->callback = read_window_update_payload;
+        frame_header->callback_payload_from_bytes = read_window_update_payload;
         break;
     case DATA_TYPE:
-        frame_header->callback = read_data_payload;
+        frame_header->callback_payload_from_bytes = read_data_payload;
         break;
     case GOAWAY_TYPE:
-        frame_header->callback = read_goaway_payload;
+        frame_header->callback_payload_from_bytes = read_goaway_payload;
         break;
     case SETTINGS_TYPE:
-        frame_header->callback = read_settings_payload;
+        frame_header->callback_payload_from_bytes = read_settings_payload;
         break;
     case CONTINUATION_TYPE:
-        frame_header->callback = read_continuation_payload;
+        frame_header->callback_payload_from_bytes = read_continuation_payload;
         break;
     case HEADERS_TYPE:
-        frame_header->callback = read_headers_payload;
+        frame_header->callback_payload_from_bytes = read_headers_payload;
         break;
     default:
         ERROR("Frame type %d not found", frame_header->type);
