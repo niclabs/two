@@ -9,6 +9,7 @@
 
 
 /*Macros for table update*/
+// TODO: rename LOCAL,REMOTE constants to LOCAL_SETTINGS, REMOTE_SETTINGS
 #define LOCAL 0
 #define REMOTE 1
 
