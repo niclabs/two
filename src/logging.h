@@ -26,6 +26,26 @@
 #define LOG_LEVEL_FATAL (5)
 #define LOG_LEVEL_OFF   (6)
 
+// Log modules
+#define LOG_MODULE_SOCK    SOCK
+#define LOG_MODULE_NET     NET
+#define LOG_MODULE_HTTP2   HTTP2
+#define LOG_MODULE_HTTP    HTTP
+#define LOG_MODULE_FRAME   FRAME
+#define LOG_MODULE_HPACK   HPACK
+
+// ENABLE_DEBUG takes precedence before LOG_MODULE
+#if defined(LOG_MODULE) && !defined(ENABLE_DEBUG)
+#define __CONCAT(x,y) x ## y
+#define __CONCAT2(x,y)__CONCAT(x,y)
+#define __LOG_LEVEL(module) __CONCAT2(LOG_LEVEL_,module)
+#else
+#define __LOG_LEVEL(module) LOG_LEVEL
+#endif
+
+// Condition to check if logging is enabled
+#define SHOULD_LOG(level, module) level >= __LOG_LEVEL(module)
+
 #ifdef WITH_CONTIKI
 #define LOG_EXIT(code) process_exit(PROCESS_CURRENT())
 #define LOG_PRINT(...) printf(__VA_ARGS__)
@@ -35,6 +55,7 @@
 #endif
 
 #if defined(ENABLE_DEBUG)
+#undef LOG_LEVEL
 #define LOG_LEVEL (LOG_LEVEL_DEBUG)
 #endif
 
@@ -42,35 +63,35 @@
 #define LOG_LEVEL (LOG_LEVEL_ERROR)
 #endif
 
-#if LOG_LEVEL_DEBUG >= LOG_LEVEL
+#if SHOULD_LOG(LOG_LEVEL_DEBUG, LOG_MODULE)
 #define LOG(level, func, file, line, msg, ...) LOG_PRINT("[" #level "] " msg "; at %s:%d in %s()\n", ## __VA_ARGS__, file, line, func)
 #else 
 #define LOG(level, func, file, line, msg, ...) LOG_PRINT("[" #level "] " msg "\n", ## __VA_ARGS__)
 #endif
 
 // Macro to print debugging messages
-#if LOG_LEVEL_DEBUG >= LOG_LEVEL
+#if SHOULD_LOG(LOG_LEVEL_DEBUG, LOG_MODULE)
 #define DEBUG(...) LOG(DEBUG, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #else
 #define DEBUG(...)
 #endif
 
 // Macro to print information messages
-#if LOG_LEVEL_INFO >= LOG_LEVEL
+#if SHOULD_LOG(LOG_LEVEL_INFO, LOG_MODULE)
 #define INFO(...) LOG(INFO, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #else
 #define INFO(...)
 #endif
 
 // Macro to print warning messages
-#if LOG_LEVEL_WARN >= LOG_LEVEL
+#if SHOULD_LOG(LOG_LEVEL_WARN, LOG_MODULE)
 #define WARN(...) LOG(WARN, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #else
 #define WARN(...)
 #endif
 
 // Macro to print error messages
-#if LOG_LEVEL_ERROR >= LOG_LEVEL
+#if SHOULD_LOG(LOG_LEVEL_ERROR, LOG_MODULE)
 #define ERROR(msg, ...)                                                                                             \
     do {                                                                                                            \
         if (errno > 0) { LOG(ERROR, __func__, __FILE__, __LINE__, msg " (%s)", ## __VA_ARGS__, strerror(errno)); }  \
@@ -81,7 +102,7 @@
 #endif
 
 // Macro to print fatal error messages
-#if LOG_LEVEL_FATAL >= LOG_LEVEL
+#if SHOULD_LOG(LOG_LEVEL_FATAL, LOG_MODULE)
 #define FATAL(msg, ...)                                                                                             \
     do {                                                                                                            \
         if (errno > 0) { LOG(FATAL, __func__, __FILE__, __LINE__, msg " (%s)", ## __VA_ARGS__, strerror(errno)); }  \
