@@ -112,6 +112,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         DEBUG("Internal error response sent. Terminating connection");
         return null_callback();
     }
+    DEBUG("Received new frame header 0x%d", header.type);
 
     // Read max frame size from local settings
     int local_max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
@@ -141,13 +142,13 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         return ret;
     }
 
-    //
     callback_t ret = { receive_payload, NULL };
     return ret;
 }
 
 callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
-{   (void) buf_out;
+{
+    (void)buf_out;
     h2states_t *h2s = (h2states_t *)state;
 
     if (cbuf_len(buf_in) < h2s->header.length) {
@@ -163,9 +164,9 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     }
     rc = handle_payload(buff_read_payload, buf_out, h2s);
 
-    if(rc < 0){
-      ERROR("Error was found while handling payload");
-      return null_callback();
+    if (rc < 0) {
+        ERROR("Error was found while handling payload");
+        return null_callback();
     }
 
     callback_t ret = { receive_header, NULL };
