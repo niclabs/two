@@ -164,7 +164,7 @@ int receive_header_block(uint8_t *header_block_fragments, int header_block_fragm
 
 /*
  * Function: create_settings_ack_frame
- * Create a Frame of type sewttings with flag ack
+ * Create a Frame of type settings with flag ack
  * Input:  pointer to frame, pointer to frameheader
  * Output: 0 if setting frame was created
  */
@@ -173,6 +173,8 @@ int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
     frame_header->length = 0;
     frame_header->type = SETTINGS_TYPE;//settings;
     frame_header->flags = set_flag(0x0, SETTINGS_ACK_FLAG);
+    // TODO: missing payload_to_bytes callback in create_settings_ack frame
+    // produces failure on h2spec generic/2/2
     frame_header->reserved = 0x0;
     frame_header->stream_id = 0;
     frame->frame_header = frame_header;
@@ -189,7 +191,7 @@ int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
 int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame_header)
 {
     if (size < 9) {
-        ERROR("frameHeader size too small, %d\n", size);
+        ERROR("frameHeader size too small, %d", size);
         return -1;
     }
     frame_header->length = bytes_to_uint32_24(byte_array);
