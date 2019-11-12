@@ -151,24 +151,23 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     (void)buf_out;
     h2states_t *h2s = (h2states_t *)state;
 
+    // Wait until all payload data has been received
     if (cbuf_len(buf_in) < h2s->header.length) {
         callback_t ret = { receive_payload, NULL };
         return ret;
     }
 
+    // Read payload
     uint8_t buff_read_payload[HTTP2_MAX_BUFFER_SIZE];
     int rc = cbuf_pop(buf_in, buff_read_payload, h2s->header.length);
-    if (rc != h2s->header.length) {
-        ERROR("Error reading bytes of payload, read %d bytes", rc);
-        return null_callback();
-    }
+
+    // Process payload
     rc = handle_payload(buff_read_payload, buf_out, h2s);
-
     if (rc < 0) {
-        ERROR("Error was found while handling payload");
         return null_callback();
     }
 
+    // Wait for next header
     callback_t ret = { receive_header, NULL };
     return ret;
 }
