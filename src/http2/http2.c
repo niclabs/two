@@ -235,19 +235,20 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
 int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
 {
     int rc;
+
     switch (h2s->header.type) {
         case DATA_TYPE: {
             DEBUG("handle_payload: RECEIVED DATA PAYLOAD");
             data_payload_t data_payload;
             //uint8_t data[h2s->header.length]; CHECK WITH HPACK PEOPLE
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &data_payload, buff_read);
-            if(rc < 0){
+            if (rc < 0) {
                 ERROR("ERROR reading data payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
                 return -1;
             }
             rc = handle_data_payload(&(h2s->header), &data_payload, buf_out, h2s);
-            if(rc < 0){
+            if (rc < 0) {
                 ERROR("ERROR in handle receive data");
                 return -1;
             }
@@ -260,17 +261,17 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             headers_payload_t hpl;
             uint8_t headers_block_fragment[HTTP2_MAX_HBF_BUFFER];
             uint8_t padding[32];
-            hpl.header_block_fragment=headers_block_fragment;
+            hpl.header_block_fragment = headers_block_fragment;
             hpl.padding = padding;
 
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &hpl, buff_read);
-            if(rc < 0){
+            if (rc < 0) {
                 ERROR("ERROR reading headers payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
                 return rc;
             }
             rc = handle_headers_payload(&(h2s->header), &hpl, buf_out, h2s);
-            if(rc < 0){
+            if (rc < 0) {
                 ERROR("ERROR in handle receive data");
                 return -1;
             }
@@ -287,24 +288,26 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             return -1;
 
         case SETTINGS_TYPE: {
-            DEBUG("handle_payload: RECEIVED SETTINGS PAYLOAD");
+            DEBUG("Received SETTINGS payload");
 
             settings_payload_t spl;
-            settings_pair_t pairs[h2s->header.length/6];
+            settings_pair_t pairs[h2s->header.length / 6];
             spl.pairs = pairs;
 
+            // Decode settings payload
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &spl, buff_read);
-            if(rc < 0){
-              // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
-              send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
-              return rc;
+            if (rc < 0) {
+                // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
+                send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+                return rc;
             }
+
+            // Use remote settings
             rc = handle_settings_payload(&spl, buf_out, h2s);
-            if(rc < 0){
-                ERROR("ERROR in handle settings payload!");
+            if (rc < 0) {
                 return -1;
             }
-            DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD OK");
+            DEBUG("SETTINGS payload received OK");
             return 0;
         }
         case PUSH_PROMISE_TYPE://Push promise
@@ -324,15 +327,15 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             goaway_pl.additional_debug_data = debug_data;
 
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &goaway_pl, buff_read);
-            if(rc < 0){
-              ERROR("Error in reading goaway payload");
-              send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-              return -1;
+            if (rc < 0) {
+                ERROR("Error in reading goaway payload");
+                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                return -1;
             }
             rc = handle_goaway_payload(&goaway_pl, buf_out, h2s);
-            if(rc < 0){
-              ERROR("Error during goaway handling");
-              return -1;
+            if (rc < 0) {
+                ERROR("Error during goaway handling");
+                return -1;
             }
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD OK");
             return 0;
@@ -347,8 +350,8 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
                 return -1;
             }
             rc = handle_window_update_payload(&window_update_payload, buf_out, h2s);
-            if(rc < 0){
-              ERROR("Error during window_update handling");
+            if (rc < 0) {
+                ERROR("Error during window_update handling");
             }
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD OK");
             return 0;
@@ -361,15 +364,15 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             contpl.header_block_fragment = continuation_block_fragment;
 
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &contpl, buff_read);
-            if(rc < 0){
-              ERROR("Error in continuation payload reading");
-              send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-              return -1;
+            if (rc < 0) {
+                ERROR("Error in continuation payload reading");
+                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                return -1;
             }
             rc = handle_continuation_payload(&h2s->header, &contpl, buf_out, h2s);
-            if(rc < 0){
-              ERROR("Error was found during continuatin payload handling");
-              return -1;
+            if (rc < 0) {
+                ERROR("Error was found during continuatin payload handling");
+                return -1;
             }
             DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD OK");
             return 0;
