@@ -34,7 +34,33 @@
 #define LOG_MODULE_FRAME   FRAME
 #define LOG_MODULE_HPACK   HPACK
 
-// ENABLE_DEBUG takes precedence before LOG_MODULE
+#ifndef LOG_LEVEL_SOCK
+#define LOG_LEVEL_SOCK (LOG_LEVEL_OFF)
+#endif
+
+#ifndef LOG_LEVEL_NET
+#define LOG_LEVEL_NET (LOG_LEVEL_OFF)
+#endif
+
+#ifndef LOG_LEVEL_HTTP2
+#define LOG_LEVEL_HTTP2 (LOG_LEVEL_OFF)
+#endif
+
+#ifndef LOG_LEVEL_HTTP
+#define LOG_LEVEL_HTTP (LOG_LEVEL_OFF)
+#endif
+
+#ifndef LOG_LEVEL_FRAME
+#define LOG_LEVEL_FRAME (LOG_LEVEL_OFF)
+#endif
+
+#ifndef LOG_LEVEL_HPACK
+#define LOG_LEVEL_HPACK (LOG_LEVEL_OFF)
+#endif
+
+// If LOG_MODULE is defined use LOG_LEVEL_<module>
+// unless ENABLE_DEBUG is defined
+// otherwise use LOG_LEVEL
 #if defined(LOG_MODULE) && !defined(ENABLE_DEBUG)
 #define __CONCAT(x,y) x ## y
 #define __CONCAT2(x,y)__CONCAT(x,y)
