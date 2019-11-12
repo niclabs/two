@@ -1,5 +1,5 @@
 #include "net.h"
-
+#include "cbuf.h"
 #include "sock.h"
 #include "logging.h"
 

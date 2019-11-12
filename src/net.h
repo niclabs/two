@@ -1,9 +1,9 @@
-#include "cbuf.h"
-#include "config.h"
-#include <stdio.h>
-
 #ifndef NET_H
 #define NET_H
+
+#include <stdio.h>
+#include "config.h"
+
 
 // Module logging
 #define LOG_MODULE LOG_MODULE_NET
