@@ -89,42 +89,62 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
 
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 {
+    // Wait until header length is received
     if (cbuf_len(buf_in) < 9) {
         callback_t ret = { receive_header, NULL };
         return ret;
     }
+
+    // Get h2states from parameters
     h2states_t *h2s = (h2states_t *)state;
+
+    // Red header data from input buffer
     frame_header_t header;
     uint8_t buff_read_header[10];
-    int rc = cbuf_pop(buf_in, buff_read_header, 9);
+    cbuf_pop(buf_in, buff_read_header, 9);
 
-    if (rc != 9) {
-        WARN("READ %d BYTES FROM SOCKET", rc);
-        return null_callback();
-    }
-    rc = frame_header_from_bytes(buff_read_header, 9, &header);
+    // Decode header
+    int rc = frame_header_from_bytes(buff_read_header, 9, &header);
     if (rc) {
-        ERROR("Error coding bytes to frame header. INTERNAL_ERROR");
+        ERROR("Failed to decode frame header. Sending INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+
+        DEBUG("Internal error response sent. Terminating connection");
         return null_callback();
     }
-    if (header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)) {
-        ERROR("Length of the frame payload greater than expected. FRAME_SIZE_ERROR");
+
+    // Read max frame size from local settings
+    int local_max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+    if (header.length > local_max_frame_size) {
+        ERROR("Invalid received frame size %d > %d. Sending FRAME_SIZE_ERROR", header.length, local_max_frame_size);
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+
+        DEBUG("FRAME_SIZE_ERROR sent. Terminating connection");
         return null_callback();
     }
+
     // save header type
     h2s->header = header;
+
     // If errors are found, internal logic will handle them.
+    /**
+     * TODO: improve method names, it is not clear on reading the code
+     * what are the conditions checked */
     rc = check_incoming_condition(buf_out, h2s);
-    if(rc < 0){
-      DEBUG("Error was found during incoming condition checking");
-      return null_callback();
+    if (rc < 0) {
+        return null_callback();
     }
-    else if(rc == 1){
-      callback_t ret = {receive_header, NULL};
-      return ret;
+
+    /**
+     * TODO: use more meaningful return values for http2 checks
+     * It is not clear immediately by reading the code what a return value 0 vs return value 1 means
+     */
+    if (rc == 1) {
+        callback_t ret = { receive_header, NULL };
+        return ret;
     }
+
+    //
     callback_t ret = { receive_payload, NULL };
     return ret;
 }
