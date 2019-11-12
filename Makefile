@@ -1,6 +1,5 @@
 TWO = .
 CFLAGS = -std=c99 -Wall -Wextra
-DEBUG_FLAGS = -DENABLE_DEBUG
 
 TARGETDIRS = examples/server/
 TESTDIRS = tests/
