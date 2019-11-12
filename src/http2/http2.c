@@ -1,6 +1,5 @@
 #include <string.h>
 
-#include "logging.h"
 #include "http2/http2.h"
 #include "http2/check.h"
 #include "http2/send.h"
@@ -8,6 +7,10 @@
 #include "http2/flowcontrol.h"
 #include "http2/handle.h"
 #include "http.h"
+
+// Specify to which module this file belongs
+#define LOG_MODULE LOG_MODULE_HTTP2
+#include "logging.h"
 
 
 callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
@@ -69,6 +72,7 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
         return null_callback();
     }
+    DEBUG("Received HTTP/2 connection preface. Sending local settings");
 
     // Initialize http2 state
     init_variables_h2s(h2s, 1);
@@ -77,6 +81,7 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
       DEBUG("Error sending local settings in http2_server_init_connection");
       return null_callback();
     }
+    DEBUG("Local settings sent. Waiting for remote settings");
     // If no error were found, http2 is ready to receive frames
     callback_t ret = { receive_header, NULL };
     return ret;
