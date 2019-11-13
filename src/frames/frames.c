@@ -177,7 +177,9 @@ int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
     // produces failure on h2spec generic/2/2
     frame_header->reserved = 0x0;
     frame_header->stream_id = 0;
+    frame_header->callback_payload_to_bytes = settings_payload_to_bytes;
     frame->frame_header = frame_header;
+
     frame->payload = NULL;
     return 0;
 }

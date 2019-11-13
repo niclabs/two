@@ -35,10 +35,14 @@ int setting_to_bytes(settings_pair_t *setting, uint8_t *bytes)
  * Input:  frame_header pointer, void* payload (to match callback signature MUST be cast to settings_payload_t*), pointer to bytes
  * Output: size of written bytes
  */
-int settings_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_t *byte_array)
+int settings_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
     (void)frame_header; //patch to avoid warning of unused variables
-    settings_payload_t *settings_payload = (settings_payload_t*)payload;
+    if (payload == NULL) {
+        DEBUG("ACK FRAME");
+        return 0;
+    }
+    settings_payload_t *settings_payload = (settings_payload_t *)payload;
     uint32_t count = settings_payload->count;
     for (uint32_t i = 0; i < count; i++) {
         //printf("%d\n",i);
@@ -59,7 +63,8 @@ int settings_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8
  */
 int read_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
-    settings_payload_t *settings_payload = (settings_payload_t *) payload;
+    settings_payload_t *settings_payload = (settings_payload_t *)payload;
+
     if (frame_header->length % 6 != 0) {
         ERROR("SETTINGS wrong size for payload");
         return -1;
@@ -111,4 +116,3 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_head
     settings_payload->pairs = pairs;
     return 0;
 }
-

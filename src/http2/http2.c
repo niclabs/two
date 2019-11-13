@@ -132,6 +132,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // what are the conditions checked
     rc = check_incoming_condition(buf_out, h2s);
     if (rc < 0) {
+        DEBUG("incoming_condition returned < 0");
         return null_callback();
     }
 
@@ -139,6 +140,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // It is not clear immediately by reading the code what a return value 0 vs return value 1 means
     if (rc == 1) {
         callback_t ret = { receive_header, NULL };
+        DEBUG("incoming_condition returned 1");
         return ret;
     }
 
