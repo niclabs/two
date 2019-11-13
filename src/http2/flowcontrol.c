@@ -71,7 +71,7 @@ int flow_control_send_data(h2states_t *h2s, uint32_t data_sent){
 
 int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increment){
     if(window_size_increment>h2s->incoming_window.window_used){
-        ERROR("Increment to big. protocol_error");
+        ERROR("Increment to big. PROTOCOL_ERROR");
         return -1;
     }
     decrease_window_used(&h2s->incoming_window,window_size_increment);
