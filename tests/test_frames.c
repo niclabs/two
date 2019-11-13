@@ -14,6 +14,21 @@
 
 //TODO: add functions of every frame to mocks
 DEFINE_FFF_GLOBALS;
+FAKE_VALUE_FUNC(int, read_window_update_payload, frame_header_t *, void *, uint8_t *);
+FAKE_VALUE_FUNC(int, read_data_payload, frame_header_t *, void *, uint8_t *);
+FAKE_VALUE_FUNC(int, read_goaway_payload, frame_header_t *, void *, uint8_t *);
+FAKE_VALUE_FUNC(int, read_settings_payload, frame_header_t *, void *, uint8_t *);
+FAKE_VALUE_FUNC(int, read_continuation_payload, frame_header_t *, void *, uint8_t *);
+FAKE_VALUE_FUNC(int, read_headers_payload, frame_header_t *, void *, uint8_t *);
+
+FAKE_VALUE_FUNC(int, create_list_of_settings_pair, uint16_t *, uint32_t *, int, settings_pair_t *);
+FAKE_VALUE_FUNC(int, create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
+FAKE_VALUE_FUNC(int, create_headers_frame, uint8_t *, int, uint32_t, frame_header_t *, headers_payload_t *, uint8_t *);
+FAKE_VALUE_FUNC(int, create_continuation_frame, uint8_t *, int, uint32_t, frame_header_t *, continuation_payload_t *, uint8_t *);
+FAKE_VALUE_FUNC(int, create_data_frame, frame_header_t *, data_payload_t *, uint8_t *, uint8_t *, int, uint32_t);
+FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t *, window_update_payload_t *, int, uint32_t);
+FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t *, goaway_payload_t *, uint8_t *, uint32_t, uint32_t, uint8_t *, uint8_t);
+
 FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t *);
@@ -36,7 +51,20 @@ FAKE_VALUE_FUNC(char *, headers_get_name_from_index, headers_t *, int);
 FAKE_VALUE_FUNC(char *, headers_get_value_from_index, headers_t *, int);
 
 /* List of fakes used by this unit tester */
-#define FFF_FAKES_LIST(FAKE)          \
+#define FFF_FAKES_LIST(FAKE)            \
+    FAKE(read_window_update_payload)    \
+    FAKE(read_data_payload)             \
+    FAKE(read_goaway_payload)           \
+    FAKE(read_settings_payload)         \
+    FAKE(read_continuation_payload)     \
+    FAKE(read_headers_payload)          \
+    FAKE(create_list_of_settings_pair)  \
+    FAKE(create_settings_frame)         \
+    FAKE(create_headers_frame)          \
+    FAKE(create_continuation_frame)     \
+    FAKE(create_data_frame)             \
+    FAKE(create_window_update_frame)    \
+    FAKE(create_goaway_frame)           \
     FAKE(uint32_24_to_byte_array)     \
     FAKE(uint32_31_to_byte_array)     \
     FAKE(uint32_to_byte_array)        \
@@ -157,7 +185,7 @@ void test_frame_header_to_bytes(void)
     uint32_t stream_id = 0;
     uint32_31_to_byte_array_fake.custom_fake = uint32_31_to_byte_array_custom_fake_0;//stream_id
 
-    frame_header_t frame_header = { length, type, flags, reserved, stream_id, NULL, NULL};
+    frame_header_t frame_header = { length, type, flags, reserved, stream_id, NULL, NULL };
     uint8_t frame_bytes[9];
     int frame_bytes_size = frame_header_to_bytes(&frame_header, frame_bytes);
 
@@ -223,7 +251,7 @@ void test_bytes_to_frame_header(void)
 
 
     frame_header_t decoder_frame_header;
-   
+
 
     bytes_to_uint32_24_fake.return_val = length;
     bytes_to_uint32_31_fake.return_val = stream_id;
@@ -290,42 +318,11 @@ void test_frame_to_bytes_settings(void)
         ids[i] = (uint16_t)i;
         values[i] = (uint32_t)i;
     }
-    settings_pair_t setting_pairs[count];
-    create_list_of_settings_pair(ids, values, count, setting_pairs);
-    settings_payload_t settings_payload;
-    settings_payload.pairs = setting_pairs;
-    settings_payload.count = count;
-
-    uint16_to_byte_array_fake.custom_fake = uint16_to_byte_array_custom_fake_num;
-    uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
-
-    uint8_t byte_array[6 * count];
-    frame_header_t frame_header;
-    int rc = settings_payload_to_bytes(&frame_header, (void*)&settings_payload, byte_array);
-    TEST_ASSERT_EQUAL(6 * count, rc);
-    uint8_t expected_bytes[] = { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
-    TEST_ASSERT_EQUAL(count, uint16_to_byte_array_fake.call_count);
-    TEST_ASSERT_EQUAL(count, uint32_to_byte_array_fake.call_count);
-    for (int i = 0; i < 6; i++) {
-        TEST_ASSERT_EQUAL(expected_bytes[i], byte_array[i]);
-    }
-}
-
-void test_frame_to_bytes_settings2(void)
-{
-    int count = 2;
-    uint16_t ids[count];
-    uint32_t values[count];
-
-    for (int i = 0; i < count; i++) {
-        ids[i] = (uint16_t)i;
-        values[i] = (uint32_t)i;
-    }
     frame_t frame;
     frame_header_t frame_header;
     settings_payload_t settings_payload;
     frame.frame_header = &frame_header;
-    frame.payload = (void*)&settings_payload;
+    frame.payload = (void *)&settings_payload;
     settings_pair_t setting_pairs[count];
     create_settings_frame(ids, values, count, &frame_header, &settings_payload, setting_pairs);
 
@@ -640,15 +637,12 @@ int main(void)
     UNIT_TEST(test_bytes_to_frame_header);
     UNIT_TEST(test_create_settings_ack_frame);
 
-    UNIT_TEST(test_frame_to_bytes_settings);
     UNIT_TEST(test_frame_to_bytes_headers)
     UNIT_TEST(test_frame_to_bytes_continuation)
     UNIT_TEST(test_frame_to_bytes_data);
     UNIT_TEST(test_frame_to_bytes_window_update);
     UNIT_TEST(test_frame_to_bytes_goaway);
     UNIT_TEST(test_frame_to_bytes_settings);
-    UNIT_TEST(test_frame_to_bytes_settings2);
-
 
 
     UNIT_TEST(test_compress_headers);
