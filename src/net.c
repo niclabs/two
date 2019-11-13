@@ -125,12 +125,6 @@ net_return_code_t on_new_data(net_client_t *p_client, unsigned int data_size)
     DEBUG("Received data from client");
     rc = read_from_socket(p_client, data_size);
 
-    // The callback does stuff
-    callback_t cb = p_client->cb.func(p_client->buf_in, p_client->buf_out, p_client->state);
-
-    // Callback is replaced
-    p_client->cb = cb;
-
     return rc;
 }
 
@@ -219,6 +213,14 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
                 if (rc != NET_OK) {
                     break;
                 }
+            }
+
+            if (cbuf_len(curr_client->buf_in) > 0) {
+                // The callback does stuff
+                callback_t cb = curr_client->cb.func(curr_client->buf_in, curr_client->buf_out, curr_client->state);
+
+                // Callback is replaced
+                curr_client->cb = cb;
             }
 
             // Writes to the socket from the client's buffers
