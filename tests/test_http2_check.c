@@ -6,9 +6,6 @@
 #include "frames/common.h"  // for frame_header_t
 #include "cbuf.h"           // for cbuf
 
-/* Import of functions not declared in http2/check.h */
-extern uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param);
-extern void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
