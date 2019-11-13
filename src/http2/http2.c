@@ -70,6 +70,7 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
     if (strncmp(preface, "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", 24) != 0) {
         ERROR("Bad preface (%s) received from client", preface);
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        DEBUG("http2_server_init_connection returning null callback");
         return null_callback();
     }
     DEBUG("Received HTTP/2 connection preface. Sending local settings");
@@ -81,7 +82,7 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
       DEBUG("Error sending local settings in http2_server_init_connection");
       return null_callback();
     }
-    DEBUG("Local settings sent. Waiting for remote settings");
+    DEBUG("Local settings sent. http2_server_init_connection returning receive_header callback");
     // If no error were found, http2 is ready to receive frames
     callback_t ret = { receive_header, NULL };
     return ret;
