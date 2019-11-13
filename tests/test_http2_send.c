@@ -1,8 +1,11 @@
 #include "unit.h"
 #include "logging.h"
+#include "fff.h"
+#include "http2/structs.h"
+#include "http2/send.h"
+#include "frames/common.h"
+#include "cbuf.h"
 
-// Include header definitions for file to test 
-// e.g #include "sock.h"
 
 void test_example(void) {
     TEST_FAIL();
