@@ -339,11 +339,25 @@ void test_check_incoming_settings_condition_errors(void)
     TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header length != 0)");
 }
 
-/*
-   void test_check_incoming_goaway_condition(void){
+void test_check_incoming_goaway_condition(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    frame_header_t head;
 
-   }
- */
+    head.length = 64;
+    head.type = 0x7;
+    head.stream_id = 0;
+    h2s.header = head;
+
+    uint32_t read_setting_from_returns[1] = { 128 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
+    int rc = check_incoming_goaway_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 0, "rc must be 0");
+
+}
+
 void test_check_incoming_goaway_condition_errors(void)
 {
     cbuf_t buf_out;
@@ -454,6 +468,7 @@ int main(void)
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_settings_condition);
     UNIT_TEST(test_check_incoming_settings_condition_errors);
+    UNIT_TEST(test_check_incoming_goaway_condition);
     UNIT_TEST(test_check_incoming_goaway_condition_errors);
     UNIT_TEST(test_check_incoming_continuation_condition);
     UNIT_TEST(test_check_incoming_continuation_condition_errors);
