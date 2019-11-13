@@ -85,6 +85,58 @@ void test_change_stream_state_end_stream_flag(void)
 */
 }
 
+/*
+
+   void test_change_stream_state_end_stream_flag_close_connection(void){}
+
+   void test_send_data(void){}
+
+   void test_send_data_full_sending(void){}
+
+   void test_send_data_errors(void){}
+
+   void test_send_settings_ack(void){}
+
+   void test_send_settings_ack_errors(void){}
+
+   void test_send_goaway(void){}
+
+   void test_send_goaway_errors(void){}
+
+   void test_send_window_update(void){}
+
+   void test_send_window_update_errors(void){}
+
+   void test_send_headers_stream_verification(void){}
+
+   void test_send_headers_stream_verification_errors(void){}
+
+   void test_send_local_settings(void){}
+
+   void test_send_local_settings_errors(void){}
+
+   void test_send_continuation_frame(void){}
+
+   void test_send_continuation_frame_errors(void){}
+
+   void test_send_headers_frame(void){}
+
+   void test_send_headers_frame_all_branches(void){}
+
+   void test_send_headers_frame_errors(void){}
+
+   void test_send_headers_one_header(void){}
+
+   void test_send_headers_with_continuation(void){}
+
+   void test_send_headers_errors(void){}
+
+   void test_send_response(void){}
+
+   void test_send_response_errors(void){}
+
+ */
+
 void test_example(void)
 {
     TEST_FAIL();
