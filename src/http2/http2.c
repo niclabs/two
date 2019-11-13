@@ -93,6 +93,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // Wait until header length is received
     if (cbuf_len(buf_in) < 9) {
         callback_t ret = { receive_header, NULL };
+        DEBUG("http2_receive_header returning receive_header callback");
         return ret;
     }
 
@@ -161,6 +162,7 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // Wait until all payload data has been received
     if (cbuf_len(buf_in) < h2s->header.length) {
         callback_t ret = { receive_payload, NULL };
+        DEBUG("http2_receive_payload returning receive_payload callback");
         return ret;
     }
 
@@ -171,10 +173,12 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // Process payload
     rc = handle_payload(buff_read_payload, buf_out, h2s);
     if (rc < 0) {
+        DEBUG("http2_receive_payload returning null callback");
         return null_callback();
     }
 
     // Wait for next header
+    DEBUG("http2_receive_payload returning receive_header callback");
     callback_t ret = { receive_header, NULL };
     return ret;
 }
