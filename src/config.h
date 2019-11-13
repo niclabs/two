@@ -6,7 +6,9 @@
 #define HTTP2_MAX_HBF_BUFFER 16384
 
 // Logging per module
-#define LOG_LEVEL_NET   (LOG_LEVEL_OFF)
+#undef LOG_LEVEL_NET
+#define LOG_LEVEL_NET   (LOG_LEVEL_DEBUG)
+#undef LOG_LEVEL_HTTP2
 #define LOG_LEVEL_HTTP2 (LOG_LEVEL_DEBUG)
 
 
