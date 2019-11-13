@@ -41,11 +41,11 @@ int check_frame_errors(uint8_t type, uint32_t length){
         case DATA_TYPE:
         case HEADERS_TYPE:
         case CONTINUATION_TYPE:
+        case PING_TYPE:
             return 0;
         case PRIORITY_TYPE: //NOT IMPLEMENTED YET
         case RST_STREAM_TYPE:
         case PUSH_PROMISE_TYPE:
-        case PING_TYPE:
             return -1;
         case SETTINGS_TYPE: {
             if (length % 6 != 0) {

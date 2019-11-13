@@ -9,6 +9,7 @@
 #include "goaway_frame.h"
 #include "window_update_frame.h"
 #include "settings_frame.h"
+#include "ping_frame.h"
 #include "hpack.h"
 
 /*RST_STREAM FRAME*/
