@@ -39,7 +39,6 @@ int settings_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8
 {
     (void)frame_header; //patch to avoid warning of unused variables
     if (payload == NULL) {
-        DEBUG("ACK FRAME");
         return 0;
     }
     settings_payload_t *settings_payload = (settings_payload_t *)payload;
