@@ -58,6 +58,7 @@ void test_check_incoming_data_condition_errors(void)
     cbuf_t buf_out;
     int rc;
     uint32_t read_setting_from_returns[1] = { 128 };
+
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     // 1st test: end_headers flag has not been received
@@ -345,11 +346,38 @@ void test_check_incoming_settings_condition_errors(void)
    void test_check_incoming_goaway_condition(void){
 
    }
-
-   void test_check_incoming_goaway_condition_errors(void){
-
-   }
  */
+void test_check_incoming_goaway_condition_errors(void)
+{
+    cbuf_t buf_out;
+
+    uint32_t read_setting_from_returns[1] = { 128 };
+
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
+    // 1st test: header with invalid id
+    h2states_t h2s_id;
+    frame_header_t head_id;
+
+    head_id.stream_id = 24;
+    head_id.length = 128;
+    h2s_id.header = head_id;
+    int rc = check_incoming_goaway_condition(&buf_out, &h2s_id);
+    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header with invalid id)");
+    TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 0, "call count must be 0");
+
+    // 2nd test: header with invalid length
+    h2states_t h2s_len;
+    frame_header_t head_len;
+
+    head_len.stream_id = 0;
+    head_len.length = 256;
+    h2s_len.header = head_len;
+    rc = check_incoming_goaway_condition(&buf_out, &h2s_len);
+    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (max frame size error)");
+    TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 1, "call count must be 1");
+
+}
 
 void test_check_incoming_continuation_condition(void)
 {
@@ -425,13 +453,13 @@ int main(void)
     UNIT_TEST(test_check_incoming_data_condition_errors);
     UNIT_TEST(test_check_incoming_headers_condition);
     UNIT_TEST(test_check_incoming_headers_condition_error);
-    UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_headers_condition_creation_of_stream);
+    UNIT_TEST(test_check_incoming_headers_condition_mismatch);
     UNIT_TEST(test_check_incoming_settings_condition);
     UNIT_TEST(test_check_incoming_settings_condition_errors);
+    UNIT_TEST(test_check_incoming_goaway_condition_errors);
     UNIT_TEST(test_check_incoming_continuation_condition);
     UNIT_TEST(test_check_incoming_continuation_condition_errors);
-
 
     return UNIT_TESTS_END();
 }
