@@ -21,10 +21,6 @@ FAKE_VALUE_FUNC(int, read_settings_payload, frame_header_t *, void *, uint8_t *)
 FAKE_VALUE_FUNC(int, read_continuation_payload, frame_header_t *, void *, uint8_t *);
 FAKE_VALUE_FUNC(int, read_headers_payload, frame_header_t *, void *, uint8_t *);
 
-FAKE_VALUE_FUNC(int, create_list_of_settings_pair, uint16_t *, uint32_t *, int, settings_pair_t *);
-FAKE_VALUE_FUNC(int, create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
-
-
 FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t *);
@@ -54,8 +50,6 @@ FAKE_VALUE_FUNC(char *, headers_get_value_from_index, headers_t *, int);
     FAKE(read_settings_payload)         \
     FAKE(read_continuation_payload)     \
     FAKE(read_headers_payload)          \
-    FAKE(create_list_of_settings_pair)  \
-    FAKE(create_settings_frame)         \
     FAKE(uint32_24_to_byte_array)     \
     FAKE(uint32_31_to_byte_array)     \
     FAKE(uint32_to_byte_array)        \
@@ -269,6 +263,36 @@ uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
     return (uint32_t)bytes[3];
 }
 
+int encode_fake_custom(hpack_states_t *hpack_states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
+{
+    (void)hpack_states;
+    (void)value_string;
+    (void)name_string;
+
+
+    //TEST_ASSERT_EQUAL_MESSAGE(0, index, "Index given to encode() should start at 0");
+    TEST_ASSERT_EQUAL_STRING_MESSAGE("hola", name_string, "Header name should be 'hola'");
+    TEST_ASSERT_EQUAL_STRING_MESSAGE("val", value_string, "Header value should be 'val'");
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+
+
+    uint8_t expected_compressed_headers[] = {
+            0,      //01000000 prefix=00, index=0
+            4,      //h=0, name length = 4;
+            'h',    //name string
+            'o',    //name string
+            'l',    //name string
+            'a',    //name string
+            3,      //h=0, value length = 3;
+            'v',    //value string
+            'a',    //value string
+            'l'     //value string
+    };
+    buffer_copy(encoded_buffer, expected_compressed_headers, 10);
+    return 10;
+}
+
 /*End of mocks*/
 void test_set_flag(void)
 {
@@ -298,6 +322,40 @@ void test_is_flag_set(void)
     TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_1));
     TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_2));
     TEST_ASSERT_EQUAL(0, is_flag_set(flag_byte, unset_flag));
+}
+
+
+void test_compress_headers(void)
+{
+    headers_t headers;
+    uint8_t compressed_headers[256];
+
+    encode_fake.custom_fake = encode_fake_custom;
+
+    // Set return values for headers functions
+    headers_count_fake.return_val = 1;
+    headers_get_name_from_index_fake.return_val = "hola";
+    headers_get_value_from_index_fake.return_val = "val";
+
+    int rc = compress_headers(&headers, compressed_headers, NULL);
+
+    TEST_ASSERT_EQUAL(10, rc);
+    uint8_t expected_compressed_headers[] = {
+            0,      //00000000 prefix=00, index=0
+            4,      //h=0, name length = 4;
+            'h',    //name string
+            'o',    //name string
+            'l',    //name string
+            'a',    //name string
+            3,      //h=0, value length = 3;
+            'v',    //value string
+            'a',    //value string
+            'l'     //value string
+    };
+
+    for (int i = 0; i < rc; i++) {
+        TEST_ASSERT_EQUAL(expected_compressed_headers[i], compressed_headers[i]);
+    }
 }
 
 
@@ -452,6 +510,7 @@ void test_frame_to_bytes_settings(void)
     }
 }
 
+
 void test_frame_to_bytes_headers(void)
 {
     uint8_t headers_block[6] = { 1, 2, 3, 4, 5, 6 };
@@ -501,6 +560,7 @@ void test_frame_to_bytes_headers(void)
     }
 }
 
+
 void test_frame_to_bytes_continuation(void)
 {
     uint8_t headers_block[6] = { 1, 2, 3, 4, 5, 6 };
@@ -546,69 +606,6 @@ void test_frame_to_bytes_continuation(void)
                                  1, 2, 3, 4, 5, 6 };
     for (int i = 0; i < size; i++) {
         TEST_ASSERT_EQUAL(expected_bytes[i], result_bytes[i]);
-    }
-}
-
-int encode_fake_custom(hpack_states_t *hpack_states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
-{
-    (void)hpack_states;
-    (void)value_string;
-    (void)name_string;
-
-
-    //TEST_ASSERT_EQUAL_MESSAGE(0, index, "Index given to encode() should start at 0");
-    TEST_ASSERT_EQUAL_STRING_MESSAGE("hola", name_string, "Header name should be 'hola'");
-    TEST_ASSERT_EQUAL_STRING_MESSAGE("val", value_string, "Header value should be 'val'");
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
-
-
-    uint8_t expected_compressed_headers[] = {
-        0,      //01000000 prefix=00, index=0
-        4,      //h=0, name length = 4;
-        'h',    //name string
-        'o',    //name string
-        'l',    //name string
-        'a',    //name string
-        3,      //h=0, value length = 3;
-        'v',    //value string
-        'a',    //value string
-        'l'     //value string
-    };
-    buffer_copy(encoded_buffer, expected_compressed_headers, 10);
-    return 10;
-}
-
-void test_compress_headers(void)
-{
-    headers_t headers;
-    uint8_t compressed_headers[256];
-
-    encode_fake.custom_fake = encode_fake_custom;
-
-    // Set return values for headers functions
-    headers_count_fake.return_val = 1;
-    headers_get_name_from_index_fake.return_val = "hola";
-    headers_get_value_from_index_fake.return_val = "val";
-
-    int rc = compress_headers(&headers, compressed_headers, NULL);
-
-    TEST_ASSERT_EQUAL(10, rc);
-    uint8_t expected_compressed_headers[] = {
-        0,      //00000000 prefix=00, index=0
-        4,      //h=0, name length = 4;
-        'h',    //name string
-        'o',    //name string
-        'l',    //name string
-        'a',    //name string
-        3,      //h=0, value length = 3;
-        'v',    //value string
-        'a',    //value string
-        'l'     //value string
-    };
-
-    for (int i = 0; i < rc; i++) {
-        TEST_ASSERT_EQUAL(expected_compressed_headers[i], compressed_headers[i]);
     }
 }
 
