@@ -8,7 +8,7 @@
 * Amount of clients.
 */
 #ifndef NET_MAX_CLIENTS
-#define NET_MAX_CLIENTS ((unsigned int) 2)
+#define NET_MAX_CLIENTS ((unsigned int) 50)
 #endif
 
 /*
