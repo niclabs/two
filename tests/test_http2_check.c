@@ -30,12 +30,28 @@ void setUp(void)
 }
 
 /* Tests http2/check functions */
+void test_check_incoming_data_condition(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    frame_header_t head;
 
-/*
-   void test_check_incoming_data_condition(void){
+    head.length = 128;
+    head.stream_id = 2440;
+    h2s.waiting_for_end_headers_flag = 0;
+    h2s.current_stream.stream_id = 2440;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.header = head;
 
-   }
- */
+    uint32_t read_setting_from_returns[1] = { 128 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
+    int rc = check_incoming_data_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == 0, "return code must be 0");
+    TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 1, "call count must be 1");
+
+}
+
 
 void test_check_incoming_data_condition_errors(void)
 {
@@ -405,6 +421,7 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
+    UNIT_TEST(test_check_incoming_data_condition);
     UNIT_TEST(test_check_incoming_data_condition_errors);
     UNIT_TEST(test_check_incoming_headers_condition);
     UNIT_TEST(test_check_incoming_headers_condition_error);
