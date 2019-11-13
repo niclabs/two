@@ -35,11 +35,86 @@ void setUp(void)
    void test_check_incoming_data_condition(void){
 
    }
-
-   void test_check_incoming_data_condition_errors(void){
-
-   }
  */
+
+void test_check_incoming_data_condition_errors(void)
+{
+    cbuf_t buf_out;
+    int rc;
+    uint32_t read_setting_from_returns[1] = { 128 };
+    SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
+    // 1st test: end_headers flag has not been received
+    h2states_t h2s_flag;
+
+    h2s_flag.waiting_for_end_headers_flag = 1;
+    rc = check_incoming_data_condition(&buf_out, &h2s_flag);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1, (continuation or headers frame expected)");
+
+    // 2nd test: Stream id is 0
+    h2states_t h2s_idzero;
+
+    h2s_idzero.waiting_for_end_headers_flag = 0;
+    h2s_idzero.current_stream.stream_id = 0;
+    rc = check_incoming_data_condition(&buf_out, &h2s_idzero);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1, (data stream id = 0)");
+
+    // 3rd test: length of frame bigger than allowed
+    frame_header_t head_len;
+    h2states_t h2s;
+
+    head_len.length = 256;
+    head_len.stream_id = 2440;
+    h2s.waiting_for_end_headers_flag = 0;
+    h2s.current_stream.stream_id = 2440;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.header = head_len;
+    rc = check_incoming_data_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1, (payload bigger than allowed)");
+
+    // 4th test: Header with stream id greater than id in current stream
+    frame_header_t head_idgt;
+
+    head_idgt.length = 128;
+    head_idgt.stream_id = 2442;
+    h2s.header = head_idgt;
+    rc = check_incoming_data_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1, (stream id is invalid)");
+
+    // 5th test: Header with stream id lower than id in current stream
+    frame_header_t head_idlt;
+
+    head_idlt.length = 128;
+    head_idlt.stream_id = 2438;
+    h2s.header = head_idlt;
+    rc = check_incoming_data_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1, (stream id invalid)");
+
+    // 6th test: Stream in IDLE
+    frame_header_t head;
+    h2states_t h2s_idle;
+
+    head.length = 128;
+    head.stream_id = 2440;
+    h2s_idle.waiting_for_end_headers_flag = 0;
+    h2s_idle.current_stream.stream_id = 2440;
+    h2s_idle.current_stream.state = STREAM_IDLE;
+    h2s_idle.header = head;
+    rc = check_incoming_data_condition(&buf_out, &h2s_idle);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1, (stream in IDLE state, protocl)");
+
+    // 7th test: STREAM_CLOSED_ERROR
+    h2states_t h2s_closed;
+
+    h2s_closed.waiting_for_end_headers_flag = 0;
+    h2s_closed.current_stream.stream_id = 2440;
+    h2s_closed.current_stream.state = STREAM_CLOSED;
+    h2s_closed.header = head;
+    rc = check_incoming_data_condition(&buf_out, &h2s_closed);
+    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1, (stream closed error)");
+
+}
+
 void test_check_incoming_headers_condition(void)
 {
     cbuf_t buf_out;
@@ -330,6 +405,7 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
+    UNIT_TEST(test_check_incoming_data_condition_errors);
     UNIT_TEST(test_check_incoming_headers_condition);
     UNIT_TEST(test_check_incoming_headers_condition_error);
     UNIT_TEST(test_check_incoming_headers_condition_mismatch);
