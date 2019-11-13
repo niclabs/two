@@ -23,11 +23,7 @@ FAKE_VALUE_FUNC(int, read_headers_payload, frame_header_t *, void *, uint8_t *);
 
 FAKE_VALUE_FUNC(int, create_list_of_settings_pair, uint16_t *, uint32_t *, int, settings_pair_t *);
 FAKE_VALUE_FUNC(int, create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
-FAKE_VALUE_FUNC(int, create_headers_frame, uint8_t *, int, uint32_t, frame_header_t *, headers_payload_t *, uint8_t *);
-FAKE_VALUE_FUNC(int, create_continuation_frame, uint8_t *, int, uint32_t, frame_header_t *, continuation_payload_t *, uint8_t *);
-FAKE_VALUE_FUNC(int, create_data_frame, frame_header_t *, data_payload_t *, uint8_t *, uint8_t *, int, uint32_t);
-FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t *, window_update_payload_t *, int, uint32_t);
-FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t *, goaway_payload_t *, uint8_t *, uint32_t, uint32_t, uint8_t *, uint8_t);
+
 
 FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
@@ -60,11 +56,6 @@ FAKE_VALUE_FUNC(char *, headers_get_value_from_index, headers_t *, int);
     FAKE(read_headers_payload)          \
     FAKE(create_list_of_settings_pair)  \
     FAKE(create_settings_frame)         \
-    FAKE(create_headers_frame)          \
-    FAKE(create_continuation_frame)     \
-    FAKE(create_data_frame)             \
-    FAKE(create_window_update_frame)    \
-    FAKE(create_goaway_frame)           \
     FAKE(uint32_24_to_byte_array)     \
     FAKE(uint32_31_to_byte_array)     \
     FAKE(uint32_to_byte_array)        \
@@ -101,6 +92,91 @@ int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
 
 //int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, table_pair_t* header_list, uint8_t table_index);
 
+int headers_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    headers_payload_t *headers_payload = (headers_payload_t *)payload;
+    int length = frame_header->length;
+
+    buffer_copy(byte_array, headers_payload->header_block_fragment, length);
+
+    return length;
+}
+
+int continuation_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    continuation_payload_t *continuation_payload = (continuation_payload_t *)payload;
+    int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
+
+    return rc;
+}
+
+int window_update_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    window_update_payload_t *window_update_payload = (window_update_payload_t *)payload;
+    uint32_t x = window_update_payload->window_size_increment;
+
+    byte_array[0] = 0;
+    byte_array[1] = (x >> 16)  & 0xFF;
+    byte_array[2] = (x >> 8)  & 0xFF;
+    byte_array[3] = (x >> 0) & 0xFF;
+    return 4;//bytes
+}
+
+int data_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    data_payload_t *data_payload = (data_payload_t *) payload;
+    int length = frame_header->length;
+    int rc = buffer_copy(byte_array, data_payload->data, length);
+    return rc;
+}
+
+int goaway_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
+    int pointer = 0;
+    int rc = uint32_31_to_byte_array(goaway_payload->last_stream_id, byte_array + pointer);
+    pointer += 4;
+    rc = uint32_to_byte_array(goaway_payload->error_code, byte_array + pointer);
+    pointer += 4;
+    uint32_t additional_debug_data_size = frame_header->length - 8;
+    rc = buffer_copy(byte_array + pointer, goaway_payload->additional_debug_data, additional_debug_data_size);
+
+    pointer += rc;
+    return pointer;
+}
+
+int setting_to_bytes_custom_fake(settings_pair_t *setting, uint8_t *bytes)
+{
+    uint8_t identifier_bytes[2];
+
+    uint16_to_byte_array(setting->identifier, identifier_bytes);
+    uint8_t value_bytes[4];
+    uint32_to_byte_array(setting->value, value_bytes);
+    for (int i = 0; i < 2; i++) {
+        bytes[i] = identifier_bytes[i];
+    }
+    for (int i = 0; i < 4; i++) {
+        bytes[2 + i] = value_bytes[i];
+    }
+    return 6;
+}
+
+int settings_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
+{
+    (void)frame_header; //patch to avoid warning of unused variables
+
+    settings_payload_t *settings_payload = (settings_payload_t *)payload;
+    uint32_t count = settings_payload->count;
+    for (uint32_t i = 0; i < count; i++) {
+        //printf("%d\n",i);
+        uint8_t setting_bytes[6];
+        int size = setting_to_bytes_custom_fake(settings_payload->pairs + i, setting_bytes);
+        for (int j = 0; j < size; j++) {
+            byte_array[i * 6 + j] = setting_bytes[j];
+        }
+    }
+    return 6 * count;
+}
 
 void test_set_flag(void)
 {
@@ -323,11 +399,26 @@ void test_frame_to_bytes_settings(void)
     settings_payload_t settings_payload;
     frame.frame_header = &frame_header;
     frame.payload = (void *)&settings_payload;
-    settings_pair_t setting_pairs[count];
-    create_settings_frame(ids, values, count, &frame_header, &settings_payload, setting_pairs);
+    settings_pair_t settings_pairs[count];
+
+    //create_settings_frame(ids, values, count, &frame_header, &settings_payload, setting_pairs);
+    frame_header.length = count * 6;
+    frame_header.type = SETTINGS_TYPE;//settings;
+    frame_header.flags = 0x0;
+    frame_header.reserved = 0x0;
+    frame_header.stream_id = 0;
+    frame_header.callback_payload_to_bytes = settings_payload_to_bytes_custom_fake;
+
+    for (int i = 0; i < count; i++) {
+        settings_pairs[i].identifier = ids[i];
+        settings_pairs[i].value = values[i];
+    }
+
+    settings_payload.count = count;
+    settings_payload.pairs = settings_pairs;
 
 
-    uint8_t expected_bytes[] = { 0, 0, 6, SETTINGS_TYPE, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
+    uint8_t expected_bytes[] = { 0, 0, 6, SETTINGS_TYPE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1};
 
 
     append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
@@ -379,8 +470,23 @@ void test_frame_to_bytes_headers(void)
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
+    /*Create headers frame*/
+    //int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *header_block_fragment)
 
-    create_headers_frame(headers_block, headers_block_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+    frame_type_t type = HEADERS_TYPE;
+    uint8_t flags = 0x0;
+    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is implemented
+
+    frame_header.length = length;
+    frame_header.type = type;
+    frame_header.flags = flags;
+    frame_header.stream_id = stream_id;
+    frame_header.reserved = 0;
+    frame_header.callback_payload_to_bytes = headers_payload_to_bytes_custom_fake;
+
+    buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    headers_payload.header_block_fragment = header_block_fragment;
+    //create_headers_frame(headers_block, headers_block_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
     frame_t frame;
     frame.frame_header = &frame_header;
     frame.payload = (void *)&headers_payload;
@@ -414,7 +520,21 @@ void test_frame_to_bytes_continuation(void)
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
 
-    create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+    //create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+    uint8_t type = CONTINUATION_TYPE;
+    uint8_t flags = 0x0;
+    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is implemented
+
+    frame_header.length = length;
+    frame_header.type = type;
+    frame_header.flags = flags;
+    frame_header.stream_id = stream_id;
+    frame_header.reserved = 0;
+    frame_header.callback_payload_to_bytes = continuation_payload_to_bytes_custom_fake;
+
+    buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    continuation_payload.header_block_fragment = header_block_fragment;
+
     frame_t frame;
     frame.frame_header = &frame_header;
     frame.payload = (void *)&continuation_payload;
@@ -508,7 +628,22 @@ void test_frame_to_bytes_data(void)
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_num;
 
-    create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
+    //create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
+    //int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data, uint8_t *data_to_send, int length, uint32_t stream_id)
+    uint8_t type = DATA_TYPE;
+    uint8_t flags = 0x0;
+
+    //uint32_t length = length; //no padding, no dependency. fix if this is implemented
+
+    frame_header.length = length;
+    frame_header.type = type;
+    frame_header.flags = flags;
+    frame_header.stream_id = stream_id;
+    frame_header.reserved = 0;
+    frame_header.callback_payload_to_bytes = data_payload_to_bytes_custom_fake;
+
+    buffer_copy(data, data_to_send, length);
+    data_payload.data = data;     //not duplicating info
     frame_t frame;
     frame.frame_header = &frame_header;
     frame.payload = (void *)&data_payload;
@@ -544,13 +679,23 @@ void test_frame_to_bytes_window_update(void)
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_num;
 
-    int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, stream_id);
-    TEST_ASSERT_EQUAL(0, rc);
+    //int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, stream_id);
+    frame_header.stream_id = stream_id;
+    frame_header.type = WINDOW_UPDATE_TYPE;
+    frame_header.length = 4;
+    frame_header.reserved = 0;
+    frame_header.flags = 0;
+    frame_header.callback_payload_to_bytes = window_update_payload_to_bytes_custom_fake;
+
+    window_update_payload.reserved = 0;
+    window_update_payload.window_size_increment = window_size_increment;
+
+    //TEST_ASSERT_EQUAL(0, rc);
     frame_t frame;
     frame.frame_header = &frame_header;
     frame.payload = (void *)&window_update_payload;
     uint8_t bytes[30];
-    rc = frame_to_bytes(&frame, bytes);
+    int rc = frame_to_bytes(&frame, bytes);
 
     uint8_t expected_bytes[] = {
         0, 0, 4,
@@ -561,7 +706,7 @@ void test_frame_to_bytes_window_update(void)
     };
     TEST_ASSERT_EQUAL(13, rc);
     for (int i = 0; i < rc; i++) {
-        printf("i:%d", i);
+        //printf("i:%d", i);
         TEST_ASSERT_EQUAL(expected_bytes[i], bytes[i]);
     }
 }
@@ -585,13 +730,25 @@ void test_frame_to_bytes_goaway(void)
 
 
 
-    int rc = create_goaway_frame(&frame_header, &goaway_payload, additional_debug_data_buffer, last_stream_id, error_code, additional_debug_data, additional_debug_data_size);
-    TEST_ASSERT_EQUAL(0, rc);
+    //int rc = create_goaway_frame(&frame_header, &goaway_payload, additional_debug_data_buffer, last_stream_id, error_code, additional_debug_data, additional_debug_data_size);
+    //TEST_ASSERT_EQUAL(0, rc);
+    frame_header.stream_id = 0;
+    frame_header.type = GOAWAY_TYPE;
+    frame_header.length = 8 + additional_debug_data_size;
+    frame_header.flags = 0;
+    frame_header.reserved = 0;
+    frame_header.callback_payload_to_bytes = goaway_payload_to_bytes_custom_fake;
+
+    goaway_payload.last_stream_id = last_stream_id;
+    goaway_payload.error_code = error_code;
+    buffer_copy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
+    goaway_payload.additional_debug_data = additional_debug_data_buffer;
+
     frame_t frame;
     frame.frame_header = &frame_header;
     frame.payload = (void *)&goaway_payload;
     uint8_t bytes[30];
-    rc = frame_to_bytes(&frame, bytes);
+    int rc = frame_to_bytes(&frame, bytes);
 
     uint8_t expected_bytes[] = {
         0, 0, 12,
@@ -615,12 +772,13 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
+    UNIT_TEST(test_compress_headers);
     UNIT_TEST(test_set_flag);
     UNIT_TEST(test_is_flag_set);
+
     UNIT_TEST(test_frame_header_to_bytes);
     UNIT_TEST(test_frame_header_to_bytes_reserved);
     UNIT_TEST(test_bytes_to_frame_header);
-    UNIT_TEST(test_create_settings_ack_frame);
 
     UNIT_TEST(test_frame_to_bytes_headers)
     UNIT_TEST(test_frame_to_bytes_continuation)
@@ -628,12 +786,6 @@ int main(void)
     UNIT_TEST(test_frame_to_bytes_window_update);
     UNIT_TEST(test_frame_to_bytes_goaway);
     UNIT_TEST(test_frame_to_bytes_settings);
-
-
-    UNIT_TEST(test_compress_headers);
-
-
-
 
     return UNIT_TESTS_END();
 }
