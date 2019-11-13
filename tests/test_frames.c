@@ -178,39 +178,6 @@ int settings_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *pa
     return 6 * count;
 }
 
-void test_set_flag(void)
-{
-    uint8_t flag_byte = (uint8_t)0;
-    uint8_t set_flag_1 = (uint8_t)0x1;
-    uint8_t set_flag_2 = (uint8_t)0x4;
-
-    flag_byte = set_flag(flag_byte, set_flag_1);
-
-    TEST_ASSERT_EQUAL(flag_byte, set_flag_1);
-
-    flag_byte = set_flag(flag_byte, set_flag_2);
-
-    TEST_ASSERT_EQUAL(flag_byte, set_flag_1 | set_flag_2);
-}
-
-void test_is_flag_set(void)
-{
-    uint8_t flag_byte = (uint8_t)0;
-    uint8_t set_flag_1 = (uint8_t)0x1;
-    uint8_t set_flag_2 = (uint8_t)0x4;
-    uint8_t unset_flag = (uint8_t)0x8;
-
-    flag_byte = set_flag(flag_byte, set_flag_1);
-    TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_1));
-    flag_byte = set_flag(flag_byte, set_flag_2);
-    TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_1));
-    TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_2));
-    TEST_ASSERT_EQUAL(0, is_flag_set(flag_byte, unset_flag));
-}
-
-
-
-
 int uint32_24_to_byte_array_custom_fake_6(uint32_t num, uint8_t *byte_array)
 {
     byte_array[0] = 0;
@@ -249,6 +216,90 @@ int append_byte_arrays_custom_fake(uint8_t *dest, uint8_t *array1, uint8_t *arra
     //memcpy(total+sizeof(array1), array2, sizeof(array2));
     return size1 + size2;
 }
+
+int uint32_to_byte_array_custom_fake_300(uint32_t num, uint8_t *byte_array)
+{
+    byte_array[0] = 0;
+    byte_array[1] = 0;
+    byte_array[2] = 1;
+    byte_array[3] = 44;
+    return 0;
+}
+
+int uint16_to_byte_array_custom_fake_300(uint16_t num, uint8_t *byte_array)
+{
+    byte_array[0] = 1;
+    byte_array[1] = 44;
+    return 0;
+}
+
+
+int uint32_to_byte_array_custom_fake_num(uint32_t num, uint8_t *byte_array)
+{
+    byte_array[0] = 0;
+    byte_array[1] = 0;
+    byte_array[2] = 0;
+    byte_array[3] = (uint8_t)num;
+    return 0;
+}
+
+int uint32_24_to_byte_array_custom_fake_num(uint32_t num, uint8_t *byte_array)
+{
+    byte_array[0] = 0;
+    byte_array[1] = 0;
+    byte_array[2] = (uint8_t)num;
+    return 0;
+}
+
+
+int uint16_to_byte_array_custom_fake_num(uint16_t num, uint8_t *byte_array)
+{
+    byte_array[0] = 0;
+    byte_array[1] = (uint8_t)num;
+    return 0;
+}
+
+uint16_t bytes_to_uint16_custom_fake_num(uint8_t *bytes)
+{
+    return (uint16_t)bytes[1];
+}
+
+uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
+{
+    return (uint32_t)bytes[3];
+}
+
+/*End of mocks*/
+void test_set_flag(void)
+{
+    uint8_t flag_byte = (uint8_t)0;
+    uint8_t set_flag_1 = (uint8_t)0x1;
+    uint8_t set_flag_2 = (uint8_t)0x4;
+
+    flag_byte = set_flag(flag_byte, set_flag_1);
+
+    TEST_ASSERT_EQUAL(flag_byte, set_flag_1);
+
+    flag_byte = set_flag(flag_byte, set_flag_2);
+
+    TEST_ASSERT_EQUAL(flag_byte, set_flag_1 | set_flag_2);
+}
+
+void test_is_flag_set(void)
+{
+    uint8_t flag_byte = (uint8_t)0;
+    uint8_t set_flag_1 = (uint8_t)0x1;
+    uint8_t set_flag_2 = (uint8_t)0x4;
+    uint8_t unset_flag = (uint8_t)0x8;
+
+    flag_byte = set_flag(flag_byte, set_flag_1);
+    TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_1));
+    flag_byte = set_flag(flag_byte, set_flag_2);
+    TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_1));
+    TEST_ASSERT_EQUAL(1, is_flag_set(flag_byte, set_flag_2));
+    TEST_ASSERT_EQUAL(0, is_flag_set(flag_byte, unset_flag));
+}
+
 
 void test_frame_header_to_bytes(void)
 {
@@ -342,48 +393,6 @@ void test_bytes_to_frame_header(void)
 }
 
 
-int uint32_to_byte_array_custom_fake_300(uint32_t num, uint8_t *byte_array)
-{
-    byte_array[0] = 0;
-    byte_array[1] = 0;
-    byte_array[2] = 1;
-    byte_array[3] = 44;
-    return 0;
-}
-
-int uint16_to_byte_array_custom_fake_300(uint16_t num, uint8_t *byte_array)
-{
-    byte_array[0] = 1;
-    byte_array[1] = 44;
-    return 0;
-}
-
-
-int uint32_to_byte_array_custom_fake_num(uint32_t num, uint8_t *byte_array)
-{
-    byte_array[0] = 0;
-    byte_array[1] = 0;
-    byte_array[2] = 0;
-    byte_array[3] = (uint8_t)num;
-    return 0;
-}
-
-int uint32_24_to_byte_array_custom_fake_num(uint32_t num, uint8_t *byte_array)
-{
-    byte_array[0] = 0;
-    byte_array[1] = 0;
-    byte_array[2] = (uint8_t)num;
-    return 0;
-}
-
-
-int uint16_to_byte_array_custom_fake_num(uint16_t num, uint8_t *byte_array)
-{
-    byte_array[0] = 0;
-    byte_array[1] = (uint8_t)num;
-    return 0;
-}
-
 void test_frame_to_bytes_settings(void)
 {
     int count = 2;
@@ -441,16 +450,6 @@ void test_frame_to_bytes_settings(void)
     for (int i = 0; i < size; i++) {
         TEST_ASSERT_EQUAL(expected_bytes[i], result_bytes[i]);
     }
-}
-
-uint16_t bytes_to_uint16_custom_fake_num(uint8_t *bytes)
-{
-    return (uint16_t)bytes[1];
-}
-
-uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
-{
-    return (uint32_t)bytes[3];
 }
 
 void test_frame_to_bytes_headers(void)
