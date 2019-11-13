@@ -10,7 +10,7 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t *, goaway_payload_t *, uint8_t *, uint32_t, uint32_t,  uint8_t *, uint8_t);
 FAKE_VALUE_FUNC(int, frame_to_bytes, frame_t *, uint8_t *);
-FAKE_VALUE_FUNC(int, prepare_new_stream, h2states_t *);
+FAKE_VOID_FUNC(prepare_new_stream, h2states_t *);
 FAKE_VALUE_FUNC(uint8_t, set_flag, uint8_t, uint8_t);
 
 #define FFF_FAKES_LIST(FAKE)            \
@@ -146,8 +146,6 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-    // Call tests here
-    UNIT_TEST(test_example);
     UNIT_TEST(test_change_stream_state_end_stream_flag);
 
     return UNIT_TESTS_END();
