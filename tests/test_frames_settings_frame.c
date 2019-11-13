@@ -190,6 +190,22 @@ void test_setting_to_bytes(void)
     }
 }
 
+void test_create_settings_ack_frame(void)
+{
+    frame_t frame;
+    frame_header_t frame_header;
+
+    create_settings_ack_frame(&frame, &frame_header);
+
+    TEST_ASSERT_EQUAL(SETTINGS_ACK_FLAG, frame.frame_header->flags);
+    TEST_ASSERT_EQUAL(SETTINGS_TYPE, frame.frame_header->type);
+    TEST_ASSERT_EQUAL(0, frame.frame_header->length);
+    TEST_ASSERT_EQUAL(0, frame.frame_header->stream_id);
+    TEST_ASSERT_EQUAL(0, frame.frame_header->reserved);
+}
+
+
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -199,6 +215,7 @@ int main(void)
     UNIT_TEST(test_create_settings_frame);
     UNIT_TEST(test_read_settings_payload);
     UNIT_TEST(test_setting_to_bytes);
+    UNIT_TEST(test_create_settings_ack_frame);
     //TODO create settings_payload_to_bytes_test
     return UNIT_TESTS_END();
 }

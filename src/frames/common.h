@@ -31,4 +31,10 @@ typedef struct FRAME_HEADER {
     int (*callback_payload_to_bytes)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *byte_array);
 } frame_header_t; //72 bits-> 9 bytes
 
+/*FRAME*/
+typedef struct {
+    frame_header_t *frame_header;
+    void *payload;
+}frame_t;
+
 #endif /*FRAMES_COMMON_H*/

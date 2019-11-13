@@ -11,13 +11,6 @@
 #include "settings_frame.h"
 #include "hpack.h"
 
-/*FRAME*/
-typedef struct {
-    frame_header_t *frame_header;
-    void *payload;
-}frame_t;
-
-
 /*RST_STREAM FRAME*/
 typedef struct {
     uint32_t error_code;

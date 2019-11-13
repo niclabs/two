@@ -29,4 +29,5 @@ int read_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *
 
 int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_header_t *frame_header,
                           settings_payload_t *settings_payload, settings_pair_t *pairs);
+int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header);
 #endif //TWO_SETTINGS_FRAME_H

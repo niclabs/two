@@ -115,3 +115,23 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_head
     settings_payload->pairs = pairs;
     return 0;
 }
+
+/*
+ * Function: create_settings_ack_frame
+ * Create a Frame of type settings with flag ack
+ * Input:  pointer to frame, pointer to frameheader
+ * Output: 0 if setting frame was created
+ */
+int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
+{
+    frame_header->length = 0;
+    frame_header->type = SETTINGS_TYPE;//settings;
+    frame_header->flags = SETTINGS_ACK_FLAG;
+    frame_header->reserved = 0x0;
+    frame_header->stream_id = 0;
+    frame_header->callback_payload_to_bytes = settings_payload_to_bytes;
+    frame->frame_header = frame_header;
+
+    frame->payload = NULL;
+    return 0;
+}

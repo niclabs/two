@@ -256,7 +256,7 @@ void test_bytes_to_frame_header(void)
     bytes_to_uint32_24_fake.return_val = length;
     bytes_to_uint32_31_fake.return_val = stream_id;
 
-    bytes_to_frame_header(bytes, 9, &decoder_frame_header);
+    frame_header_from_bytes(bytes, 9, &decoder_frame_header);
 
     TEST_ASSERT_EQUAL_MESSAGE(length, decoder_frame_header.length, "wrong length.");
     TEST_ASSERT_EQUAL_MESSAGE(flags, decoder_frame_header.flags, "wrong flag.");
@@ -327,7 +327,7 @@ void test_frame_to_bytes_settings(void)
     create_settings_frame(ids, values, count, &frame_header, &settings_payload, setting_pairs);
 
 
-    uint8_t expected_bytes[] = { 0, 0, 6, SETTINGS_TYPE, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  0, 1, 0, 0, 0, 1 };
+    uint8_t expected_bytes[] = { 0, 0, 6, SETTINGS_TYPE, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
 
 
     append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
@@ -361,21 +361,6 @@ uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
 {
     return (uint32_t)bytes[3];
 }
-
-void test_create_settings_ack_frame(void)
-{
-    frame_t frame;
-    frame_header_t frame_header;
-
-    create_settings_ack_frame(&frame, &frame_header);
-
-    TEST_ASSERT_EQUAL(SETTINGS_ACK_FLAG, frame.frame_header->flags);
-    TEST_ASSERT_EQUAL(SETTINGS_TYPE, frame.frame_header->type);
-    TEST_ASSERT_EQUAL(0, frame.frame_header->length);
-    TEST_ASSERT_EQUAL(0, frame.frame_header->stream_id);
-    TEST_ASSERT_EQUAL(0, frame.frame_header->reserved);
-}
-
 
 void test_frame_to_bytes_headers(void)
 {
