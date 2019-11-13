@@ -17,9 +17,9 @@
 * Function: prepare_new_stream
 * Prepares a new stream, setting its state as STREAM_IDLE.
 * Input: -> st: pointer to hstates_t struct where connection variables are stored
-* Output: 0.
+* Output: void.
 */
-int prepare_new_stream(h2states_t* st);
+void prepare_new_stream(h2states_t* st);
 
 /*
 * Function: read_setting_from
