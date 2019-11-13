@@ -38,20 +38,49 @@ void test_handle_data_payload_no_flags(void) {
     frame_header_t head;
     head.length = 10;
     data_payload_t dpl;
-    uint8_t nums[10];
-    for(int i = 0; i < 10; i++){
-      nums[i] = i+1;
-    }
-    dpl.data = nums;
     cbuf_t bout;
     h2states_t h2s;
     h2s.data.size = 0;
     // Fake settings
     flow_control_receive_data_fake.return_val = 0;
     is_flag_set_fake.return_val = 0;
+    int rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
+    TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, head.length, "Data size must be equal to header payload's length");
+}
+
+void test_handle_data_payload_multi_data(void) {
+    frame_header_t head;
+    head.length = 12;
+    data_payload_t dpl;
+    cbuf_t bout;
+    h2states_t h2s;
+    // h2s.headers.headers = h2s.headers_buf;
+    // h2s.headers.count = 0;
+    // h2s.headers.maxlen = 200;
+    // strncpy(h2s.headers.headers[0].name, ":method", 20);
+    // strncpy(h2s.headers.headers[0].value, "value", 20);
+    // strncpy(h2s.headers.headers[1].name, ":scheme", 20);
+    // strncpy(h2s.headers.headers[1].value, "value", 20);
+    // strncpy(h2s.headers.headers[2].name, ":path", 20);
+    // strncpy(h2s.headers.headers[2].value, "value", 20);
+    // h2s.headers.count = 3;
+    h2s.data.size = 0;
+    // Fake settings
+    flow_control_receive_data_fake.return_val = 0;
+    int flag_set_returns[3] = {0,0,1};
+    SET_RETURN_SEQ(is_flag_set, flag_set_returns, 3);
+    http_server_response_fake.return_val = 0;
+    send_response_fake.return_val = 0;
+    headers_get_fake.return_val = "value";
     //cbuf_pop_fake.custom_fake = cbuf_pop_preface_fake;
     int rc = handle_data_payload(&head, &dpl, &bout, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
+    rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
+    rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
+    TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, 3*head.length, "Data size must be equal to header payload's length");
 }
 
 int main(void)
@@ -60,6 +89,7 @@ int main(void)
 
     // Call tests here
     UNIT_TEST(test_handle_data_payload_no_flags);
+    UNIT_TEST(test_handle_data_payload_multi_data);
 
     return UNIT_TESTS_END();
 }
