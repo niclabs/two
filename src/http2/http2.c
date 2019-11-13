@@ -111,6 +111,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
 
         DEBUG("Internal error response sent. Terminating connection");
+        DEBUG("http2_receive_header returning null callback");
         return null_callback();
     }
     DEBUG("Received new frame header 0x%d", header.type);
@@ -122,6 +123,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
 
         DEBUG("FRAME_SIZE_ERROR sent. Terminating connection");
+        DEBUG("http2_receive_header returning null callback");
         return null_callback();
     }
 
@@ -134,6 +136,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     rc = check_incoming_condition(buf_out, h2s);
     if (rc < 0) {
         DEBUG("incoming_condition returned < 0");
+        DEBUG("http2_receive_header returning null callback");
         return null_callback();
     }
 
@@ -142,9 +145,10 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     if (rc == 1) {
         callback_t ret = { receive_header, NULL };
         DEBUG("incoming_condition returned 1");
+        DEBUG("http2_receive_header returning receive_header callback");
         return ret;
     }
-
+    DEBUG("http2_receive_header returning receive_payload callback");
     callback_t ret = { receive_payload, NULL };
     return ret;
 }
