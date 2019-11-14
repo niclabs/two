@@ -105,7 +105,11 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
       return -1;
     }
     if(end_stream){
-      change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+      rc = change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+      if(rc < 0){
+          DEBUG("send_data: Close connection. GOAWAY previously received");
+          return -1;
+      }
     }
     h2s->data.processed += count_data_to_send;
     if(h2s->data.size == h2s->data.processed) {
@@ -440,7 +444,11 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
         return rc;
       }
       if(end_stream){
-        change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+        rc = change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+        if(rc < 0){
+            DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
+            return -1;
+        }
       }
       return rc;
   }
@@ -469,7 +477,11 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s){
         return rc;
       }
       if(end_stream){
-        change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+        rc = change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+        if(rc < 0){
+            DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
+            return -1;
+        }
       }
       return rc;
   }
