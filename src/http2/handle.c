@@ -51,7 +51,11 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
     }
     // Stream state handling for end stream flag
     if(h2s->received_end_stream == 1){
-        change_stream_state_end_stream_flag(0, buf_out, h2s); // 0 is for receiving
+        rc = change_stream_state_end_stream_flag(0, buf_out, h2s); // 0 is for receiving
+        if(rc < 0){
+            DEBUG("handle_data_payload: Close connection. GOAWAY previously received");
+            return -1;
+        }
         h2s->received_end_stream = 0;
         rc = validate_pseudoheaders(&h2s->headers);
         if(rc < 0){
@@ -133,7 +137,11 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
       //st->hd_lists.header_list_count_in = rc;
       h2s->waiting_for_end_headers_flag = 0;//RESET TO 0
       if(h2s->received_end_stream == 1){
-          change_stream_state_end_stream_flag(0, buf_out, h2s); //0 is for receiving
+          rc = change_stream_state_end_stream_flag(0, buf_out, h2s); //0 is for receiving
+          if(rc < 0){
+              DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
+              return -1;
+          }
           h2s->received_end_stream = 0;//RESET TO 0
           rc = validate_pseudoheaders(&h2s->headers);
           if(rc < 0){
