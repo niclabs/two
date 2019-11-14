@@ -520,7 +520,8 @@ int send_response(cbuf_t *buf_out, h2states_t *h2s)
 {
     if (h2s->headers.count == 0) {
         ERROR("There were no headers to write");
-        return -1;
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     int rc;
     if (h2s->data.size > 0) {
