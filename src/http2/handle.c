@@ -99,14 +99,14 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
     if (hbf_size >= HTTP2_MAX_HBF_BUFFER) {
         ERROR("Header block fragments too big (not enough space allocated). INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     //first we receive fragments, so we save those on the h2s->header_block_fragments buffer
     rc = buffer_copy(h2s->header_block_fragments + h2s->header_block_fragments_pointer, hpl->header_block_fragment, hbf_size);
     if (rc < 1) {
         ERROR("Headers' header block fragment were not written or paylaod was empty. rc = %d", rc);
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     h2s->header_block_fragments_pointer += rc;
     //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
@@ -126,50 +126,50 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
                 ERROR("Error was found receiving header_block. INTERNAL ERROR");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
             }
-            return -1;
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         if (rc != h2s->header_block_fragments_pointer) {
             ERROR("ERROR still exists fragments to receive. Read %d bytes of %d bytes", rc, h2s->header_block_fragments_pointer);
             send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-            return -1;
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         else {//all fragments already received.
             h2s->header_block_fragments_pointer = 0;
         }
-        //st->hd_lists.header_list_count_in = rc;
         h2s->waiting_for_end_headers_flag = 0;                          //RESET TO 0
         if (h2s->received_end_stream == 1) {
             rc = change_stream_state_end_stream_flag(0, buf_out, h2s);  //0 is for receiving
             if (rc < 0) {
                 DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
-                return -1;
+                return HTTP2_RC_CLOSE_CONNECTION;
             }
             h2s->received_end_stream = 0;//RESET TO 0
             rc = validate_pseudoheaders(&h2s->headers);
             if (rc < 0) {
                 ERROR("handle_continuation_payload: Malformed request received");
                 send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-                return -1;
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
             // Generate response through http layer
             rc = http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
             if (rc < 0) {
                 DEBUG("An error occurred during http layer response generation");
-                return rc;
+                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
 
             // Generate http2 response using http response
-            return send_response(buf_out, h2s);
+            return (h2_ret_code_t)send_response(buf_out, h2s);
         }
         uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
         uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
         if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
             ERROR("Header list size greater than max allowed. Send HTTP 431");
             //TODO send error and finish stream
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
