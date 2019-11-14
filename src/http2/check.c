@@ -51,35 +51,35 @@ int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s)
         //protocol error
         ERROR("CONTINUATION frame was expected. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (h2s->header.stream_id == 0) {
         ERROR("Invalid stream id: 0. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (h2s->header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)) {
         ERROR("Frame exceeds the MAX_FRAME_SIZE. FRAME SIZE ERROR");
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (h2s->current_stream.state == STREAM_IDLE) {
         if (h2s->header.stream_id < h2s->last_open_stream_id) {
             ERROR("Invalid stream id: not bigger than last open. PROTOCOL ERROR");
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-            return -1;
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         if (h2s->header.stream_id % 2 != h2s->is_server) {
             INFO("Incoming stream id: %u", h2s->header.stream_id);
             ERROR("Invalid stream id parity. PROTOCOL ERROR");
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-            return -1;
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         else { // Open a new stream, update last_open and last_peer stream
             h2s->current_stream.stream_id = h2s->header.stream_id;
             h2s->current_stream.state = STREAM_OPEN;
             h2s->last_open_stream_id = h2s->current_stream.stream_id;
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
     }
     else if (h2s->current_stream.state != STREAM_OPEN &&
@@ -87,16 +87,16 @@ int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s)
         //stream closed error
         ERROR("Current stream is not open. STREAM CLOSED ERROR");
         send_connection_error(buf_out, HTTP2_STREAM_CLOSED, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->header.stream_id != h2s->current_stream.stream_id) {
         //protocol error
         ERROR("Stream ids do not match. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else {
-        return 0;
+        return HTTP2_RC_NO_ERROR;
     }
 }
 
