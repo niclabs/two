@@ -8,39 +8,39 @@ int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s)
     if (h2s->waiting_for_end_headers_flag) {
         ERROR("CONTINUATION or HEADERS frame was expected. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (h2s->current_stream.stream_id == 0) {
         ERROR("Data stream ID is 0. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)) {
         ERROR("Data payload bigger than allower. MAX_FRAME_SIZE error");
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->header.stream_id > h2s->current_stream.stream_id) {
         ERROR("Stream ID is invalid. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->header.stream_id < h2s->current_stream.stream_id) {
         ERROR("Stream closed. STREAM CLOSED ERROR");
         send_connection_error(buf_out, HTTP2_STREAM_CLOSED, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->current_stream.state == STREAM_IDLE) {
         ERROR("Stream was in IDLE state. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->current_stream.state != STREAM_OPEN && h2s->current_stream.state != STREAM_HALF_CLOSED_LOCAL) {
         ERROR("Stream was not in a valid state for data. STREAM CLOSED ERROR");
         send_connection_error(buf_out, HTTP2_STREAM_CLOSED, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 
