@@ -145,7 +145,7 @@ void test_check_incoming_headers_condition(void)
     uint32_t read_setting_from_returns[1] = { 128 };
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     int rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be 0");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
 }
@@ -199,17 +199,17 @@ void test_check_incoming_headers_condition_error(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     int rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (waiting for end headers flag set)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (waiting for end headers flag set)");
     rc = check_incoming_headers_condition(&buf_out, &h2s_valid);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id equals to 0)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream id equals to 0)");
     rc = check_incoming_headers_condition(&buf_out, &h2s_fs);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (frame size bigger than MAX_FRAME_SIZE");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (frame size bigger than MAX_FRAME_SIZE");
     rc = check_incoming_headers_condition(&buf_out, &h2s_last);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id not bigger than last open)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream id not bigger than last open)");
     rc = check_incoming_headers_condition(&buf_out, &h2s_parity);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id parity is wrong)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream id parity is wrong)");
     rc = check_incoming_headers_condition(&buf_out, &h2s_parity_c);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (stream id parity is wrong)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream id parity is wrong)");
 }
 
 void test_check_incoming_headers_condition_creation_of_stream(void)
@@ -231,7 +231,7 @@ void test_check_incoming_headers_condition_creation_of_stream(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     int rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be 0");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
@@ -239,7 +239,7 @@ void test_check_incoming_headers_condition_creation_of_stream(void)
     h2s.current_stream.stream_id = 2438;
     h2s.current_stream.state = STREAM_IDLE;
     rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == 0, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_NO_ERROR, "Return code must be 0");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
@@ -262,17 +262,17 @@ void test_check_incoming_headers_condition_mismatch(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     int rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (streams ids do not match)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (streams ids do not match)");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2438, "Stream id must be 2438");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
 
     h2s.current_stream.state = STREAM_CLOSED;
     rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (STREAM_CLOSED_ERROR)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (STREAM_CLOSED_ERROR)");
 
     h2s.current_stream.stream_id = 2440;
     rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "Return code must be -1 (STREAM_CLOSED_ERROR)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (STREAM_CLOSED_ERROR)");
 }
 
 void test_check_incoming_settings_condition(void)
