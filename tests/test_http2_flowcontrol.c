@@ -35,7 +35,7 @@ void test_increase_window_used(void)
     int iwu = increase_window_used((h2_window_manager_t *)&wm, 3);
 
     // Return value should be 0
-    TEST_ASSERT_EQUAL(0, iwu);
+    TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, iwu);
 
     // Check if window_used have the correct content
     TEST_ASSERT_EQUAL( 8, wm[0].window_used);
