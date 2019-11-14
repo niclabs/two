@@ -110,7 +110,7 @@ void test_flow_control_send_data_success(void)
     int fcsd = flow_control_send_data((h2states_t *)&h2s, 7);
 
     // Return value should be 0
-    TEST_ASSERT_EQUAL(0, fcsd);
+    TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, fcsd);
 
     // Check if outgoing_window have the correct content
     TEST_ASSERT_EQUAL( 12, h2s[0].outgoing_window.window_used);
@@ -129,7 +129,7 @@ void test_flow_control_send_data_fail(void)
     int fcsd = flow_control_send_data((h2states_t *)&h2s, 7);
 
     // Return value should be -1
-    TEST_ASSERT_EQUAL(-1, fcsd);
+    TEST_ASSERT_EQUAL(HTTP2_RC_ERROR, fcsd);
 
     // Check if outgoing_window have the correct content
     TEST_ASSERT_EQUAL( 10, h2s[0].outgoing_window.window_used);
