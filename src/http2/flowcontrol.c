@@ -36,7 +36,7 @@ int increase_window_used(h2_window_manager_t *window_manager, uint32_t data_size
 int decrease_window_used(h2_window_manager_t *window_manager, uint32_t window_size_increment)
 {
     window_manager->window_used -= window_size_increment;
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
