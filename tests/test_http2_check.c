@@ -44,7 +44,7 @@ void test_check_incoming_data_condition(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     int rc = check_incoming_data_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "return code must be HTTP2_RC_NO_ERROR");
     TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 1, "call count must be 1");
 
 }
@@ -145,7 +145,7 @@ void test_check_incoming_headers_condition(void)
     uint32_t read_setting_from_returns[1] = { 128 };
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     int rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be HTTP2_RC_NO_ERROR");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
 }
@@ -231,7 +231,7 @@ void test_check_incoming_headers_condition_creation_of_stream(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     int rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be HTTP2_RC_NO_ERROR");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
@@ -239,7 +239,7 @@ void test_check_incoming_headers_condition_creation_of_stream(void)
     h2s.current_stream.stream_id = 2438;
     h2s.current_stream.state = STREAM_IDLE;
     rc = check_incoming_headers_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_NO_ERROR, "Return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be HTTP2_RC_NO_ERROR");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Current stream id must be 2440");
@@ -354,7 +354,7 @@ void test_check_incoming_goaway_condition(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     int rc = check_incoming_goaway_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
 
 }
 
