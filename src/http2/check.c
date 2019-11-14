@@ -140,14 +140,14 @@ int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s)
     if (h2s->header.stream_id != 0x0) {
         ERROR("GOAWAY doesnt have STREAM ID 0. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (h2s->header.length > read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE)) {
         ERROR("GOAWAY payload bigger than allowed. MAX_FRAME_SIZE ERROR");
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s)
