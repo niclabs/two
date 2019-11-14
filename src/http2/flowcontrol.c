@@ -106,5 +106,5 @@ uint32_t get_size_data_to_send(h2states_t *h2s)
     else {
         return h2s->data.size - h2s->data.processed;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
