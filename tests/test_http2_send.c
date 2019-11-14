@@ -57,14 +57,6 @@ void test_change_stream_state_end_stream_flag(void)
     TEST_ASSERT_MESSAGE(h2s_hcr.current_stream.state == STREAM_CLOSED, "state must be STREAM_CLOSED");
     TEST_ASSERT_MESSAGE(prepare_new_stream_fake.call_count == 1, "prepare_new_stream must have been called");
     TEST_ASSERT_EQUAL(STREAM_CLOSED, prepare_new_stream_fake.arg0_val->current_stream.state);
-/*
-    h2s_hcr.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
-    h2s_hcr.received_goaway = 1;
-    rc = change_stream_state_end_stream_flag(1, &buf_out, &h2s_hcr);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION, "return code must be HTTP2_RC_CLOSE_CONNECTION");
-    TEST_ASSERT_MESSAGE(h2s_hcr.current_stream.state == STREAM_CLOSED, "state must be STREAM_CLOSED");
-    TEST_ASSERT_MESSAGE(prepare_new_stream_fake.call_count == 1, "prepare_new_stream should not have been called");
-*/
 
     h2states_t h2s_hcl;
 
@@ -75,19 +67,34 @@ void test_change_stream_state_end_stream_flag(void)
     TEST_ASSERT_MESSAGE(h2s_hcl.current_stream.state == STREAM_CLOSED, "state must be STREAM_CLOSED");
     TEST_ASSERT_MESSAGE(prepare_new_stream_fake.call_count == 2, "prepare_new_stream must have been called");
     TEST_ASSERT_EQUAL(STREAM_CLOSED, prepare_new_stream_fake.arg0_val->current_stream.state);
-/*
+
+}
+
+void test_change_stream_state_end_stream_flag_close_connection(void)
+{
+    cbuf_t buf_out;
+
+    h2states_t h2s_hcr;
+
+    h2s_hcr.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    h2s_hcr.received_goaway = 1;
+    int rc = change_stream_state_end_stream_flag(1, &buf_out, &h2s_hcr);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION, "return code must be HTTP2_RC_CLOSE_CONNECTION");
+    TEST_ASSERT_MESSAGE(h2s_hcr.current_stream.state == STREAM_CLOSED, "state must be STREAM_CLOSED");
+    TEST_ASSERT_MESSAGE(prepare_new_stream_fake.call_count == 0, "prepare_new_stream should not have been called");
+
+    h2states_t h2s_hcl;
+
     h2s_hcl.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
     h2s_hcl.received_goaway = 1;
     rc = change_stream_state_end_stream_flag(0, &buf_out, &h2s_hcl);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION, "return code must be HTTP2_RC_CLOSE_CONNECTION");
     TEST_ASSERT_MESSAGE(h2s_hcl.current_stream.state == STREAM_CLOSED, "state must be STREAM_CLOSED");
-    TEST_ASSERT_MESSAGE(prepare_new_stream_fake.call_count == 2, "prepare_new_stream should not have been called");
-*/
+    TEST_ASSERT_MESSAGE(prepare_new_stream_fake.call_count == 0, "prepare_new_stream should not have been called");
+
 }
 
 /*
-
-   void test_change_stream_state_end_stream_flag_close_connection(void){}
 
    void test_send_data(void){}
 
@@ -147,6 +154,7 @@ int main(void)
     UNIT_TESTS_BEGIN();
 
     UNIT_TEST(test_change_stream_state_end_stream_flag);
+    UNIT_TEST(test_change_stream_state_end_stream_flag_close_connection);
 
     return UNIT_TESTS_END();
 }
