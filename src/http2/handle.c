@@ -41,7 +41,7 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
 
     if (rc < 0) {
         send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     buffer_copy(h2s->data.buf + h2s->data.size, data_payload->data, data_length);
     h2s->data.size += data_length;
@@ -53,26 +53,26 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
         rc = change_stream_state_end_stream_flag(0, buf_out, h2s); // 0 is for receiving
         if (rc < 0) {
             DEBUG("handle_data_payload: Close connection. GOAWAY previously received");
-            return -1;
+            return HTTP2_RC_CLOSE_CONNECTION;
         }
         h2s->received_end_stream = 0;
         rc = validate_pseudoheaders(&h2s->headers);
         if (rc < 0) {
             ERROR("handle_continuation_payload: Malformed request received");
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-            return -1;
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
-        // Generate response through http layer
+        // Generate response through http layer. !! Check http_server_response possible error codes and send errors
         rc = http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
         if (rc < 0) {
             DEBUG("An error occurred during http layer response generation");
-            return rc;
+            return HTTP2_RC_ERROR;
         }
 
-        // Generate http2 response using http response
-        return send_response(buf_out, h2s);
+        // Generate http2 response using http response. !! Check possible errors codes on send_response
+        return (h2_ret_code_t)send_response(buf_out, h2s);
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
