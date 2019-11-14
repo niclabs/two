@@ -69,10 +69,10 @@ int flow_control_send_data(h2states_t *h2s, uint32_t data_sent)
 {
     if (data_sent > get_window_available_size(h2s->outgoing_window)) {
         ERROR("Trying to send more data than allowed by window.");
-        return -1;
+        return HTTP2_RC_ERROR;
     }
     increase_window_used(&h2s->outgoing_window, data_sent);
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increment)
