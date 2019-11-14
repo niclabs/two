@@ -89,10 +89,10 @@ int flow_control_receive_window_update(h2states_t *h2s, uint32_t window_size_inc
 {
     if (window_size_increment > h2s->outgoing_window.window_used) {
         ERROR("Flow control: window increment bigger than window used. PROTOCOL_ERROR");
-        return -1;
+        return HTTP2_RC_ERROR;
     }
     decrease_window_used(&h2s->outgoing_window, window_size_increment);
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 
