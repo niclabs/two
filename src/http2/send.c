@@ -25,7 +25,7 @@ int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2stat
             if (h2s->received_goaway) {
                 send_goaway(HTTP2_NO_ERROR, buf_out, h2s);
                 DEBUG("change_stream_state_end_stream_flag: Close connection. GOAWAY frame was previously received");
-                return -1;
+                return HTTP2_RC_CLOSE_CONNECTION;
             }
             else {
                 prepare_new_stream(h2s);
@@ -41,14 +41,14 @@ int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2stat
             if (h2s->received_goaway) {
                 send_goaway(HTTP2_NO_ERROR, buf_out, h2s);
                 DEBUG("change_stream_state_end_stream_flag: Close connection. GOAWAY frame was previously received");
-                return -1;
+                return HTTP2_RC_CLOSE_CONNECTION;
             }
             else {
                 prepare_new_stream(h2s);
             }
         }
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
