@@ -62,14 +62,15 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
-        // Generate response through http layer. !! Check http_server_response possible error codes and send errors
+        // Generate response through http layer.
         rc = http_server_response(h2s->data.buf, &h2s->data.size, &h2s->headers);
         if (rc < 0) {
             DEBUG("An error occurred during http layer response generation");
-            return HTTP2_RC_ERROR;
+            send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
 
-        // Generate http2 response using http response. !! Check possible errors codes on send_response
+        // Generate http2 response using http response.
         return (h2_ret_code_t)send_response(buf_out, h2s);
     }
     return HTTP2_RC_NO_ERROR;
