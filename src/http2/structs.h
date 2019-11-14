@@ -61,6 +61,15 @@ typedef enum SettingsParameters{
   MAX_HEADER_LIST_SIZE = (uint16_t) 0x6
 }sett_param_t;
 
+typedef enum {
+  HTTP2_RC_CLOSE_CONNECTION = 2,
+  HTTP2_RC_ACK_RECEIVED = 1,
+  HTTP2_RC_NO_ERROR = 0,
+  HTTP2_RC_ERROR = -1,
+  HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT = -2,
+} h2_ret_code_t;
+
+
 /*Struct for HTTP2 Stream*/
 typedef struct HTTP2_STREAM {
     uint32_t stream_id;
