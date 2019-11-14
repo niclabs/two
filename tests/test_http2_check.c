@@ -354,7 +354,7 @@ void test_check_incoming_goaway_condition(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
 
     int rc = check_incoming_goaway_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == 0, "rc must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be 0");
 
 }
 
@@ -374,7 +374,7 @@ void test_check_incoming_goaway_condition_errors(void)
     head_id.length = 128;
     h2s_id.header = head_id;
     int rc = check_incoming_goaway_condition(&buf_out, &h2s_id);
-    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header with invalid id)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (header with invalid id)");
     TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 0, "call count must be 0");
 
     // 2nd test: header with invalid length
@@ -385,7 +385,7 @@ void test_check_incoming_goaway_condition_errors(void)
     head_len.length = 256;
     h2s_len.header = head_len;
     rc = check_incoming_goaway_condition(&buf_out, &h2s_len);
-    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (max frame size error)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (max frame size error)");
     TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 1, "call count must be 1");
 
 }
