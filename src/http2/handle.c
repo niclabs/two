@@ -12,20 +12,20 @@ int validate_pseudoheaders(headers_t *pseudoheaders)
 
     if (headers_get(pseudoheaders, ":method") == NULL) {
         ERROR("\":method\" pseudoheader was missing.");
-        return -1;
+        return HTTP2_RC_ERROR;
     }
 
     if (headers_get(pseudoheaders, ":scheme") == NULL) {
         ERROR("\":scheme\" pseudoheader was missing.");
-        return -1;
+        return HTTP2_RC_ERROR;
     }
 
     if (headers_get(pseudoheaders, ":path") == NULL) {
         ERROR("\":path\" pseudoheader was missing.");
-        return -1;
+        return HTTP2_RC_ERROR;
     }
 
-    return headers_validate(pseudoheaders);
+    return (h2_ret_code_t)headers_validate(pseudoheaders);
 }
 
 /*
