@@ -291,17 +291,17 @@ void test_check_incoming_settings_condition(void)
 
     h2s.header = header_not_ack;
     int rc = check_incoming_settings_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == 0, "RC must be 0. ACK flag is not setted");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "RC must be HTTP2_RC_NO_ERROR. ACK flag is not setted");
     TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 1, "wait must remain in 1");
 
     h2s.header = header_ack;
     rc = check_incoming_settings_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(is_flag_set_fake.call_count == 2, "is flag set must be called for second time");
-    TEST_ASSERT_MESSAGE(rc == 1, "RC must be 1. ACK flag was setted and payload size was 0");
+    TEST_ASSERT_MESSAGE(rc ==HTTP2_RC_ACK_RECEIVED, "RC must be HTTP2_RC_ACK_RECEIVED. ACK flag was setted and payload size was 0");
     TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait must be changed to 0");
 
     rc = check_incoming_settings_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == 1, "RC must be 1. ACK flag was setted, but not wait ack flag asigned");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_ACK_RECEIVED, "RC must be HTTP2_RC_ACK_RECEIVED. ACK flag was setted, but not wait ack flag asigned");
 }
 
 void test_check_incoming_settings_condition_errors(void)
@@ -329,14 +329,14 @@ void test_check_incoming_settings_condition_errors(void)
 
     h2s.header = header_ack_wrong_stream;
     int rc = check_incoming_settings_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (wrong stream)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (wrong stream)");
     h2s.header = header_ack_wrong_size;
     rc = check_incoming_settings_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header length > MAX_FRAME_SIZE)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (header length > MAX_FRAME_SIZE)");
     TEST_ASSERT_MESSAGE(read_setting_from_fake.call_count == 1, "read_setting_from must be called for the first time");
     // header length < MAX_FRAME_SIZE, but its 24 != 0
     rc = check_incoming_settings_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "rc must be -1 (header length != 0)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (header length != 0)");
 }
 
 void test_check_incoming_goaway_condition(void)
