@@ -406,7 +406,7 @@ void test_check_incoming_continuation_condition(void)
     uint32_t read_setting_from_returns[1] = { 280 };
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
     int rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == 0, "return code must be 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "return code must be HTTP2_RC_NO_ERROR");
 }
 
 void test_check_incoming_continuation_condition_errors(void)
@@ -425,34 +425,34 @@ void test_check_incoming_continuation_condition_errors(void)
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 4);
 
     int rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (not previous headers)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (not previous headers)");
 
     h2s.waiting_for_end_headers_flag = 1;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (incoming id equals 0 - invalid stream)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (incoming id equals 0 - invalid stream)");
 
     h2s.header.stream_id = 442;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (stream mistmatch - invalid stream)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream mistmatch - invalid stream)");
 
     h2s.header.stream_id = 440;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (header length bigger than max - FRAME_SIZE_ERROR)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (header length bigger than max - FRAME_SIZE_ERROR)");
 
     h2s.header.length = 180;
     h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (strean not open)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (strean not open)");
 
     h2s.current_stream.state = STREAM_IDLE;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (stream in idle)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream in idle)");
 
     h2s.current_stream.state = STREAM_OPEN;
     h2s.header_block_fragments_pointer = 128;
     h2s.header.length = HTTP2_MAX_HBF_BUFFER - 100;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == -1, "return code must be -1 (block fragments too big)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (block fragments too big)");
 
 }
 
