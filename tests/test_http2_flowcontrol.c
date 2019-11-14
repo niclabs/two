@@ -147,7 +147,7 @@ void test_flow_control_send_window_update_success(void)
     int swu = flow_control_send_window_update((h2states_t *)&h2s, 5);
 
     // Return value should be 0
-    TEST_ASSERT_EQUAL(0, swu);
+    TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, swu);
 
     // Check if outgoing_window have the correct content
     TEST_ASSERT_EQUAL( 2, h2s[0].incoming_window.window_used);
@@ -165,7 +165,7 @@ void test_flow_control_send_window_update_fail(void)
     int swu = flow_control_send_window_update((h2states_t *)&h2s, 7);
 
     // Return value should be -1
-    TEST_ASSERT_EQUAL(-1, swu);
+    TEST_ASSERT_EQUAL(HTTP2_RC_ERROR, swu);
 
     // Check if outgoing_window have the correct content
     TEST_ASSERT_EQUAL( 5, h2s[0].incoming_window.window_used);
