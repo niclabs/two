@@ -52,10 +52,10 @@ int flow_control_receive_data(h2states_t *h2s, uint32_t length)
 
     if (length > window_available) {
         ERROR("Available window is smaller than data received. FLOW_CONTROL_ERROR");
-        return -1;
+        return HTTP2_RC_ERROR;
     }
     increase_window_used(&h2s->incoming_window, length);
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
