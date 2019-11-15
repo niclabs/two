@@ -198,7 +198,7 @@ void event_loop_close(event_loop_t *loop)
             curr->close_cb(curr);
 
             // Move curr socket to unused list
-            event_sock_t * next = curr->next;
+            event_sock_t *next = curr->next;
             curr->next = loop->unused;
             loop->unused = curr;
 
