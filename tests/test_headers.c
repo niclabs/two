@@ -10,16 +10,15 @@ void setUp(void)
 void tearDown(void)
 {}
 
-void test_headers(void)
+void test_headers_set(void)
 {
 	int res;
 	char * value;
 
-	header_t hlist[3];
 	// initialize headers
 	headers_t headers;
 
-	headers_init(&headers, hlist, 3);
+	headers_init(&headers);
 
 	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
 
@@ -75,7 +74,7 @@ void test_headers(void)
 	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read");
 
 	// test write after header size
-	res = headers_set(&headers, "better", "Na na na naa-naa");
+	res = headers_set(&headers, "better", "Na na na narana");
 	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
 	TEST_ASSERT_EQUAL_MESSAGE(ENOMEM, errno, "errno should be set to ENOMEM when trying to write after list is full");
 	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after an error write");
@@ -94,10 +93,12 @@ void test_headers(void)
 	value = headers_get(&headers, "yesterday");
 	TEST_ASSERT_EQUAL_MESSAGE(NULL, value, "read of non existing header should return NULL");
 
+	// Check function get_name_from_index and get_value_from_index
     TEST_ASSERT_EQUAL_STRING("hello", headers_get_name_from_index(&headers, 0));
     TEST_ASSERT_EQUAL_STRING("it's me", headers_get_value_from_index(&headers, 0));
     TEST_ASSERT_EQUAL_STRING("Hey jude", headers_get_name_from_index(&headers, 1));
     TEST_ASSERT_EQUAL_STRING("don't be afraid", headers_get_value_from_index(&headers, 1));
+
 }
 
 void test_headers_add(void)
@@ -105,11 +106,9 @@ void test_headers_add(void)
 	int res;
 	char * value;
 
-	header_t hlist[2];
 	// initialize headers
 	headers_t headers;
-
-	headers_init(&headers, hlist, 2);
+	headers_init(&headers);
 
 	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
 	
@@ -144,30 +143,21 @@ void test_headers_add(void)
 	value = headers_get(&headers, "hello");
 	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye,it's me", value, "read of existing header should return concatenation of values");
 
-	// test failed write
-	res = headers_add(&headers, "hello", "my baby");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 if there is no more space available for the value");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "add header should not increase size on failure");
-	
     // test succesful write
 	res = headers_add(&headers, "goodbye", "my baby");
 	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
 	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should increase size when writing a new header");
 
-	// test succesful write
-	res = headers_add(&headers, "bye bye", "birdie");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 if array is full");
-	TEST_ASSERT_EQUAL_MESSAGE(ENOMEM, errno, "errno should be set to ENOMEM when trying to write after list is full");
-	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should maintain size after a failure");
+}
+
 }
 
 void test_get_header_list_size(void){
 	int res;
 
 	// initialize headers
-	header_t hlist[2];
 	headers_t headers;
-	headers_init(&headers, hlist, 2);
+	headers_init(&headers);
 
 	// test succesful write
 	res = headers_set(&headers, "name1", "value1");
@@ -186,7 +176,7 @@ void test_get_header_list_size(void){
 int main(void)
 {
     UNIT_TESTS_BEGIN();
-    UNIT_TEST(test_headers);
+    UNIT_TEST(test_headers_set);
     UNIT_TEST(test_headers_add);
     UNIT_TEST(test_get_header_list_size);
     UNIT_TESTS_END();
