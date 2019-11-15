@@ -78,6 +78,9 @@ int headers_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_
  */
 int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
+    DEBUG("Reading HEADERS payload");
+    fflush(stdout);
+    fflush(stderr);
     headers_payload_t *headers_payload = (headers_payload_t *) payload;
 
     uint8_t pad_length = 0;             // only if padded flag is set

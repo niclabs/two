@@ -65,6 +65,9 @@ int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload
  */
 int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
+    DEBUG("Reading DATA payload");
+    fflush(stdout);
+    fflush(stderr);
     data_payload_t *data_payload = (data_payload_t *) payload;
     uint8_t flags = frame_header->flags;
     int length = frame_header->length;

@@ -62,6 +62,9 @@ int settings_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8
  */
 int read_settings_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
+    DEBUG("Reading SETTINGS payload");
+    fflush(stdout);
+    fflush(stderr);
     settings_payload_t *settings_payload = (settings_payload_t *)payload;
 
     if (frame_header->length % 6 != 0) {
