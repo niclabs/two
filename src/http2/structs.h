@@ -112,7 +112,6 @@ typedef struct HTTP2_STATES {
 
     frame_header_t header;
     http2_data_t data;
-    header_t headers_buf[HTTP2_MAX_HEADER_COUNT];     /*TODO: remove this and make it dinamic*/
     headers_t headers;
 } h2states_t;
 

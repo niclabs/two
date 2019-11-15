@@ -46,9 +46,8 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
     //h2s->header = NULL;
     hpack_init_states(&(h2s->hpack_states), DEFAULT_HEADER_TABLE_SIZE);
 
-    h2s->headers.headers = h2s->headers_buf;
-    h2s->headers.count = 0;
-    h2s->headers.maxlen = HTTP2_MAX_HEADER_COUNT;
+    headers_init(&(h2s->headers));
+
     return 0;
 }
 
