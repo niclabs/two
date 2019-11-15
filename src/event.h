@@ -24,9 +24,19 @@ struct event_sock;
 struct event_loop;
 
 // Callbacks
+
+// Called on a new client connection 
 typedef void (*event_connection_cb)(struct event_sock *server, int status);
+
+// Called whenever new data is available, or a read error occurrs 
+// it must return the number of bytes read in order to remove them from the input buffer
 typedef int (*event_read_cb)(struct event_sock *sock, ssize_t size, uint8_t *bytes);
+
+// Will be called when the output buffer is empty
 typedef void (*event_write_cb)(struct event_sock *sock, int status);
+
+// Will be called after all write operations are finished and 
+// the socket is closed
 typedef void (*event_close_cb)(struct event_sock *sock);
 
 typedef int event_handle_t;
@@ -82,16 +92,41 @@ typedef struct event_loop {
 
 
 // Sock operations
+
+// Open the socket for listening on the specified port
+// On new client it will call the callback with a 0 status if
+// there are free available client slots and -1 if no more
+// client slots are available
 int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb);
+
+// Be notified on read operations on the socket
+// event_read_stop must be called before assigning a new read callback
 int event_read(event_sock_t *sock, event_read_cb cb);
+
+// Stop receiving read notifications
 void event_read_stop(event_sock_t *sock);
+
+// Write to the output buffer, will notify the callback when all bytes are 
+// written
 int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb cb);
+
+// Close the socket
+// will notify the callback after all write operations are finished
 int event_close(event_sock_t *sock, event_close_cb cb);
+
+// Accept a new client
 int event_accept(event_sock_t *server, event_sock_t *client);
 
 // Loop operations
+
+// Initialize a new event_loop
 void event_loop_init(event_loop_t *loop);
+
+// Obtain a new free socket from the event loop
+// it will fail if there are no more sockets available
 event_sock_t *event_sock_create(event_loop_t *loop);
+
+// Start the loop
 void event_loop(event_loop_t *loop);
 
 #endif
