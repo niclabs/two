@@ -358,7 +358,7 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     if (rc < 0) {
         ERROR("Error creating continuation frame. INTERNAL ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return rc;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (end_stream) {
         frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
@@ -371,9 +371,9 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     if (rc != bytes_size) {
         ERROR("Error writting continuation frame. INTERNAL ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return rc;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
