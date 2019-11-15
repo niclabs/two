@@ -287,6 +287,7 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
             INFO("Current stream closed");
         }
         int rc = send_goaway(HTTP2_NO_ERROR, buf_out, h2s); // We send a goaway to close the connection
+        // TODO: review error code from send_goaway in handle_goaway_payload
         if (rc < 0) {
             ERROR("Error sending GOAWAY FRAME");            // TODO shutdown_connection
             return rc;
