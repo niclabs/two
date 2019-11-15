@@ -250,8 +250,11 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
     switch (h2s->header.type) {
         case DATA_TYPE: {
             DEBUG("handle_payload: RECEIVED DATA PAYLOAD");
+
             data_payload_t data_payload;
-            //uint8_t data[h2s->header.length]; CHECK WITH HPACK PEOPLE
+            uint8_t data[h2s->header.length];
+            data_payload.data = data;
+
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &data_payload, buff_read);
             if (rc < 0) {
                 ERROR("ERROR reading data payload");
