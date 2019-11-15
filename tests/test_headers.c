@@ -150,6 +150,48 @@ void test_headers_add(void)
 
 }
 
+void test_limits_add_set (void){
+	
+	// Now robustness test, testing limits
+	headers_t headers;
+	int res;
+
+	headers_init(&headers);
+	char *test_name = "x-test"; 
+	char *test_value = "x";
+	for(int i=0; i<31; i++){
+		res = headers_add(&headers, test_name, test_value);
+		TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header"); 
+}
+	// Fail write with add into buffer, it was full
+	res = headers_add(&headers, test_name, test_value);
+	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
+
+	// Fail write with set into buffer, it was full
+	char *test_value2 = "y";
+	res = headers_set(&headers, test_name, test_value2);
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
+
+	for(int i=0; i<14; i++){
+		char test_name2[3];
+		sprintf(test_name2, "%d", i);
+		res = headers_set(&headers, test_name2, test_value);
+		TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
+	}
+	// Fail write with add into buffer, it was full
+	res = headers_add(&headers, test_name, test_value);
+	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
+
+	// Modify previous x-test val to add 1 to size -> actual size = 70
+	res = headers_set(&headers, test_name, "xx");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
+
+	// Try to add 1 to the size to overpass 70
+	res = headers_set(&headers, test_name, "xxx");
+	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
+
+	//OK
+
 }
 
 void test_get_header_list_size(void){
@@ -178,6 +220,7 @@ int main(void)
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_headers_set);
     UNIT_TEST(test_headers_add);
+	UNIT_TEST(test_limits_add_set);
     UNIT_TEST(test_get_header_list_size);
     UNIT_TESTS_END();
 }
