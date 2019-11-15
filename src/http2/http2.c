@@ -78,7 +78,7 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
     // Initialize http2 state
     init_variables_h2s(h2s, 1);
     int rc = send_local_settings(buf_out, h2s);
-    if(rc < 0){
+    if(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT){
       DEBUG("Error sending local settings in http2_server_init_connection");
       return null_callback();
     }

@@ -300,7 +300,7 @@ int send_local_settings(cbuf_t *buf_out, h2states_t *h2s)
     if (rc) {
         ERROR("Error in Settings Frame creation");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint8_t byte_mysettings[9 + 6 * 6]; /*header: 9 bytes + 6 * setting: 6 bytes */
     int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
@@ -309,11 +309,11 @@ int send_local_settings(cbuf_t *buf_out, h2states_t *h2s)
     if (rc != size_byte_mysettings) {
         ERROR("Error in local settings writing");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     /*Settings were sent, so we expect an ack*/
     h2s->wait_setting_ack = 1;
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
