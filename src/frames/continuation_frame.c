@@ -57,8 +57,6 @@ int create_continuation_frame(uint8_t *headers_block, int headers_block_size, ui
 int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
     DEBUG("Reading CONTINUATION payload");
-    fflush(stdout);
-    fflush(stderr);
     continuation_payload_t *continuation_payload = (continuation_payload_t *)payload;
     int rc = buffer_copy(continuation_payload->header_block_fragment, bytes, frame_header->length);
 
