@@ -179,7 +179,7 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
     if (rc < 0) {
         ERROR("Error creating GOAWAY frame");
         //TODO shutdown connection
-        return -1;
+        return HTTP2_RC_ERROR;
     }
     frame.frame_header = &header;
     frame.payload = (void *)&goaway_pl;
@@ -191,13 +191,13 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
     if (rc != bytes_size) {
         ERROR("Error writting goaway frame. INTERNAL ERROR");
         //TODO shutdown connection
-        return -1;
+        return HTTP2_RC_ERROR;
     }
     h2s->sent_goaway = 1;
     if (h2s->received_goaway) {
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 
 }
 
