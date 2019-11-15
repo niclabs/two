@@ -435,12 +435,14 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
 int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
 {
     if (h2s->received_goaway) {
-        ERROR("GOAWAY was received. Current process must not open a new stream");
-        return -1;
+        ERROR("send_headers: GOAWAY was received. Current process must not open a new stream");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (h2s->headers.count == 0) {
-        ERROR("There are no headers to send");
-        return -1;
+        ERROR("send_headers called when there are no headers to send");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
     int size = compress_headers(&h2s->headers, encoded_bytes, &h2s->hpack_states);
