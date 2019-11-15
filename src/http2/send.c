@@ -524,7 +524,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
  */
 int send_response(cbuf_t *buf_out, h2states_t *h2s)
 {
-    if (headers_count(&(h2s->header))== 0) {
+    if (headers_count(&(h2s->headers))== 0) {
         ERROR("There were no headers to write");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
