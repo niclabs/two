@@ -261,7 +261,7 @@ int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s)
         h2s->current_stream.state == STREAM_HALF_CLOSED_LOCAL) {
         ERROR("Current stream was closed! Send request error. INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->current_stream.state == STREAM_IDLE) {
         if (h2s->is_server) { // server must use even numbers
@@ -273,7 +273,7 @@ int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s)
         h2s->current_stream.state = STREAM_OPEN;
         h2s->current_stream.stream_id = h2s->last_open_stream_id;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
