@@ -179,41 +179,49 @@ void event_loop_poll(event_loop_t *loop)
 
 void event_loop_close(event_loop_t *loop)
 {
-    event_sock_t *head = loop->polling;
-    event_sock_t *prev = head;
+    event_sock_t *curr = loop->polling;
+    event_sock_t *prev = NULL;
 
     int max_fds = -1;
 
-    while (head != NULL) {
+    while (curr != NULL) {
         // if the event is closing and we are not waiting to read
-        if (head->state == EVENT_SOCK_CLOSING && cbuf_len(&head->buf_out) <= 0) {
+        if (curr->state == EVENT_SOCK_CLOSING && cbuf_len(&curr->buf_out) <= 0) {
             // prevent sock to be used in polling
-            FD_CLR(head->socket, &loop->active_fds);
+            FD_CLR(curr->socket, &loop->active_fds);
+
+            // close the socket and update its status
+            close(curr->socket);
+            curr->state = EVENT_SOCK_CLOSED;
+
+            // call the close callback
+            curr->close_cb(curr);
+
+            // Move curr socket to unused list
+            event_sock_t * next = curr->next;
+            curr->next = loop->unused;
+            loop->unused = curr;
 
             // remove the socket from the polling list
             // and move the socket back to the unused list
-            prev->next = head->next;
-            head->next = loop->unused;
-            loop->unused = head;
-
-            // close the socket and update its status
-            close(head->socket);
-            head->state = EVENT_SOCK_CLOSED;
-
-            // call the close callback
-            head->close_cb(head);
+            if (prev == NULL) {
+                loop->polling = next;
+            }
+            else {
+                prev->next = next;
+            }
 
             // move the head forward
-            head = prev->next;
+            curr = next;
             continue;
         }
 
-        if (head->socket > max_fds) {
-            max_fds = head->socket;
+        if (curr->socket > max_fds) {
+            max_fds = curr->socket;
         }
 
-        prev = head;
-        head = head->next;
+        prev = curr;
+        curr = curr->next;
     }
 
     // update the max file descriptor
