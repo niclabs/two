@@ -67,13 +67,13 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     if (h2s->data.size <= 0) {
         ERROR("No data to be sent. INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     h2_stream_state_t state = h2s->current_stream.state;
     if (state != STREAM_OPEN && state != STREAM_HALF_CLOSED_REMOTE) {
         ERROR("Wrong state for sending DATA. INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint32_t stream_id = h2s->current_stream.stream_id;
     uint8_t count_data_to_send = get_size_data_to_send(h2s);
@@ -85,7 +85,7 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     if (rc < 0) {
         ERROR("Error creating data frame. INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (end_stream) {
         frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
@@ -97,20 +97,21 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     INFO("Sending DATA");
     rc = cbuf_push(buf_out, buff_bytes, bytes_size);
     if (rc != bytes_size) {
-        ERROR("Error writting data frame. INTERNAL ERROR");
+        ERROR("send_data: Error writting data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return rc;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     rc = flow_control_send_data(h2s, count_data_to_send);
-    if (rc < 0) {
+    if (rc == HTTP2_RC_ERROR) {
+        ERROR("send_data: Trying to send more data than allowed ");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (end_stream) {
         rc = change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
-        if (rc < 0) {
+        if (rc == HTTP2_RC_CLOSE_CONNECTION) {
             DEBUG("send_data: Close connection. GOAWAY previously received");
-            return -1;
+            return rc;
         }
     }
     h2s->data.processed += count_data_to_send;
@@ -118,7 +119,7 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
         h2s->data.size = 0;
         h2s->data.processed = 0;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 
