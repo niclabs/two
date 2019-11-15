@@ -33,25 +33,6 @@ void *event_queue_find(struct qnode *queue, void *elem, event_compare_cb compare
     return NULL;
 }
 
-void *event_queue_delete(struct qnode *queue, struct qnode *elem)
-{
-    struct qnode *head = queue;
-    struct qnode *prev = head;
-
-    while (head != NULL) {
-        if (head == elem) {
-            prev->next = head->next;
-            head->next = NULL;
-
-            return head;
-        }
-        prev = head;
-        head = head->next;
-    }
-
-    return NULL;
-}
-
 int compare_handle(void *s, void *h)
 {
     event_sock_t *sock = (event_sock_t *)s;
