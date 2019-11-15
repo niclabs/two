@@ -45,10 +45,8 @@ int echo_read(event_sock_t *client, ssize_t nread, uint8_t *buf)
         return nread;
     }
 
-    if (nread < 0) {
-        INFO("Remote connection closed");
-        event_close(client, on_client_close);
-    }
+    INFO("Remote connection closed");
+    event_close(client, on_client_close);
 
     return 0;
 }
