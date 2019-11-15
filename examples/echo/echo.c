@@ -16,11 +16,11 @@ event_sock_t *server;
 void on_server_close(event_sock_t *handle) {
     (void)handle;
     INFO("Server closed");
+    exit(0);
 }
 
 void close_server(int sig) {
     (void)sig;
-    INFO("CLOSING");
     event_close(server, on_server_close);
 }
 
