@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#ifdef CONF_MAX_HEADER_BUFFER_SIZE
+#define MAX_HEADER_BUFFER_SIZE (CONF_MAX_HEADER_LIST_SIZE)
+#else
+#define MAX_HEADER_BUFFER_SIZE (4096)
+#endif
+
 #ifndef CONF_MAX_HEADER_NAME_LEN
 #define MAX_HEADER_NAME_LEN (16)
 #else
@@ -17,13 +23,6 @@
 #endif
 
 
-/**
- * Data structure to store a single headers
- */
-typedef struct {
-    char name[MAX_HEADER_NAME_LEN + 1];
-    char value[MAX_HEADER_VALUE_LEN + 1];
-} header_t;
 
 /**
  * Data structure to store a header list
@@ -31,9 +30,9 @@ typedef struct {
  * Should not be used directly, use provided API methods
  */
 typedef struct {
-    header_t * headers;
-    int count;
-    int maxlen;
+    char buffer[MAX_HEADER_BUFFER_SIZE];
+    uint16_t n_entries;
+    uint16_t size;
 } headers_t;
 
 
@@ -46,7 +45,7 @@ typedef struct {
  * @param maxlen maximum number of elements that the header list can store
  * @return 0 if ok -1 if an error ocurred
  */
-int headers_init(headers_t * headers, header_t * hlist, int maxlen);
+int headers_init(headers_t * headers);
 
 /**
  *This function will reset header list

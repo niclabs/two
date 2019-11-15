@@ -6,114 +6,18 @@
 #include "headers.h"
 #include "logging.h"
 
-int headers_init(headers_t *headers, header_t *hlist, int maxlen)
+int headers_init(headers_t *headers)
 {
-    memset(headers, 0, sizeof(*headers));
-    memset(hlist, 0, maxlen * sizeof(*hlist));
+    memset(headers->buffer, 0, sizeof(headers->buffer));
 
-
-    headers->headers = hlist;
-    headers->maxlen = maxlen;
-    headers->count = 0;
+    headers->n_entries = 0;
+    headers->size = 0;
     return 0;
 }
 
 int headers_clean(headers_t *headers)
 {
-    return headers_init(headers, headers->headers, headers->maxlen);
-}
-
-
-int headers_add(headers_t *headers, const char *name, const char *value)
-{
-    assert(headers != NULL);
-    assert(name != NULL);
-    assert(value != NULL);
-
-    if (strlen(name) > MAX_HEADER_NAME_LEN || strlen(value) > MAX_HEADER_VALUE_LEN) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    for (int i = 0; i < headers->count; i++) {
-        // case insensitive name comparison of headers
-        if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
-            DEBUG("Found header with name: '%s'", name);
-
-            if (strlen(value) > MAX_HEADER_VALUE_LEN - strlen(headers->headers[i].value + 1)) {
-                errno = ENOMEM;
-                return -1;
-            }
-
-            // Concatenate values
-            strncat(headers->headers[i].value, ",", MAX_HEADER_VALUE_LEN);
-            strncat(headers->headers[i].value, value, MAX_HEADER_VALUE_LEN);
-
-            return 0;
-        }
-    }
-
-    if (headers->count >= headers->maxlen) {
-        errno = ENOMEM;
-        return -1;
-    }
-
-    // Set header name
-    strncpy(headers->headers[headers->count].name, name, MAX_HEADER_NAME_LEN - 1);
-
-    // Set header value
-    strncpy(headers->headers[headers->count].value, value, MAX_HEADER_VALUE_LEN - 1);
-
-    DEBUG("Wrote header: '%s':'%s'", headers->headers[headers->count].name, headers->headers[headers->count].value);
-
-    // Update header count
-    headers->count++;
-
-    return 0;
-
-}
-
-int headers_set(headers_t *headers, const char *name, const char *value)
-{
-    // Assertions for debugging
-    assert(headers != NULL);
-    assert(name != NULL);
-    assert(value != NULL);
-
-    // TODO: should we check value len or just write the truncated value?
-    if (strlen(name) > MAX_HEADER_NAME_LEN || strlen(value) > MAX_HEADER_VALUE_LEN) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    for (int i = 0; i < headers->count; i++) {
-        // case insensitive name comparison of headers
-        if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
-            DEBUG("Found header with name: '%s'", name);
-            // found a header with the same name
-            strncpy(headers->headers[i].value, value, MAX_HEADER_VALUE_LEN);
-            DEBUG("Wrote header: '%s':'%s'", headers->headers[i].name, headers->headers[i].value);
-            return 0;
-        }
-    }
-
-    if (headers->count >= headers->maxlen) {
-        errno = ENOMEM;
-        return -1;
-    }
-
-    // Set header name
-    strncpy(headers->headers[headers->count].name, name, MAX_HEADER_NAME_LEN);
-
-    // Set header value
-    strncpy(headers->headers[headers->count].value, value, MAX_HEADER_VALUE_LEN);
-
-    DEBUG("Wrote header: '%s':'%s'", headers->headers[headers->count].name, headers->headers[headers->count].value);
-
-    // Update header count
-    headers->count++;
-
-    return 0;
+    return headers_init(headers);
 }
 
 char *headers_get(headers_t *headers, const char *name)
@@ -122,22 +26,197 @@ char *headers_get(headers_t *headers, const char *name)
     assert(headers != NULL);
     assert(name != NULL);
 
-    if (strlen(name) > MAX_HEADER_NAME_LEN) {
+    if (strlen(name) + 1 > MAX_HEADER_BUFFER_SIZE) {
         errno = EINVAL;
         return NULL;
     }
-
-    for (int i = 0; i < headers->count; i++) {
+    uint16_t words_count = 0;
+    for (int i = 0; i < headers->size; i++) {
         // case insensitive name comparison of headers
-        if (strncasecmp(headers->headers[i].name, name, MAX_HEADER_NAME_LEN) == 0) {
+        if (words_count%2 == 0 && (strcasecmp(name, headers->buffer + i) == 0)) {
             // found a header with the same name
             DEBUG("Found header with name '%s'", name);
-            return headers->headers[i].value;
+            return (headers->buffer + i + 1 + strlen(name));
         }
+        //now move forward the length of the string
+        i += strlen(headers->buffer + i);
+        words_count++;
     }
     return NULL;
 }
 
+
+int headers_new(headers_t *headers, const char *name, const char *value, uint8_t with_replacement)
+{
+
+    assert(headers != NULL);
+    assert(name != NULL);
+    assert(value != NULL);
+
+    uint16_t name_len = strlen(name);
+    uint16_t value_len = strlen(value);
+
+    if (name_len > MAX_HEADER_NAME_LEN || value_len > MAX_HEADER_VALUE_LEN){
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (name_len + 1 > MAX_HEADER_BUFFER_SIZE || value_len + 1 > MAX_HEADER_BUFFER_SIZE) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    
+    char *prev_value = headers_get(headers, name);
+
+    if(prev_value != NULL){
+    //case in which already exist entry with same name
+        //plus 1 in case with replacement is for separation mark ','
+        if((with_replacement && (value_len + 1 + headers->size > MAX_HEADER_BUFFER_SIZE))
+            || (!with_replacement && (headers->size - strlen(prev_value) + value_len > MAX_HEADER_BUFFER_SIZE))){
+            errno = ENOMEM;
+            return -1;
+        }
+
+        char buffer_aux[MAX_HEADER_BUFFER_SIZE];
+        memset(buffer_aux, 0, sizeof(buffer_aux));
+        
+        uint16_t i_aux = 0;
+        uint16_t entries_counter = 0;
+
+        for (uint16_t i = 0; i < MAX_HEADER_BUFFER_SIZE; i++) {
+            
+            entries_counter++;
+
+            // case insensitive name comparison of headers
+            if (strncasecmp(headers->buffer + i, name, name_len) == 0) {
+                
+                DEBUG("Found header with name: '%s'", name);
+
+                //First cpy name into aux
+                strncpy(buffer_aux + i_aux , headers->buffer + i, name_len + 1);
+                i_aux += name_len + 1;
+                i += name_len + 1;
+                //Then previous value
+                uint16_t previous_value_len = strlen(headers->buffer + i);
+
+                if(with_replacement){
+                    //case headers_add
+                    strncpy(buffer_aux + i_aux , headers->buffer + i, previous_value_len);
+                    i_aux += previous_value_len;
+                    i += previous_value_len;
+                    //Add separation mark
+                    buffer_aux[i_aux] = ','; 
+                    i_aux++;
+                    //Finally copy new value
+                    strncpy(buffer_aux + i_aux, value, value_len + 1);
+                    i_aux += value_len + 1;
+                    //+1 is for the comma
+                    headers->size += (value_len + 1);
+
+                } else {
+                    //case headers_set, forget previous value
+                    strncpy(buffer_aux + i_aux, value, value_len + 1);
+                    i += previous_value_len;
+                    i_aux += value_len + 1;
+                    headers->size -= previous_value_len;
+                    headers->size += value_len;
+                }
+
+            } else {
+
+                //Cpy name
+                uint16_t previous_name_len = strlen(headers->buffer + i);
+                strncpy(buffer_aux + i_aux, headers->buffer + i, previous_name_len + 1);
+                i_aux += (previous_name_len + 1); 
+                i += (previous_name_len + 1);
+                //Then cpy value
+                uint16_t previous_value_len = strlen(headers->buffer + i);
+                strncpy(buffer_aux + i_aux, headers->buffer + i, previous_value_len + 1);
+                i_aux += (previous_value_len + 1);
+                i += previous_value_len;
+            }
+
+                if(entries_counter >= headers->n_entries) break;
+
+        }
+
+        //Finally copy all from aux buffer to original one
+        memcpy(headers->buffer, buffer_aux, MAX_HEADER_BUFFER_SIZE);
+
+    } else {
+    //case no dupĺicate
+
+        // + 2 is for the two 0's of EOS
+        if (headers->size + name_len + value_len + 2 > MAX_HEADER_BUFFER_SIZE) {
+            errno = ENOMEM;
+            return -1;
+        }
+        
+        // Set header name
+        strncpy(headers->buffer + headers->size, name, name_len + 1);
+
+        // Set header value
+        strncpy(headers->buffer + headers->size + name_len + 1, value, value_len + 1);
+
+        DEBUG("Wrote header: '%s':'%s'", headers->buffer + headers->size, headers->buffer + headers->size + name_len + 1);
+
+        // Update header count
+        headers->size += (name_len + value_len + 2);
+        headers->n_entries ++;
+    }
+
+    return 0;
+}
+
+int headers_add(headers_t *headers, const char *name, const char *value){
+    return headers_new(headers, name, value, 1);
+}
+
+int headers_set(headers_t *headers, const char *name, const char *value)
+{
+    return headers_new(headers, name, value, 0);
+}
+
+int headers_count(headers_t *headers)
+{   
+    return headers->n_entries;
+}
+
+char *headers_get_name_from_index(headers_t *headers, int index)
+{
+    // Assertions for debugging
+    assert(headers != NULL);
+
+    if(index > headers->n_entries - 1){
+        return NULL;
+    }
+    
+    uint16_t words_count=0;
+    uint16_t entries_count=0;
+    
+    // Every two words is an entry
+    for(uint16_t i=0; i<headers->size; i++){
+        // Case find header of exact index
+        if(words_count%2 == 0 && index == entries_count){
+            return headers->buffer + i;
+        }
+        // Else advance the len of the string
+        i+=strlen(headers->buffer + i);
+        words_count++;
+        
+        if(words_count%2==0) entries_count++;
+
+    }
+    return NULL;
+
+}
+
+char *headers_get_value_from_index(headers_t *headers, int index)
+{
+    char *name_pos = headers_get_name_from_index(headers, index);
+    return name_pos + strlen(name_pos) + 1;
+}
 
 int headers_validate(headers_t* headers) {
     // Assertions for debugging
@@ -162,39 +241,14 @@ int headers_validate(headers_t* headers) {
 }
 
 
-int headers_count(headers_t *headers)
-{
-    return headers->count;
-}
-
-header_t *get_header_from_index(headers_t *headers, int index)
-{
-    // Assertions for debugging
-    assert(headers != NULL);
-    assert(index >= 0);
-    assert(index < headers->maxlen);
-
-    return &headers->headers[index];
-}
-
-char *headers_get_name_from_index(headers_t *headers, int index)
-{
-    return get_header_from_index(headers, index)->name;
-}
-
-char *headers_get_value_from_index(headers_t *headers, int index)
-{
-    return get_header_from_index(headers, index)->value;
-}
 
 uint32_t headers_get_header_list_size(headers_t *headers)
 {
-    int header_list_size = 0;
+    uint32_t header_list_size = headers->size;
+    // minus all the 0's to end string
+    header_list_size -= 2*(headers->n_entries);
+    // plus an overhead of 32 octects for each string, name and value
+    header_list_size += 64*(headers->n_entries);
 
-    for (int i = 0; i < headers->count; i++) {
-        header_list_size += strlen(headers->headers[i].name);
-        header_list_size += strlen(headers->headers[i].value);
-        header_list_size += 64; //overhead of 32 octets for each, name and value
-    }
     return header_list_size;    //OK
 }
