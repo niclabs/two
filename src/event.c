@@ -189,8 +189,8 @@ void event_loop_close(event_loop_t *loop)
         if (head->state == EVENT_SOCK_CLOSING && cbuf_len(&head->buf_out) <= 0) {
             // prevent sock to be used in polling
             FD_CLR(head->socket, &loop->active_fds);
-            
-             // remove the socket from the polling list
+
+            // remove the socket from the polling list
             // and move the socket back to the unused list
             prev->next = head->next;
             head->next = loop->unused;
@@ -378,7 +378,7 @@ int event_close(event_sock_t *sock, event_close_cb cb)
     assert(sock != NULL);
     assert(sock->loop != NULL);
     assert(sock->state == EVENT_SOCK_CONNECTED || \
-            sock->state == EVENT_SOCK_LISTENING);
+           sock->state == EVENT_SOCK_LISTENING);
     assert(cb != NULL);
 
     // set sock state and callback
