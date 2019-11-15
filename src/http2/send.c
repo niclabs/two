@@ -139,7 +139,7 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
     if (rc < 0) {
         ERROR("Error in Settings ACK creation!");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint8_t byte_ack[9 + 0]; /*Settings ACK frame only has a header*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
@@ -149,9 +149,9 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
     if (rc != size_byte_ack) {
         ERROR("Error in Settings ACK sending");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
