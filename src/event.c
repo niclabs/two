@@ -247,6 +247,10 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
         return -1;
     }
 
+    // allow address reuse to prevent "address already in use" errors
+    int option = 1;
+    setsockopt(sock->socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
     /* Struct sockaddr_in6 needed for binding. Family defined for ipv6. */
     struct sockaddr_in6 sin6;
     sin6.sin6_family = AF_INET6;
