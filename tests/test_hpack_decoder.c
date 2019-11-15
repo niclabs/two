@@ -201,8 +201,8 @@ int8_t hpack_tables_find_name_return_new_name(hpack_dynamic_table_t *dynamic_tab
 int8_t hpack_tables_find_entry_name_and_value_return_method_get(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     TEST_ASSERT_EQUAL(2, index);
-    strncpy(name, ":method", 7);
-    strncpy(value, "GET", 3);
+    strncpy(name, ":method", 8);
+    strncpy(value, "GET", 4);
     return 0;
 }
 
