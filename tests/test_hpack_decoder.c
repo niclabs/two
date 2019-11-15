@@ -658,12 +658,10 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
     memset(value, 0, 14);
 
 
-    header_t h_list[1];
     headers_t headers;
 
-    headers.count = 0;
-    headers.maxlen = 3;
-    headers.headers = h_list;
+    headers.n_entries = 0;
+    headers.size = 0;
     //int rc = hpack_decoder_decode_literal_header_field_with_incremental_indexing(&dynamic_table, header_block_name_literal, name, value);
     int rc = hpack_decoder_decode_header_block(&hpack_states, header_block_name_literal, header_block_size, &headers);
 
@@ -699,15 +697,13 @@ void test_decode_header_block_literal_never_indexed(void)
     char *expected_name = "hola";
     char *expected_value = "val";
 
-    header_t h_list[1];
     headers_t headers;
     hpack_states_t states;
 
     hpack_init_states(&states, 100); // 100 is a dummy value
 
-    headers.count = 0;
-    headers.maxlen = 3;
-    headers.headers = h_list;
+    headers.n_entries = 0;
+    headers.size = 0;
 
     uint32_t hpack_encoded_integer_size_fake_seq[] = {
         1,
@@ -742,7 +738,8 @@ void test_decode_header_block_literal_never_indexed(void)
     //Never indexed
     //No huffman encoding - Header name as static table index
 
-    headers.count = 0;
+    headers.n_entries = 0;
+    headers.size = 0;
 
     header_block_size = 5;
     uint8_t header_block_name_indexed[] = {
@@ -817,15 +814,13 @@ void test_decode_header_block_literal_without_indexing(void)
     char *expected_name = "hola";
     char *expected_value = "val";
 
-    header_t h_list[1];
     headers_t headers;
     hpack_states_t states;
 
     hpack_init_states(&states, 100); //100 is a dummy value btw
 
-    headers.count = 0;
-    headers.maxlen = 3;
-    headers.headers = h_list;
+    headers.n_entries = 0;
+    headers.size = 0;
 
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)0;
     hpack_utils_find_prefix_size_fake.return_val = 4;
@@ -855,7 +850,8 @@ void test_decode_header_block_literal_without_indexing(void)
     //without indexing
     //No huffman encoding - Header name as static table index
 
-    headers.count = 0;
+    headers.n_entries = 0;
+    headers.size = 0;
 
     header_block_size = 6;
     uint8_t header_block_name_indexed[] = {
