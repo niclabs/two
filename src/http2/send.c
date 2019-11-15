@@ -439,7 +439,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    if (h2s->headers.count == 0) {
+    if (headers_count(&(h2s->headers))== 0) {
         ERROR("send_headers called when there are no headers to send");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
