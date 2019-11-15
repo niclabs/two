@@ -11,7 +11,7 @@ endif
 TEST_SRC_CFLAGS = -fprofile-arcs -ftest-coverage -fdata-sections -ffunction-sections
 
 # Target specific configurations
-$(TEST_BUILD)/test_headers: CFLAGS += -DCONF_MAX_HEADER_NAME_LEN=8 -DCONF_MAX_HEADER_VALUE_LEN=16
+$(TEST_BUILD)/test_headers: CFLAGS += -DCONF_MAX_HEADER_NAME_LEN=8 -DCONF_MAX_HEADER_VALUE_LEN=16 -DCONF_MAX_HEADER_BUFFER_SIZE=70
 $(TEST_BUILD)/test_hpack_tables: CFLAGS += -DCONF_MAX_HEADER_NAME_LEN=30 -DCONF_MAX_HEADER_VALUE_LEN=20
 
 # Test formatting variables
