@@ -531,23 +531,35 @@ int send_response(cbuf_t *buf_out, h2states_t *h2s)
     }
     int rc;
     if (h2s->data.size > 0) {
-        rc = send_headers(0, buf_out, h2s);
-        if (rc < 0) {
+        rc = send_headers(0, buf_out, h2s); // CLOSE CONN, CLOSE CONN SENT, NO ERROR
+        if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error was found sending headers on response");
             return rc;
         }
-        rc = send_data(1, buf_out, h2s);
-        if (rc < 0) {
+        else if (rc == HTTP2_RC_CLOSE_CONNECTION){
+            DEBUG("send_response: Close connection. GOAWAY sent while on send_headers.");
+            return rc;
+        }
+        rc = send_data(1, buf_out, h2s); // CLOSE CONN, CLOSE CONN SENT, NO ERROR
+        if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error was found sending data on response");
+            return rc;
+        }
+        else if (rc == HTTP2_RC_CLOSE_CONNECTION){
+            DEBUG("send_response: Close connection. GOAWAY sent while on send_data.");
             return rc;
         }
     }
     else {
         rc = send_headers(1, buf_out, h2s);
-        if (rc < 0) {
+        if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error was found sending headers on response");
             return rc;
         }
+        else if (rc == HTTP2_RC_CLOSE_CONNECTION){
+            DEBUG("send_response: Close connection. GOAWAY sent while on send_headers.");
+            return rc;
+        }
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
