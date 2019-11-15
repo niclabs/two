@@ -136,8 +136,9 @@ void event_loop_poll(event_loop_t *loop)
 
     // poll list of file descriptors with select
     if (select(loop->nfds, &read_fds, &write_fds, NULL, &tv) < 0) {
-        // maybe this should be an assert
-        WARN("I/O polling returned error: %s", strerror(errno));
+        // if an error different from interrupt is caught
+        // here, there is an issue with the implementation
+        assert(errno == EINTR);
         return;
     }
 
