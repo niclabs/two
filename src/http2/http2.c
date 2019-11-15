@@ -262,6 +262,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
                 return -1;
             }
             rc = handle_data_payload(&(h2s->header), &data_payload, buf_out, h2s);
+            // TODO: handle different error codes for handle_data_payload
             if (rc < 0) {
                 ERROR("ERROR in handle receive data");
                 return -1;
@@ -285,6 +286,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
                 return rc;
             }
             rc = handle_headers_payload(&(h2s->header), &hpl, buf_out, h2s);
+            // TODO: handle different error codes for handle_headers_payload
             if (rc < 0) {
                 ERROR("ERROR in handle receive data");
                 return -1;
@@ -384,6 +386,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
                 return -1;
             }
             rc = handle_continuation_payload(&h2s->header, &contpl, buf_out, h2s);
+            // TODO: handle different error codes for handle_continuation_payload
             if (rc < 0) {
                 ERROR("Error was found during continuatin payload handling");
                 return -1;
