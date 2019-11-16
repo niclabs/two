@@ -1,12 +1,8 @@
 #include "unit.h"
 #include "logging.h"
 
-#include <http2/structs.h>
-#include <http2/flowcontrol.h>
-
-
-// Include header definitions for file to test
-// e.g #include "sock.h"
+#include "http2/structs.h"
+#include "http2/flowcontrol.h"
 
 void test_get_window_available_size(void)
 {
@@ -27,199 +23,199 @@ void test_get_window_available_size(void)
 void test_increase_window_used(void)
 {
     // Create function parameters
-    h2_window_manager_t wm[1];
+    h2_window_manager_t wm;
 
-    wm[0].window_used = 5;
+    wm.window_used = 5;
 
     // Perform request
-    int iwu = increase_window_used((h2_window_manager_t *)&wm, 3);
+    int iwu = increase_window_used(&wm, 3);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, iwu);
 
     // Check if window_used have the correct content
-    TEST_ASSERT_EQUAL( 8, wm[0].window_used);
+    TEST_ASSERT_EQUAL( 8, wm.window_used);
 }
 
 
 void test_decrease_window_used(void)
 {
     // Create function parameters
-    h2_window_manager_t wm[1];
+    h2_window_manager_t wm;
 
-    wm[0].window_used = 15;
+    wm.window_used = 15;
 
     // Perform request
-    int dwu = decrease_window_used((h2_window_manager_t *)&wm, 13);
+    int dwu = decrease_window_used(&wm, 13);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, dwu);
 
     // Check if window_used have the correct content
-    TEST_ASSERT_EQUAL( 2, wm[0].window_used);
+    TEST_ASSERT_EQUAL( 2, wm.window_used);
 }
 
 
 void test_flow_control_receive_data_success(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].incoming_window.window_size = 15;
-    h2s[0].incoming_window.window_used = 5;
+    h2s.incoming_window.window_size = 15;
+    h2s.incoming_window.window_used = 5;
 
     // Perform request
-    int fcrd = flow_control_receive_data((h2states_t *)&h2s, 7);
+    int fcrd = flow_control_receive_data(&h2s, 7);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, fcrd);
 
     // Check if incoming_window have the correct content
-    TEST_ASSERT_EQUAL( 12, h2s[0].incoming_window.window_used);
+    TEST_ASSERT_EQUAL( 12, h2s.incoming_window.window_used);
 }
 
 
 void test_flow_control_receive_data_fail(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].incoming_window.window_size = 15;
-    h2s[0].incoming_window.window_used = 10;
+    h2s.incoming_window.window_size = 15;
+    h2s.incoming_window.window_used = 10;
 
     // Perform request
-    int fcrd = flow_control_receive_data((h2states_t *)&h2s, 7);
+    int fcrd = flow_control_receive_data(&h2s, 7);
 
     // Return value should be -1
     TEST_ASSERT_EQUAL(HTTP2_RC_ERROR, fcrd);
 
     // Check if incoming_window have the correct content
-    TEST_ASSERT_EQUAL( 10, h2s[0].incoming_window.window_used);
+    TEST_ASSERT_EQUAL( 10, h2s.incoming_window.window_used);
 }
 
 
 void test_flow_control_send_data_success(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].outgoing_window.window_size = 15;
-    h2s[0].outgoing_window.window_used = 5;
+    h2s.outgoing_window.window_size = 15;
+    h2s.outgoing_window.window_used = 5;
 
     // Perform request
-    int fcsd = flow_control_send_data((h2states_t *)&h2s, 7);
+    int fcsd = flow_control_send_data(&h2s, 7);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, fcsd);
 
     // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 12, h2s[0].outgoing_window.window_used);
+    TEST_ASSERT_EQUAL( 12, h2s.outgoing_window.window_used);
 }
 
 
 void test_flow_control_send_data_fail(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].outgoing_window.window_size = 15;
-    h2s[0].outgoing_window.window_used = 10;
+    h2s.outgoing_window.window_size = 15;
+    h2s.outgoing_window.window_used = 10;
 
     // Perform request
-    int fcsd = flow_control_send_data((h2states_t *)&h2s, 7);
+    int fcsd = flow_control_send_data(&h2s, 7);
 
     // Return value should be -1
     TEST_ASSERT_EQUAL(HTTP2_RC_ERROR, fcsd);
 
     // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 10, h2s[0].outgoing_window.window_used);
+    TEST_ASSERT_EQUAL( 10, h2s.outgoing_window.window_used);
 }
 
 
 void test_flow_control_send_window_update_success(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].incoming_window.window_used = 7;
+    h2s.incoming_window.window_used = 7;
 
     // Perform request
-    int swu = flow_control_send_window_update((h2states_t *)&h2s, 5);
+    int swu = flow_control_send_window_update(&h2s, 5);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, swu);
 
     // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 2, h2s[0].incoming_window.window_used);
+    TEST_ASSERT_EQUAL( 2, h2s.incoming_window.window_used);
 }
 
 
 void test_flow_control_send_window_update_fail(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].incoming_window.window_used = 5;
+    h2s.incoming_window.window_used = 5;
 
     // Perform request
-    int swu = flow_control_send_window_update((h2states_t *)&h2s, 7);
+    int swu = flow_control_send_window_update(&h2s, 7);
 
     // Return value should be -1
     TEST_ASSERT_EQUAL(HTTP2_RC_ERROR, swu);
 
     // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 5, h2s[0].incoming_window.window_used);
+    TEST_ASSERT_EQUAL( 5, h2s.incoming_window.window_used);
 }
 
 
 void test_flow_control_receive_window_update_success(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].outgoing_window.window_used = 10;
+    h2s.outgoing_window.window_used = 10;
 
     // Perform request
-    int rwu = flow_control_receive_window_update((h2states_t *)&h2s, 7);
+    int rwu = flow_control_receive_window_update(&h2s, 7);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, rwu);
 
     // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 3, h2s[0].outgoing_window.window_used);
+    TEST_ASSERT_EQUAL( 3, h2s.outgoing_window.window_used);
 }
 
 
 void test_flow_control_receive_window_update_fail(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].outgoing_window.window_used = 5;
+    h2s.outgoing_window.window_used = 5;
 
     // Perform request
-    int rwu = flow_control_receive_window_update((h2states_t *)&h2s, 7);
+    int rwu = flow_control_receive_window_update(&h2s, 7);
 
     // Return value should be -1
     TEST_ASSERT_EQUAL(HTTP2_RC_ERROR, rwu);
 
     // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 5, h2s[0].outgoing_window.window_used);
+    TEST_ASSERT_EQUAL( 5, h2s.outgoing_window.window_used);
 }
 
 
 void test_get_size_data_to_send_v1(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].outgoing_window.window_size = 18;
-    h2s[0].outgoing_window.window_used = 0;
-    h2s[0].data.size = 20;
-    h2s[0].data.processed = 15;
+    h2s.outgoing_window.window_size = 18;
+    h2s.outgoing_window.window_used = 0;
+    h2s.data.size = 20;
+    h2s.data.processed = 15;
 
     // Perform request
-    int gsds = get_size_data_to_send((h2states_t *)&h2s);
+    int gsds = get_size_data_to_send(&h2s);
 
     // Return value should be 5
     TEST_ASSERT_EQUAL(5, gsds);
@@ -229,15 +225,15 @@ void test_get_size_data_to_send_v1(void)
 void test_get_size_data_to_send_v2(void)
 {
     // Create function parameters
-    h2states_t h2s[1];
+    h2states_t h2s;
 
-    h2s[0].outgoing_window.window_size = 18;
-    h2s[0].outgoing_window.window_used = 10;
-    h2s[0].data.size = 20;
-    h2s[0].data.processed = 0;
+    h2s.outgoing_window.window_size = 18;
+    h2s.outgoing_window.window_used = 10;
+    h2s.data.size = 20;
+    h2s.data.processed = 0;
 
     // Perform request
-    int gsds = get_size_data_to_send((h2states_t *)&h2s);
+    int gsds = get_size_data_to_send(&h2s);
 
     // Return value should be 8
     TEST_ASSERT_EQUAL(8, gsds);
