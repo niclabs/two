@@ -29,7 +29,7 @@ void prepare_new_stream(h2states_t* st);
 *        -> param: it indicates which parameter to read from table.
 * Output: The value read from the table. -1 if nothing was read.
 */
-uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param);
+int read_setting_from(h2states_t *st, uint8_t place, uint8_t param);
 
 
 int buffer_copy(uint8_t* dest, uint8_t* orig, int size);

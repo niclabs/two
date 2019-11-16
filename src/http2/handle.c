@@ -162,7 +162,12 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
             return (h2_ret_code_t)send_response(buf_out, h2s);
         }
         uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
-        uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
+        int setting_read = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
+        if (setting_read < 0){
+            //TODO send error if necessary, check return code
+            return HTTP2_RC_ERROR;
+        }
+        uint32_t MAX_HEADER_LIST_SIZE_VALUE = (uint32_t) setting_read;
         if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
             ERROR("Header list size greater than max allowed. Send HTTP 431");
             //TODO send error and finish stream
@@ -361,7 +366,12 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
             return send_response(buf_out, h2s);
         }
         uint32_t header_list_size = headers_get_header_list_size(&h2s->headers);
-        uint32_t MAX_HEADER_LIST_SIZE_VALUE = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
+        int setting_read = read_setting_from(h2s, LOCAL, MAX_HEADER_LIST_SIZE);
+        if (setting_read < 0){
+            //TODO send error if necessary, check return code
+            return HTTP2_RC_ERROR;
+        }
+        uint32_t MAX_HEADER_LIST_SIZE_VALUE = (uint32_t) setting_read;
         if (header_list_size > MAX_HEADER_LIST_SIZE_VALUE) {
             WARN("Header list size greater than max allowed. Send HTTP 431");
             //TODO send error and finish stream

@@ -1,4 +1,5 @@
 #include "http2/utils.h"
+#include "logging.h"
 
 
 /*
@@ -28,9 +29,10 @@ void prepare_new_stream(h2states_t* st){
 * Output: The value read from the table. -1 if nothing was read.
 */
 
-uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
+int read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
   if(param < 1 || param > 6){
-    return -1;
+    DEBUG("Invalid index from which to read the settings");
+    return HTTP2_RC_ERROR;
   }
   else if(place == LOCAL){
     return st->local_settings[--param];
@@ -39,7 +41,8 @@ uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
     return st->remote_settings[--param];
   }
   else{
-    return -1;
+    DEBUG("Invalid place from where read settings");
+    return HTTP2_RC_ERROR;
   }
 }
 
