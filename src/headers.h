@@ -41,9 +41,8 @@ typedef struct {
  * This function will reset provided memory
  *
  * @param headers headers data structure
- * @param hlist h pointer to header_t list of size maxlen
- * @param maxlen maximum number of elements that the header list can store
- * @return 0 if ok -1 if an error ocurred
+ * @param hlist h pointer to header_t list
+ * @return (void) 
  */
 void headers_init(headers_t * headers);
 
@@ -51,7 +50,7 @@ void headers_init(headers_t * headers);
  *This function will reset header list
  *
  * @param headers headers data structure
- * @return 0 if ok -1 if an error ocurred
+ * @return (void)
  */
 void headers_clean(headers_t *headers);
 
@@ -83,12 +82,12 @@ int headers_set(headers_t * headers, const char * name, const char * value);
  *
  * @param headers header list data structure
  * @param name name of the header to search
- * @param value header value of the header with name 'name' or NULL if error
+ * @return value header value of the header with name 'name' or NULL if error
  * */
 char * headers_get(headers_t * headers, const char * name);
 
 /**
- * Cheacks all headers for validity.
+ * Checks all headers for validity.
  *
  * There shouldn't be any ommited values, nor any duplicated ones.
  *

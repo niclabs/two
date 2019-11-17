@@ -6,6 +6,15 @@
 #include "headers.h"
 #include "logging.h"
 
+
+/*
+ * Function: headers_init
+ * Initializes a headers struct
+ * Input:
+ *      -> *headers: struct which will be initialized
+ * Output:
+ *      (void)
+ */
 void headers_init(headers_t *headers)
 {
     memset(headers->buffer, 0, sizeof(headers->buffer));
@@ -14,11 +23,28 @@ void headers_init(headers_t *headers)
     headers->size = 0;
 }
 
+/*
+ * Function: headers_clean
+ * Cleans headers list struct
+ * Input:
+ *      -> *headers: header list
+ * Output:
+ *      (void)
+ */
 void headers_clean(headers_t *headers)
 {
     headers_init(headers);
 }
 
+/*
+ * Function: headers_get
+ * Get header value of the header list
+ * Input:
+ *      -> *headers: header list
+ *      -> *name: name of the header to search
+ * Output:
+ *      String with the value of the header, NULL if it doesn't exist
+ */
 char *headers_get(headers_t *headers, const char *name)
 {
     // Assertions for debugging
@@ -44,7 +70,18 @@ char *headers_get(headers_t *headers, const char *name)
     return NULL;
 }
 
-
+/*
+ * Function: headers_new
+ * Main function to add new header into the header list
+ * To add with replacement is overwrite the value of the header if it exist
+ * To add without replacement is to concatenate previous value
+ * Input:
+ *      -> *headers: header list
+ *      -> *name: name of the header to search
+ *      -> with_replacement: boolean value to indicate if it is added with replacement or not
+ * Output:
+ *      0 if success, -1 if error
+ */
 int headers_new(headers_t *headers, const char *name, const char *value, uint8_t with_replacement)
 {
 
@@ -54,6 +91,15 @@ int headers_new(headers_t *headers, const char *name, const char *value, uint8_t
 
     uint16_t name_len = strlen(name);
     uint16_t value_len = strlen(value);
+/*
+ * Function: headers_add
+ * Add new header using headers_new function without replacement
+ * Input:
+ *      -> *headers: header list
+ *      -> *name: name of the header to search
+ * Output:
+ *      0 if success, -1 if error
+ */
 
     if (name_len > MAX_HEADER_NAME_LEN || value_len > MAX_HEADER_VALUE_LEN){
         errno = EINVAL;
@@ -168,20 +214,55 @@ int headers_new(headers_t *headers, const char *name, const char *value, uint8_t
     return 0;
 }
 
+/*
+ * Function: headers_add
+ * Add new header using headers_new function without replacement
+ * Input:
+ *      -> *headers: header list
+ *      -> *name: name of the header to search
+ * Output:
+ *      0 if success, -1 if error
+ */
 int headers_add(headers_t *headers, const char *name, const char *value){
     return headers_new(headers, name, value, 0);
 }
 
+/*
+ * Function: headers_set
+ * Add new header using headers_new function without replacement
+ * Input:
+ *      -> *headers: header list
+ *      -> *name: name of the header to search
+ * Output:
+ *      0 if success, -1 if error
+ */
 int headers_set(headers_t *headers, const char *name, const char *value)
 {
     return headers_new(headers, name, value, 1);
 }
 
+/*
+ * Function: headers_count
+ * Returns the amount of entries in the header list
+ * Input:
+ *      -> *headers: header list
+ * Output:
+ *      Amount of entries in the header list
+ */
 int headers_count(headers_t *headers)
 {   
     return headers->n_entries;
 }
 
+/*
+ * Function: headers_get_name_from_index
+ * Returns the name of the header of a certain index in the list
+ * Input:
+ *      -> *headers: header list
+ *      -> index: index of the header list to search
+ * Output:
+ *      String with the name of the header, NULL if it doesn't exist
+ */
 char *headers_get_name_from_index(headers_t *headers, int index)
 {
     // Assertions for debugging
@@ -211,12 +292,32 @@ char *headers_get_name_from_index(headers_t *headers, int index)
 
 }
 
+/*
+ * Function: headers_get_value_from_index
+ * Returns the value of the header of a certain index in the list
+ * Input:
+ *      -> *headers: header list
+ *      -> index: index of the header list to search
+ * Output:
+ *      String with the value of the header, NULL if it doesn't exist
+ */
 char *headers_get_value_from_index(headers_t *headers, int index)
 {
     char *name_pos = headers_get_name_from_index(headers, index);
     return name_pos + strlen(name_pos) + 1;
 }
 
+/*
+ * Function: headers_validate
+ * Check if the header list is correct, which means, every header in it is correct
+ * 
+ * There shouldn't be any empty values nor duplicated ones
+ * 
+ * Input:
+ *      -> *headers: header list
+ * Output:
+ *      0 if correct, -1 otherwise
+ */
 int headers_validate(headers_t* headers) {
     // Assertions for debugging
     assert(headers != NULL);
@@ -240,7 +341,14 @@ int headers_validate(headers_t* headers) {
 }
 
 
-
+/*
+ * Function: headers_get_header_list_size
+ * Returns the size of the header list related to the RFC Standards
+ * Input:
+ *      -> *headers: header list
+ * Output:
+ *      Size of the header list in bytes
+ */
 uint32_t headers_get_header_list_size(headers_t *headers)
 {
     uint32_t header_list_size = headers->size;
