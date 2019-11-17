@@ -24,7 +24,7 @@ extern int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *header
 extern int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host);
 
 DEFINE_FFF_GLOBALS;
-FAKE_VALUE_FUNC(int, headers_clean, headers_t *);
+FAKE_VOID_FUNC(headers_clean, headers_t *);
 FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
 FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
 FAKE_VALUE_FUNC(http_resource_handler_t, resource_handler_get, char *, char *);

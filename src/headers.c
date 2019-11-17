@@ -6,18 +6,17 @@
 #include "headers.h"
 #include "logging.h"
 
-int headers_init(headers_t *headers)
+void headers_init(headers_t *headers)
 {
     memset(headers->buffer, 0, sizeof(headers->buffer));
 
     headers->n_entries = 0;
     headers->size = 0;
-    return 0;
 }
 
-int headers_clean(headers_t *headers)
+void headers_clean(headers_t *headers)
 {
-    return headers_init(headers);
+    headers_init(headers);
 }
 
 char *headers_get(headers_t *headers, const char *name)

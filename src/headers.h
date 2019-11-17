@@ -45,7 +45,7 @@ typedef struct {
  * @param maxlen maximum number of elements that the header list can store
  * @return 0 if ok -1 if an error ocurred
  */
-int headers_init(headers_t * headers);
+void headers_init(headers_t * headers);
 
 /**
  *This function will reset header list
@@ -53,7 +53,7 @@ int headers_init(headers_t * headers);
  * @param headers headers data structure
  * @return 0 if ok -1 if an error ocurred
  */
-int headers_clean(headers_t *headers);
+void headers_clean(headers_t *headers);
 
 /**
  * Add a header to the list, if header already exists, concatenate value
