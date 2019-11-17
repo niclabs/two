@@ -71,9 +71,9 @@ int headers_new(headers_t *headers, const char *name, const char *value, uint8_t
 
     if(prev_value != NULL){
     //case in which already exist entry with same name
-        //plus 1 in case with replacement is for separation mark ','
-        if((with_replacement && (value_len + 1 + headers->size > MAX_HEADER_BUFFER_SIZE))
-            || (!with_replacement && (headers->size - strlen(prev_value) + value_len > MAX_HEADER_BUFFER_SIZE))){
+        //plus 1 in case without replacement is for separation mark ','
+        if((!with_replacement && (value_len + 1 + headers->size > MAX_HEADER_BUFFER_SIZE))
+            || (with_replacement && (headers->size - strlen(prev_value) + value_len > MAX_HEADER_BUFFER_SIZE))){
             errno = ENOMEM;
             return -1;
         }
@@ -100,7 +100,7 @@ int headers_new(headers_t *headers, const char *name, const char *value, uint8_t
                 //Then previous value
                 uint16_t previous_value_len = strlen(headers->buffer + i);
 
-                if(with_replacement){
+                if(!with_replacement){
                     //case headers_add
                     strncpy(buffer_aux + i_aux , headers->buffer + i, previous_value_len);
                     i_aux += previous_value_len;
@@ -170,12 +170,12 @@ int headers_new(headers_t *headers, const char *name, const char *value, uint8_t
 }
 
 int headers_add(headers_t *headers, const char *name, const char *value){
-    return headers_new(headers, name, value, 1);
+    return headers_new(headers, name, value, 0);
 }
 
 int headers_set(headers_t *headers, const char *name, const char *value)
 {
-    return headers_new(headers, name, value, 0);
+    return headers_new(headers, name, value, 1);
 }
 
 int headers_count(headers_t *headers)
