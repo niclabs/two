@@ -48,7 +48,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
 
     headers_init(&(h2s->headers));
 
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
@@ -200,11 +200,11 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
         }
         case PRIORITY_TYPE://Priority
             WARN("TODO: Priority Frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case RST_STREAM_TYPE://RST_STREAM
             WARN("TODO: Reset Stream Frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case SETTINGS_TYPE: {
             rc = check_incoming_settings_condition(buf_out, h2s);
@@ -212,18 +212,18 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
         }
         case PUSH_PROMISE_TYPE://Push promise
             WARN("TODO: Push promise frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case PING_TYPE://Ping
             WARN("TODO: Ping frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case GOAWAY_TYPE: {
             rc = check_incoming_goaway_condition(buf_out, h2s);
             return rc;
         }
         case WINDOW_UPDATE_TYPE: {
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
         case CONTINUATION_TYPE: {
             rc = check_incoming_continuation_condition(buf_out, h2s);
@@ -231,7 +231,7 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
         }
         default: {
             WARN("Error: Type not found");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         }
     }
@@ -258,16 +258,16 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("ERROR reading data payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             rc = handle_data_payload(&(h2s->header), &data_payload, buf_out, h2s);
             // TODO: handle different error codes for handle_data_payload
             if (rc < 0) {
                 ERROR("ERROR in handle receive data");
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             DEBUG("handle_payload: RECEIVED DATA PAYLOAD OK");
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
         case HEADERS_TYPE: {
             DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD");
@@ -288,19 +288,19 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             // TODO: handle different error codes for handle_headers_payload
             if (rc < 0) {
                 ERROR("ERROR in handle receive data");
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD OK");
-            return 0;
+            return HTTP2_RC_NO_ERROR;
 
         }
         case PRIORITY_TYPE://Priority
             WARN("TODO: Priority Frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case RST_STREAM_TYPE://RST_STREAM
             WARN("TODO: Reset Stream Frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case SETTINGS_TYPE: {
             DEBUG("Received SETTINGS payload");
@@ -320,18 +320,18 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             // Use remote settings
             rc = handle_settings_payload(&spl, buf_out, h2s);
             if (rc < 0) {
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             DEBUG("SETTINGS payload received OK");
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
         case PUSH_PROMISE_TYPE://Push promise
             WARN("TODO: Push promise frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case PING_TYPE://Ping
             WARN("TODO: Ping frame. Not implemented yet.");
-            return -1;
+            return HTTP2_RC_ERROR;
 
         case GOAWAY_TYPE: {
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD");
@@ -345,15 +345,15 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("Error in reading goaway payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             rc = handle_goaway_payload(&goaway_pl, buf_out, h2s);
             if (rc < 0) {
                 ERROR("Error during goaway handling");
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD OK");
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
         case WINDOW_UPDATE_TYPE: {
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD");
@@ -362,14 +362,14 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
                 send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); // TODO: review - always FRAME_SIZE_ERROR ?
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             rc = handle_window_update_payload(&window_update_payload, buf_out, h2s);
             if (rc < 0) {
                 ERROR("Error during window_update handling");
             }
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD OK");
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
         case CONTINUATION_TYPE: {
             DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD");
@@ -382,20 +382,20 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("Error in continuation payload reading");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             rc = handle_continuation_payload(&h2s->header, &contpl, buf_out, h2s);
             // TODO: handle different error codes for handle_continuation_payload
             if (rc < 0) {
                 ERROR("Error was found during continuatin payload handling");
-                return -1;
+                return HTTP2_RC_ERROR;
             }
             DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD OK");
-            return 0;
+            return HTTP2_RC_NO_ERROR;
         }
         default: {
             WARN("Error: Type not found");
-            return -1;
+            return HTTP2_RC_ERROR;
         }
     }
 }
