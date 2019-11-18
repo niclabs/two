@@ -245,6 +245,10 @@ net_return_code_t net_server_loop(unsigned int port, callback_t default_callback
                 curr_client->next = first_available;
                 first_available = curr_client;
 
+                if (first_connected == curr_client) {
+                    first_connected = next;
+                }
+
                 curr_client = next;
                 continue;
             }
