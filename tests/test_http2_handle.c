@@ -6,7 +6,13 @@
 #include "frames/common.h"          // for frame_header_t
 #include "frames/data_frame.h"      // for data_payload_t
 #include "frames/headers_frame.h"   // for headers_payload_t
+#include "frames/settings_frame.h"  // for settings_payload_t
 #include "cbuf.h"                   // for cbuf
+
+extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
+
+#define LOCAL_SETTINGS 0
+#define REMOTE_SETTINGS 1
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, flow_control_receive_data, h2states_t *, uint32_t);
@@ -174,6 +180,37 @@ void test_handle_headers_payload_end_stream_and_headers(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.received_end_stream, "Pointer must be equal to 10");
 }
 
+void test_update_settings_table(void)
+{
+    settings_pair_t pairs[4];
+
+    pairs[0].identifier = 0x2;
+    pairs[0].value = 0;
+    pairs[1].identifier = 0x4;
+    pairs[1].value = 1024;
+    pairs[2].identifier = 0x5;
+    pairs[2].value = 18432;
+    pairs[3].identifier = 0x6;
+    pairs[3].value = 100;
+    settings_payload_t spl;
+    spl.pairs = pairs;
+    spl.count = 4;
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.remote_settings[0] = h2s.local_settings[0] = 1;
+    h2s.remote_settings[1] = h2s.local_settings[1] = 1;
+    h2s.remote_settings[2] = h2s.local_settings[2] = 1;
+    h2s.remote_settings[3] = h2s.local_settings[3] = 1;
+    h2s.remote_settings[4] = h2s.local_settings[4] = 1;
+    h2s.remote_settings[5] = h2s.local_settings[5] = 1;
+    int rc = update_settings_table(&spl, LOCAL_SETTINGS, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
+    TEST_ASSERT_EQUAL_MESSAGE(0, h2s.local_settings[1], "Setting value was set to 0");
+    TEST_ASSERT_EQUAL_MESSAGE(1024, h2s.local_settings[3], "Setting value was set to 1024");
+    TEST_ASSERT_EQUAL_MESSAGE(18432, h2s.local_settings[4], "Setting value was set to 18432");
+    TEST_ASSERT_EQUAL_MESSAGE(100, h2s.local_settings[5], "Setting value was set to 100");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -185,5 +222,7 @@ int main(void)
     UNIT_TEST(test_handle_headers_payload_end_stream_flag);
     UNIT_TEST(test_handle_headers_payload_end_headers_flag);
     UNIT_TEST(test_handle_headers_payload_end_stream_and_headers);
+    UNIT_TEST(test_update_settings_table);
+
     return UNIT_TESTS_END();
 }
