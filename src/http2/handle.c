@@ -273,12 +273,12 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
     if (goaway_pl->error_code != HTTP2_NO_ERROR) {
         INFO("Received GOAWAY with ERROR");
         // i guess that is closed on the other side, are you?
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION;
     }
     if (h2s->sent_goaway == 1) { // received answer to goaway
         INFO("Connection CLOSED");
         // Return -1 to close connection
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION;
     }
     if (h2s->received_goaway == 1) {
         INFO("Another GOAWAY has been received before, just info");
@@ -295,10 +295,10 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
         // TODO: review error code from send_goaway in handle_goaway_payload
         if (rc < 0) {
             ERROR("Error sending GOAWAY FRAME");            // TODO shutdown_connection
-            return rc;
+            return HTTP2_RC_CLOSE_CONNECTION;
         }
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
