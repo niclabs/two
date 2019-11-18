@@ -123,8 +123,27 @@ void test_handle_headers_payload_end_stream_flag(void)
     TEST_ASSERT_EQUAL_MESSAGE(10, h2s.header_block_fragments_pointer, "Pointer must be equal to 10");
     TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_end_stream, "Pointer must be equal to 10");
 }
+
+void test_handle_headers_payload_end_headers_flag(void)
+{
+    frame_header_t head;
+    headers_payload_t hpl;
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.header_block_fragments_pointer = 0;
+    h2s.received_end_stream = 0;
+    // Set fake returns
+    get_header_block_fragment_size_fake.return_val = 10;
+    buffer_copy_fake.return_val = 10;
+    int flag_set_returns[2] = {0, 1};
+    SET_RETURN_SEQ(is_flag_set, flag_set_returns, 2);
+    receive_header_block_fake.return_val = 10;
+    headers_get_header_list_size_fake.return_val = 10;
+    read_setting_from_fake.return_val = 20;
     int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
+    TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be equal to 10");
+    TEST_ASSERT_EQUAL_MESSAGE(0, h2s.received_end_stream, "Pointer must be equal to 10");
 }
 
 int main(void)
@@ -134,6 +153,8 @@ int main(void)
     // Call tests here
     UNIT_TEST(test_handle_data_payload_no_flags);
     UNIT_TEST(test_handle_data_payload_multi_data);
-    // UNIT_TEST(test_handle_headers_payload);
+    UNIT_TEST(test_handle_headers_payload_no_flags);
+    UNIT_TEST(test_handle_headers_payload_end_stream_flag);
+    UNIT_TEST(test_handle_headers_payload_end_headers_flag);
     return UNIT_TESTS_END();
 }
