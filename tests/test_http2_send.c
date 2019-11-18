@@ -16,18 +16,21 @@ FAKE_VALUE_FUNC(int, create_data_frame, frame_header_t *, data_payload_t *, uint
 FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, h2states_t *);
 FAKE_VALUE_FUNC(int, flow_control_send_data, h2states_t *, uint32_t);
 FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t *);
+FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t *, window_update_payload_t *, int, uint32_t);
+FAKE_VALUE_FUNC(int, flow_control_send_window_update, h2states_t *, uint32_t);
 
-#define FFF_FAKES_LIST(FAKE)            \
-    FAKE(cbuf_push)                     \
-    FAKE(create_goaway_frame)           \
-    FAKE(frame_to_bytes)                \
-    FAKE(prepare_new_stream)            \
-    FAKE(set_flag)                      \
-    FAKE(create_data_frame)             \
-    FAKE(get_size_data_to_send)         \
-    FAKE(flow_control_send_data)        \
-    FAKE(create_settings_ack_frame)     \
-
+#define FFF_FAKES_LIST(FAKE)                \
+    FAKE(cbuf_push)                         \
+    FAKE(create_goaway_frame)               \
+    FAKE(frame_to_bytes)                    \
+    FAKE(prepare_new_stream)                \
+    FAKE(set_flag)                          \
+    FAKE(create_data_frame)                 \
+    FAKE(get_size_data_to_send)             \
+    FAKE(flow_control_send_data)            \
+    FAKE(create_settings_ack_frame)         \
+    FAKE(create_window_update_frame)        \
+    FAKE(flow_control_send_window_update)   \
 
 void setUp(void)
 {
@@ -389,11 +392,64 @@ void test_send_goaway_errors(void)
 
 }
 
+void test_send_window_update(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.incoming_window.window_used = 24;
+
+    create_window_update_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+    flow_control_send_window_update_fake.return_val = HTTP2_RC_NO_ERROR;
+
+    int rc = send_window_update(16, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_EQUAL(16, flow_control_send_window_update_fake.arg1_val);
+}
+
+void test_send_window_update_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.incoming_window.window_used = 24;
+
+    int create_wu_return[4] = { -1, 0, 0, 0 };
+    SET_RETURN_SEQ(create_window_update_frame, create_wu_return, 4);
+
+    frame_to_bytes_fake.return_val = 13;
+
+    int push_return[6] = { 13, 13, 5, 13, 13, 13 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 6);
+
+    flow_control_send_window_update_fake.return_val = HTTP2_RC_ERROR;
+
+    int rc = send_window_update(28, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error creating frame)");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes must be called by send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push must be called by send_goaway");
+
+    rc = send_window_update(28, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (window increment too big)");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 2, "frame to bytes must be called by send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 2, "cbuf_push must be called by send_goaway");
+
+    rc = send_window_update(16, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error writing frame)");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 4, "frame to bytes must be called by send_window_update and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 4, "cbuf_push must be called by send_window_update and send_goaway");
+
+    rc = send_window_update(16, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error sending frame)");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 6, "frame to bytes must be called by send_window_update and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 6, "cbuf_push must be called by send_window_update and send_goaway");
+
+
+}
+
 /*
-   void test_send_window_update(void){}
-
-   void test_send_window_update_errors(void){}
-
    void test_send_headers_stream_verification(void){}
 
    void test_send_headers_stream_verification_errors(void){}
@@ -445,6 +501,8 @@ int main(void)
     UNIT_TEST(test_send_goaway);
     UNIT_TEST(test_send_goaway_close_connection);
     UNIT_TEST(test_send_goaway_errors);
+    UNIT_TEST(test_send_window_update);
+    UNIT_TEST(test_send_window_update_errors);
 
     return UNIT_TESTS_END();
 }
