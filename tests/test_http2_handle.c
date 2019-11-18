@@ -96,6 +96,7 @@ void test_handle_headers_payload_no_flags(void)
     headers_payload_t hpl;
     cbuf_t bout;
     h2states_t h2s;
+
     h2s.header_block_fragments_pointer = 0;
     // Set fake returns
     get_header_block_fragment_size_fake.return_val = 10;
@@ -112,11 +113,12 @@ void test_handle_headers_payload_end_stream_flag(void)
     headers_payload_t hpl;
     cbuf_t bout;
     h2states_t h2s;
+
     h2s.header_block_fragments_pointer = 0;
     // Set fake returns
     get_header_block_fragment_size_fake.return_val = 10;
     buffer_copy_fake.return_val = 10;
-    int flag_set_returns[2] = {1, 0};
+    int flag_set_returns[2] = { 1, 0 };
     SET_RETURN_SEQ(is_flag_set, flag_set_returns, 2);
     int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
@@ -130,12 +132,13 @@ void test_handle_headers_payload_end_headers_flag(void)
     headers_payload_t hpl;
     cbuf_t bout;
     h2states_t h2s;
+
     h2s.header_block_fragments_pointer = 0;
     h2s.received_end_stream = 0;
     // Set fake returns
     get_header_block_fragment_size_fake.return_val = 10;
     buffer_copy_fake.return_val = 10;
-    int flag_set_returns[2] = {0, 1};
+    int flag_set_returns[2] = { 0, 1 };
     SET_RETURN_SEQ(is_flag_set, flag_set_returns, 2);
     receive_header_block_fake.return_val = 10;
     headers_get_header_list_size_fake.return_val = 10;
@@ -152,16 +155,17 @@ void test_handle_headers_payload_end_stream_and_headers(void)
     headers_payload_t hpl;
     cbuf_t bout;
     h2states_t h2s;
+
     h2s.header_block_fragments_pointer = 0;
     h2s.received_end_stream = 0;
     // Set fake returns
     get_header_block_fragment_size_fake.return_val = 10;
     buffer_copy_fake.return_val = 10;
-    int flag_set_returns[2] = {1, 1};
+    int flag_set_returns[2] = { 1, 1 };
     SET_RETURN_SEQ(is_flag_set, flag_set_returns, 2);
     receive_header_block_fake.return_val = 10;
     change_stream_state_end_stream_flag_fake.return_val = 0;
-    headers_get_fake.return_val = (char *) 'a';
+    headers_get_fake.return_val = (char *)'a';
     http_server_response_fake.return_val = 0;
     send_response_fake.return_val = 0;
     int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
