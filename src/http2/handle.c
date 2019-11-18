@@ -317,7 +317,8 @@ int handle_ping_payload(frame_header_t *header, ping_payload_t *ping_payload, cb
         return HTTP2_RC_NO_ERROR;
     }
     else {                                                                  //Received PING frame with no ACK
-        int rc = send_ping_ack(buf_out, ping_payload->opaque_data, h2s);    //Response a PING ACK frame
+        int8_t ack_flag = 1; //TRUE
+        int rc = send_ping(buf_out, ping_payload->opaque_data, ack_flag, h2s);    //Response a PING ACK frame
         return (h2_ret_code_t)rc;
     }
 }

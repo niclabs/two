@@ -157,24 +157,32 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
 
 
 /*
- * Function: send_ping_ack
- * Sends an ACK ping frame to endpoint
+ * Function: send_ping
+ * Sends a ping frame to endpoint
  * Input:
  *      -> opaque_data: opaque data of ping payload
+ *      -> ack: boolean if ack != 0 sends an ACK ping, else sends a ping with the ACK flag not set.
  *      -> h2s: pointer to hstates struct where http and http2 connection info is
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping_ack(cbuf_t *buf_out, uint8_t* opaque_data, h2states_t *h2s)
+int send_ping(cbuf_t *buf_out, uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
 {
     frame_t ack_frame;
     frame_header_t ack_frame_header;
     ping_payload_t ping_payload;
+
     ack_frame.frame_header = &ack_frame_header;
-    ack_frame.payload = (void*) &ping_payload;
-    int rc = create_ping_ack_frame(&ack_frame_header, &ping_payload, opaque_data);
+    ack_frame.payload = (void *)&ping_payload;
+    int rc;
+    if (ack) {
+        rc = create_ping_ack_frame(&ack_frame_header, &ping_payload, opaque_data);
+    }
+    else {
+        rc = create_ping_frame(&ack_frame_header, &ping_payload, opaque_data);
+    }
     if (rc < 0) {
-        ERROR("Error in PING ACK creation!");
+        ERROR("Error in PING creation!");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
@@ -182,9 +190,9 @@ int send_ping_ack(cbuf_t *buf_out, uint8_t* opaque_data, h2states_t *h2s)
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     // We write the ACK to NET
     rc = cbuf_push(buf_out, byte_ack, size_byte_ack);
-    INFO("Sending PING ACK");
+    INFO("Sending PING");
     if (rc != size_byte_ack) {
-        ERROR("Error in PING ACK sending");
+        ERROR("Error in PING sending");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
@@ -475,7 +483,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    if (headers_count(&(h2s->headers))== 0) {
+    if (headers_count(&(h2s->headers)) == 0) {
         ERROR("send_headers called when there are no headers to send");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
@@ -509,9 +517,9 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
                 return rc;
             }
         }
-        return rc; // should be HTTP2_RC_NO_ERROR
+        return rc;  // should be HTTP2_RC_NO_ERROR
     }
-    else {//if headers must be send with one or more continuation frames
+    else {          //if headers must be send with one or more continuation frames
         int remaining = size;
         //send Header Frame
         rc = send_headers_frame(encoded_bytes, max_frame_size, stream_id, 0, end_stream, buf_out, h2s);
@@ -560,7 +568,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
  */
 int send_response(cbuf_t *buf_out, h2states_t *h2s)
 {
-    if (headers_count(&(h2s->headers))== 0) {
+    if (headers_count(&(h2s->headers)) == 0) {
         ERROR("There were no headers to write");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
@@ -572,7 +580,7 @@ int send_response(cbuf_t *buf_out, h2states_t *h2s)
             ERROR("Error was found sending headers on response");
             return rc;
         }
-        else if (rc == HTTP2_RC_CLOSE_CONNECTION){
+        else if (rc == HTTP2_RC_CLOSE_CONNECTION) {
             DEBUG("send_response: Close connection. GOAWAY sent while on send_headers.");
             return rc;
         }
@@ -588,7 +596,7 @@ int send_response(cbuf_t *buf_out, h2states_t *h2s)
             ERROR("Error was found sending headers on response");
             return rc;
         }
-        else if (rc == HTTP2_RC_CLOSE_CONNECTION){
+        else if (rc == HTTP2_RC_CLOSE_CONNECTION) {
             DEBUG("send_response: Close connection. GOAWAY sent while on send_headers.");
             return rc;
         }
