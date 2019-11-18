@@ -12,6 +12,9 @@ FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t *, goaway_payload_t *, 
 FAKE_VALUE_FUNC(int, frame_to_bytes, frame_t *, uint8_t *);
 FAKE_VOID_FUNC(prepare_new_stream, h2states_t *);
 FAKE_VALUE_FUNC(uint8_t, set_flag, uint8_t, uint8_t);
+FAKE_VALUE_FUNC(int, create_data_frame, frame_header_t *, data_payload_t *, uint8_t *, uint8_t *, int, uint32_t);
+FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, h2states_t *);
+FAKE_VALUE_FUNC(int, flow_control_send_data, h2states_t *, uint32_t);
 
 #define FFF_FAKES_LIST(FAKE)            \
     FAKE(cbuf_push)                     \
@@ -19,6 +22,9 @@ FAKE_VALUE_FUNC(uint8_t, set_flag, uint8_t, uint8_t);
     FAKE(frame_to_bytes)                \
     FAKE(prepare_new_stream)            \
     FAKE(set_flag)                      \
+    FAKE(create_data_frame)             \
+    FAKE(get_size_data_to_send)         \
+    FAKE(flow_control_send_data)        \
 
 
 void setUp(void)
@@ -94,21 +100,185 @@ void test_change_stream_state_end_stream_flag_close_connection(void)
 
 }
 
-/*
+void test_send_data(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    http2_data_t data;
 
-   void test_send_data(void){}
+    data.size = 36;
+    data.processed = 0;
+    h2s.outgoing_window.window_size = 30;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.current_stream.stream_id = 24;
+    h2s.data = data;
 
-   void test_send_data_full_sending(void){}
+    get_size_data_to_send_fake.return_val = 30;
+    create_data_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 39;
+    cbuf_push_fake.return_val = 39;
+    flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
 
-   void test_send_data_errors(void){}
+    int rc = send_data(0, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "return code must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s.data.processed == 30, "data processed must be 30");
+    TEST_ASSERT_MESSAGE(h2s.data.size == 36, "data size must remain as 36");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "stream state must remain as STREAM_OPEN");
+}
 
-   void test_send_settings_ack(void){}
+void test_send_data_end_stream(void)
+{
+    cbuf_t buf_out;
+    http2_data_t data;
+    h2states_t h2s_open;
 
-   void test_send_settings_ack_errors(void){}
+    data.size = 36;
+    data.processed = 0;
+    h2s_open.outgoing_window.window_size = 30;
+    h2s_open.current_stream.state = STREAM_OPEN;
+    h2s_open.current_stream.stream_id = 24;
+    h2s_open.data = data;
 
-   void test_send_goaway(void){}
+    get_size_data_to_send_fake.return_val = 30;
+    create_data_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 39;
+    cbuf_push_fake.return_val = 39;
+    flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
 
-   void test_send_goaway_errors(void){}
+    int rc = send_data(1, &buf_out, &h2s_open);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "return code must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_open.data.processed == 30, "data processed must be 30");
+    TEST_ASSERT_MESSAGE(h2s_open.data.size == 36, "data size must remain as 36");
+    TEST_ASSERT_MESSAGE(h2s_open.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "stream state must be STREAM_HALF_CLOSED_LOCAL");
+
+    h2states_t h2s_hcr;
+
+    h2s_hcr.outgoing_window.window_size = 30;
+    h2s_hcr.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    h2s_hcr.current_stream.stream_id = 24;
+    h2s_hcr.received_goaway = 0;
+    h2s_hcr.data = data;
+
+    rc = send_data(1, &buf_out, &h2s_hcr);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "return code must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_hcr.data.processed == 30, "data processed must be 30");
+    TEST_ASSERT_MESSAGE(h2s_hcr.data.size == 36, "data size must remain as 36");
+    TEST_ASSERT_MESSAGE(h2s_hcr.current_stream.state == STREAM_CLOSED, "stream state must be STREAM_CLOSED");
+
+}
+
+void test_send_data_full_sending(void)
+{
+    cbuf_t buf_out;
+    http2_data_t data;
+    h2states_t h2s;
+
+    data.size = 36;
+    data.processed = 0;
+    h2s.outgoing_window.window_size = 50;
+    h2s.current_stream.state = STREAM_OPEN;
+    h2s.current_stream.stream_id = 24;
+    h2s.data = data;
+
+    get_size_data_to_send_fake.return_val = 36;
+    create_data_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 39;
+    cbuf_push_fake.return_val = 39;
+    flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
+
+    int rc = send_data(0, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "return code must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s.data.processed == 0, "data processed must be 0");
+    TEST_ASSERT_MESSAGE(h2s.data.size == 0, "data size must be 0 ");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "stream state must remain as STREAM_OPEN");
+
+}
+
+
+void test_send_data_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s_nodata;
+
+    h2s_nodata.data.size = 0;
+    h2s_nodata.data.processed = 0;
+
+    int rc = send_data(0, &buf_out, &h2s_nodata);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "no data to send");
+
+    h2states_t h2s_wstate;
+
+    h2s_wstate.data.size = 32;
+    h2s_wstate.data.processed = 0;
+    h2s_wstate.current_stream.state = STREAM_CLOSED;
+
+    rc = send_data(0, &buf_out, &h2s_wstate);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "wrong state for sending data");
+
+    h2states_t h2s_create;
+    h2s_create.data.size = 32;
+    h2s_create.data.processed = 0;
+    h2s_create.current_stream.state = STREAM_OPEN;
+
+    get_size_data_to_send_fake.return_val = 32;
+    int create_return[3] = { -1, 0, 0 };
+    SET_RETURN_SEQ(create_data_frame, create_return, 3);
+
+    rc = send_data(0, &buf_out, &h2s_create);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "error creating data frame");
+
+
+    h2states_t h2s_write;
+    h2s_write.data.size = 32;
+    h2s_write.data.processed = 0;
+    h2s_write.current_stream.state = STREAM_OPEN;
+
+    frame_to_bytes_fake.return_val = 39;
+    int push_return[2] = { 30, 39 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 2);
+
+    rc = send_data(0, &buf_out, &h2s_write);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "error writing data frame");
+
+
+    h2states_t h2s_fc;
+    h2s_fc.data.size = 32;
+    h2s_fc.data.processed = 0;
+    h2s_fc.current_stream.state = STREAM_OPEN;
+
+    flow_control_send_data_fake.return_val = HTTP2_RC_ERROR;
+
+    rc = send_data(0, &buf_out, &h2s_fc);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Trying to send more data than allowed");
+    TEST_ASSERT_EQUAL(32, flow_control_send_data_fake.arg1_val);
+}
+
+void test_send_data_close_connection(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.outgoing_window.window_size = 30;
+    h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+    h2s.current_stream.stream_id = 24;
+    h2s.received_goaway = 1;
+    h2s.data.size = 36;
+    h2s.data.processed = 0;
+
+    get_size_data_to_send_fake.return_val = 36;
+    create_data_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 39;
+    cbuf_push_fake.return_val = 39;
+    flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
+
+    int rc = send_data(1, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION, "return code must be HTTP2_RC_CLOSE_CONNECTION");
+    TEST_ASSERT_MESSAGE(h2s.data.processed == 0, "value of data processed must remain as 0"); // review
+    TEST_ASSERT_MESSAGE(h2s.data.size == 36, "value of data size must remain as 36");
+    TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_CLOSED, "stream state must be STREAM_CLOSED");
+
+
+}
 
    void test_send_window_update(void){}
 
@@ -155,6 +325,11 @@ int main(void)
 
     UNIT_TEST(test_change_stream_state_end_stream_flag);
     UNIT_TEST(test_change_stream_state_end_stream_flag_close_connection);
+    UNIT_TEST(test_send_data);
+    UNIT_TEST(test_send_data_end_stream);
+    UNIT_TEST(test_send_data_full_sending);
+    UNIT_TEST(test_send_data_errors);
+    UNIT_TEST(test_send_data_close_connection);
 
     return UNIT_TESTS_END();
 }
