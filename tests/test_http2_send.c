@@ -15,6 +15,7 @@ FAKE_VALUE_FUNC(uint8_t, set_flag, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, create_data_frame, frame_header_t *, data_payload_t *, uint8_t *, uint8_t *, int, uint32_t);
 FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, h2states_t *);
 FAKE_VALUE_FUNC(int, flow_control_send_data, h2states_t *, uint32_t);
+FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t *);
 
 #define FFF_FAKES_LIST(FAKE)            \
     FAKE(cbuf_push)                     \
@@ -25,6 +26,7 @@ FAKE_VALUE_FUNC(int, flow_control_send_data, h2states_t *, uint32_t);
     FAKE(create_data_frame)             \
     FAKE(get_size_data_to_send)         \
     FAKE(flow_control_send_data)        \
+    FAKE(create_settings_ack_frame)     \
 
 
 void setUp(void)
@@ -280,6 +282,52 @@ void test_send_data_close_connection(void)
 
 }
 
+void test_send_settings_ack(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    create_settings_ack_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 9;
+    cbuf_push_fake.return_val = 9;
+
+    int rc = send_settings_ack(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "RC must be 0");
+    TEST_ASSERT_MESSAGE(create_settings_ack_frame_fake.call_count == 1, "ACK creation called one time");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes called one time");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push called one time");
+
+
+}
+
+void test_send_settings_ack_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    int create_return[2] = { -1, 0 };
+
+    SET_RETURN_SEQ(create_settings_ack_frame, create_return, 2);
+
+    frame_to_bytes_fake.return_val = 9;
+
+    int push_return[3] = { 9, 4, 9 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 3);
+
+    int rc = send_settings_ack(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "RC must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, error creating");
+    TEST_ASSERT_MESSAGE(create_settings_ack_frame_fake.call_count == 1, "ACK creation called one time");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes is called when sending goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push is called when sending goaway");
+
+    rc = send_settings_ack(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "RC must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, error writing to cbuf");
+    TEST_ASSERT_MESSAGE(create_settings_ack_frame_fake.call_count == 2, "ACK creation called one time");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 3, "frame to bytes called in send settings and send goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf_push called in send settings and send goaway");
+    TEST_ASSERT_EQUAL(9, cbuf_push_fake.arg2_val);
+
+}
    void test_send_window_update(void){}
 
    void test_send_window_update_errors(void){}
@@ -330,6 +378,8 @@ int main(void)
     UNIT_TEST(test_send_data_full_sending);
     UNIT_TEST(test_send_data_errors);
     UNIT_TEST(test_send_data_close_connection);
+    UNIT_TEST(test_send_settings_ack);
+    UNIT_TEST(test_send_settings_ack_errors);
 
     return UNIT_TESTS_END();
 }
