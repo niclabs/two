@@ -35,6 +35,14 @@ typedef struct {
     uint16_t size;
 } headers_t;
 
+/**
+ * Data structure to indicate location of a header
+ * Uses pointer to header buffer
+ */
+typedef struct {
+    char *name;
+    char *value;
+} header_t;
 
 /**
  * Initialize header list with specified array and set list counter to zero
