@@ -251,10 +251,10 @@ int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t
     // update_settings_table checks for possible errors in the incoming settings
     if (!update_settings_table(spl, REMOTE, buf_out, h2s)) {
         int rc = send_settings_ack(buf_out, h2s);
-        return rc;
+        return (h2_ret_code_t)rc;
     }
     else {
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
 }
 
