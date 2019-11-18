@@ -122,7 +122,16 @@ char * headers_get_value_from_index(headers_t * headers, int index);
 /**
  * Calculate size of header list for http/2
  */
-uint32_t headers_get_header_list_size(headers_t* headers);
+/**
+ * Copy pointers to headers into a array of header_t
+ * This makes iterating through headers easier
+ * 
+ * @param headers headers list data structure
+ * @param headers_array header array that stores name and value of each ones as pointers to the buffer
+ * 
+ * @return (void)
+ */
+void headers_get_all(header_list_t* headers, header_t *headers_array);
 
 
 #endif

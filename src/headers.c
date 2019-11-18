@@ -308,6 +308,37 @@ char *headers_get_value_from_index(headers_t *headers, int index)
 }
 
 /*
+ * Function: headers_get_all 
+ * Copy pointers of name and value of each header in the header list to a header array
+ * Input:
+ *      -> *headers: header list struct
+ *      -> *headers_array: array of pointers to headers name and value.
+ * Output:
+ *      (void)
+ */
+void headers_get_all(header_list_t* headers, header_t *headers_array){
+    
+    assert(headers != NULL);
+    uint16_t n_entries = 0;
+
+    for(int i=0; i<headers->size; i++){
+        //for every header
+
+        //get name
+        char *name = headers->buffer + i;
+        headers_array[n_entries].name = name;
+        //plus one for 0 between them
+        i += strlen(name) + 1;
+        //get value 
+        char *value = headers->buffer + i;
+        headers_array[n_entries].value = value;
+        i += strlen(value);
+        n_entries ++;
+    }
+}
+
+
+/*
  * Function: headers_validate
  * Check if the header list is correct, which means, every header in it is correct
  * 
@@ -322,9 +353,12 @@ int headers_validate(headers_t* headers) {
     // Assertions for debugging
     assert(headers != NULL);
 
+    header_t headers_array[headers_count(headers)];
+    headers_get_all(headers, headers_array);
+
     for (int i = 0; i < headers_count(headers); i++) {
-        char* name = headers_get_name_from_index(headers, i);
-        char* value = headers_get_value_from_index(headers, i);
+        char* name = headers_array[i].name;
+        char* value = headers_array[i].value;
         if (value == NULL)
         {
             ERROR("Headers validation failed, the \"%s\" field had no value", name);

@@ -141,8 +141,11 @@ int compress_headers(headers_t *headers_out, uint8_t *compressed_headers, hpack_
     //TODO implement dynamic table size update
     int pointer = 0;
 
+    header_t headers_array[headers_count(headers_out)];
+    headers_get_all(headers_out, headers_array);
+
     for (uint8_t i = 0; i < headers_count(headers_out); i++) {
-        int rc = encode(hpack_states, headers_get_name_from_index(headers_out, i), headers_get_value_from_index(headers_out, i), compressed_headers + pointer);
+        int rc = encode(hpack_states, headers_array[i].name, headers_array[i].value, compressed_headers + pointer);
         pointer += rc;
     }
     return pointer;

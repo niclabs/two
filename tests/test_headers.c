@@ -215,6 +215,33 @@ void test_get_header_list_size(void){
     TEST_ASSERT_EQUAL(5 + 7 + 64 + 6 + 12 + 64, result);
 }
 
+void test_headers_get_all(void){
+	int res;
+
+	// initialize headers
+	headers_init(&headers);
+
+	// test succesful write
+	res = headers_set(&headers, "name1", "value1");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should update after succesful write");
+
+	// test succesful write
+	res = headers_set(&headers, "another", "anothervalue");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should update after succesful write");
+
+	header_t headers_array[2];
+	headers_get_all(&headers, headers_array);
+	
+	//now test correct strings
+	TEST_ASSERT_EQUAL_STRING(headers_array[0].name, "name1");
+	TEST_ASSERT_EQUAL_STRING(headers_array[0].value, "value1");
+	TEST_ASSERT_EQUAL_STRING(headers_array[1].name, "another");
+	TEST_ASSERT_EQUAL_STRING(headers_array[1].value, "anothervalue");
+
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -222,5 +249,6 @@ int main(void)
     UNIT_TEST(test_headers_add);
 	UNIT_TEST(test_limits_add_set);
     UNIT_TEST(test_get_header_list_size);
+	UNIT_TEST(test_headers_get_all);
     UNIT_TESTS_END();
 }

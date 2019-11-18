@@ -38,9 +38,7 @@ FAKE_VALUE_FUNC(int, encode, hpack_states_t *, char *, char *,  uint8_t *);
 FAKE_VALUE_FUNC(int, decode_header_block, hpack_states_t *, uint8_t *, uint8_t, headers_t *);
 
 // Headers functions
-FAKE_VALUE_FUNC(int, headers_count, headers_t *);
-FAKE_VALUE_FUNC(char *, headers_get_name_from_index, headers_t *, int);
-FAKE_VALUE_FUNC(char *, headers_get_value_from_index, headers_t *, int);
+FAKE_VOID_FUNC(headers_get_all, header_list_t *, header_t *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)            \
@@ -63,8 +61,7 @@ FAKE_VALUE_FUNC(char *, headers_get_value_from_index, headers_t *, int);
     FAKE(encode)                      \
     FAKE(decode_header_block)         \
     FAKE(headers_count)               \
-    FAKE(headers_get_name_from_index) \
-    FAKE(headers_get_value_from_index)
+    FAKE(headers_get_all) 
 
 void setUp(void)
 {
@@ -263,6 +260,12 @@ uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
     return (uint32_t)bytes[3];
 }
 
+void headers_get_all_fake_custom(header_list_t *headers, header_t *headers_array)
+{
+    headers_array[0].name = "hola";
+    headers_array[0].value = "val";
+}
+
 int encode_fake_custom(hpack_states_t *hpack_states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
 {
     (void)hpack_states;
@@ -334,8 +337,7 @@ void test_compress_headers(void)
 
     // Set return values for headers functions
     headers_count_fake.return_val = 1;
-    headers_get_name_from_index_fake.return_val = "hola";
-    headers_get_value_from_index_fake.return_val = "val";
+    headers_get_all_fake.custom_fake = headers_get_all_fake_custom;
 
     int rc = compress_headers(&headers, compressed_headers, NULL);
 
