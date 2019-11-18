@@ -202,21 +202,21 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_ou
                 if (value != 0 && value != 1) {
                     ERROR("Invalid value in ENABLE_PUSH settings. Protocol Error");
                     send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-                    return -1;
+                    return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
                 }
                 break;
             case INITIAL_WINDOW_SIZE:
                 if (value > 2147483647) {
                     ERROR("Invalid value in INITIAL_WINDOW_SIZE settings. Protocol Error");
                     send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
-                    return -1;
+                    return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
                 }
                 break;
             case MAX_FRAME_SIZE:
                 if (value > 16777215 || value < 16384) {
                     ERROR("Invalid value in MAX_FRAME_SIZE settings. Protocol Error");
                     send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-                    return -1;
+                    return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
                 }
                 break;
             default:
@@ -233,7 +233,7 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_ou
             break;
         }
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*
