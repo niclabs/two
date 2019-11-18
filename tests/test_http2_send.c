@@ -6,6 +6,8 @@
 #include "frames/common.h"
 #include "cbuf.h"
 
+extern int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s);
+
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t *, goaway_payload_t *, uint8_t *, uint32_t, uint32_t,  uint8_t *, uint8_t);
@@ -449,11 +451,144 @@ void test_send_window_update_errors(void)
 
 }
 
+void test_send_headers_stream_verification_server(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s_idle;
+
+    h2s_idle.is_server = 1;
+    h2s_idle.current_stream.stream_id = 2;
+    h2s_idle.current_stream.state = STREAM_IDLE;
+    h2s_idle.last_open_stream_id = 1;
+
+    h2states_t h2s_parity;
+
+    h2s_parity.is_server = 1;
+    h2s_parity.current_stream.stream_id = 4;
+    h2s_parity.current_stream.state = STREAM_IDLE;
+    h2s_parity.last_open_stream_id = 4;
+
+    h2states_t h2s_id_gt;
+
+    h2s_id_gt.is_server = 1;
+    h2s_id_gt.current_stream.stream_id = 4;
+    h2s_id_gt.current_stream.state = STREAM_IDLE;
+    h2s_id_gt.last_open_stream_id = 25;
+
+    h2states_t h2s_open;
+
+    h2s_open.is_server = 1;
+    h2s_open.current_stream.stream_id = 24;
+    h2s_open.current_stream.state = STREAM_OPEN;
+    h2s_open.last_open_stream_id = 24;
+
+    int rc = send_headers_stream_verification(&buf_out, &h2s_idle);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_idle.current_stream.state == STREAM_OPEN, "stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_idle.current_stream.stream_id == 2, "stream_id of the new stream must be 2");
+    TEST_ASSERT_MESSAGE(h2s_idle.last_open_stream_id == 2, "last open stream id must be 2");
+
+    rc = send_headers_stream_verification(&buf_out, &h2s_parity);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_parity.current_stream.state == STREAM_OPEN, "stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_parity.current_stream.stream_id == 6, "stream_id of the new stream must be 6");
+    TEST_ASSERT_MESSAGE(h2s_parity.last_open_stream_id == 6, "last open stream id must be 6");
+
+    rc = send_headers_stream_verification(&buf_out, &h2s_id_gt);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_id_gt.current_stream.state == STREAM_OPEN, "stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_id_gt.current_stream.stream_id == 26, "stream_id of the new stream must be 26");
+    TEST_ASSERT_MESSAGE(h2s_id_gt.last_open_stream_id == 26, "last open stream id must be 26");
+
+    rc = send_headers_stream_verification(&buf_out, &h2s_open);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_open.current_stream.state == STREAM_OPEN, "stream state must remain STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_open.current_stream.stream_id == 24, "stream_id of the new stream must be 24");
+    TEST_ASSERT_MESSAGE(h2s_open.last_open_stream_id == 24, "last open stream id must be 24");
+
+}
+
+void test_send_headers_stream_verification_client(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s_idle;
+
+    h2s_idle.is_server = 0;
+    h2s_idle.current_stream.stream_id = 3;
+    h2s_idle.current_stream.state = STREAM_IDLE;
+    h2s_idle.last_open_stream_id = 1;
+
+    h2states_t h2s_parity;
+
+    h2s_parity.is_server = 0;
+    h2s_parity.current_stream.stream_id = 5;
+    h2s_parity.current_stream.state = STREAM_IDLE;
+    h2s_parity.last_open_stream_id = 4;
+
+    h2states_t h2s_id_gt;
+
+    h2s_id_gt.is_server = 0;
+    h2s_id_gt.current_stream.stream_id = 5;
+    h2s_id_gt.current_stream.state = STREAM_IDLE;
+    h2s_id_gt.last_open_stream_id = 25;
+
+    h2states_t h2s_open;
+
+    h2s_open.is_server = 0;
+    h2s_open.current_stream.stream_id = 23;
+    h2s_open.current_stream.state = STREAM_OPEN;
+    h2s_open.last_open_stream_id = 23;
+
+    int rc = send_headers_stream_verification(&buf_out, &h2s_idle);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_idle.current_stream.state == STREAM_OPEN, "stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_idle.current_stream.stream_id == 3, "stream_id of the new stream must be 3");
+    TEST_ASSERT_MESSAGE(h2s_idle.last_open_stream_id == 3, "last open stream id must be 3");
+
+    rc = send_headers_stream_verification(&buf_out, &h2s_parity);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_parity.current_stream.state == STREAM_OPEN, "stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_parity.current_stream.stream_id == 5, "stream_id of the new stream must be 5");
+    TEST_ASSERT_MESSAGE(h2s_parity.last_open_stream_id == 5, "last open stream id must be 5");
+
+    rc = send_headers_stream_verification(&buf_out, &h2s_id_gt);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_id_gt.current_stream.state == STREAM_OPEN, "stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_id_gt.current_stream.stream_id == 27, "stream_id of the new stream must be 27");
+    TEST_ASSERT_MESSAGE(h2s_id_gt.last_open_stream_id == 27, "last open stream id must be 27");
+
+    rc = send_headers_stream_verification(&buf_out, &h2s_open);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_open.current_stream.state == STREAM_OPEN, "stream state must remain STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_open.current_stream.stream_id == 23, "stream_id of the new stream must be 23");
+    TEST_ASSERT_MESSAGE(h2s_open.last_open_stream_id == 23, "last open stream id must be 23");
+}
+
+void test_send_headers_stream_verification_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s_closed;
+    h2states_t h2s_hcl;
+
+    h2s_closed.current_stream.state = STREAM_CLOSED;
+    h2s_hcl.current_stream.state = STREAM_HALF_CLOSED_LOCAL;
+
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+
+    int rc = send_headers_stream_verification(&buf_out, &h2s_closed);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream closed)");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes must be called in send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push_fake must be called in send_goaway");
+
+    rc = send_headers_stream_verification(&buf_out, &h2s_hcl);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream closed)");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 2, "frame to bytes must be called in send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 2, "cbuf_push_fake must be called in send_goaway");
+
+}
+
 /*
-   void test_send_headers_stream_verification(void){}
-
-   void test_send_headers_stream_verification_errors(void){}
-
    void test_send_local_settings(void){}
 
    void test_send_local_settings_errors(void){}
@@ -503,6 +638,9 @@ int main(void)
     UNIT_TEST(test_send_goaway_errors);
     UNIT_TEST(test_send_window_update);
     UNIT_TEST(test_send_window_update_errors);
+    UNIT_TEST(test_send_headers_stream_verification_server);
+    UNIT_TEST(test_send_headers_stream_verification_client);
+    UNIT_TEST(test_send_headers_stream_verification_errors);
 
     return UNIT_TESTS_END();
 }
