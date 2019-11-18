@@ -20,6 +20,7 @@ FAKE_VALUE_FUNC(int, read_goaway_payload, frame_header_t *, void *, uint8_t *);
 FAKE_VALUE_FUNC(int, read_settings_payload, frame_header_t *, void *, uint8_t *);
 FAKE_VALUE_FUNC(int, read_continuation_payload, frame_header_t *, void *, uint8_t *);
 FAKE_VALUE_FUNC(int, read_headers_payload, frame_header_t *, void *, uint8_t *);
+FAKE_VALUE_FUNC(int, read_ping_payload, frame_header_t *, void *, uint8_t *);
 
 FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
@@ -49,6 +50,7 @@ FAKE_VOID_FUNC(headers_get_all, header_list_t *, header_t *);
     FAKE(read_settings_payload)         \
     FAKE(read_continuation_payload)     \
     FAKE(read_headers_payload)          \
+    FAKE(read_ping_payload)          \
     FAKE(uint32_24_to_byte_array)     \
     FAKE(uint32_31_to_byte_array)     \
     FAKE(uint32_to_byte_array)        \
@@ -726,7 +728,6 @@ void test_frame_to_bytes_goaway(void)
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_num;
-
 
 
     //int rc = create_goaway_frame(&frame_header, &goaway_payload, additional_debug_data_buffer, last_stream_id, error_code, additional_debug_data, additional_debug_data_size);
