@@ -150,6 +150,16 @@ int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s)
     return HTTP2_RC_NO_ERROR;
 }
 
+int check_incoming_ping_condition(cbuf_t *buf_out, h2states_t *h2s)
+{
+    if (h2s->header.stream_id != 0x0) {
+        ERROR("PING doesnt have STREAM ID 0. PROTOCOL ERROR");
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        return -1;
+    }
+    return 0;
+}
+
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
     if (!h2s->waiting_for_end_headers_flag) {

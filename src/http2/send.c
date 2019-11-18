@@ -97,7 +97,7 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     INFO("Sending DATA");
     rc = cbuf_push(buf_out, buff_bytes, bytes_size);
     if (rc != bytes_size) {
-        ERROR("send_data: Error writting data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
+        ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
@@ -149,6 +149,42 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
     INFO("Sending settings ACK");
     if (rc != size_byte_ack) {
         ERROR("Error in Settings ACK sending");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
+    return HTTP2_RC_NO_ERROR;
+}
+
+
+/*
+ * Function: send_ping_ack
+ * Sends an ACK ping frame to endpoint
+ * Input:
+ *      -> opaque_data: opaque data of ping payload
+ *      -> h2s: pointer to hstates struct where http and http2 connection info is
+ * stored
+ * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
+ */
+int send_ping_ack(cbuf_t *buf_out, uint8_t* opaque_data, h2states_t *h2s)
+{
+    frame_t ack_frame;
+    frame_header_t ack_frame_header;
+    ping_payload_t ping_payload;
+    ack_frame.frame_header = &ack_frame_header;
+    ack_frame.payload = (void*) &ping_payload;
+    int rc = create_ping_ack_frame(&ack_frame_header, &ping_payload, opaque_data);
+    if (rc < 0) {
+        ERROR("Error in PING ACK creation!");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
+    uint8_t byte_ack[9 + 8]; /*Settings ACK frame has a header and a payload of 8 bytes*/
+    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
+    // We write the ACK to NET
+    rc = cbuf_push(buf_out, byte_ack, size_byte_ack);
+    INFO("Sending PING ACK");
+    if (rc != size_byte_ack) {
+        ERROR("Error in PING ACK sending");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
@@ -543,10 +579,6 @@ int send_response(cbuf_t *buf_out, h2states_t *h2s)
         rc = send_data(1, buf_out, h2s); // CLOSE CONN, CLOSE CONN SENT, NO ERROR
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error was found sending data on response");
-            return rc;
-        }
-        else if (rc == HTTP2_RC_CLOSE_CONNECTION){
-            DEBUG("send_response: Close connection. GOAWAY sent while on send_data.");
             return rc;
         }
     }

@@ -214,10 +214,10 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
             WARN("TODO: Push promise frame. Not implemented yet.");
             return HTTP2_RC_ERROR;
 
-        case PING_TYPE://Ping
-            WARN("TODO: Ping frame. Not implemented yet.");
-            return HTTP2_RC_ERROR;
-
+        case PING_TYPE: {//Ping
+            rc = check_incoming_ping_condition(buf_out, h2s);
+            return rc;
+        }
         case GOAWAY_TYPE: {
             rc = check_incoming_goaway_condition(buf_out, h2s);
             return rc;
@@ -330,8 +330,22 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             return HTTP2_RC_ERROR;
 
         case PING_TYPE://Ping
-            WARN("TODO: Ping frame. Not implemented yet.");
-            return HTTP2_RC_ERROR;
+            DEBUG("handle_payload: RECEIVED PING PAYLOAD");
+
+            ping_payload_t ping_payload;
+            rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &ping_payload, buff_read);
+            if (rc < 0) {
+                ERROR("ERROR reading ping payload");
+                send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); //Always frame size error?
+                return rc;
+            }
+            rc = handle_ping_payload(&(h2s->header), &ping_payload, buf_out, h2s);
+            if (rc < 0) {
+                ERROR("ERROR in handle receive data");
+                return -1;
+            }
+            DEBUG("handle_payload: RECEIVED PING PAYLOAD OK");
+            return 0;
 
         case GOAWAY_TYPE: {
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD");

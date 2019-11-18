@@ -199,6 +199,9 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
     case HEADERS_TYPE:
         frame_header->callback_payload_from_bytes = read_headers_payload;
         break;
+    case PING_TYPE:
+        frame_header->callback_payload_from_bytes = read_ping_payload;
+        break;
     default:
         ERROR("Frame type %d not found", frame_header->type);
         return -1;

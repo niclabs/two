@@ -9,4 +9,5 @@ int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_settings_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s);
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s);
+int check_incoming_ping_condition(cbuf_t *buf_out, h2states_t *h2s);
 #endif
