@@ -47,8 +47,10 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-void test_handle_data_payload_no_flags(void) {
+void test_handle_data_payload_no_flags(void)
+{
     frame_header_t head;
+
     head.length = 10;
     data_payload_t dpl;
     cbuf_t bout;
@@ -63,8 +65,10 @@ void test_handle_data_payload_no_flags(void) {
     TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, head.length, "Data size must be equal to header payload's length");
 }
 
-void test_handle_data_payload_multi_data(void) {
+void test_handle_data_payload_multi_data(void)
+{
     frame_header_t head;
+
     head.length = 12;
     data_payload_t dpl;
     cbuf_t bout;
@@ -72,7 +76,7 @@ void test_handle_data_payload_multi_data(void) {
     h2s.data.size = 0;
     // Fake settings
     flow_control_receive_data_fake.return_val = 0;
-    int flag_set_returns[3] = {0,0,1};
+    int flag_set_returns[3] = { 0, 0, 1 };
     SET_RETURN_SEQ(is_flag_set, flag_set_returns, 3);
     http_server_response_fake.return_val = 0;
     send_response_fake.return_val = 0;
@@ -83,7 +87,7 @@ void test_handle_data_payload_multi_data(void) {
     TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
     rc = handle_data_payload(&head, &dpl, &bout, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
-    TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, 3*head.length, "Data size must be equal to header payload's length");
+    TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, 3 * head.length, "Data size must be equal to 3 times payload's length");
 }
 
 void test_handle_headers_payload(void){
