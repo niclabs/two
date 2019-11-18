@@ -328,6 +328,68 @@ void test_send_settings_ack_errors(void)
     TEST_ASSERT_EQUAL(9, cbuf_push_fake.arg2_val);
 
 }
+
+void test_send_goaway(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.sent_goaway = 0;
+    h2s.received_goaway = 0;
+
+    create_goaway_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+
+    int rc = send_goaway(HTTP2_PROTOCOL_ERROR, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "RC must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s.sent_goaway == 1, "sent_goaway must be 1");
+    TEST_ASSERT_EQUAL(32, cbuf_push_fake.arg2_val);
+
+
+}
+
+void test_send_goaway_close_connection(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.sent_goaway = 0;
+    h2s.received_goaway = 1;
+
+    create_goaway_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+
+    int rc = send_goaway(HTTP2_NO_ERROR, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION, "RC must be HTTP2_RC_CLOSE_CONNECTION");
+    TEST_ASSERT_MESSAGE(h2s.sent_goaway == 1, "sent_goaway must be 1");
+    TEST_ASSERT_EQUAL(32, cbuf_push_fake.arg2_val);
+}
+
+void test_send_goaway_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.sent_goaway = 0;
+    h2s.received_goaway = 1;
+
+    int create_return[2] = { -1, 0 };
+    SET_RETURN_SEQ(create_goaway_frame, create_return, 2);
+
+    int rc = send_goaway(HTTP2_NO_ERROR, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_ERROR, "rc must be HTTP2_RC_ERROR (creating frame)");
+
+    frame_to_bytes_fake.return_val = 8;
+    cbuf_push_fake.return_val = 2;
+
+    rc = send_goaway(HTTP2_NO_ERROR, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_ERROR, "rc must be HTTP2_RC_ERROR (writing frame)");
+
+}
+
+/*
    void test_send_window_update(void){}
 
    void test_send_window_update_errors(void){}
@@ -380,6 +442,9 @@ int main(void)
     UNIT_TEST(test_send_data_close_connection);
     UNIT_TEST(test_send_settings_ack);
     UNIT_TEST(test_send_settings_ack_errors);
+    UNIT_TEST(test_send_goaway);
+    UNIT_TEST(test_send_goaway_close_connection);
+    UNIT_TEST(test_send_goaway_errors);
 
     return UNIT_TESTS_END();
 }
