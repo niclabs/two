@@ -391,12 +391,12 @@ int handle_window_update_payload(window_update_payload_t *wupl, cbuf_t *buf_out,
     if (window_size_increment == 0) {
         ERROR("Flow-control window increment is 0. Stream Error. PROTOCOL_ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     int rc = flow_control_receive_window_update(h2s, window_size_increment);
     if (rc < 0) {
         send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    return 0;
+    return HTTP2_RC_NO_ERROR;
 }
