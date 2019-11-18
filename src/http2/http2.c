@@ -35,6 +35,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
     h2s->last_open_stream_id = 1;
     h2s->header_block_fragments_pointer = 0;
     h2s->waiting_for_end_headers_flag = 0;
+    h2s->waiting_for_HEADERS_frame = 0;
     h2s->received_end_stream = 0;
     h2s->incoming_window.window_size = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->incoming_window.window_used = 0;
@@ -81,6 +82,7 @@ callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *s
         DEBUG("Error sending local settings in http2_server_init_connection");
         return null_callback();
     }
+    h2s->waiting_for_HEADERS_frame = 1;
     DEBUG("Local settings sent. http2_server_init_connection returning receive_header callback");
     // If no error were found, http2 is ready to receive frames
     callback_t ret = { receive_header, NULL };

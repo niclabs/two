@@ -98,6 +98,7 @@ typedef struct HTTP2_STATES {
     uint8_t header_block_fragments[HTTP2_MAX_HBF_BUFFER];
     uint8_t header_block_fragments_pointer;     //points to the next byte to write in
     uint8_t waiting_for_end_headers_flag;       //bool
+    uint8_t waiting_for_HEADERS_frame;
     uint8_t received_end_stream;
     h2_window_manager_t incoming_window;
     h2_window_manager_t outgoing_window;

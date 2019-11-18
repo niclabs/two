@@ -5,6 +5,11 @@
 
 int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
+    if (h2s->waiting_for_HEADERS_frame == 1) {
+        ERROR("HEADERS frame was expected. PROTOCOL ERROR");
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
     if (h2s->waiting_for_end_headers_flag) {
         ERROR("CONTINUATION or HEADERS frame was expected. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
@@ -46,6 +51,10 @@ int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s)
 
 int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
+    if (h2s->waiting_for_HEADERS_frame == 1) {
+        h2s->waiting_for_HEADERS_frame = 0;
+    }
+    
     // Check if stream is not created or previous one is closed
     if (h2s->waiting_for_end_headers_flag) {
         //protocol error
@@ -162,6 +171,11 @@ int check_incoming_ping_condition(cbuf_t *buf_out, h2states_t *h2s)
 
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
+    if (h2s->waiting_for_HEADERS_frame == 1) {
+        ERROR("HEADERS frame was expected. PROTOCOL ERROR");
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
     if (!h2s->waiting_for_end_headers_flag) {
         ERROR("Continuation must be preceded by a HEADERS frame. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
