@@ -20,6 +20,7 @@ FAKE_VALUE_FUNC(int, flow_control_send_data, h2states_t *, uint32_t);
 FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t *);
 FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t *, window_update_payload_t *, int, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_send_window_update, h2states_t *, uint32_t);
+FAKE_VALUE_FUNC(int, create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
 
 #define FFF_FAKES_LIST(FAKE)                \
     FAKE(cbuf_push)                         \
@@ -33,6 +34,7 @@ FAKE_VALUE_FUNC(int, flow_control_send_window_update, h2states_t *, uint32_t);
     FAKE(create_settings_ack_frame)         \
     FAKE(create_window_update_frame)        \
     FAKE(flow_control_send_window_update)   \
+    FAKE(create_settings_frame)             \
 
 void setUp(void)
 {
@@ -588,11 +590,65 @@ void test_send_headers_stream_verification_errors(void)
 
 }
 
+void test_send_local_settings(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    for (int i = 0; i < 6; i++) {
+        h2s.local_settings[i] = 1;
+        h2s.remote_settings[i] = 1;
+    }
+
+    create_settings_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 16;
+    cbuf_push_fake.return_val = 16;
+
+    int rc = send_local_settings(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 1, "wait setting ack must be 1");
+    TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 1, "create_settings_frame must be called once");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame_to_bytes must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 16, "size_byte_mysettings must be 16");
+}
+
+void test_send_local_settings_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.wait_setting_ack = 0;
+    for (int i = 0; i < 6; i++) {
+        h2s.local_settings[i] = 1;
+        h2s.remote_settings[i] = 1;
+    }
+
+    int create_return[2] = { -1, 0 };
+    SET_RETURN_SEQ(create_settings_frame, create_return, 2);
+
+    frame_to_bytes_fake.return_val = 16;
+
+    int push_return[3] = { 16, 4, 16 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 3);
+
+    int rc = send_local_settings(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (create error)");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait setting ack must be 1");
+    TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 1, "create_settings_frame must be called once");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame_to_bytes must be called once in send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push must be called once in send_goaway");
+
+    rc = send_local_settings(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (create error)");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait setting ack must be 1");
+    TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 2, "create_settings_frame must be called once");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 3, "frame_to_bytes must be called in send_local_settings and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf_push must be called in send_local_settings and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 16, "size_byte_mysettings must be 16");
+
+}
+
 /*
-   void test_send_local_settings(void){}
-
-   void test_send_local_settings_errors(void){}
-
    void test_send_continuation_frame(void){}
 
    void test_send_continuation_frame_errors(void){}
@@ -641,6 +697,8 @@ int main(void)
     UNIT_TEST(test_send_headers_stream_verification_server);
     UNIT_TEST(test_send_headers_stream_verification_client);
     UNIT_TEST(test_send_headers_stream_verification_errors);
+    UNIT_TEST(test_send_local_settings);
+    UNIT_TEST(test_send_local_settings_errors);
 
     return UNIT_TESTS_END();
 }
