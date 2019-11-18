@@ -343,7 +343,7 @@ void test_net_server_loop_connect(void)
 
     TEST_ASSERT_EQUAL(1, sock_create_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_listen_fake.call_count);
-    TEST_ASSERT_EQUAL(NET_MAX_CLIENTS, sock_accept_fake.call_count);
+    TEST_ASSERT_EQUAL(2, sock_accept_fake.call_count);
 
     TEST_ASSERT_EQUAL(1, sock_poll_fake.call_count);
     TEST_ASSERT_EQUAL(1, sock_read_fake.call_count);
