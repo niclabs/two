@@ -12,8 +12,6 @@
 #define HTTP2_MAX_HBF_BUFFER 16384
 /*Definition of max buffer size*/
 #define HTTP2_MAX_BUFFER_SIZE 16384
-/*Define max count of headers*/
-#define HTTP2_MAX_HEADER_COUNT 256
 
 
 /*Default settings values*/
