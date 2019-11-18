@@ -585,7 +585,7 @@ void init_hpack_encoded_header_t(hpack_encoded_header_t *encoded_header)
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, headers_t *headers)
+int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, header_list_t *headers)
 {
     int pointer = 0;
 

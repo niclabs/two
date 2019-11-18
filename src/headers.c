@@ -15,7 +15,7 @@
  * Output:
  *      (void)
  */
-void headers_init(headers_t *headers)
+void headers_init(header_list_t *headers)
 {
     memset(headers->buffer, 0, sizeof(headers->buffer));
 
@@ -31,7 +31,7 @@ void headers_init(headers_t *headers)
  * Output:
  *      (void)
  */
-void headers_clean(headers_t *headers)
+void headers_clean(header_list_t *headers)
 {
     headers_init(headers);
 }
@@ -45,7 +45,7 @@ void headers_clean(headers_t *headers)
  * Output:
  *      String with the value of the header, NULL if it doesn't exist
  */
-char *headers_get(headers_t *headers, const char *name)
+char *headers_get(header_list_t *headers, const char *name)
 {
     // Assertions for debugging
     assert(headers != NULL);
@@ -82,7 +82,7 @@ char *headers_get(headers_t *headers, const char *name)
  * Output:
  *      0 if success, -1 if error
  */
-int headers_new(headers_t *headers, const char *name, const char *value, uint8_t with_replacement)
+int headers_new(header_list_t *headers, const char *name, const char *value, uint8_t with_replacement)
 {
 
     assert(headers != NULL);
@@ -223,7 +223,7 @@ int headers_new(headers_t *headers, const char *name, const char *value, uint8_t
  * Output:
  *      0 if success, -1 if error
  */
-int headers_add(headers_t *headers, const char *name, const char *value){
+int headers_add(header_list_t *headers, const char *name, const char *value){
     return headers_new(headers, name, value, 0);
 }
 
@@ -236,7 +236,7 @@ int headers_add(headers_t *headers, const char *name, const char *value){
  * Output:
  *      0 if success, -1 if error
  */
-int headers_set(headers_t *headers, const char *name, const char *value)
+int headers_set(header_list_t *headers, const char *name, const char *value)
 {
     return headers_new(headers, name, value, 1);
 }
@@ -249,7 +249,7 @@ int headers_set(headers_t *headers, const char *name, const char *value)
  * Output:
  *      Amount of entries in the header list
  */
-int headers_count(headers_t *headers)
+int headers_count(header_list_t *headers)
 {   
     return headers->n_entries;
 }
@@ -263,7 +263,7 @@ int headers_count(headers_t *headers)
  * Output:
  *      String with the name of the header, NULL if it doesn't exist
  */
-char *headers_get_name_from_index(headers_t *headers, int index)
+char *headers_get_name_from_index(header_list_t *headers, int index)
 {
     // Assertions for debugging
     assert(headers != NULL);
@@ -301,7 +301,7 @@ char *headers_get_name_from_index(headers_t *headers, int index)
  * Output:
  *      String with the value of the header, NULL if it doesn't exist
  */
-char *headers_get_value_from_index(headers_t *headers, int index)
+char *headers_get_value_from_index(header_list_t *headers, int index)
 {
     char *name_pos = headers_get_name_from_index(headers, index);
     return name_pos + strlen(name_pos) + 1;
@@ -349,7 +349,7 @@ void headers_get_all(header_list_t* headers, header_t *headers_array){
  * Output:
  *      0 if correct, -1 otherwise
  */
-int headers_validate(headers_t* headers) {
+int headers_validate(header_list_t *headers) {
     // Assertions for debugging
     assert(headers != NULL);
 
@@ -383,7 +383,7 @@ int headers_validate(headers_t* headers) {
  * Output:
  *      Size of the header list in bytes
  */
-uint32_t headers_get_header_list_size(headers_t *headers)
+uint32_t headers_get_header_list_size(header_list_t *headers)
 {
     uint32_t header_list_size = headers->size;
     // minus all the 0's to end string

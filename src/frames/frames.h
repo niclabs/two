@@ -23,7 +23,7 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
 
 //int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload);
-int receive_header_block(uint8_t *header_block_fragments, int header_block_fragments_pointer, headers_t *headers, hpack_states_t *hpack_states);
+int receive_header_block(uint8_t *header_block_fragments, int header_block_fragments_pointer, header_list_t *headers, hpack_states_t *hpack_states);
 
 /*flags methods*/
 int is_flag_set(uint8_t flags, uint8_t flag);
@@ -35,7 +35,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes);
 
 /*Headers compression*/
 //TODO
-int compress_headers(headers_t *headers_out,  uint8_t *compressed_headers, hpack_states_t *hpack_states);
+int compress_headers(header_list_t *headers_out,  uint8_t *compressed_headers, hpack_states_t *hpack_states);
 
 
 //TODO refactor this function to not use frame_t

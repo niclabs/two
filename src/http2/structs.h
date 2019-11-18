@@ -111,7 +111,7 @@ typedef struct HTTP2_STATES {
 
     frame_header_t header;
     http2_data_t data;
-    headers_t headers;
+    header_list_t headers;
 } h2states_t;
 
 

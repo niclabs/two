@@ -16,7 +16,7 @@ FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int8_t, hpack_init_states, hpack_states_t *, uint32_t);
 FAKE_VOID_FUNC(send_connection_error, cbuf_t *, uint32_t, h2states_t *);
 FAKE_VALUE_FUNC(callback_t, null_callback);
-FAKE_VOID_FUNC(headers_init, headers_t *);
+FAKE_VOID_FUNC(headers_init, header_list_t *);
 FAKE_VALUE_FUNC(int, send_local_settings, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, frame_header_from_bytes, uint8_t *, int, frame_header_t *);
 FAKE_VALUE_FUNC(int, read_setting_from, h2states_t *, uint8_t, uint8_t);

@@ -12,7 +12,7 @@ DEFINE_FFF_GLOBALS;
 /*
    FAKE_VALUE_FUNC(int8_t, hpack_huffman_encode, huffman_encoded_word_t *, uint8_t);
    FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
-   FAKE_VALUE_FUNC(int,  headers_add, headers_t * , const char * , const char * );
+   FAKE_VALUE_FUNC(int,  headers_add, header_list_t * , const char * , const char * );
  */
 
 void setUp(void)

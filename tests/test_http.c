@@ -20,13 +20,13 @@
 /*Import of functions not declared in http.h */
 extern uint32_t get_data(uint8_t *data_in_buff, uint32_t data_in_buff_size, uint8_t *data_buffer, size_t size);
 extern int set_data(uint8_t *data_buff, uint32_t *data_buff_size, int max_data_buff_size, uint8_t *data, int data_size);
-extern int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, char *method, char *uri);
-extern int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host);
+extern int do_request(uint8_t *data_buff, uint32_t *data_size, header_list_t *headers_buff, char *method, char *uri);
+extern int send_client_request(header_list_t *headers_buff, char *method, char *uri, char *host);
 
 DEFINE_FFF_GLOBALS;
-FAKE_VOID_FUNC(headers_clean, headers_t *);
-FAKE_VALUE_FUNC(int, headers_set, headers_t *, const char *, const char *);
-FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
+FAKE_VOID_FUNC(headers_clean, header_list_t *);
+FAKE_VALUE_FUNC(int, headers_set, header_list_t *, const char *, const char *);
+FAKE_VALUE_FUNC(char *, headers_get, header_list_t *, const char *);
 FAKE_VALUE_FUNC(http_resource_handler_t, resource_handler_get, char *, char *);
 
 /* List of fakes used by this unit tester */
@@ -53,7 +53,7 @@ void setUp()
 
 char header_name[10];
 char header_value[10];
-int headers_set_custom_fake(headers_t * headers, const char * head, const char * val)
+int headers_set_custom_fake(header_list_t * headers, const char * head, const char * val)
 {
     (void) headers;
     memcpy(header_name, head, strlen(head));
@@ -146,10 +146,10 @@ void test_do_request_success(void)
     // Create function parameters
     uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
-    headers_t headers_buff[1];
+    header_list_t headers_buff[1];
 
     // Perform request
-    int res = do_request((uint8_t *) &data, &data_size, (headers_t *) &headers_buff, "GET", "/index");
+    int res = do_request((uint8_t *) &data, &data_size, (header_list_t *) &headers_buff, "GET", "/index");
 
     // Check that auxiliary functions was called only once
     TEST_ASSERT_EQUAL(1, resource_handler_get_fake.call_count);
@@ -179,10 +179,10 @@ void test_do_request_fail_resource_handler_get(void)
     // Create function parameters
     uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
-    headers_t headers_buff[1];
+    header_list_t headers_buff[1];
 
     // Perform request
-    int res = do_request((uint8_t *) &data, &data_size, (headers_t *) &headers_buff, "GET", "/index");
+    int res = do_request((uint8_t *) &data, &data_size, (header_list_t *) &headers_buff, "GET", "/index");
 
     // Check that auxiliary functions was called only once
     TEST_ASSERT_EQUAL(1, resource_handler_get_fake.call_count);
@@ -214,10 +214,10 @@ void test_http_server_response_success(void)
     // Create function parameters
     uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
-    headers_t headers_buff[1];
+    header_list_t headers_buff[1];
 
     // Perform response
-    int res = http_server_response((uint8_t *)&data, &data_size, (headers_t *)&headers_buff);
+    int res = http_server_response((uint8_t *)&data, &data_size, (header_list_t *)&headers_buff);
 
     // Check that the auxiliary function have been called twice
     TEST_ASSERT_EQUAL(2, headers_get_fake.call_count);
@@ -239,10 +239,10 @@ void test_http_server_response_fail_method_not_supported(void)
     // Create function parameters
     uint8_t data[20];
     uint32_t data_size = (uint32_t)sizeof(data);
-    headers_t headers_buff[1];
+    header_list_t headers_buff[1];
 
     // Perform response
-    int res = http_server_response((uint8_t *)&data, &data_size, (headers_t *)&headers_buff);
+    int res = http_server_response((uint8_t *)&data, &data_size, (header_list_t *)&headers_buff);
 
     // Check that the auxiliary function have been called twice
     TEST_ASSERT_EQUAL(2, headers_get_fake.call_count);

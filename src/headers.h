@@ -33,7 +33,7 @@ typedef struct {
     char buffer[MAX_HEADER_BUFFER_SIZE];
     uint16_t n_entries;
     uint16_t size;
-} headers_t;
+} header_list_t;
 
 /**
  * Data structure to indicate location of a header
@@ -52,7 +52,7 @@ typedef struct {
  * @param hlist h pointer to header_t list
  * @return (void) 
  */
-void headers_init(headers_t * headers);
+void headers_init(header_list_t * headers);
 
 /**
  *This function will reset header list
@@ -60,7 +60,7 @@ void headers_init(headers_t * headers);
  * @param headers headers data structure
  * @return (void)
  */
-void headers_clean(headers_t *headers);
+void headers_clean(header_list_t *headers);
 
 /**
  * Add a header to the list, if header already exists, concatenate value
@@ -72,7 +72,7 @@ void headers_clean(headers_t *headers);
  * @param value header value
  * @return 0 if ok -1 if an error ocurred
  */
-int headers_add(headers_t * headers, const char * name, const char * value);
+int headers_add(header_list_t * headers, const char * name, const char * value);
 
 /**
  * Set the header for a given name, if the header is already set
@@ -83,7 +83,7 @@ int headers_add(headers_t * headers, const char * name, const char * value);
  * @param value header value
  * @return 0 if ok -1 if an error ocurred
  */
-int headers_set(headers_t * headers, const char * name, const char * value);
+int headers_set(header_list_t * headers, const char * name, const char * value);
 
 /**
  * Get a pointere to the value of the header with name 'name'
@@ -92,7 +92,7 @@ int headers_set(headers_t * headers, const char * name, const char * value);
  * @param name name of the header to search
  * @return value header value of the header with name 'name' or NULL if error
  * */
-char * headers_get(headers_t * headers, const char * name);
+char * headers_get(header_list_t * headers, const char * name);
 
 /**
  * Checks all headers for validity.
@@ -102,26 +102,28 @@ char * headers_get(headers_t * headers, const char * name);
  * @param headers headers list data structure
  * @return 0 if ok -1 if validation failed
  * */
-int headers_validate(headers_t* headers);
+int headers_validate(header_list_t* headers);
 
 /**
  * Return total number of headers in the header list
  */
-int headers_count(headers_t * headers);
+int headers_count(header_list_t * headers);
 
 /**
  * Return header name from header in the position given by index
  */
-char * headers_get_name_from_index(headers_t * headers, int index);
+char * headers_get_name_from_index(header_list_t * headers, int index);
 
 /**
  * Return header value from header in the position given by index
  */
-char * headers_get_value_from_index(headers_t * headers, int index);
+char * headers_get_value_from_index(header_list_t * headers, int index);
 
 /**
  * Calculate size of header list for http/2
  */
+uint32_t headers_get_header_list_size(header_list_t* headers);
+
 /**
  * Copy pointers to headers into a array of header_t
  * This makes iterating through headers easier

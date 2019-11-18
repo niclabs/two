@@ -7,7 +7,7 @@
 #include "logging.h"
 #include "http.h"
 
-int validate_pseudoheaders(headers_t *pseudoheaders)
+int validate_pseudoheaders(header_list_t *pseudoheaders)
 {
 
     if (headers_get(pseudoheaders, ":method") == NULL) {

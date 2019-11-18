@@ -20,13 +20,13 @@ FAKE_VOID_FUNC(send_connection_error, cbuf_t *, uint32_t, h2states_t *);
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(int, is_flag_set, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, change_stream_state_end_stream_flag, uint8_t, cbuf_t *, h2states_t *);
-FAKE_VALUE_FUNC(int, http_server_response, uint8_t *, uint32_t *, headers_t *);
+FAKE_VALUE_FUNC(int, http_server_response, uint8_t *, uint32_t *, header_list_t *);
 FAKE_VALUE_FUNC(int, send_response, cbuf_t *, h2states_t *);
-FAKE_VALUE_FUNC(int, headers_validate, headers_t *);
-FAKE_VALUE_FUNC(char *, headers_get, headers_t *, const char *);
+FAKE_VALUE_FUNC(int, headers_validate, header_list_t *);
+FAKE_VALUE_FUNC(char *, headers_get, header_list_t *, const char *);
 FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size, frame_header_t *, headers_payload_t *);
-FAKE_VALUE_FUNC(int, receive_header_block, uint8_t *, int, headers_t *, hpack_states_t *);
-FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, headers_t *);
+FAKE_VALUE_FUNC(int, receive_header_block, uint8_t *, int, header_list_t *, hpack_states_t *);
+FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, header_list_t *);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
 
 #define FFF_FAKES_LIST(FAKE)                                    \

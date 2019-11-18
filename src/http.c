@@ -133,7 +133,7 @@ int clean_data(uint8_t *data_buff, uint32_t *data_size)
 /**
  * Send an http error with the given code and message
  */
-int error(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, int code, char *msg)
+int error(uint8_t *data_buff, uint32_t *data_size, header_list_t *headers_buff, int code, char *msg)
 {
     // Set status code
     char strCode[4];
@@ -161,7 +161,7 @@ int error(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, int 
 /**
  * Perform request for the given method and uri
  */
-int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff, char *method, char *uri)
+int do_request(uint8_t *data_buff, uint32_t *data_size, header_list_t *headers_buff, char *method, char *uri)
 {
     // parse URI removing query parameters
     char path[HTTP_MAX_PATH_SIZE];
@@ -198,7 +198,7 @@ int do_request(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff,
 }
 
 
-int http_server_response(uint8_t *data_buff, uint32_t *data_size, headers_t *headers_buff)
+int http_server_response(uint8_t *data_buff, uint32_t *data_size, header_list_t *headers_buff)
 {
     // Get the method, path and scheme from headers
     char *method = headers_get(headers_buff, ":method");
@@ -222,7 +222,7 @@ int http_server_response(uint8_t *data_buff, uint32_t *data_size, headers_t *hea
 ************************************/
 
 
-int send_client_request(headers_t *headers_buff, char *method, char *uri, char *host)
+int send_client_request(header_list_t *headers_buff, char *method, char *uri, char *host)
 {
     // Clean output header list
     headers_clean(headers_buff);
@@ -239,7 +239,7 @@ int send_client_request(headers_t *headers_buff, char *method, char *uri, char *
 }
 
 
-int process_server_response(uint8_t *data_buff, uint32_t data_buff_size, headers_t *headers_buff, char *method, uint8_t *response, size_t *size)
+int process_server_response(uint8_t *data_buff, uint32_t data_buff_size, header_list_t *headers_buff, char *method, uint8_t *response, size_t *size)
 {
     //If it is a GET request, wait for the server response data
     if (strncmp("GET", method, 8) == 0) {
@@ -259,7 +259,7 @@ int process_server_response(uint8_t *data_buff, uint32_t data_buff_size, headers
 }
 
 
-int res_manager_get(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
+int res_manager_get(header_list_t *headers_buff, char *uri, uint8_t *response, size_t *size)
 {
     (void)response;
     (void)size;
@@ -267,7 +267,7 @@ int res_manager_get(headers_t *headers_buff, char *uri, uint8_t *response, size_
 }
 
 
-int res_manager_head(headers_t *headers_buff, char *uri, uint8_t *response, size_t *size)
+int res_manager_head(header_list_t *headers_buff, char *uri, uint8_t *response, size_t *size)
 {
     (void)response;
     (void)size;

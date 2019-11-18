@@ -16,7 +16,7 @@ void test_headers_set(void)
 	char * value;
 
 	// initialize headers
-	headers_t headers;
+	header_list_t headers;
 
 	headers_init(&headers);
 
@@ -107,7 +107,7 @@ void test_headers_add(void)
 	char * value;
 
 	// initialize headers
-	headers_t headers;
+	header_list_t headers;
 	headers_init(&headers);
 
 	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
@@ -153,7 +153,7 @@ void test_headers_add(void)
 void test_limits_add_set (void){
 	
 	// Now robustness test, testing limits
-	headers_t headers;
+	header_list_t headers;
 	int res;
 
 	headers_init(&headers);
@@ -198,7 +198,7 @@ void test_get_header_list_size(void){
 	int res;
 
 	// initialize headers
-	headers_t headers;
+	header_list_t headers;
 	headers_init(&headers);
 
 	// test succesful write
@@ -219,6 +219,7 @@ void test_headers_get_all(void){
 	int res;
 
 	// initialize headers
+	header_list_t headers;
 	headers_init(&headers);
 
 	// test succesful write

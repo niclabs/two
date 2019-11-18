@@ -35,9 +35,10 @@ FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t *, uint8_t *, uint8_t *, int, i
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 
 FAKE_VALUE_FUNC(int, encode, hpack_states_t *, char *, char *,  uint8_t *);
-FAKE_VALUE_FUNC(int, decode_header_block, hpack_states_t *, uint8_t *, uint8_t, headers_t *);
+FAKE_VALUE_FUNC(int, decode_header_block, hpack_states_t *, uint8_t *, uint8_t, header_list_t *);
 
 // Headers functions
+FAKE_VALUE_FUNC(int, headers_count, header_list_t *);
 FAKE_VOID_FUNC(headers_get_all, header_list_t *, header_t *);
 
 /* List of fakes used by this unit tester */
@@ -330,7 +331,7 @@ void test_is_flag_set(void)
 
 void test_compress_headers(void)
 {
-    headers_t headers;
+    header_list_t headers;
     uint8_t compressed_headers[256];
 
     encode_fake.custom_fake = encode_fake_custom;

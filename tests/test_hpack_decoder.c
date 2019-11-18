@@ -42,7 +42,7 @@ void pad_code(uint32_t *code, uint8_t length)
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
-FAKE_VALUE_FUNC(int,  headers_add, headers_t *, const char *, const char * );
+FAKE_VALUE_FUNC(int,  headers_add, header_list_t *, const char *, const char * );
 FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t *);
 FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
@@ -206,7 +206,7 @@ int8_t hpack_tables_find_entry_name_and_value_return_method_get(hpack_dynamic_ta
     return 0;
 }
 
-int headers_add_check_inputs(headers_t *headers, const char *name, const char *value)
+int headers_add_check_inputs(header_list_t *headers, const char *name, const char *value)
 {
     TEST_ASSERT_EQUAL(0, memcmp("new_name", name, strlen("new_name")));
     TEST_ASSERT_EQUAL(0, memcmp("val", value, strlen("val")));
@@ -658,7 +658,7 @@ void test_decode_header_block_literal_with_incremental_indexing(void)
     memset(value, 0, 14);
 
 
-    headers_t headers;
+    header_list_t headers;
 
     headers.n_entries = 0;
     headers.size = 0;
@@ -697,7 +697,7 @@ void test_decode_header_block_literal_never_indexed(void)
     char *expected_name = "hola";
     char *expected_value = "val";
 
-    headers_t headers;
+    header_list_t headers;
     hpack_states_t states;
 
     hpack_init_states(&states, 100); // 100 is a dummy value
@@ -814,7 +814,7 @@ void test_decode_header_block_literal_without_indexing(void)
     char *expected_name = "hola";
     char *expected_value = "val";
 
-    headers_t headers;
+    header_list_t headers;
     hpack_states_t states;
 
     hpack_init_states(&states, 100); //100 is a dummy value btw
