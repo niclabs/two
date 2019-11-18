@@ -211,6 +211,43 @@ void test_update_settings_table(void)
     TEST_ASSERT_EQUAL_MESSAGE(100, h2s.local_settings[5], "Setting value was set to 100");
 }
 
+void test_update_settings_table_errors(void)
+{
+    settings_pair_t pairs1[1];
+    settings_pair_t pairs2[1];
+    settings_pair_t pairs3[1];
+
+    pairs1[0].identifier = 0x2;
+    pairs1[0].value = 2;
+    pairs2[0].identifier = 0x4;
+    pairs2[0].value = 2147483648;
+    pairs3[0].identifier = 0x5;
+    pairs3[0].value = 16000;
+    settings_payload_t spl1;
+    spl1.pairs = pairs1;
+    spl1.count = 1;
+    settings_payload_t spl2;
+    spl2.pairs = pairs2;
+    spl2.count = 1;
+    settings_payload_t spl3;
+    spl3.pairs = pairs3;
+    spl3.count = 1;
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.remote_settings[0] = h2s.local_settings[0] = 1;
+    h2s.remote_settings[1] = h2s.local_settings[1] = 1;
+    h2s.remote_settings[2] = h2s.local_settings[2] = 1;
+    h2s.remote_settings[3] = h2s.local_settings[3] = 1;
+    h2s.remote_settings[4] = h2s.local_settings[4] = 1;
+    h2s.remote_settings[5] = h2s.local_settings[5] = 1;
+    int rc = update_settings_table(&spl1, LOCAL_SETTINGS, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
+    rc = update_settings_table(&spl2, LOCAL_SETTINGS, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
+    rc = update_settings_table(&spl3, LOCAL_SETTINGS, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -223,6 +260,7 @@ int main(void)
     UNIT_TEST(test_handle_headers_payload_end_headers_flag);
     UNIT_TEST(test_handle_headers_payload_end_stream_and_headers);
     UNIT_TEST(test_update_settings_table);
+    UNIT_TEST(test_update_settings_table_errors);
 
     return UNIT_TESTS_END();
 }
