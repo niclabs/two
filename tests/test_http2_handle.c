@@ -90,7 +90,22 @@ void test_handle_data_payload_multi_data(void)
     TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, 3 * head.length, "Data size must be equal to 3 times payload's length");
 }
 
-void test_handle_headers_payload(void){
+void test_handle_headers_payload_no_flags(void)
+{
+    frame_header_t head;
+    headers_payload_t hpl;
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.header_block_fragments_pointer = 0;
+    // Set fake returns
+    get_header_block_fragment_size_fake.return_val = 10;
+    buffer_copy_fake.return_val = 10;
+    is_flag_set_fake.return_val = 0;
+    int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
+    TEST_ASSERT_EQUAL_MESSAGE(10, h2s.header_block_fragments_pointer, "Pointer must be equal to 10");
+}
+
     frame_header_t head;
     headers_payload_t hpl;
     cbuf_t bout;
