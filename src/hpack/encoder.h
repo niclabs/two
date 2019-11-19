@@ -5,9 +5,9 @@
 #ifndef TWO_HPACK_ENCODER_H
 #define TWO_HPACK_ENCODER_H
 
-#include <stdint.h>             /* for uint8_t, uint32_t    */
+#include <stdint.h>         /* for uint8_t, uint32_t    */
 #include "hpack.h"
-#include "tables.h"       /* for hpack_dynamic_table_t    */
+#include "tables.h"         /* for hpack_dynamic_table_t    */
 #include "config.h"
 
 
