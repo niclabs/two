@@ -1,12 +1,12 @@
 TWO = .
 CFLAGS = -std=c99 -Wall -Wextra
 
-TARGETDIRS = examples/server/ examples/echo/
+TARGETDIRS = examples/server/ examples/echo/ examples/tiny/
 TESTDIRS = tests/
 
 MODULES	+= hpack http2 frames
 
-all: server echo
+all: server echo tiny
 
 PORT ?= 8888
 CI ?= 0
