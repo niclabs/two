@@ -10,7 +10,7 @@
 #define LOG_MODULE LOG_MODULE_HTTP2_HANDLE
 #include "logging.h"
 
-int validate_pseudoheaders(headers_t *pseudoheaders)
+int validate_pseudoheaders(header_list_t *pseudoheaders)
 {
 
     if (headers_get(pseudoheaders, ":method") == NULL) {
