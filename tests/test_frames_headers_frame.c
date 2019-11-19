@@ -60,9 +60,8 @@ void test_create_headers_frame(void)
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    int rc = create_headers_frame(headers_block, headers_block_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+    create_headers_frame(headers_block, headers_block_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
 
-    TEST_ASSERT_EQUAL(0, rc);
     TEST_ASSERT_EQUAL(1, frame_header.stream_id);
     TEST_ASSERT_EQUAL(HEADERS_TYPE, frame_header.type);
     TEST_ASSERT_EQUAL(0, frame_header.flags);

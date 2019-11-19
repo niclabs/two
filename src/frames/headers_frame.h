@@ -24,7 +24,7 @@ typedef enum {
 }headers_flag_t;
 
 /*header payload methods*/
-int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *header_block_fragment);
+void create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *header_block_fragment);
 int headers_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);
 int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload);

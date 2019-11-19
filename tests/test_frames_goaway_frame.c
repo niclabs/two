@@ -62,15 +62,14 @@ void test_create_goaway_frame(void)
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    int rc = create_goaway_frame(&frame_header,
-                                 &goaway_payload,
-                                 additional_debug_data_buffer,
-                                 last_stream_id,
-                                 error_code,
-                                 additional_debug_data,
-                                 additional_debug_data_size);
+    create_goaway_frame(&frame_header,
+                        &goaway_payload,
+                        additional_debug_data_buffer,
+                        last_stream_id,
+                        error_code,
+                        additional_debug_data,
+                        additional_debug_data_size);
 
-    TEST_ASSERT_EQUAL(0, rc);
     TEST_ASSERT_EQUAL(8 + 8, frame_header.length);
     TEST_ASSERT_EQUAL(GOAWAY_TYPE, frame_header.type);
     TEST_ASSERT_EQUAL(0x0, frame_header.flags);

@@ -35,9 +35,9 @@ int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
  * Function: create_data_frame
  * Creates a data frame
  * Input: frame_header, data_payload, data array for data payload, data_to_send(data to save in the data_frame), size of the data to send, stream_id
- * Output: 0 if no error
+ * Output: (void)
  */
-int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data, uint8_t *data_to_send, int length, uint32_t stream_id)
+void create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data, uint8_t *data_to_send, int length, uint32_t stream_id)
 {
     uint8_t type = DATA_TYPE;
     uint8_t flags = 0x0;
@@ -53,7 +53,7 @@ int create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload
 
     buffer_copy(data, data_to_send, length);
     data_payload->data = data; //not duplicating info
-    return 0;
+
 }
 
 

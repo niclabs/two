@@ -45,9 +45,9 @@ void test_create_continuation_frame(void)
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
 
-    int rc = create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header,
+    create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header,
                                        &continuation_payload, header_block_fragment);
-    TEST_ASSERT_EQUAL(0, rc);
+
     TEST_ASSERT_EQUAL(stream_id, frame_header.stream_id);
     TEST_ASSERT_EQUAL(CONTINUATION_TYPE, frame_header.type);
     TEST_ASSERT_EQUAL(0, frame_header.flags);

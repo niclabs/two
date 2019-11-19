@@ -39,9 +39,9 @@ int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
  * Function: create_ping_frame
  * Create a ping Frame
  * Input: frame_header, ping_payload, pointer to space for opaque_data (it will ALWAYS send 8 bytes).
- * Output: 0, or -1 if any error
+ * Output: (void)
  */
-int create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data)
+void create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data)
 {
     frame_header->stream_id = 0;
     frame_header->type = PING_TYPE;
@@ -52,16 +52,15 @@ int create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload
 
     buffer_copy(ping_payload->opaque_data, opaque_data, frame_header->length);
 
-    return 0;
 }
 
 /*
  * Function: create_ping_frame
  * Create a ping Frame
  * Input: frame_header, ping_payload, pointer to space for opaque_data (it will ALWAYS send 8 bytes).
- * Output: 0, or -1 if any error
+ * Output: (void)
  */
-int create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data)
+void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data)
 {
     frame_header->stream_id = 0;
     frame_header->type = PING_TYPE;
@@ -71,8 +70,6 @@ int create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_pay
     frame_header->callback_payload_to_bytes = ping_payload_to_bytes;
 
     buffer_copy(ping_payload->opaque_data, opaque_data, frame_header->length);
-
-    return 0;
 }
 
 /*

@@ -61,10 +61,8 @@ void test_create_ping_frame(void)
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    int rc = create_ping_frame(&frame_header, &ping_payload, payload);
+    create_ping_frame(&frame_header, &ping_payload, payload);
 
-
-    TEST_ASSERT_EQUAL(0, rc);
     TEST_ASSERT_EQUAL(0, frame_header.stream_id);
     TEST_ASSERT_EQUAL(PING_TYPE, frame_header.type);
     TEST_ASSERT_EQUAL(0, frame_header.flags);
@@ -83,10 +81,8 @@ void test_create_ping_ack_frame(void)
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    int rc = create_ping_ack_frame(&frame_header, &ping_payload, payload);
+    create_ping_ack_frame(&frame_header, &ping_payload, payload);
 
-
-    TEST_ASSERT_EQUAL(0, rc);
     TEST_ASSERT_EQUAL(0, frame_header.stream_id);
     TEST_ASSERT_EQUAL(PING_TYPE, frame_header.type);
     TEST_ASSERT_EQUAL(PING_ACK_FLAG, frame_header.flags);

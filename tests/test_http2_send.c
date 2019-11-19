@@ -12,19 +12,18 @@ extern int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, 
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
-FAKE_VALUE_FUNC(int, create_goaway_frame, frame_header_t *, goaway_payload_t *, uint8_t *, uint32_t, uint32_t,  uint8_t *, uint8_t);
+FAKE_VOID_FUNC(create_goaway_frame, frame_header_t *, goaway_payload_t *, uint8_t *, uint32_t, uint32_t,  uint8_t *, uint8_t);
 FAKE_VALUE_FUNC(int, frame_to_bytes, frame_t *, uint8_t *);
 FAKE_VOID_FUNC(prepare_new_stream, h2states_t *);
 FAKE_VALUE_FUNC(uint8_t, set_flag, uint8_t, uint8_t);
-FAKE_VALUE_FUNC(int, create_data_frame, frame_header_t *, data_payload_t *, uint8_t *, uint8_t *, int, uint32_t);
+FAKE_VOID_FUNC(create_data_frame, frame_header_t *, data_payload_t *, uint8_t *, uint8_t *, int, uint32_t);
 FAKE_VALUE_FUNC(uint32_t, get_size_data_to_send, h2states_t *);
 FAKE_VALUE_FUNC(int, flow_control_send_data, h2states_t *, uint32_t);
-FAKE_VALUE_FUNC(int, create_settings_ack_frame, frame_t *, frame_header_t *);
+FAKE_VOID_FUNC(create_settings_ack_frame, frame_t *, frame_header_t *);
 FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t *, window_update_payload_t *, int, uint32_t);
 FAKE_VALUE_FUNC(int, flow_control_send_window_update, h2states_t *, uint32_t);
-FAKE_VALUE_FUNC(int, create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
-FAKE_VALUE_FUNC(int, create_continuation_frame, uint8_t *, int, uint32_t, frame_header_t *, continuation_payload_t *, uint8_t *);
-FAKE_VALUE_FUNC(int, create_headers_frame, uint8_t *, int, uint32_t, frame_header_t *, headers_payload_t *, uint8_t *);
+FAKE_VOID_FUNC(create_continuation_frame, uint8_t *, int, uint32_t, frame_header_t *, continuation_payload_t *, uint8_t *);
+FAKE_VOID_FUNC(create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
 
 #define FFF_FAKES_LIST(FAKE)                \
     FAKE(cbuf_push)                         \
@@ -129,7 +128,6 @@ void test_send_data(void)
     h2s.data = data;
 
     get_size_data_to_send_fake.return_val = 30;
-    create_data_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 39;
     cbuf_push_fake.return_val = 39;
     flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
@@ -156,7 +154,6 @@ void test_send_data_end_stream(void)
     h2s_open.data = data;
 
     get_size_data_to_send_fake.return_val = 30;
-    create_data_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 39;
     cbuf_push_fake.return_val = 39;
     flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
@@ -199,7 +196,6 @@ void test_send_data_full_sending(void)
     h2s.data = data;
 
     get_size_data_to_send_fake.return_val = 36;
-    create_data_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 39;
     cbuf_push_fake.return_val = 39;
     flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
@@ -233,17 +229,8 @@ void test_send_data_errors(void)
     rc = send_data(0, &buf_out, &h2s_wstate);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "wrong state for sending data");
 
-    h2states_t h2s_create;
-    h2s_create.data.size = 32;
-    h2s_create.data.processed = 0;
-    h2s_create.current_stream.state = STREAM_OPEN;
 
     get_size_data_to_send_fake.return_val = 32;
-    int create_return[3] = { -1, 0, 0 };
-    SET_RETURN_SEQ(create_data_frame, create_return, 3);
-
-    rc = send_data(0, &buf_out, &h2s_create);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "error creating data frame");
 
 
     h2states_t h2s_write;
@@ -284,7 +271,6 @@ void test_send_data_close_connection(void)
     h2s.data.processed = 0;
 
     get_size_data_to_send_fake.return_val = 36;
-    create_data_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 39;
     cbuf_push_fake.return_val = 39;
     flow_control_send_data_fake.return_val = HTTP2_RC_NO_ERROR;
@@ -303,7 +289,6 @@ void test_send_settings_ack(void)
     cbuf_t buf_out;
     h2states_t h2s;
 
-    create_settings_ack_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 9;
     cbuf_push_fake.return_val = 9;
 
@@ -321,9 +306,6 @@ void test_send_settings_ack_errors(void)
     cbuf_t buf_out;
     h2states_t h2s;
 
-    int create_return[2] = { -1, 0 };
-
-    SET_RETURN_SEQ(create_settings_ack_frame, create_return, 2);
 
     frame_to_bytes_fake.return_val = 9;
 
@@ -331,7 +313,7 @@ void test_send_settings_ack_errors(void)
     SET_RETURN_SEQ(cbuf_push, push_return, 3);
 
     int rc = send_settings_ack(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "RC must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, error creating");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "RC must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, error creating");
     TEST_ASSERT_MESSAGE(create_settings_ack_frame_fake.call_count == 1, "ACK creation called one time");
     TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes is called when sending goaway");
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push is called when sending goaway");
@@ -352,8 +334,6 @@ void test_send_goaway(void)
 
     h2s.sent_goaway = 0;
     h2s.received_goaway = 0;
-
-    create_goaway_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
 
@@ -373,7 +353,6 @@ void test_send_goaway_close_connection(void)
     h2s.sent_goaway = 0;
     h2s.received_goaway = 1;
 
-    create_goaway_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
 
@@ -391,16 +370,10 @@ void test_send_goaway_errors(void)
     h2s.sent_goaway = 0;
     h2s.received_goaway = 1;
 
-    int create_return[2] = { -1, 0 };
-    SET_RETURN_SEQ(create_goaway_frame, create_return, 2);
-
-    int rc = send_goaway(HTTP2_NO_ERROR, &buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_ERROR, "rc must be HTTP2_RC_ERROR (creating frame)");
-
     frame_to_bytes_fake.return_val = 8;
     cbuf_push_fake.return_val = 2;
 
-    rc = send_goaway(HTTP2_NO_ERROR, &buf_out, &h2s);
+    int rc = send_goaway(HTTP2_NO_ERROR, &buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_ERROR, "rc must be HTTP2_RC_ERROR (writing frame)");
 
 }
@@ -412,7 +385,6 @@ void test_send_window_update(void)
 
     h2s.incoming_window.window_used = 24;
 
-    create_window_update_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
     flow_control_send_window_update_fake.return_val = HTTP2_RC_NO_ERROR;
@@ -609,7 +581,6 @@ void test_send_local_settings(void)
         h2s.remote_settings[i] = 1;
     }
 
-    create_settings_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 16;
     cbuf_push_fake.return_val = 16;
 
@@ -632,8 +603,6 @@ void test_send_local_settings_errors(void)
         h2s.remote_settings[i] = 1;
     }
 
-    int create_return[2] = { -1, 0 };
-    SET_RETURN_SEQ(create_settings_frame, create_return, 2);
 
     frame_to_bytes_fake.return_val = 16;
 
@@ -641,15 +610,15 @@ void test_send_local_settings_errors(void)
     SET_RETURN_SEQ(cbuf_push, push_return, 3);
 
     int rc = send_local_settings(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (create error)");
-    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait setting ack must be 1");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_NO_ERROR, "rc must be HTTP2_NO_ERROR (success)");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 1, "wait setting ack must be 1");
     TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 1, "create_settings_frame must be called once");
     TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame_to_bytes must be called once in send_goaway");
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push must be called once in send_goaway");
 
     rc = send_local_settings(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (create error)");
-    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait setting ack must be 1");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 1, "wait setting ack must be 1");
     TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 2, "create_settings_frame must be called once");
     TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 3, "frame_to_bytes must be called in send_local_settings and send_goaway");
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf_push must be called in send_local_settings and send_goaway");

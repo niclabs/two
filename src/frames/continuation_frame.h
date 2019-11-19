@@ -17,7 +17,7 @@ typedef enum {
 }continuation_flag_t;
 
 /*continuation payload methods*/
-int create_continuation_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, continuation_payload_t *continuation_payload, uint8_t *header_block_fragment);
+void create_continuation_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, continuation_payload_t *continuation_payload, uint8_t *header_block_fragment);
 int continuation_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);
 int read_continuation_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 

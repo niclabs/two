@@ -57,9 +57,8 @@ void test_create_data_frame(void)
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    int rc = create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
+    create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
 
-    TEST_ASSERT_EQUAL(0, rc);
 
     TEST_ASSERT_EQUAL(length, frame_header.length);
     TEST_ASSERT_EQUAL(DATA_TYPE, frame_header.type);

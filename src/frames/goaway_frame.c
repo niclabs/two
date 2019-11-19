@@ -47,9 +47,9 @@ int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t
  * Function: create_goaway_frame
  * Create a GOAWAY Frame
  * Input: frame_header, goaway_payload, pointer to space for additional debug data, last stream id, error code, additional debug data, and its size.
- * Output: 0, or -1 if any error
+ * Output: (void)
  */
-int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data_buffer, uint32_t last_stream_id, uint32_t error_code,  uint8_t *additional_debug_data, uint8_t additional_debug_data_size)
+void create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data_buffer, uint32_t last_stream_id, uint32_t error_code,  uint8_t *additional_debug_data, uint8_t additional_debug_data_size)
 {
     frame_header->stream_id = 0;
     frame_header->type = GOAWAY_TYPE;
@@ -62,7 +62,7 @@ int create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_p
     goaway_payload->error_code = error_code;
     buffer_copy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
     goaway_payload->additional_debug_data = additional_debug_data_buffer;
-    return 0;
+
 }
 
 /*

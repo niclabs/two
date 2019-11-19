@@ -10,9 +10,9 @@
  * Function: create_headers_frame
  * Creates a headers frame, with no flags set, and with the given header block fragment atached
  * Input: header_block_fragment, its, size, streamid, pointer to the frame_header, pointer to the header_payload, pointer to the header_block_fragment that will be inside the frame
- * Output: 0 if no error ocurred
+ * Output: (void)
  */
-int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *header_block_fragment)
+void create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *header_block_fragment)
 {
     frame_type_t type = HEADERS_TYPE;
     uint8_t flags = 0x0;
@@ -27,7 +27,7 @@ int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_
 
     buffer_copy(header_block_fragment, headers_block, headers_block_size);
     headers_payload->header_block_fragment = header_block_fragment;
-    return 0;
+
 }
 
 

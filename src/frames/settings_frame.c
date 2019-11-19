@@ -99,9 +99,9 @@ int create_list_of_settings_pair(uint16_t *ids, uint32_t *values, int count, set
  * Function: create_settings_frame
  * Create a Frame of type sewttings with its payload
  * Input:  pointer to ids array, pointer to values array, size of those arrays,  pointer to frame, pointer to frameheader, pointer to settings payload, pointer to settings Pairs.
- * Output: 0 if setting frame was created
+ * Output: (void)
  */
-int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_header_t *frame_header,
+void create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_header_t *frame_header,
                           settings_payload_t *settings_payload, settings_pair_t *pairs)
 {
     frame_header->length = count * 6;
@@ -114,16 +114,15 @@ int create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_head
     count = create_list_of_settings_pair(ids, values, count, pairs);
     settings_payload->count = count;
     settings_payload->pairs = pairs;
-    return 0;
 }
 
 /*
  * Function: create_settings_ack_frame
  * Create a Frame of type settings with flag ack
  * Input:  pointer to frame, pointer to frameheader
- * Output: 0 if setting frame was created
+ * Output: (void)
  */
-int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
+void create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
 {
     frame_header->length = 0;
     frame_header->type = SETTINGS_TYPE;//settings;
@@ -134,5 +133,4 @@ int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header)
     frame->frame_header = frame_header;
 
     frame->payload = NULL;
-    return 0;
 }

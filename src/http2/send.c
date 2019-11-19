@@ -83,12 +83,8 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     frame_header_t frame_header;
     data_payload_t data_payload;
     uint8_t data[count_data_to_send];
-    int rc = create_data_frame(&frame_header, &data_payload, data, h2s->data.buf + h2s->data.processed, count_data_to_send, stream_id);
-    if (rc < 0) {
-        ERROR("Error creating data frame. INTERNAL_ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
+    create_data_frame(&frame_header, &data_payload, data, h2s->data.buf + h2s->data.processed, count_data_to_send, stream_id);
+    
     if (end_stream) {
         frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
     }
@@ -97,7 +93,7 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     INFO("Sending DATA");
-    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    int rc = cbuf_push(buf_out, buff_bytes, bytes_size);
     if (rc != bytes_size) {
         ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
@@ -138,12 +134,8 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
     frame_header_t ack_frame_header;
     int rc;
 
-    rc = create_settings_ack_frame(&ack_frame, &ack_frame_header);
-    if (rc < 0) {
-        ERROR("Error in Settings ACK creation!");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
+    create_settings_ack_frame(&ack_frame, &ack_frame_header);
+    
     uint8_t byte_ack[9 + 0]; /*Settings ACK frame only has a header*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     // We write the ACK to NET
@@ -178,15 +170,10 @@ int send_ping(cbuf_t *buf_out, uint8_t *opaque_data, int8_t ack, h2states_t *h2s
     ack_frame.payload = (void *)&ping_payload;
     int rc;
     if (ack) {
-        rc = create_ping_ack_frame(&ack_frame_header, &ping_payload, opaque_data);
+        create_ping_ack_frame(&ack_frame_header, &ping_payload, opaque_data);
     }
     else {
-        rc = create_ping_frame(&ack_frame_header, &ping_payload, opaque_data);
-    }
-    if (rc < 0) {
-        ERROR("Error in PING creation!");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+        create_ping_frame(&ack_frame_header, &ping_payload, opaque_data);
     }
     uint8_t byte_ack[9 + 8]; /*Settings ACK frame has a header and a payload of 8 bytes*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
@@ -221,13 +208,8 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
     frame_header_t header;
     goaway_payload_t goaway_pl;
     uint8_t additional_debug_data[h2s->debug_size];
-
-    rc = create_goaway_frame(&header, &goaway_pl, additional_debug_data, h2s->last_open_stream_id, error_code, h2s->debug_data_buffer, h2s->debug_size);
-    if (rc < 0) {
-        ERROR("Error creating GOAWAY frame");
-        //TODO shutdown connection
-        return HTTP2_RC_ERROR;
-    }
+    
+    create_goaway_frame(&header, &goaway_pl, additional_debug_data, h2s->last_open_stream_id, error_code, h2s->debug_data_buffer, h2s->debug_size);
     frame.frame_header = &header;
     frame.payload = (void *)&goaway_pl;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
@@ -342,13 +324,8 @@ int send_local_settings(cbuf_t *buf_out, h2states_t *h2s)
 
     settings_pair_t mypairs[6];
     /*rc must be 0*/
-    rc = create_settings_frame(ids, h2s->local_settings, 6, &mysettingframeheader, &mysettings, mypairs);
+    create_settings_frame(ids, h2s->local_settings, 6, &mysettingframeheader, &mysettings, mypairs);
 
-    if (rc) {
-        ERROR("Error in Settings Frame creation");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
     uint8_t byte_mysettings[9 + 6 * 6]; /*header: 9 bytes + 6 * setting: 6 bytes */
     int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
     rc = cbuf_push(buf_out, byte_mysettings, size_byte_mysettings);
@@ -401,12 +378,8 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     continuation_payload_t continuation_payload;
     uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
 
-    rc = create_continuation_frame(buff_read, size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
-    if (rc < 0) {
-        ERROR("Error creating continuation frame. INTERNAL ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
+    create_continuation_frame(buff_read, size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
+    
     if (end_stream) {
         frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
     }
@@ -445,12 +418,8 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
     uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
 
     // We create the headers frame
-    rc = create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
-    if (rc < 0) {
-        ERROR("Error creating headers frame. INTERNAL ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
+    create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
+    
     if (end_headers) {
         frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
     }

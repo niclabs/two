@@ -33,8 +33,4 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes);
 //TODO
 int compress_headers(header_list_t *headers_out,  uint8_t *compressed_headers, hpack_states_t *hpack_states);
 
-
-//TODO refactor this function to not use frame_t
-int create_settings_ack_frame(frame_t *frame, frame_header_t *frame_header);
-
 #endif /*FRAMES_H*/
