@@ -99,10 +99,13 @@ void event_do_write(event_sock_t *sock)
 
         // notify of write when buffer is empty
         if (cbuf_len(&sock->buf_out) <= 0) {
-            sock->write_cb(sock, 0);
+            event_write_cb write_cb = sock->write_cb;
 
             // remove write callback
             sock->write_cb = NULL;
+
+            // notify of write
+            write_cb(sock, 0);
         }
     }
 }
