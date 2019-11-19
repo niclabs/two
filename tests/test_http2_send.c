@@ -632,7 +632,6 @@ void test_send_continuation_frame(void)
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
-    create_continuation_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
 
@@ -652,7 +651,6 @@ void test_send_continuation_frame_end_stream(void)
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
-    create_continuation_frame_fake.return_val = 0;
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
 
@@ -671,27 +669,19 @@ void test_send_continuation_frame_errors(void)
     cbuf_t buf_out;
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+    int rc;
 
-    int create_continuation_return[2] = { -1, 0 };
-    SET_RETURN_SEQ(create_continuation_frame, create_continuation_return, 2);
     frame_to_bytes_fake.return_val = 32;
-    int push_return[3] = { 32, 16, 32 };
-    SET_RETURN_SEQ(cbuf_push, push_return, 3);
+    int push_return[2] = {16, 32 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 2);
 
-    int rc = send_continuation_frame(buff, 32, 5, 1, &buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error creating)");
-    TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 1, "Create continuation frame call count must be 1");
-    TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 0, "Set flag call count must be 0");
-    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes must be called in send_goaway");
-    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf push must be called in send_goaway");
-    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
 
     rc = send_continuation_frame(buff, 32, 5, 1, &buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error writing)");
-    TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 2, "Create continuation frame call count must be 1");
+    TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 1, "Create continuation frame call count must be 1");
     TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 1, "Set flag call count must be 1");
-    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 3, "Frame to bytes must be called in send_continuation_frame and send_goaway");
-    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf push call must be called in send_continuation_frame and send_goaway");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 2, "Frame to bytes must be called in send_continuation_frame and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 2, "cbuf push call must be called in send_continuation_frame and send_goaway");
     TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
 
 }
