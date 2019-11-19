@@ -50,7 +50,7 @@ int check_frame_errors(uint8_t type, uint32_t length)
             return -1;
         case SETTINGS_TYPE: {
             if (length % 6 != 0) {
-                printf("Error: length not divisible by 6, %d", length);
+                printf("Error: length not divisible by 6, %u", length);
                 return -1;
             }
             else {
@@ -59,7 +59,7 @@ int check_frame_errors(uint8_t type, uint32_t length)
         }
         case GOAWAY_TYPE: {
             if (length < 8) {
-                printf("Error: length < 8, %d", length);
+                printf("Error: length < 8, %u", length);
                 return -1;
             }
             else {
@@ -68,7 +68,7 @@ int check_frame_errors(uint8_t type, uint32_t length)
         }
         case WINDOW_UPDATE_TYPE: {
             if (length != 4) {
-                printf("Error: length != 4, %d", length);
+                printf("Error: length != 4, %u", length);
                 return -1;
             }
             else {

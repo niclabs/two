@@ -169,10 +169,10 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 
     // Read payload
     uint8_t buff_read_payload[HTTP2_MAX_BUFFER_SIZE];
-    int rc = cbuf_pop(buf_in, buff_read_payload, h2s->header.length);
+    cbuf_pop(buf_in, buff_read_payload, h2s->header.length);
 
     // Process payload
-    rc = handle_payload(buff_read_payload, buf_out, h2s);
+    int rc = handle_payload(buff_read_payload, buf_out, h2s);
     if (rc < 0) {
         DEBUG("http2_receive_payload returning null callback");
         return null_callback();

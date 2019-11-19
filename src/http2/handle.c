@@ -191,10 +191,10 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
 int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s)
 {
     uint8_t i;
-    uint16_t id;
-    uint32_t value;
 
     for (i = 0; i < spl->count; i++) {
+        uint16_t id;
+        uint32_t value;
         id = spl->pairs[i].identifier;
         value = spl->pairs[i].value;
         if (id < 1 || id > 6) {
