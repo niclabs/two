@@ -13,6 +13,46 @@
 #define LOG_LEVEL_EVENT LOG_LEVEL_DEBUG
 #include "logging.h"
 
+#define LIST_ADD(list, elem) \
+    {                        \
+        elem->next = list;   \
+        list = elem;         \
+    }
+#define LIST_NEXT(elem) elem = elem->next;
+#define LIST_FIND(type, queue, condition)   \
+    ({                                      \
+        type *elem = queue;                 \
+        type *res = NULL;                   \
+        while (elem != NULL) {              \
+            if (condition) {                \
+                res = elem;                 \
+                break;                      \
+            }                               \
+            LIST_NEXT(elem);                \
+        }                                   \
+        res;                                \
+    });
+
+#define LIST_DELETE(type, queue, elem)          \
+    ({                                          \
+        type *res = NULL;                       \
+        type *curr = queue, *prev = NULL;       \
+        while (curr != NULL) {                  \
+            if (curr == elem) {                 \
+                if (prev == NULL) {             \
+                    queue = curr->next;         \
+                }                               \
+                else {                          \
+                    prev->next = curr->next;    \
+                }                               \
+                res = curr;                     \
+                break;                          \
+            }                                   \
+            LIST_NEXT(elem);                    \
+        }                                       \
+        res;                                    \
+    });
+
 // Private methods
 struct qnode {
     struct qnode *next;
@@ -20,39 +60,50 @@ struct qnode {
 
 typedef int (*event_compare_cb)(void *first, void *second);
 
-void *event_queue_find(struct qnode *queue, void *elem, event_compare_cb compare)
+// find socket file descriptor in socket queue
+event_sock_t *event_socket_find(event_sock_t *queue, event_descriptor_t descriptor)
 {
-    struct qnode *head = queue;
-
-    while (head != NULL) {
-        if (compare(head, elem) > 0) {
-            return head;
-        }
-        head = head->next;
-    }
-    return NULL;
-}
-
-int compare_handle(void *s, void *h)
-{
-    event_sock_t *sock = (event_sock_t *)s;
-    event_descriptor_t *handle = (event_descriptor_t *)h;
-
-    return sock->descriptor == *handle;
+    return LIST_FIND(event_sock_t, queue, elem->descriptor == descriptor);
 }
 
 // find socket file descriptor in socket queue
-event_sock_t *event_find_handle(event_sock_t *queue, event_descriptor_t handle)
+event_handler_t *event_handler_find(event_handler_t *queue, event_type_t type)
 {
-    return event_queue_find((struct qnode *)queue, &handle, &compare_handle);
+    return LIST_FIND(event_handler_t, queue, elem->type == type);
 }
+
+// find free handler in loop memory
+event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
+{
+    if (loop->unused_handlers == NULL) {
+        return NULL;
+    }
+
+    // get event handler from loop memory
+    event_handler_t *handler = loop->unused_handlers;
+    loop->unused_handlers = handler->next;
+
+    // reset handler memory
+    memset(handler, 0, sizeof(event_handler_t));
+
+    handler->next = sock->handlers;
+    sock->handlers = handler;
+
+    return handler;
+}
+
 
 void event_do_read(event_sock_t *sock)
 {
     // this is a server socket
-    if (sock->state == EVENT_SOCK_LISTENING && sock->conn_cb != NULL) {
+    if (sock->state == EVENT_SOCK_LISTENING) {
         // call connection_cb with status ok if there are available clients
-        sock->conn_cb(sock, sock->loop->unused == NULL ? -1 : 0);
+        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE);
+        if (handler != NULL) {
+            // if this happens there is an error with the implementation
+            assert(handler->event.connection.cb != NULL);
+            handler->event.connection.cb(sock, sock->loop->unused == NULL ? -1 : 0);
+        }
     }
     else if (sock->read_cb != NULL) {
         int readlen = EVENT_MAX_BUF_SIZE - cbuf_len(&sock->buf_in);
@@ -80,32 +131,37 @@ void event_do_read(event_sock_t *sock)
     }
 }
 
-void event_do_write(event_sock_t *sock)
+void event_do_write(event_sock_t *sock, event_handler_t *handler)
 {
-    if (sock->write_cb != NULL) {
-        int len = cbuf_len(&sock->buf_out);
+    if (handler != NULL) {
+        // if this happens there is a problem with the implementation
+        assert(handler->event.write.cb != NULL);
+
+        // attempt to write remaining bytes
+        int len = cbuf_len(&handler->event.write.buf);
         uint8_t buf[len];
 
-        cbuf_peek(&sock->buf_out, buf, len);
+        cbuf_peek(&handler->event.write.buf, buf, len);
         int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
 
         if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            sock->write_cb(sock, -1);
+            handler->event.write.cb(sock, -1);
             return;
         }
 
         // remove written
-        cbuf_pop(&sock->buf_out, NULL, written);
+        cbuf_pop(&handler->event.write.buf, NULL, written);
 
         // notify of write when buffer is empty
-        if (cbuf_len(&sock->buf_out) <= 0) {
-            event_write_cb write_cb = sock->write_cb;
-
-            // remove write callback
-            sock->write_cb = NULL;
+        if (cbuf_len(&handler->event.write.buf) <= 0) {
+            // remove write handler from list
+            LIST_DELETE(event_handler_t, sock->handlers, handler);
 
             // notify of write
-            write_cb(sock, 0);
+            handler->event.write.cb(sock, 0);
+
+            // move handler to loop unused list
+            LIST_ADD(sock->loop->unused_handlers, handler);
         }
     }
 }
@@ -140,9 +196,10 @@ void event_loop_poll(event_loop_t *loop)
         }
 
         event_sock_t *sock;
+        event_handler_t *wh;
         if (read || write || FD_ISSET(i, &loop->active_fds)) {
             // find the handle on the polling list
-            sock = event_find_handle(loop->polling, i);
+            sock = event_socket_find(loop->polling, i);
 
             // if this happens it means there is a problem with the implementation
             assert(sock != NULL);
@@ -151,7 +208,8 @@ void event_loop_poll(event_loop_t *loop)
                 read = 1;
             }
 
-            if (cbuf_len(&sock->buf_out) > 0) {
+            wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
+            if (wh != NULL && cbuf_len(&wh->event.write.buf) > 0) {
                 write = 1;
             }
         }
@@ -167,7 +225,7 @@ void event_loop_poll(event_loop_t *loop)
 
         // if a write event is detected perform write operations
         if (write) {
-            event_do_write(sock);
+            event_do_write(sock, wh);
         }
     }
 }
@@ -180,8 +238,9 @@ void event_loop_close(event_loop_t *loop)
     int max_fds = -1;
 
     while (curr != NULL) {
-        // if the event is closing and we are not waiting to read
-        if (curr->state == EVENT_SOCK_CLOSING && cbuf_len(&curr->buf_out) <= 0) {
+        // if the event is closing and we are not waiting to write
+        event_handler_t *wh = event_handler_find(curr->handlers, EVENT_WRITE_TYPE);
+        if (curr->state == EVENT_SOCK_CLOSING && (wh == NULL || cbuf_len(&wh->event.write.buf) <= 0)) {
             // prevent sock to be used in polling
             FD_CLR(curr->descriptor, &loop->active_fds);
 
@@ -204,6 +263,12 @@ void event_loop_close(event_loop_t *loop)
             }
             else {
                 prev->next = next;
+            }
+
+            // move socket handlers back to the unused handler list
+            for (event_handler_t *h = curr->handlers; h != NULL; h = h->next) {
+                h->next = loop->unused_handlers;
+                loop->unused_handlers = h;
             }
 
             // move the head forward
@@ -258,7 +323,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
         return -1;
     }
 
-    if (listen(sock->descriptor, EVENT_MAX_DESCRIPTORS - 1) < 0) {
+    if (listen(sock->descriptor, EVENT_MAX_SOCKETS - 1) < 0) {
         close(sock->descriptor);
         return -1;
     }
@@ -269,15 +334,21 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     // add socket fd to read watchlist
     FD_SET(sock->descriptor, &loop->active_fds);
 
-    // add poll callback to sock
-    sock->conn_cb = cb;
-
     // update sock state
     sock->state = EVENT_SOCK_LISTENING;
 
     // add socket to polling queue
     sock->next = loop->polling;
     loop->polling = sock;
+
+    // add event handler to socket
+    event_handler_t *handler = event_handler_find_free(loop, sock);
+    assert(handler != NULL);
+
+    // set handler event
+    handler->type = EVENT_CONNECTION_TYPE;
+    memset(&handler->event.connection, 0, sizeof(event_connection_t));
+    handler->event.connection.cb = cb;
 
     return 0;
 }
@@ -316,14 +387,27 @@ int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb 
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    // check that we are not already writing
-    assert(sock->write_cb == NULL);
+    // see if there is already a write handler set
+    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
+    assert(handler == NULL);
 
-    // set write cb
-    sock->write_cb = cb;
+    // find free handler
+    event_loop_t *loop = sock->loop;
+    handler = event_handler_find_free(loop, sock);
+    assert(handler != NULL);
+
+    // set handler event
+    handler->type = EVENT_WRITE_TYPE;
+    memset(&handler->event.write, 0, sizeof(event_write_t));
+
+    // initialize write buffer
+    cbuf_init(&handler->event.write.buf, handler->event.write.buf_data, EVENT_MAX_BUF_SIZE);
+
+    // set write callback
+    handler->event.write.cb = cb;
 
     // write bytes to output buffer
-    return cbuf_push(&sock->buf_out, bytes, size);
+    return cbuf_push(&handler->event.write.buf, bytes, size);
 }
 
 int event_accept(event_sock_t *server, event_sock_t *client)
@@ -386,15 +470,21 @@ void event_loop_init(event_loop_t *loop)
 
     // reset socket memory
     FD_ZERO(&loop->active_fds);
-    memset(&loop->sockets, 0, EVENT_MAX_DESCRIPTORS * sizeof(event_sock_t));
+    memset(loop->sockets, 0, EVENT_MAX_SOCKETS * sizeof(event_sock_t));
 
     // create unused socket list
-    for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
+    for (int i = 0; i < EVENT_MAX_SOCKETS - 1; i++) {
         loop->sockets[i].next = &loop->sockets[i + 1];
     }
-
     // list of unused sockets
     loop->unused = &loop->sockets[0];
+
+    // reset handler memory and create unused handler list
+    memset(loop->handlers, 0, EVENT_MAX_HANDLERS * sizeof(event_handler_t));
+    for (int i = 0; i  < EVENT_MAX_HANDLERS - 1; i++) {
+        loop->handlers[i].next = &loop->handlers[i + 1];
+    }
+    loop->unused_handlers = &loop->handlers[0];
 }
 
 event_sock_t *event_sock_create(event_loop_t *loop)
@@ -415,7 +505,6 @@ event_sock_t *event_sock_create(event_loop_t *loop)
 
     // initialize buffers
     cbuf_init(&sock->buf_in, sock->buf_in_data, EVENT_MAX_BUF_SIZE);
-    cbuf_init(&sock->buf_out, sock->buf_out_data, EVENT_MAX_BUF_SIZE);
 
     // assign sock variables
     sock->loop = loop;

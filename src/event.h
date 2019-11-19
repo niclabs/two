@@ -8,9 +8,21 @@
 #include "cbuf.h"
 
 #ifndef CONF_EVENT_MAX_DESCRIPTORS
-#define EVENT_MAX_DESCRIPTORS 8
+#define EVENT_MAX_DESCRIPTORS 4
 #else
 #define EVENT_MAX_DESCRIPTORS (CONF_EVENT_MAX_DESCRIPTORS)
+#endif
+
+#ifndef CONF_EVENT_MAX_SOCKETS
+#define EVENT_MAX_SOCKETS (EVENT_MAX_DESCRIPTORS)
+#else
+#define EVENT_MAX_SOCKETS (CONF_EVENT_MAX_SOCKETS)
+#endif
+
+#ifndef CONF_EVENT_MAX_HANDLERS
+#define EVENT_MAX_HANDLERS (EVENT_MAX_SOCKETS * 2)
+#else
+#define EVENT_MAX_HANDLERS (CONF_EVENT_MAX_HANDLERS)
 #endif
 
 #ifndef CONF_EVENT_MAX_BUF_SIZE
@@ -25,17 +37,17 @@ struct event_loop;
 
 // Callbacks
 
-// Called on a new client connection 
+// Called on a new client connection
 typedef void (*event_connection_cb)(struct event_sock *server, int status);
 
-// Called whenever new data is available, or a read error occurrs 
+// Called whenever new data is available, or a read error occurrs
 // it must return the number of bytes read in order to remove them from the input buffer
 typedef int (*event_read_cb)(struct event_sock *sock, ssize_t size, uint8_t *bytes);
 
 // Will be called when the output buffer is empty
 typedef void (*event_write_cb)(struct event_sock *sock, int status);
 
-// Will be called after all write operations are finished and 
+// Will be called after all write operations are finished and
 // the socket is closed
 typedef void (*event_close_cb)(struct event_sock *sock);
 
@@ -44,6 +56,41 @@ typedef uint16_t event_descriptor_t;
 #else
 typedef int event_descriptor_t;
 #endif
+
+typedef enum {
+    EVENT_CONNECTION_TYPE,
+    EVENT_WRITE_TYPE,
+    EVENT_READ_TYPE
+} event_type_t;
+
+typedef struct event_connection {
+    // type variables
+    event_connection_cb cb;
+} event_connection_t;
+
+typedef struct event_read {
+    // type variables
+    uint8_t buf_data[EVENT_MAX_BUF_SIZE];
+    cbuf_t buf;
+    event_read_cb cb;
+} event_read_t;
+
+typedef struct event_write {
+    // type variables
+    uint8_t buf_data[EVENT_MAX_BUF_SIZE];
+    cbuf_t buf;
+    event_write_cb cb;
+} event_write_t;
+
+typedef struct event_handler {
+    struct event_handler *next;
+    event_type_t type;
+    union {
+        event_connection_t connection;
+        event_read_t read;
+        event_write_t write;
+    } event;
+} event_handler_t;
 
 typedef struct event_sock {
     /* "inherited fields" */
@@ -65,18 +112,13 @@ typedef struct event_sock {
         EVENT_SOCK_CLOSING
     } state;
 
-    /* new connection callback */
-    event_connection_cb conn_cb;
+    // event handler list
+    event_handler_t *handlers;
 
     /* read event */
     uint8_t buf_in_data[EVENT_MAX_BUF_SIZE];
     cbuf_t buf_in;
     event_read_cb read_cb;
-
-    /* write event */
-    uint8_t buf_out_data[EVENT_MAX_BUF_SIZE];
-    cbuf_t buf_out;
-    event_write_cb write_cb;
 
     event_close_cb close_cb;
 } event_sock_t;
@@ -86,8 +128,11 @@ typedef struct event_loop {
     event_sock_t *polling;
 
     // static memory
-    event_sock_t sockets[EVENT_MAX_DESCRIPTORS];
+    event_sock_t sockets[EVENT_MAX_SOCKETS];
     event_sock_t *unused;
+
+    event_handler_t handlers[EVENT_MAX_HANDLERS];
+    event_handler_t *unused_handlers;
 
     // loop state
     int running;
@@ -115,7 +160,7 @@ int event_read(event_sock_t *sock, event_read_cb cb);
 // Stop receiving read notifications
 void event_read_stop(event_sock_t *sock);
 
-// Write to the output buffer, will notify the callback when all bytes are 
+// Write to the output buffer, will notify the callback when all bytes are
 // written
 int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb cb);
 
