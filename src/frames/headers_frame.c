@@ -37,9 +37,9 @@ void create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32
  * Input: frame_header, header_payload pointer, array to save the bytes
  * Output: size of the array of bytes, -1 if error
  */
-int headers_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_t *byte_array)
+int headers_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
-    headers_payload_t *headers_payload = (headers_payload_t *) payload;
+    headers_payload_t *headers_payload = (headers_payload_t *)payload;
     int pointer = 0;
 
     //not implemented yet!
@@ -79,7 +79,7 @@ int headers_payload_to_bytes(frame_header_t *frame_header, void* payload, uint8_
 int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
     DEBUG("Reading HEADERS payload");
-    headers_payload_t *headers_payload = (headers_payload_t *) payload;
+    headers_payload_t *headers_payload = (headers_payload_t *)payload;
 
     uint8_t pad_length = 0;             // only if padded flag is set
     uint8_t exclusive_dependency = 0;   // only if priority flag is set
@@ -163,4 +163,3 @@ uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_pa
     (void)headers_payload;
     return frame_header->length - pad_length - priority_length;
 }
-
