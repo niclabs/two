@@ -18,6 +18,6 @@ typedef struct {
 /*Window_update frame methods*/
 int create_window_update_frame(frame_header_t *frame_header, window_update_payload_t *window_update_payload, int window_size_increment, uint32_t stream_id);
 int window_update_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);
-int read_window_update_payload(frame_header_t *frame_header,void *payload,  uint8_t *buff_read);
+int read_window_update_payload(frame_header_t *frame_header, void *payload,  uint8_t *buff_read);
 
 #endif //TWO_WINDOW_UPDATE_FRAME_H
