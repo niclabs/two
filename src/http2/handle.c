@@ -307,15 +307,14 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
 /*
  * Function: handle_ping_payload
  * Handles ping payload.
- * Input: -> header: frame header of ping frame.
- *        -> ping_payload: payload of ping frame.
+ * Input: -> ping_payload: payload of ping frame.
  *        -> h2s: pointer h2states_t struct where connection variables are stored
  * IMPORTANT: this implementation doesn't check the correctness of the last stream
  * Output: HTTP2_RC_NO_ERROR if no error were found during the handling.
  */
-int handle_ping_payload(frame_header_t *header, ping_payload_t *ping_payload, cbuf_t *buf_out, h2states_t *h2s)
+int handle_ping_payload(ping_payload_t *ping_payload, cbuf_t *buf_out, h2states_t *h2s)
 {
-    if (header->flags == PING_ACK_FLAG) { // received ACK to PING
+    if (h2s->header.flags == PING_ACK_FLAG) { // received ACK to PING
         INFO("Received ACK to PING frame");
         return HTTP2_RC_NO_ERROR;
     }
