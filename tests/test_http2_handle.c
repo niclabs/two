@@ -7,7 +7,7 @@
 #include "frames/data_frame.h"      // for data_payload_t
 #include "frames/headers_frame.h"   // for headers_payload_t
 #include "frames/settings_frame.h"  // for settings_payload_t
-#include "frames/goaway_frame.h"  // for settings_payload_t
+#include "frames/goaway_frame.h"    // for settings_payload_t
 #include "cbuf.h"                   // for cbuf
 
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
@@ -29,7 +29,7 @@ FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size, frame_header_t *, head
 FAKE_VALUE_FUNC(int, receive_header_block, uint8_t *, int, header_list_t *, hpack_states_t *);
 FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, header_list_t *);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
-FAKE_VALUE_FUNC(int, send_goaway, uint32_t , cbuf_t *, h2states_t *);
+FAKE_VALUE_FUNC(int, send_goaway, uint32_t, cbuf_t *, h2states_t *);
 
 #define FFF_FAKES_LIST(FAKE)                                    \
     FAKE(flow_control_receive_data)                             \
@@ -252,13 +252,31 @@ void test_update_settings_table_errors(void)
 
 void test_handle_goaway_payload_error_received(void)
 {
-  goaway_payload_t gapl;
-  gapl.last_stream_id = 15;
-  gapl.error_code = 0x1; // No error code
-  cbuf_t bout;
-  h2states_t h2s;
-  int rc = handle_goaway_payload(&gapl, &bout, &h2s);
-  TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Return code must be 2 (HTTP2_RC_CLOSE_CONNECTION)");
+    goaway_payload_t gapl;
+
+    gapl.last_stream_id = 15;
+    gapl.error_code = 0x1; // Error code
+    cbuf_t bout;
+    h2states_t h2s;
+    int rc = handle_goaway_payload(&gapl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Return code must be 2 (HTTP2_RC_CLOSE_CONNECTION)");
+}
+
+void test_handle_goaway_payload_no_error_stream_smaller(void)
+{
+    goaway_payload_t gapl;
+
+    gapl.last_stream_id = 15;
+    gapl.error_code = 0x0; // No error code
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.current_stream.stream_id = 12;
+    h2s.current_stream.state = 2;
+    send_goaway_fake.return_val = 0;
+    int rc = handle_goaway_payload(&gapl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
+    TEST_ASSERT_EQUAL_MESSAGE(2, h2s.current_stream.state, "Current stream must be closed.");
+    TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_goaway, "GOAWAY was received.");
 }
 
 int main(void)
@@ -275,6 +293,7 @@ int main(void)
     UNIT_TEST(test_update_settings_table);
     UNIT_TEST(test_update_settings_table_errors);
     UNIT_TEST(test_handle_goaway_payload_error_received);
+    UNIT_TEST(test_handle_goaway_payload_no_error_stream_smaller);
 
     return UNIT_TESTS_END();
 }
