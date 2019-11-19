@@ -23,7 +23,9 @@
 #define HTTP2_SETTINGS_MAX_FRAME_SIZE (5)
 #define HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE (6)
 
+#ifndef MIN
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
+#endif
 
 #define true 1
 #define false 0
