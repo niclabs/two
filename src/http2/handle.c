@@ -358,7 +358,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
 
         if (rc < 0) {
             ERROR("Error was found receiving header_block");
-            send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+            send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         if (rc != h2s->header_block_fragments_pointer) {
