@@ -8,7 +8,7 @@
 
 extern int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s);
 extern int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s);
-
+extern int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s);
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
@@ -24,6 +24,7 @@ FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t *, window_update
 FAKE_VALUE_FUNC(int, flow_control_send_window_update, h2states_t *, uint32_t);
 FAKE_VALUE_FUNC(int, create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
 FAKE_VALUE_FUNC(int, create_continuation_frame, uint8_t *, int, uint32_t, frame_header_t *, continuation_payload_t *, uint8_t *);
+FAKE_VALUE_FUNC(int, create_headers_frame, uint8_t *, int, uint32_t, frame_header_t *, headers_payload_t *, uint8_t *);
 
 #define FFF_FAKES_LIST(FAKE)                \
     FAKE(cbuf_push)                         \
@@ -39,6 +40,7 @@ FAKE_VALUE_FUNC(int, create_continuation_frame, uint8_t *, int, uint32_t, frame_
     FAKE(flow_control_send_window_update)   \
     FAKE(create_settings_frame)             \
     FAKE(create_continuation_frame)         \
+    FAKE(create_headers_frame)              \
 
 void setUp(void)
 {
@@ -725,13 +727,116 @@ void test_send_continuation_frame_errors(void)
 
 }
 
+void test_send_headers_frame(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+
+    create_headers_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+
+    int rc = send_headers_frame(buff, 32, 5, 0, 0, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "create_headers_frame call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 0, "set_flag call count must be 0");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf push must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
+
+}
+
+void test_send_headers_frame_end_headers(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+
+    create_headers_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+
+    int rc = send_headers_frame(buff, 32, 5, 1, 0, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "create_headers_frame call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 1, "set_flag call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.arg1_val == HEADERS_END_HEADERS_FLAG, "set_flag arg1 must be HEADERS_END_HEADERS_FLAG");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf push must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
+
+}
+
+void test_send_headers_frame_end_stream(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+
+    create_headers_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+
+    int rc = send_headers_frame(buff, 32, 5, 0, 1, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "create_headers_frame call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 1, "set_flag call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.arg1_val == HEADERS_END_STREAM_FLAG, "set_flag arg1 must be HEADERS_END_STREAM_FLAG");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf push must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
+}
+
+void test_send_headers_frame_all_branches(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+
+    create_headers_frame_fake.return_val = 0;
+    frame_to_bytes_fake.return_val = 32;
+    cbuf_push_fake.return_val = 32;
+
+    int rc = send_headers_frame(buff, 32, 5, 1, 1, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "create_headers_frame call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 2, "set_flag call count must be 1");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf push must be called once");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
+}
+
+void test_send_headers_frame_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
+
+    int create_headers_return[2] = { -1, 0 };
+    SET_RETURN_SEQ(create_headers_frame, create_headers_return, 2);
+    frame_to_bytes_fake.return_val = 32;
+    int push_return[3] = { 32, 16, 32 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 3);
+
+    int rc = send_headers_frame(buff, 32, 5, 0, 0, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error creating)");
+    TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 1, "Create headers frame call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 0, "Set flag call count must be 0");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "Frame to bytes must be called in send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf push must be called in send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
+
+    rc = send_headers_frame(buff, 32, 5, 0, 0, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error writing)");
+    TEST_ASSERT_MESSAGE(create_headers_frame_fake.call_count == 2, "Create headers frame call count must be 1");
+    TEST_ASSERT_MESSAGE(set_flag_fake.call_count == 0, "Set flag call count must be 0");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 3, "Frame to bytes must be called in send_headers_frame and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf push call must be called in send_headers_frame and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 32, "cbuf push arg2 must be 32");
+}
+
 /*
-   void test_send_headers_frame(void){}
-
-   void test_send_headers_frame_all_branches(void){}
-
-   void test_send_headers_frame_errors(void){}
-
    void test_send_headers_one_header(void){}
 
    void test_send_headers_with_continuation(void){}
@@ -775,6 +880,10 @@ int main(void)
     UNIT_TEST(test_send_continuation_frame);
     UNIT_TEST(test_send_continuation_frame_end_stream);
     UNIT_TEST(test_send_continuation_frame_errors);
+    UNIT_TEST(test_send_headers_frame);
+    UNIT_TEST(test_send_headers_frame_end_stream);
+    UNIT_TEST(test_send_headers_frame_end_headers);
+    UNIT_TEST(test_send_headers_frame_errors);
 
     return UNIT_TESTS_END();
 }
