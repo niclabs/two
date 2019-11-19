@@ -139,15 +139,26 @@ void event_loop_poll(event_loop_t *loop)
             write = 1;
         }
 
+        event_sock_t *sock;
+        if (read || write || FD_ISSET(i, &loop->active_fds)) {
+            // find the handle on the polling list
+            sock = event_find_handle(loop->polling, i);
+
+            // if this happens it means there is a problem with the implementation
+            assert(sock != NULL);
+
+            if (cbuf_len(&sock->buf_in) > 0) {
+                read = 1;
+            }
+
+            if (cbuf_len(&sock->buf_out) > 0) {
+                write = 1;
+            }
+        }
+
         if (!read && !write) {
             continue;
         }
-
-        // find the handle on the polling list
-        event_sock_t *sock = event_find_handle(loop->polling, i);
-
-        // if this happens it means there is a problem with the implementation
-        assert(sock != NULL);
 
         // if a read event is detected perform read operations
         if (read) {
@@ -281,27 +292,8 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    // check that we are not already reading
-    assert(sock->read_cb == NULL);
-
     // add read callback to event
     sock->read_cb = cb;
-
-    // if there are bytes available in the buffer
-    // call the read callback immediately
-    int len = cbuf_len(&sock->buf_in);
-    if (len > 0) {
-        uint8_t buf[len];
-
-        // get the remaining bytes in the buffer
-        cbuf_peek(&sock->buf_in, buf, len);
-
-        // notify the calling event
-        int readlen = sock->read_cb(sock, len, buf);
-
-        // remove the read bytes
-        cbuf_pop(&sock->buf_in, NULL, readlen);
-    }
 
     return 0;
 }
