@@ -24,7 +24,7 @@ FAKE_VALUE_FUNC(int, create_window_update_frame, frame_header_t *, window_update
 FAKE_VALUE_FUNC(int, flow_control_send_window_update, h2states_t *, uint32_t);
 FAKE_VOID_FUNC(create_continuation_frame, uint8_t *, int, uint32_t, frame_header_t *, continuation_payload_t *, uint8_t *);
 FAKE_VOID_FUNC(create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
-FAKE_VOID_FUNC(create_headers_frame, uint8_t *, int , uint32_t , frame_header_t *, headers_payload_t *, uint8_t *);
+FAKE_VOID_FUNC(create_headers_frame, uint8_t *, int, uint32_t, frame_header_t *, headers_payload_t *, uint8_t *);
 
 #define FFF_FAKES_LIST(FAKE)                \
     FAKE(cbuf_push)                         \
@@ -673,7 +673,7 @@ void test_send_continuation_frame_errors(void)
     int rc;
 
     frame_to_bytes_fake.return_val = 32;
-    int push_return[2] = {16, 32 };
+    int push_return[2] = { 16, 32 };
     SET_RETURN_SEQ(cbuf_push, push_return, 2);
 
 
@@ -773,7 +773,7 @@ void test_send_headers_frame_errors(void)
     int rc;
 
     frame_to_bytes_fake.return_val = 32;
-    int push_return[2] = {16, 32 };
+    int push_return[2] = { 16, 32 };
     SET_RETURN_SEQ(cbuf_push, push_return, 2);
 
 
