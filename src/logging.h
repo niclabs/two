@@ -62,9 +62,9 @@
 // unless ENABLE_DEBUG is defined
 // otherwise use LOG_LEVEL
 #if defined(LOG_MODULE) && !defined(ENABLE_DEBUG)
-#define __CONCAT(x,y) x ## y
-#define __CONCAT2(x,y)__CONCAT(x,y)
-#define __LOG_LEVEL(module) __CONCAT2(LOG_LEVEL_,module)
+#define __LOG_CONCAT0(x,y) x ## y
+#define __LOG_CONCAT1(x,y)__LOG_CONCAT0(x,y)
+#define __LOG_LEVEL(module) __LOG_CONCAT1(LOG_LEVEL_,module)
 #else
 #define __LOG_LEVEL(module) LOG_LEVEL
 #endif
