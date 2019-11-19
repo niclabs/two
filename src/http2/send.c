@@ -230,6 +230,39 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
 
 }
 
+int send_rst_stream(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s)
+{
+    int rc;
+    frame_t frame;
+    frame_header_t header;
+    rst_stream_payload_t rst_stream_pl;
+
+    rc = create_rst_stream_frame(&header, &rst_stream_pl, h2s->last_open_stream_id, error_code);
+    if (rc < 0) {
+        ERROR("Error creating RST_STREAM frame");
+        return HTTP2_RC_ERROR;
+    }
+    frame.frame_header = &header;
+    frame.payload = (void *)&rst_stream_pl;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    INFO("Sending RST_STREAM, error code: %u", error_code);
+
+    if (rc != bytes_size) {
+        ERROR("Error writting RST_STREAM frame. INTERNAL ERROR");
+        return HTTP2_RC_ERROR;
+    }
+    /* 
+    h2s->sent_goaway = 1;
+    if (h2s->received_goaway) {
+        return HTTP2_RC_CLOSE_CONNECTION;
+    } 
+    */
+    return HTTP2_RC_NO_ERROR;
+
+}
+
 /*
  * Function: send_window_update
  * Sends connection window update to endpoint.
@@ -355,6 +388,15 @@ void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s
 
     if (rc < 0) {
         WARN("Error sending GOAWAY frame to endpoint.");
+    }
+}
+
+void send_stream_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s)
+{
+    int rc = send_rst_stream(error_code, buf_out, h2s);
+
+    if (rc < 0) {
+        WARN("Error sending RST_STREAM frame to endpoint.");
     }
 }
 
