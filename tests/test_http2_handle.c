@@ -8,7 +8,7 @@
 #include "frames/headers_frame.h"   // for headers_payload_t
 #include "frames/settings_frame.h"  // for settings_payload_t
 #include "frames/goaway_frame.h"    // for goaway_payload_t
-#include "frames/ping_frame.h"    // for ping_payload_t
+#include "frames/ping_frame.h"      // for ping_payload_t
 #include "cbuf.h"                   // for cbuf
 
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
@@ -31,6 +31,7 @@ FAKE_VALUE_FUNC(int, receive_header_block, uint8_t *, int, header_list_t *, hpac
 FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, header_list_t *);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, send_goaway, uint32_t, cbuf_t *, h2states_t *);
+FAKE_VALUE_FUNC(int, send_ping, cbuf_t *, uint8_t *, int8_t, h2states_t *);
 
 #define FFF_FAKES_LIST(FAKE)                                    \
     FAKE(flow_control_receive_data)                             \
@@ -46,6 +47,8 @@ FAKE_VALUE_FUNC(int, send_goaway, uint32_t, cbuf_t *, h2states_t *);
     FAKE(receive_header_block)                                  \
     FAKE(headers_get_header_list_size)                          \
     FAKE(read_setting_from)                                     \
+    FAKE(send_goaway)                                     \
+    FAKE(send_ping)                                     \
 
 
 void setUp(void)
@@ -300,7 +303,11 @@ void test_handle_goaway_payload_no_error_stream_bigger(void)
 void test_handle_ping_payload_ack(void)
 {
     ping_payload_t ppl;
-    
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.header.flags = 0x1;
+    int rc = handle_ping_payload(&ppl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
 }
 
 int main(void)
@@ -319,6 +326,6 @@ int main(void)
     UNIT_TEST(test_handle_goaway_payload_error_received);
     UNIT_TEST(test_handle_goaway_payload_no_error_stream_smaller);
     UNIT_TEST(test_handle_goaway_payload_no_error_stream_bigger);
-
+    UNIT_TEST(test_handle_ping_payload_ack);
     return UNIT_TESTS_END();
 }
