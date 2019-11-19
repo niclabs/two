@@ -58,7 +58,7 @@ char *headers_get(header_list_t *headers, const char *name)
     uint16_t words_count = 0;
     for (int i = 0; i < headers->size; i++) {
         // case insensitive name comparison of headers
-        if (words_count%2 == 0 && (strcasecmp(name, headers->buffer + i) == 0)) {
+        if (words_count % 2 == 0 && (strcasecmp(name, headers->buffer + i) == 0)) {
             // found a header with the same name
             DEBUG("Found header with name '%s'", name);
             return (headers->buffer + i + 1 + strlen(name));
@@ -101,7 +101,7 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
  *      0 if success, -1 if error
  */
 
-    if (name_len > MAX_HEADER_NAME_LEN || value_len > MAX_HEADER_VALUE_LEN){
+    if (name_len > MAX_HEADER_NAME_LEN || value_len > MAX_HEADER_VALUE_LEN) {
         errno = EINVAL;
         return -1;
     }
@@ -111,47 +111,47 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
         return -1;
     }
 
-    
+
     char *prev_value = headers_get(headers, name);
 
-    if(prev_value != NULL){
-    //case in which already exist entry with same name
+    if (prev_value != NULL) {
+        //case in which already exist entry with same name
         //plus 1 in case without replacement is for separation mark ','
-        if((!with_replacement && (value_len + 1 + headers->size > MAX_HEADER_BUFFER_SIZE))
-            || (with_replacement && (headers->size - strlen(prev_value) + value_len > MAX_HEADER_BUFFER_SIZE))){
+        if ((!with_replacement && (value_len + 1 + headers->size > MAX_HEADER_BUFFER_SIZE))
+            || (with_replacement && (headers->size - strlen(prev_value) + value_len > MAX_HEADER_BUFFER_SIZE))) {
             errno = ENOMEM;
             return -1;
         }
 
         char buffer_aux[MAX_HEADER_BUFFER_SIZE];
         memset(buffer_aux, 0, sizeof(buffer_aux));
-        
+
         uint16_t i_aux = 0;
         uint16_t entries_counter = 0;
 
         for (uint16_t i = 0; i < MAX_HEADER_BUFFER_SIZE; i++) {
-            
+
             entries_counter++;
 
             // case insensitive name comparison of headers
             if (strncasecmp(headers->buffer + i, name, name_len) == 0) {
-                
+
                 DEBUG("Found header with name: '%s'", name);
 
                 //First cpy name into aux
-                strncpy(buffer_aux + i_aux , headers->buffer + i, name_len + 1);
+                strncpy(buffer_aux + i_aux, headers->buffer + i, name_len + 1);
                 i_aux += name_len + 1;
                 i += name_len + 1;
                 //Then previous value
                 uint16_t previous_value_len = strlen(headers->buffer + i);
 
-                if(!with_replacement){
+                if (!with_replacement) {
                     //case headers_add
-                    strncpy(buffer_aux + i_aux , headers->buffer + i, previous_value_len);
+                    strncpy(buffer_aux + i_aux, headers->buffer + i, previous_value_len);
                     i_aux += previous_value_len;
                     i += previous_value_len;
                     //Add separation mark
-                    buffer_aux[i_aux] = ','; 
+                    buffer_aux[i_aux] = ',';
                     i_aux++;
                     //Finally copy new value
                     strncpy(buffer_aux + i_aux, value, value_len + 1);
@@ -159,7 +159,8 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
                     //+1 is for the comma
                     headers->size += (value_len + 1);
 
-                } else {
+                }
+                else {
                     //case headers_set, forget previous value
                     strncpy(buffer_aux + i_aux, value, value_len + 1);
                     i += previous_value_len;
@@ -168,12 +169,13 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
                     headers->size += value_len;
                 }
 
-            } else {
+            }
+            else {
 
                 //Cpy name
                 uint16_t previous_name_len = strlen(headers->buffer + i);
                 strncpy(buffer_aux + i_aux, headers->buffer + i, previous_name_len + 1);
-                i_aux += (previous_name_len + 1); 
+                i_aux += (previous_name_len + 1);
                 i += (previous_name_len + 1);
                 //Then cpy value
                 uint16_t previous_value_len = strlen(headers->buffer + i);
@@ -182,22 +184,25 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
                 i += previous_value_len;
             }
 
-                if(entries_counter >= headers->n_entries) break;
+            if (entries_counter >= headers->n_entries) {
+                break;
+            }
 
         }
 
         //Finally copy all from aux buffer to original one
         memcpy(headers->buffer, buffer_aux, MAX_HEADER_BUFFER_SIZE);
 
-    } else {
-    //case no dupĺicate
+    }
+    else {
+        //case no dupĺicate
 
         // + 2 is for the two 0's of EOS
         if (headers->size + name_len + value_len + 2 > MAX_HEADER_BUFFER_SIZE) {
             errno = ENOMEM;
             return -1;
         }
-        
+
         // Set header name
         strncpy(headers->buffer + headers->size, name, name_len + 1);
 
@@ -208,7 +213,7 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
 
         // Update header count
         headers->size += (name_len + value_len + 2);
-        headers->n_entries ++;
+        headers->n_entries++;
     }
 
     return 0;
@@ -223,7 +228,8 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
  * Output:
  *      0 if success, -1 if error
  */
-int headers_add(header_list_t *headers, const char *name, const char *value){
+int headers_add(header_list_t *headers, const char *name, const char *value)
+{
     return headers_new(headers, name, value, 0);
 }
 
@@ -250,7 +256,7 @@ int headers_set(header_list_t *headers, const char *name, const char *value)
  *      Amount of entries in the header list
  */
 int headers_count(header_list_t *headers)
-{   
+{
     return headers->n_entries;
 }
 
@@ -268,24 +274,26 @@ char *headers_get_name_from_index(header_list_t *headers, int index)
     // Assertions for debugging
     assert(headers != NULL);
 
-    if(index > headers->n_entries - 1){
+    if (index > headers->n_entries - 1) {
         return NULL;
     }
-    
-    uint16_t words_count=0;
-    uint16_t entries_count=0;
-    
+
+    uint16_t words_count = 0;
+    uint16_t entries_count = 0;
+
     // Every two words is an entry
-    for(uint16_t i=0; i<headers->size; i++){
+    for (uint16_t i = 0; i < headers->size; i++) {
         // Case find header of exact index
-        if(words_count%2 == 0 && index == entries_count){
+        if (words_count % 2 == 0 && index == entries_count) {
             return headers->buffer + i;
         }
         // Else advance the len of the string
-        i+=strlen(headers->buffer + i);
+        i += strlen(headers->buffer + i);
         words_count++;
-        
-        if(words_count%2==0) entries_count++;
+
+        if (words_count % 2 == 0) {
+            entries_count++;
+        }
 
     }
     return NULL;
@@ -304,11 +312,12 @@ char *headers_get_name_from_index(header_list_t *headers, int index)
 char *headers_get_value_from_index(header_list_t *headers, int index)
 {
     char *name_pos = headers_get_name_from_index(headers, index);
+
     return name_pos + strlen(name_pos) + 1;
 }
 
 /*
- * Function: headers_get_all 
+ * Function: headers_get_all
  * Copy pointers of name and value of each header in the header list to a header array
  * Input:
  *      -> *headers: header list struct
@@ -316,12 +325,13 @@ char *headers_get_value_from_index(header_list_t *headers, int index)
  * Output:
  *      (void)
  */
-void headers_get_all(header_list_t* headers, header_t *headers_array){
-    
+void headers_get_all(header_list_t *headers, header_t *headers_array)
+{
+
     assert(headers != NULL);
     uint16_t n_entries = 0;
 
-    for(int i=0; i<headers->size; i++){
+    for (int i = 0; i < headers->size; i++) {
         //for every header
 
         //get name
@@ -329,11 +339,11 @@ void headers_get_all(header_list_t* headers, header_t *headers_array){
         headers_array[n_entries].name = name;
         //plus one for 0 between them
         i += strlen(name) + 1;
-        //get value 
+        //get value
         char *value = headers->buffer + i;
         headers_array[n_entries].value = value;
         i += strlen(value);
-        n_entries ++;
+        n_entries++;
     }
 }
 
@@ -341,15 +351,16 @@ void headers_get_all(header_list_t* headers, header_t *headers_array){
 /*
  * Function: headers_validate
  * Check if the header list is correct, which means, every header in it is correct
- * 
+ *
  * There shouldn't be any empty values nor duplicated ones
- * 
+ *
  * Input:
  *      -> *headers: header list
  * Output:
  *      0 if correct, -1 otherwise
  */
-int headers_validate(header_list_t *headers) {
+int headers_validate(header_list_t *headers)
+{
     // Assertions for debugging
     assert(headers != NULL);
 
@@ -357,15 +368,13 @@ int headers_validate(header_list_t *headers) {
     headers_get_all(headers, headers_array);
 
     for (int i = 0; i < headers_count(headers); i++) {
-        char* name = headers_array[i].name;
-        char* value = headers_array[i].value;
-        if (value == NULL)
-        {
+        char *name = headers_array[i].name;
+        char *value = headers_array[i].value;
+        if (value == NULL) {
             ERROR("Headers validation failed, the \"%s\" field had no value", name);
             return -1;
         }
-        if (strchr(value, ',') != NULL)
-        {
+        if (strchr(value, ',') != NULL) {
             ERROR("Headers validation failed, the \"%s\" field was ducplicated", name);
             return -1;
         }
@@ -386,10 +395,11 @@ int headers_validate(header_list_t *headers) {
 uint32_t headers_get_header_list_size(header_list_t *headers)
 {
     uint32_t header_list_size = headers->size;
+
     // minus all the 0's to end string
-    header_list_size -= 2*(headers->n_entries);
+    header_list_size -= 2 * (headers->n_entries);
     // plus an overhead of 32 octects for each string, name and value
-    header_list_size += 64*(headers->n_entries);
+    header_list_size += 64 * (headers->n_entries);
 
     return header_list_size;    //OK
 }
