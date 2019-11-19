@@ -13,12 +13,18 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
+FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t *);
+FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_31, uint8_t *);
+FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32, uint8_t *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
     FAKE(buffer_copy)                 \
     FAKE(uint32_to_byte_array)        \
-    FAKE(uint32_31_to_byte_array)
+    FAKE(uint32_31_to_byte_array)     \
+    FAKE(bytes_to_uint32_31)          \
+    FAKE(bytes_to_uint32_24)          \
+    FAKE(bytes_to_uint32)             \
 
 void setUp(void)
 {
@@ -118,6 +124,51 @@ void test_goaway_payload_to_bytes(void)
     }
 }
 
+
+void test_read_goaway_payload(void)
+{
+    /*expected*/
+    frame_header_t expected_frame_header;
+
+    expected_frame_header.type = GOAWAY_TYPE;
+    expected_frame_header.flags = 0x0;
+    expected_frame_header.stream_id = 0;
+    expected_frame_header.reserved = 0;
+    expected_frame_header.length = 16;
+
+    goaway_payload_t expected_goaway_payload;
+    expected_goaway_payload.last_stream_id = 30;
+    expected_goaway_payload.error_code = 1;
+    uint8_t additional_debug_data[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    expected_goaway_payload.additional_debug_data = additional_debug_data;
+
+
+    /*mocks*/
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    bytes_to_uint32_fake.return_val = expected_goaway_payload.error_code;
+    bytes_to_uint32_24_fake.return_val = expected_frame_header.length;
+    bytes_to_uint32_31_fake.return_val = expected_goaway_payload.last_stream_id;
+
+
+    //fill the buffer
+    uint8_t read_buffer[] = { 0, 0, 0, 30,
+                              0, 0, 0, 1,
+                              1, 2, 3, 4, 5, 6, 7, 8 };
+
+    /*result*/
+    goaway_payload_t goaway_payload;
+    uint8_t debug[30];
+    goaway_payload.additional_debug_data = debug;
+    int rc = read_goaway_payload(&expected_frame_header, (void *)&goaway_payload, read_buffer);
+
+    TEST_ASSERT_EQUAL(expected_frame_header.length, rc);//se leyeron 16 bytes
+    TEST_ASSERT_EQUAL(expected_goaway_payload.last_stream_id, goaway_payload.last_stream_id);
+    TEST_ASSERT_EQUAL(expected_goaway_payload.error_code, goaway_payload.error_code);
+
+    for (int i = 0; i < expected_frame_header.length - 8; i++) {
+        TEST_ASSERT_EQUAL(expected_goaway_payload.additional_debug_data[i], goaway_payload.additional_debug_data[i]);
+    }
+}
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -125,8 +176,7 @@ int main(void)
     // Call tests here
     UNIT_TEST(test_create_goaway_frame);
     UNIT_TEST(test_goaway_payload_to_bytes);
-    //TODO: make test for read_goaway_payload
-    //UNIT_TEST(test_read_goaway_payload);
+    UNIT_TEST(test_read_goaway_payload);
 
     return UNIT_TESTS_END();
 }
