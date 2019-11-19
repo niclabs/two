@@ -14,7 +14,7 @@
  */
 int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
-    data_payload_t *data_payload = (data_payload_t *) payload;
+    data_payload_t *data_payload = (data_payload_t *)payload;
     int length = frame_header->length;
     uint8_t flags = frame_header->flags;
 
@@ -66,7 +66,7 @@ void create_data_frame(frame_header_t *frame_header, data_payload_t *data_payloa
 int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
     DEBUG("Reading DATA payload");
-    data_payload_t *data_payload = (data_payload_t *) payload;
+    data_payload_t *data_payload = (data_payload_t *)payload;
     uint8_t flags = frame_header->flags;
     int length = frame_header->length;
 
