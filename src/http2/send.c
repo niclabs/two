@@ -237,11 +237,7 @@ int send_rst_stream(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s)
     frame_header_t header;
     rst_stream_payload_t rst_stream_pl;
 
-    rc = create_rst_stream_frame(&header, &rst_stream_pl, h2s->last_open_stream_id, error_code);
-    if (rc < 0) {
-        ERROR("Error creating RST_STREAM frame");
-        return HTTP2_RC_ERROR;
-    }
+    create_rst_stream_frame(&header, &rst_stream_pl, h2s->last_open_stream_id, error_code);
     frame.frame_header = &header;
     frame.payload = (void *)&rst_stream_pl;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
@@ -253,12 +249,7 @@ int send_rst_stream(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s)
         ERROR("Error writting RST_STREAM frame. INTERNAL ERROR");
         return HTTP2_RC_ERROR;
     }
-    /* 
-    h2s->sent_goaway = 1;
-    if (h2s->received_goaway) {
-        return HTTP2_RC_CLOSE_CONNECTION;
-    } 
-    */
+    //TODO Set flags and conditions for after sending a RST_STREAM frame
     return HTTP2_RC_NO_ERROR;
 
 }

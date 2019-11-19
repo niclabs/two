@@ -67,12 +67,11 @@ void test_create_rst_stream_frame(void)
 
     buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
-    int rc = create_rst_stream_frame(&frame_header,
+    create_rst_stream_frame(&frame_header,
                                  &rst_stream_payload,
                                  last_stream_id,
                                  error_code);
 
-    TEST_ASSERT_EQUAL(0, rc);
     TEST_ASSERT_EQUAL(4, frame_header.length);
     TEST_ASSERT_EQUAL(RST_STREAM_TYPE, frame_header.type);
     TEST_ASSERT_EQUAL(0x0, frame_header.flags);

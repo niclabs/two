@@ -10,9 +10,8 @@
  * Function: create_rst_stream_frame
  * Create a rst stream Frame
  * Input: frame_header, rst_stream_payload_t pointer, stream_id, error_code.
- * Output: 0, or -1 if any error
  */
-int create_rst_stream_frame(frame_header_t *frame_header, rst_stream_payload_t *rst_stream_payload,
+void create_rst_stream_frame(frame_header_t *frame_header, rst_stream_payload_t *rst_stream_payload,
                             uint32_t stream_id, uint32_t error_code)
 {
     frame_header->stream_id = stream_id;
@@ -23,7 +22,6 @@ int create_rst_stream_frame(frame_header_t *frame_header, rst_stream_payload_t *
     frame_header->callback_payload_to_bytes = rst_stream_payload_to_bytes;
 
     rst_stream_payload->error_code = error_code;
-    return 0;
 }
 
 /*
