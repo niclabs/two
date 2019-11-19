@@ -57,7 +57,7 @@ int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s)
     if (h2s->waiting_for_HEADERS_frame == 1) {
         h2s->waiting_for_HEADERS_frame = 0;
     }
-    
+
     // Check if stream is not created or previous one is closed
     if (h2s->waiting_for_end_headers_flag) {
         //protocol error
@@ -167,9 +167,9 @@ int check_incoming_ping_condition(cbuf_t *buf_out, h2states_t *h2s)
     if (h2s->header.stream_id != 0x0) {
         ERROR("PING doesnt have STREAM ID 0. PROTOCOL ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-        return -1;
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    return 0;
+    return HTTP2_NO_ERROR;
 }
 
 int check_incoming_continuation_condition(cbuf_t *buf_out, h2states_t *h2s)
