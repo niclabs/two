@@ -1,10 +1,12 @@
 #include "http2/send.h"
 #include "frames.h"
 #include "headers.h"
-#include "logging.h"
 #include "http2/utils.h"
 #include "http2/flowcontrol.h"
 
+// Specify to which module this file belongs
+#define LOG_MODULE LOG_MODULE_HTTP2_SEND
+#include "logging.h"
 
 /*
  * Function: change_stream_state_end_stream_flag
@@ -231,7 +233,7 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     rc = cbuf_push(buf_out, buff_bytes, bytes_size);
-    INFO("Sending GOAWAY, error code: %u", error_code);
+    DEBUG("Sending GOAWAY, error code: %u", error_code);
 
     if (rc != bytes_size) {
         ERROR("Error writting goaway frame. INTERNAL ERROR");

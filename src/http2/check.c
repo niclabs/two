@@ -1,6 +1,9 @@
 #include "http2/check.h"
 #include "http2/send.h"
 #include "http2/utils.h"
+
+// Specify to which module this file belongs
+#define LOG_MODULE LOG_MODULE_HTTP2_CHECK
 #include "logging.h"
 
 int check_incoming_data_condition(cbuf_t *buf_out, h2states_t *h2s)

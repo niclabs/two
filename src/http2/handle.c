@@ -4,10 +4,13 @@
 #include "http2/structs.h"
 #include "frames.h"
 #include "http2/send.h"
-#include "logging.h"
 #include "http.h"
 
-int validate_pseudoheaders(header_list_t *pseudoheaders)
+// Specify to which module this file belongs
+#define LOG_MODULE LOG_MODULE_HTTP2_HANDLE
+#include "logging.h"
+
+int validate_pseudoheaders(headers_t *pseudoheaders)
 {
 
     if (headers_get(pseudoheaders, ":method") == NULL) {
