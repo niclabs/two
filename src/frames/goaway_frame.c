@@ -15,7 +15,8 @@
  */
 int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
-    goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
+    goaway_payload_t *goaway_payload = (goaway_payload_t *)payload;
+
     if (frame_header->length < 4) {
         ERROR("Length< 4, FRAME_SIZE_ERROR");
         return -1;
@@ -74,7 +75,7 @@ void create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_
 int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
     DEBUG("Reading GOAWAY payload");
-    goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
+    goaway_payload_t *goaway_payload = (goaway_payload_t *)payload;
     if (frame_header->length < 4) {
         ERROR("Length < 4, FRAME_SIZE_ERROR");
         return -1;
