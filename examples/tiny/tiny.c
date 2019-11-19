@@ -339,7 +339,7 @@ int read_header(event_sock_t *client, ssize_t size, uint8_t *buf)
         frame_header_t *header = &ctx->header;
         parse_frame_header(ctx->frame, header);
 
-        DEBUG("received header = {length: %d, type: %d, flags: %d, stream_id: %d}", \
+        DEBUG("received header = {length: %lu, type: %d, flags: %d, stream_id: %lu}", \
           header->length, header->type, header->flags, header->stream_id);
 
         event_read_stop(client);
