@@ -18,8 +18,8 @@ typedef enum {
 }ping_flag_t;
 
 /*goaway payload methods*/
-void create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data);
-void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data);
+void create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t *opaque_data);
+void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t *opaque_data);
 int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);
 int read_ping_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 

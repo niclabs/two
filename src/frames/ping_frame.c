@@ -21,8 +21,9 @@
  */
 int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
-    ping_payload_t *ping_payload = (ping_payload_t *) payload;
-    if(frame_header->stream_id != 0x0){
+    ping_payload_t *ping_payload = (ping_payload_t *)payload;
+
+    if (frame_header->stream_id != 0x0) {
         //Protocol ERROR
         ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
         return -1;
@@ -41,7 +42,7 @@ int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
  * Input: frame_header, ping_payload, pointer to space for opaque_data (it will ALWAYS send 8 bytes).
  * Output: (void)
  */
-void create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data)
+void create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t *opaque_data)
 {
     frame_header->stream_id = 0;
     frame_header->type = PING_TYPE;
@@ -60,7 +61,7 @@ void create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payloa
  * Input: frame_header, ping_payload, pointer to space for opaque_data (it will ALWAYS send 8 bytes).
  * Output: (void)
  */
-void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data)
+void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t *opaque_data)
 {
     frame_header->stream_id = 0;
     frame_header->type = PING_TYPE;
@@ -80,18 +81,19 @@ void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_pa
  */
 int read_ping_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
-    ping_payload_t *ping_payload = (ping_payload_t *) payload;
+    ping_payload_t *ping_payload = (ping_payload_t *)payload;
+
     if (frame_header->length != 8) {
         ERROR("PING frame with Length != 8, FRAME_SIZE_ERROR");
         return -1;
     }
-    if(frame_header->stream_id != 0x0){
+    if (frame_header->stream_id != 0x0) {
         //Protocol ERROR
         ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
         return -1;
     }
 
-    int rc = buffer_copy(ping_payload->opaque_data, bytes , 8);
+    int rc = buffer_copy(ping_payload->opaque_data, bytes, 8);
     if (rc < 0) {
         ERROR("error in buffer copy");
         return -1;
