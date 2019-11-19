@@ -89,6 +89,8 @@ typedef struct event_loop {
     event_sock_t sockets[EVENT_MAX_HANDLES];
     event_sock_t *unused;
 
+    // loop state
+    int running;
 
 #ifndef WITH_CONTIKI
     // list of file descriptors

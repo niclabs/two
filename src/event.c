@@ -426,6 +426,10 @@ event_sock_t *event_sock_create(event_loop_t *loop)
 
 void event_loop(event_loop_t *loop)
 {
+    assert(loop != NULL);
+    assert(loop->running == 0);
+
+    loop->running = 1;
     while (event_loop_is_alive(loop)) {
         // perform timer events
 
@@ -435,4 +439,5 @@ void event_loop(event_loop_t *loop)
         // perform close events
         event_loop_close(loop);
     }
+    loop->running = 0;
 }
