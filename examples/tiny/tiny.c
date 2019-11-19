@@ -100,7 +100,7 @@ http2_settings_t default_settings = {
 static event_loop_t loop;
 static event_sock_t *server;
 
-static http2_ctx_t http2_ctx_list[EVENT_MAX_HANDLES];
+static http2_ctx_t http2_ctx_list[EVENT_MAX_DESCRIPTORS];
 static http2_ctx_t *connected;
 static http2_ctx_t *unused;
 
@@ -339,8 +339,13 @@ int read_header(event_sock_t *client, ssize_t size, uint8_t *buf)
         frame_header_t *header = &ctx->header;
         parse_frame_header(ctx->frame, header);
 
+#ifndef WITH_CONTIKI
+        DEBUG("received header = {length: %u, type: %d, flags: %d, stream_id: %u}", \
+          header->length, header->type, header->flags, header->stream_id);
+#else 
         DEBUG("received header = {length: %lu, type: %d, flags: %d, stream_id: %lu}", \
           header->length, header->type, header->flags, header->stream_id);
+#endif
 
         event_read_stop(client);
         if (process_header(client, ctx, header) < 0) {
@@ -461,8 +466,8 @@ void on_new_connection(event_sock_t *server, int status)
 int main()
 {
     // set client memory
-    memset(http2_ctx_list, 0, EVENT_MAX_HANDLES * sizeof(http2_ctx_t));
-    for (int i = 0; i < EVENT_MAX_HANDLES - 1; i++) {
+    memset(http2_ctx_list, 0, EVENT_MAX_DESCRIPTORS * sizeof(http2_ctx_t));
+    for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
         http2_ctx_list[i].next = &http2_ctx_list[i + 1];
     }
     connected = NULL;
