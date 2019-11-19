@@ -12,7 +12,7 @@
  * Input: frame_header, rst_stream_payload_t pointer, stream_id, error_code.
  */
 void create_rst_stream_frame(frame_header_t *frame_header, rst_stream_payload_t *rst_stream_payload,
-                            uint32_t stream_id, uint32_t error_code)
+                             uint32_t stream_id, uint32_t error_code)
 {
     frame_header->stream_id = stream_id;
     frame_header->type = RST_STREAM_TYPE;
@@ -62,7 +62,7 @@ int read_rst_stream_payload(frame_header_t *frame_header, void *payload, uint8_t
         ERROR("Length != 4, FRAME_SIZE_ERROR");
         return -1;
     }
-    if (frame_header->stream_id == 0x0){
+    if (frame_header->stream_id == 0x0) {
         ERROR("stream_id of RST STREAM FRAME is 0, PROTOCOL_ERROR");
         return -1;
     }
