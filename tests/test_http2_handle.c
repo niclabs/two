@@ -7,7 +7,8 @@
 #include "frames/data_frame.h"      // for data_payload_t
 #include "frames/headers_frame.h"   // for headers_payload_t
 #include "frames/settings_frame.h"  // for settings_payload_t
-#include "frames/goaway_frame.h"    // for settings_payload_t
+#include "frames/goaway_frame.h"    // for goaway_payload_t
+#include "frames/ping_frame.h"    // for ping_payload_t
 #include "cbuf.h"                   // for cbuf
 
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
@@ -294,6 +295,12 @@ void test_handle_goaway_payload_no_error_stream_bigger(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
     TEST_ASSERT_EQUAL_MESSAGE(4, h2s.current_stream.state, "Current stream must be closed.");
     TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_goaway, "GOAWAY was received.");
+}
+
+void test_handle_ping_payload_ack(void)
+{
+    ping_payload_t ppl;
+    
 }
 
 int main(void)

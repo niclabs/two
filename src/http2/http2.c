@@ -341,7 +341,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
                 send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); //Always frame size error?
                 return rc;
             }
-            rc = handle_ping_payload(&(h2s->header), &ping_payload, buf_out, h2s);
+            rc = handle_ping_payload(&ping_payload, buf_out, h2s);
             if (rc < 0) {
                 ERROR("ERROR in handle receive data");
                 return -1;

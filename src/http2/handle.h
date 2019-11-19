@@ -71,6 +71,6 @@ int handle_window_update_payload(window_update_payload_t *wupl, cbuf_t *buf_out,
  * IMPORTANT: this implementation doesn't check the correctness of the last stream
  * Output: HTTP2_RC_NO_ERROR if no error were found during the handling.
  */
-int handle_ping_payload(frame_header_t *header, ping_payload_t *ping_payload, cbuf_t *buf_out, h2states_t *h2s);
+int handle_ping_payload(ping_payload_t *ping_payload, cbuf_t *buf_out, h2states_t *h2s);
 
 #endif
