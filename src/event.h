@@ -39,7 +39,11 @@ typedef void (*event_write_cb)(struct event_sock *sock, int status);
 // the socket is closed
 typedef void (*event_close_cb)(struct event_sock *sock);
 
+#ifdef WITH_CONTIKI
+typedef uint16_t event_handle_t;
+#else
 typedef int event_handle_t;
+#endif
 
 typedef struct event_sock {
     /* "inherited fields" */
@@ -85,9 +89,12 @@ typedef struct event_loop {
     event_sock_t sockets[EVENT_MAX_HANDLES];
     event_sock_t *unused;
 
+
+#ifndef WITH_CONTIKI
     // list of file descriptors
     fd_set active_fds;
     int nfds;
+#endif
 } event_loop_t;
 
 
