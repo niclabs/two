@@ -102,7 +102,7 @@ int create_list_of_settings_pair(uint16_t *ids, uint32_t *values, int count, set
  * Output: (void)
  */
 void create_settings_frame(uint16_t *ids, uint32_t *values, int count, frame_header_t *frame_header,
-                          settings_payload_t *settings_payload, settings_pair_t *pairs)
+                           settings_payload_t *settings_payload, settings_pair_t *pairs)
 {
     frame_header->length = count * 6;
     frame_header->type = SETTINGS_TYPE;//settings;
