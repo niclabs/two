@@ -36,22 +36,24 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 }
 
 
-int check_frame_errors(uint8_t type, uint32_t length){
+int check_frame_errors(uint8_t type, uint32_t length)
+{
     switch (type) {
         case DATA_TYPE:
         case HEADERS_TYPE:
         case CONTINUATION_TYPE:
+        case RST_STREAM_TYPE:
         case PING_TYPE:
             return 0;
         case PRIORITY_TYPE: //NOT IMPLEMENTED YET
-        case RST_STREAM_TYPE:
         case PUSH_PROMISE_TYPE:
             return -1;
         case SETTINGS_TYPE: {
             if (length % 6 != 0) {
                 printf("Error: length not divisible by 6, %d", length);
                 return -1;
-            } else {
+            }
+            else {
                 return 0;
             }
         }
@@ -59,7 +61,8 @@ int check_frame_errors(uint8_t type, uint32_t length){
             if (length < 8) {
                 printf("Error: length < 8, %d", length);
                 return -1;
-            } else {
+            }
+            else {
                 return 0;
             }
         }
@@ -67,7 +70,8 @@ int check_frame_errors(uint8_t type, uint32_t length){
             if (length != 4) {
                 printf("Error: length != 4, %d", length);
                 return -1;
-            } else {
+            }
+            else {
                 return 0;
             }
         }
@@ -89,7 +93,8 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
     uint32_t length = frame_header->length;
     uint8_t type = frame_header->type;
     int errors = check_frame_errors(type, length);
-    if(errors < 0){
+
+    if (errors < 0) {
         //Error in frame
         return errors;
     }
@@ -143,6 +148,7 @@ int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hp
     int pointer = 0;
 
     header_t headers_array[headers_count(headers_out)];
+
     headers_get_all(headers_out, headers_array);
 
     for (uint8_t i = 0; i < headers_count(headers_out); i++) {
@@ -183,32 +189,34 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
     frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
     frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
 
-    switch (frame_header->type)
-    {
-    case WINDOW_UPDATE_TYPE:
-        frame_header->callback_payload_from_bytes = read_window_update_payload;
-        break;
-    case DATA_TYPE:
-        frame_header->callback_payload_from_bytes = read_data_payload;
-        break;
-    case GOAWAY_TYPE:
-        frame_header->callback_payload_from_bytes = read_goaway_payload;
-        break;
-    case SETTINGS_TYPE:
-        frame_header->callback_payload_from_bytes = read_settings_payload;
-        break;
-    case CONTINUATION_TYPE:
-        frame_header->callback_payload_from_bytes = read_continuation_payload;
-        break;
-    case HEADERS_TYPE:
-        frame_header->callback_payload_from_bytes = read_headers_payload;
-        break;
-    case PING_TYPE:
-        frame_header->callback_payload_from_bytes = read_ping_payload;
-        break;
-    default:
-        ERROR("Frame type %d not found", frame_header->type);
-        return -1;
+    switch (frame_header->type) {
+        case WINDOW_UPDATE_TYPE:
+            frame_header->callback_payload_from_bytes = read_window_update_payload;
+            break;
+        case DATA_TYPE:
+            frame_header->callback_payload_from_bytes = read_data_payload;
+            break;
+        case GOAWAY_TYPE:
+            frame_header->callback_payload_from_bytes = read_goaway_payload;
+            break;
+        case SETTINGS_TYPE:
+            frame_header->callback_payload_from_bytes = read_settings_payload;
+            break;
+        case CONTINUATION_TYPE:
+            frame_header->callback_payload_from_bytes = read_continuation_payload;
+            break;
+        case HEADERS_TYPE:
+            frame_header->callback_payload_from_bytes = read_headers_payload;
+            break;
+        case PING_TYPE:
+            frame_header->callback_payload_from_bytes = read_ping_payload;
+            break;
+        case RST_STREAM_TYPE:
+            frame_header->callback_payload_from_bytes = read_rst_stream_payload;
+            break;
+        default:
+            ERROR("Frame type %d not found", frame_header->type);
+            return -1;
     }
 
     return 0;

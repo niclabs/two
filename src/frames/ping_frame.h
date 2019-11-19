@@ -8,7 +8,7 @@
 
 #include "common.h"
 
-/*GOAWAY FRAME*/
+/*PING FRAME*/
 typedef struct {
     uint8_t opaque_data[8];//64 bits
 } ping_payload_t;
@@ -17,7 +17,7 @@ typedef enum {
     PING_ACK_FLAG = 0x1
 }ping_flag_t;
 
-/*goaway payload methods*/
+/*ping payload methods*/
 int create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data);
 int create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_payload, uint8_t* opaque_data);
 int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);

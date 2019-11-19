@@ -10,12 +10,8 @@
 #include "window_update_frame.h"
 #include "settings_frame.h"
 #include "ping_frame.h"
+#include "rst_stream_frame.h"
 #include "hpack.h"
-
-/*RST_STREAM FRAME*/
-typedef struct {
-    uint32_t error_code;
-}rst_stream_payload_t;
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
