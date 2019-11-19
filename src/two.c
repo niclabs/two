@@ -7,8 +7,6 @@
 #include <strings.h>
 #include <stdio.h>
 
-//#define LOG_LEVEL (LOG_LEVEL_DEBUG)
-
 #include "two.h"
 #include "http2/http2.h"
 #include "http2/structs.h"

@@ -6,8 +6,6 @@
 #include <strings.h>
 #include <stdio.h>
 
-//#define LOG_LEVEL (LOG_LEVEL_DEBUG)
-
 #include "http.h"
 #include "resource_handler.h"
 #include "logging.h"
