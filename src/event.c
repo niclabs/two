@@ -36,13 +36,13 @@ void *event_queue_find(struct qnode *queue, void *elem, event_compare_cb compare
 int compare_handle(void *s, void *h)
 {
     event_sock_t *sock = (event_sock_t *)s;
-    event_handle_t *handle = (event_handle_t *)h;
+    event_descriptor_t *handle = (event_descriptor_t *)h;
 
-    return sock->socket == *handle;
+    return sock->descriptor == *handle;
 }
 
 // find socket file descriptor in socket queue
-event_sock_t *event_find_handle(event_sock_t *queue, event_handle_t handle)
+event_sock_t *event_find_handle(event_sock_t *queue, event_descriptor_t handle)
 {
     return event_queue_find((struct qnode *)queue, &handle, &compare_handle);
 }
@@ -59,7 +59,7 @@ void event_do_read(event_sock_t *sock)
         uint8_t buf[readlen];
 
         // perform read in non blocking manner
-        int count = recv(sock->socket, buf, readlen, MSG_DONTWAIT);
+        int count = recv(sock->descriptor, buf, readlen, MSG_DONTWAIT);
         if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             sock->read_cb(sock, count, NULL);
             return;
@@ -87,7 +87,7 @@ void event_do_write(event_sock_t *sock)
         uint8_t buf[len];
 
         cbuf_peek(&sock->buf_out, buf, len);
-        int written = send(sock->socket, buf, len, MSG_DONTWAIT);
+        int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
 
         if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             sock->write_cb(sock, -1);
@@ -183,10 +183,10 @@ void event_loop_close(event_loop_t *loop)
         // if the event is closing and we are not waiting to read
         if (curr->state == EVENT_SOCK_CLOSING && cbuf_len(&curr->buf_out) <= 0) {
             // prevent sock to be used in polling
-            FD_CLR(curr->socket, &loop->active_fds);
+            FD_CLR(curr->descriptor, &loop->active_fds);
 
             // close the socket and update its status
-            close(curr->socket);
+            close(curr->descriptor);
             curr->state = EVENT_SOCK_CLOSED;
 
             // call the close callback
@@ -211,8 +211,8 @@ void event_loop_close(event_loop_t *loop)
             continue;
         }
 
-        if (curr->socket > max_fds) {
-            max_fds = curr->socket;
+        if (curr->descriptor > max_fds) {
+            max_fds = curr->descriptor;
         }
 
         prev = curr;
@@ -238,14 +238,14 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     assert(sock->state == EVENT_SOCK_CLOSED);
 
     event_loop_t *loop = sock->loop;
-    sock->socket = socket(AF_INET6, SOCK_STREAM, 0);
-    if (sock->socket < 0) {
+    sock->descriptor = socket(AF_INET6, SOCK_STREAM, 0);
+    if (sock->descriptor < 0) {
         return -1;
     }
 
     // allow address reuse to prevent "address already in use" errors
     int option = 1;
-    setsockopt(sock->socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+    setsockopt(sock->descriptor, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     /* Struct sockaddr_in6 needed for binding. Family defined for ipv6. */
     struct sockaddr_in6 sin6;
@@ -253,21 +253,21 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     sin6.sin6_port = htons(port);
     sin6.sin6_addr = in6addr_any;
 
-    if (bind(sock->socket, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
-        close(sock->socket);
+    if (bind(sock->descriptor, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
+        close(sock->descriptor);
         return -1;
     }
 
-    if (listen(sock->socket, EVENT_MAX_HANDLES - 1) < 0) {
-        close(sock->socket);
+    if (listen(sock->descriptor, EVENT_MAX_DESCRIPTORS - 1) < 0) {
+        close(sock->descriptor);
         return -1;
     }
 
     // update max fds value
-    loop->nfds = sock->socket + 1;
+    loop->nfds = sock->descriptor + 1;
 
     // add socket fd to read watchlist
-    FD_SET(sock->socket, &loop->active_fds);
+    FD_SET(sock->descriptor, &loop->active_fds);
 
     // add poll callback to sock
     sock->conn_cb = cb;
@@ -335,7 +335,7 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     assert(server->state == EVENT_SOCK_LISTENING);
     assert(client->state == EVENT_SOCK_CLOSED);
 
-    int clifd = accept(server->socket, NULL, NULL);
+    int clifd = accept(server->descriptor, NULL, NULL);
     if (clifd < 0) {
         ERROR("Failed to accept new client");
         return -1;
@@ -350,7 +350,7 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     FD_SET(clifd, &loop->active_fds);
 
     // set client variables
-    client->socket = clifd;
+    client->descriptor = clifd;
     client->state = EVENT_SOCK_CONNECTED;
 
     // add socket to polling list
@@ -386,10 +386,10 @@ void event_loop_init(event_loop_t *loop)
 
     // reset socket memory
     FD_ZERO(&loop->active_fds);
-    memset(&loop->sockets, 0, EVENT_MAX_HANDLES * sizeof(event_sock_t));
+    memset(&loop->sockets, 0, EVENT_MAX_DESCRIPTORS * sizeof(event_sock_t));
 
     // create unused socket list
-    for (int i = 0; i < EVENT_MAX_HANDLES - 1; i++) {
+    for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
         loop->sockets[i].next = &loop->sockets[i + 1];
     }
 

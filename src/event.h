@@ -7,10 +7,10 @@
 
 #include "cbuf.h"
 
-#ifndef CONF_EVENT_MAX_HANDLES
-#define EVENT_MAX_HANDLES 8
+#ifndef CONF_EVENT_MAX_DESCRIPTORS
+#define EVENT_MAX_DESCRIPTORS 8
 #else
-#define EVENT_MAX_HANDLES (CONF_EVENT_MAX_HANDLES)
+#define EVENT_MAX_DESCRIPTORS (CONF_EVENT_MAX_DESCRIPTORS)
 #endif
 
 #ifndef CONF_EVENT_MAX_BUF_SIZE
@@ -40,9 +40,9 @@ typedef void (*event_write_cb)(struct event_sock *sock, int status);
 typedef void (*event_close_cb)(struct event_sock *sock);
 
 #ifdef WITH_CONTIKI
-typedef uint16_t event_handle_t;
+typedef uint16_t event_descriptor_t;
 #else
-typedef int event_handle_t;
+typedef int event_descriptor_t;
 #endif
 
 typedef struct event_sock {
@@ -56,7 +56,7 @@ typedef struct event_sock {
     struct event_loop *loop;
 
     /* type related fields */
-    event_handle_t socket;
+    event_descriptor_t descriptor;
     enum {
         EVENT_SOCK_CLOSED,
         EVENT_SOCK_OPENED,
@@ -86,7 +86,7 @@ typedef struct event_loop {
     event_sock_t *polling;
 
     // static memory
-    event_sock_t sockets[EVENT_MAX_HANDLES];
+    event_sock_t sockets[EVENT_MAX_DESCRIPTORS];
     event_sock_t *unused;
 
     // loop state
