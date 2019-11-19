@@ -47,8 +47,8 @@ FAKE_VALUE_FUNC(int, send_ping, cbuf_t *, uint8_t *, int8_t, h2states_t *);
     FAKE(receive_header_block)                                  \
     FAKE(headers_get_header_list_size)                          \
     FAKE(read_setting_from)                                     \
-    FAKE(send_goaway)                                     \
-    FAKE(send_ping)                                     \
+    FAKE(send_goaway)                                           \
+    FAKE(send_ping)                                             \
 
 
 void setUp(void)
@@ -305,9 +305,23 @@ void test_handle_ping_payload_ack(void)
     ping_payload_t ppl;
     cbuf_t bout;
     h2states_t h2s;
+
     h2s.header.flags = 0x1;
     int rc = handle_ping_payload(&ppl, &bout, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
+}
+
+void test_handle_ping_payload_send(void)
+{
+    ping_payload_t ppl;
+    cbuf_t bout;
+    h2states_t h2s;
+
+    h2s.header.flags = 0x0;
+    send_ping_fake.return_val = 0;
+    int rc = handle_ping_payload(&ppl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
+    TEST_ASSERT_MESSAGE(send_ping_fake.call_count == 1, "Send ping must be called once");
 }
 
 int main(void)
@@ -327,5 +341,7 @@ int main(void)
     UNIT_TEST(test_handle_goaway_payload_no_error_stream_smaller);
     UNIT_TEST(test_handle_goaway_payload_no_error_stream_bigger);
     UNIT_TEST(test_handle_ping_payload_ack);
+    UNIT_TEST(test_handle_ping_payload_send);
+
     return UNIT_TESTS_END();
 }
