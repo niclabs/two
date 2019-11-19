@@ -58,16 +58,18 @@ int rst_stream_payload_to_bytes(frame_header_t *frame_header, void *payload, uin
  */
 int read_rst_stream_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
-    DEBUG("Reading GOAWAY payload");
+    DEBUG("Reading RST PAYLOAD payload");
     rst_stream_payload_t *rst_stream_payload = (rst_stream_payload_t *)payload;
     if (frame_header->length != 4) {
         ERROR("Length != 4, FRAME_SIZE_ERROR");
         return -1;
     }
-    int pointer = 0;
-    uint32_t error_code = bytes_to_uint32(bytes + pointer);
+    if (frame_header->stream_id == 0x0){
+        ERROR("stream_id of RST STREAM FRAME is 0, PROTOCOL_ERROR");
+        return -1;
+    }
+    uint32_t error_code = bytes_to_uint32(bytes);
     rst_stream_payload->error_code = error_code;
-    pointer += 4;
 
     return frame_header->length;
 }
