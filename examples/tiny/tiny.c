@@ -25,10 +25,9 @@
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
-// booleans
-typedef int bool;
 #define true 1
 #define false 0
+
 
 // local struct definitions
 typedef struct frame_header {
@@ -201,7 +200,7 @@ void create_frame_header(raw_frame_header_t *header, uint32_t length, uint8_t fl
     header->data[8] = stream_id & 0xFF;
 }
 
-void send_settings_frame(http2_ctx_t *ctx, struct frame_settings_field *fields, int len, bool ack, event_write_cb on_send)
+void send_settings_frame(http2_ctx_t *ctx, struct frame_settings_field *fields, int len, int ack, event_write_cb on_send)
 {
     assert(ctx->sock != NULL);
     assert(fields == NULL || ack == false);
