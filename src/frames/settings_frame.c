@@ -3,7 +3,7 @@
 //
 
 #include "settings_frame.h"
-#include "common.h"
+#include "structs.h"
 #include "utils.h"
 #include "logging.h"
 

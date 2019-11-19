@@ -5,7 +5,7 @@
 #ifndef TWO_WINDOW_UPDATE_FRAME_H
 #define TWO_WINDOW_UPDATE_FRAME_H
 
-#include "common.h"
+#include "structs.h"
 
 
 /*WINDOW_UPDATE FRAME*/

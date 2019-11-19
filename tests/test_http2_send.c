@@ -3,7 +3,7 @@
 #include "fff.h"
 #include "http2/structs.h"
 #include "http2/send.h"
-#include "frames/common.h"
+#include "frames/structs.h"
 #include "cbuf.h"
 
 extern int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s);

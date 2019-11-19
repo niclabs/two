@@ -4,7 +4,7 @@
 
 #ifndef TWO_HEADERS_H
 #define TWO_HEADERS_H
-#include "common.h"
+#include "structs.h"
 /*HEADERS FRAME*/
 
 typedef struct {

@@ -4,7 +4,7 @@
 
 #ifndef TWO_SETTINGS_FRAME_H
 #define TWO_SETTINGS_FRAME_H
-#include "common.h"
+#include "structs.h"
 
 /*SETTINGS FRAME*/
 typedef struct {

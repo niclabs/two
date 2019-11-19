@@ -3,7 +3,7 @@
 #include "logging.h"
 #include "http2/structs.h"          // for h2states_t
 #include "http2/handle.h"
-#include "frames/common.h"          // for frame_header_t
+#include "frames/structs.h"          // for frame_header_t
 #include "frames/data_frame.h"      // for data_payload_t
 #include "frames/headers_frame.h"   // for headers_payload_t
 #include "frames/settings_frame.h"  // for settings_payload_t

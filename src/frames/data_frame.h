@@ -6,7 +6,7 @@
 #define TWO_DATA_FRAME_H
 
 #include <stdint.h>
-#include "common.h"
+#include "structs.h"
 /*DATA FRAME*/
 
 typedef struct {

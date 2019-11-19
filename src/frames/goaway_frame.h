@@ -5,7 +5,7 @@
 #ifndef TWO_GOAWAY_FRAME_H
 #define TWO_GOAWAY_FRAME_H
 
-#include "common.h"
+#include "structs.h"
 
 /*GOAWAY FRAME*/
 typedef struct {

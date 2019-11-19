@@ -6,7 +6,7 @@
 #define TWO_PING_FRAME_H
 
 
-#include "common.h"
+#include "structs.h"
 
 /*PING FRAME*/
 typedef struct {

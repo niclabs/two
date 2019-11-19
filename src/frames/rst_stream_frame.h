@@ -5,7 +5,7 @@
 #ifndef TWO_RST_STREAM_H
 #define TWO_RST_STREAM_H
 
-#include "common.h"
+#include "structs.h"
 
 /*RST_STREAM FRAME*/
 typedef struct {

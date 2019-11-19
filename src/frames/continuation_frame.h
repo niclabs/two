@@ -4,7 +4,7 @@
 
 #ifndef TWO_CONTINUATION_FRAME_H
 #define TWO_CONTINUATION_FRAME_H
-#include "common.h"
+#include "structs.h"
 
 /*CONTINUATION FRAME*/
 

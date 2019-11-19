@@ -1,5 +1,5 @@
-#ifndef FRAMES_COMMON_H
-#define FRAMES_COMMON_H
+#ifndef FRAMES_STRUCTS_H
+#define FRAMES_STRUCTS_H
 #include <stdint.h>
 
 /*note the difference between
@@ -37,4 +37,4 @@ typedef struct {
     void *payload;
 }frame_t;
 
-#endif /*FRAMES_COMMON_H*/
+#endif /*FRAMES_STRUCTS_H*/

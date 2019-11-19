@@ -4,7 +4,7 @@
 
 #include "unit.h"
 #include "logging.h"
-#include "frames/common.h" //Common structs for frames
+#include "frames/structs.h" //Common structs for frames
 #include "rst_stream_frame.h"
 #include "fff.h"
 
