@@ -7,6 +7,7 @@
 #include "frames/data_frame.h"      // for data_payload_t
 #include "frames/headers_frame.h"   // for headers_payload_t
 #include "frames/settings_frame.h"  // for settings_payload_t
+#include "frames/goaway_frame.h"  // for settings_payload_t
 #include "cbuf.h"                   // for cbuf
 
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
@@ -28,6 +29,7 @@ FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size, frame_header_t *, head
 FAKE_VALUE_FUNC(int, receive_header_block, uint8_t *, int, header_list_t *, hpack_states_t *);
 FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, header_list_t *);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
+FAKE_VALUE_FUNC(int, send_goaway, uint32_t , cbuf_t *, h2states_t *);
 
 #define FFF_FAKES_LIST(FAKE)                                    \
     FAKE(flow_control_receive_data)                             \
@@ -248,6 +250,17 @@ void test_update_settings_table_errors(void)
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
 }
 
+void test_handle_goaway_payload_error_received(void)
+{
+  goaway_payload_t gapl;
+  gapl.last_stream_id = 15;
+  gapl.error_code = 0x1; // No error code
+  cbuf_t bout;
+  h2states_t h2s;
+  int rc = handle_goaway_payload(&gapl, &bout, &h2s);
+  TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Return code must be 2 (HTTP2_RC_CLOSE_CONNECTION)");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -261,6 +274,7 @@ int main(void)
     UNIT_TEST(test_handle_headers_payload_end_stream_and_headers);
     UNIT_TEST(test_update_settings_table);
     UNIT_TEST(test_update_settings_table_errors);
+    UNIT_TEST(test_handle_goaway_payload_error_received);
 
     return UNIT_TESTS_END();
 }
