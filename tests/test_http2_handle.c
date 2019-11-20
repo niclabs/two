@@ -360,6 +360,28 @@ void test_handle_continuation_payload_end_headers(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be 0, headers were read");
 }
 
+void test_handle_continuation_payload_end_headers_end_stream(void)
+{
+    frame_header_t header;
+
+    header.length = 10;
+    continuation_payload_t contpl;
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.header_block_fragments_pointer = 5;
+    h2s.received_end_stream = 1;
+    buffer_copy_fake.return_val = 10;
+    is_flag_set_fake.return_val = 1;
+    receive_header_block_fake.return_val = 15;
+    change_stream_state_end_stream_flag_fake.return_val = 0;
+    headers_get_fake.return_val = (char *) 'a';
+    http_server_response_fake.return_val = 0;
+    send_response_fake.return_val = 0;
+    int rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
+    TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be 0, headers were read");
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -380,5 +402,6 @@ int main(void)
     UNIT_TEST(test_handle_ping_payload_send);
     UNIT_TEST(test_handle_continuation_payload_no_flags);
     UNIT_TEST(test_handle_continuation_payload_end_headers);
+    UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream);
     return UNIT_TESTS_END();
 }
