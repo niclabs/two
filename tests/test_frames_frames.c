@@ -21,6 +21,7 @@ FAKE_VALUE_FUNC(int, read_settings_payload, frame_header_t *, void *, uint8_t *)
 FAKE_VALUE_FUNC(int, read_continuation_payload, frame_header_t *, void *, uint8_t *);
 FAKE_VALUE_FUNC(int, read_headers_payload, frame_header_t *, void *, uint8_t *);
 FAKE_VALUE_FUNC(int, read_ping_payload, frame_header_t *, void *, uint8_t *);
+FAKE_VALUE_FUNC(int, read_rst_stream_payload, frame_header_t *, void *, uint8_t *);
 
 FAKE_VALUE_FUNC(int, uint32_24_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
@@ -50,21 +51,22 @@ FAKE_VOID_FUNC(headers_get_all, header_list_t *, header_t *);
     FAKE(read_settings_payload)         \
     FAKE(read_continuation_payload)     \
     FAKE(read_headers_payload)          \
-    FAKE(read_ping_payload)          \
-    FAKE(uint32_24_to_byte_array)     \
-    FAKE(uint32_31_to_byte_array)     \
-    FAKE(uint32_to_byte_array)        \
-    FAKE(uint16_to_byte_array)        \
-    FAKE(bytes_to_uint32)             \
-    FAKE(bytes_to_uint32_31)          \
-    FAKE(bytes_to_uint32_24)          \
-    FAKE(bytes_to_uint16)             \
-    FAKE(append_byte_arrays)          \
-    FAKE(buffer_copy)                 \
-    FAKE(encode)                      \
-    FAKE(decode_header_block)         \
-    FAKE(headers_count)               \
-    FAKE(headers_get_all) 
+    FAKE(read_ping_payload)             \
+    FAKE(read_rst_stream_payload)       \
+    FAKE(uint32_24_to_byte_array)       \
+    FAKE(uint32_31_to_byte_array)       \
+    FAKE(uint32_to_byte_array)          \
+    FAKE(uint16_to_byte_array)          \
+    FAKE(bytes_to_uint32)               \
+    FAKE(bytes_to_uint32_31)            \
+    FAKE(bytes_to_uint32_24)            \
+    FAKE(bytes_to_uint16)               \
+    FAKE(append_byte_arrays)            \
+    FAKE(buffer_copy)                   \
+    FAKE(encode)                        \
+    FAKE(decode_header_block)           \
+    FAKE(headers_count)                 \
+    FAKE(headers_get_all)               \
 
 void setUp(void)
 {
