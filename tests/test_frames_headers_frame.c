@@ -3,7 +3,7 @@
 #include "frames/structs.h" //Common structs for frames
 #include "headers_frame.h"
 #include "fff.h"
-
+#include "config.h"
 
 // Include header definitions for file to test
 // e.g #include "sock_non_blocking.h"
@@ -135,12 +135,37 @@ void test_read_headers_payload(void)
     }
 }
 
+void test_read_headers_payload_error(void)
+{
+    /*expected*/
+    frame_header_t expected_frame_header;
+
+    expected_frame_header.type = 0x1;
+    expected_frame_header.flags = set_flag_fake_custom(0x0, 0x4);
+    expected_frame_header.stream_id = 1;
+    expected_frame_header.reserved = 0;
+    expected_frame_header.length = HTTP2_MAX_HBF_BUFFER;
+
+    //fill the buffer
+    uint8_t read_buffer[20] = { 0, 12, 34, 5, 234, 7, 34, 98, 9, 0, 0, 1, 12, 3 /*payload*/ };
+
+    /*result*/
+    headers_payload_t headers_payload;
+    uint8_t headers_block_fragment[64];
+    headers_payload.header_block_fragment = headers_block_fragment;
+
+    int rc = read_headers_payload(&expected_frame_header, (void*) &headers_payload, read_buffer);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
     
     // Call tests here
     UNIT_TEST(test_read_headers_payload);
+    UNIT_TEST(test_read_headers_payload_error);
     UNIT_TEST(test_create_headers_frame);
     UNIT_TEST(test_headers_payload_to_bytes);
 
