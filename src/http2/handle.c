@@ -371,7 +371,11 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
         //st->hd_lists.header_list_count_in = rc;
         h2s->waiting_for_end_headers_flag = 0;
         if (h2s->received_end_stream == 1) {    //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
-            h2s->current_stream.state = STREAM_HALF_CLOSED_REMOTE;
+            rc = change_stream_state_end_stream_flag(0, buf_out, h2s);  //0 is for receiving
+            if (rc < 0) {
+                DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
+                return HTTP2_RC_CLOSE_CONNECTION;
+            }
             h2s->received_end_stream = 0;       //RESET TO 0
             rc = validate_pseudoheaders(&h2s->headers);
             if (rc < 0) {
