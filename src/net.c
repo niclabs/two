@@ -3,6 +3,7 @@
 #include "sock.h"
 
 // Specify to which module this file belongs
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_NET
 #include "logging.h"
 

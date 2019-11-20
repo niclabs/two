@@ -9,6 +9,7 @@
 #include "http.h"
 #include "resource_handler.h"
 
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_HTTP
 #include "logging.h"
 

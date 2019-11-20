@@ -3,6 +3,7 @@
 #include "http2/utils.h"
 
 // Specify to which module this file belongs
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_HTTP2
 #include "logging.h"
 

@@ -3,6 +3,7 @@
 //
 #include "hpack/huffman.h"
 
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_HPACK
 #include "logging.h"
 

@@ -4,6 +4,8 @@
 #include <assert.h>
 
 #include "headers.h"
+
+#include "config.h"
 #include "logging.h"
 
 

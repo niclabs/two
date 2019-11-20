@@ -13,6 +13,7 @@
 
 #include "sock.h"
 
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_SOCK
 #include "logging.h"
 
