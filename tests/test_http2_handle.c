@@ -31,7 +31,7 @@ FAKE_VALUE_FUNC(int, receive_header_block, uint8_t *, int, header_list_t *, hpac
 FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, header_list_t *);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, send_goaway, uint32_t, cbuf_t *, h2states_t *);
-FAKE_VALUE_FUNC(int, send_ping, cbuf_t *, uint8_t *, int8_t, h2states_t *);
+FAKE_VALUE_FUNC(int, send_ping, uint8_t *, int8_t, cbuf_t *, h2states_t *);
 
 #define FFF_FAKES_LIST(FAKE)                                    \
     FAKE(flow_control_receive_data)                             \

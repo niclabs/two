@@ -84,7 +84,7 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     data_payload_t data_payload;
     uint8_t data[count_data_to_send];
     create_data_frame(&frame_header, &data_payload, data, h2s->data.buf + h2s->data.processed, count_data_to_send, stream_id);
-    
+
     if (end_stream) {
         frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
     }
@@ -135,7 +135,7 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
     int rc;
 
     create_settings_ack_frame(&ack_frame, &ack_frame_header);
-    
+
     uint8_t byte_ack[9 + 0]; /*Settings ACK frame only has a header*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     // We write the ACK to NET
@@ -160,7 +160,7 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping(cbuf_t *buf_out, uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
+int send_ping(uint8_t *opaque_data, int8_t ack, cbuf_t *buf_out, h2states_t *h2s)
 {
     frame_t ack_frame;
     frame_header_t ack_frame_header;
@@ -208,7 +208,7 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
     frame_header_t header;
     goaway_payload_t goaway_pl;
     uint8_t additional_debug_data[h2s->debug_size];
-    
+
     create_goaway_frame(&header, &goaway_pl, additional_debug_data, h2s->last_open_stream_id, error_code, h2s->debug_data_buffer, h2s->debug_size);
     frame.frame_header = &header;
     frame.payload = (void *)&goaway_pl;
@@ -412,7 +412,7 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
 
     create_continuation_frame(buff_read, size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
-    
+
     if (end_stream) {
         frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
     }
@@ -452,7 +452,7 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
 
     // We create the headers frame
     create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
-    
+
     if (end_headers) {
         frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
     }
