@@ -115,11 +115,7 @@ typedef struct event_sock {
     // event handler list
     event_handler_t *handlers;
 
-    /* read event */
-    uint8_t buf_in_data[EVENT_MAX_BUF_SIZE];
-    cbuf_t buf_in;
-    event_read_cb read_cb;
-
+    // close operation
     event_close_cb close_cb;
 } event_sock_t;
 

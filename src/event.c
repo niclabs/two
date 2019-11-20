@@ -13,11 +13,22 @@
 #define LOG_LEVEL_EVENT LOG_LEVEL_DEBUG
 #include "logging.h"
 
-#define LIST_ADD(list, elem) \
-    {                        \
-        elem->next = list;   \
-        list = elem;         \
+
+// List operations
+#define LIST_ELEM (elem)
+#define LIST_PUSH(elem, list)   \
+    {                           \
+        elem->next = list;      \
+        list = elem;            \
     }
+#define LIST_POP(list)          \
+    ({                          \
+        void *elem = list;      \
+        if (list != NULL) {     \
+            list = list->next;  \
+        }                       \
+        elem;                   \
+    })
 #define LIST_NEXT(elem) elem = elem->next;
 #define LIST_FIND(type, queue, condition)   \
     ({                                      \
@@ -54,87 +65,78 @@
     });
 
 // Private methods
-struct qnode {
-    struct qnode *next;
-};
 
-typedef int (*event_compare_cb)(void *first, void *second);
 
 // find socket file descriptor in socket queue
 event_sock_t *event_socket_find(event_sock_t *queue, event_descriptor_t descriptor)
 {
-    return LIST_FIND(event_sock_t, queue, elem->descriptor == descriptor);
+    return LIST_FIND(event_sock_t, queue, LIST_ELEM->descriptor == descriptor);
 }
 
 // find socket file descriptor in socket queue
 event_handler_t *event_handler_find(event_handler_t *queue, event_type_t type)
 {
-    return LIST_FIND(event_handler_t, queue, elem->type == type);
+    return LIST_FIND(event_handler_t, queue, LIST_ELEM->type == type);
 }
 
 // find free handler in loop memory
 event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
 {
-    if (loop->unused_handlers == NULL) {
-        return NULL;
-    }
-
     // get event handler from loop memory
-    event_handler_t *handler = loop->unused_handlers;
-    loop->unused_handlers = handler->next;
+    event_handler_t *handler = LIST_POP(loop->unused_handlers);
 
-    // reset handler memory
-    memset(handler, 0, sizeof(event_handler_t));
+    if (handler != NULL) {
+        // reset handler memory
+        memset(handler, 0, sizeof(event_handler_t));
 
-    handler->next = sock->handlers;
-    sock->handlers = handler;
+        // link handler to sock memory
+        LIST_PUSH(handler, sock->handlers);
+    }
 
     return handler;
 }
 
-
-void event_do_read(event_sock_t *sock)
+void event_do_connect(event_sock_t *sock, event_handler_t *handler)
 {
-    // this is a server socket
-    if (sock->state == EVENT_SOCK_LISTENING) {
-        // call connection_cb with status ok if there are available clients
-        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE);
-        if (handler != NULL) {
-            // if this happens there is an error with the implementation
-            assert(handler->event.connection.cb != NULL);
-            handler->event.connection.cb(sock, sock->loop->unused == NULL ? -1 : 0);
-        }
+    if (handler != NULL) {
+        // if this happens there is an error with the implementation
+        assert(handler->event.connection.cb != NULL);
+        handler->event.connection.cb(sock, sock->loop->unused == NULL ? -1 : 0);
     }
-    else if (sock->read_cb != NULL) {
-        int readlen = EVENT_MAX_BUF_SIZE - cbuf_len(&sock->buf_in);
+}
+
+void event_do_read(event_sock_t *sock, event_handler_t *handler)
+{
+    if (handler != NULL && handler->event.read.cb) {
+        int readlen = EVENT_MAX_BUF_SIZE - cbuf_len(&handler->event.read.buf);
         uint8_t buf[readlen];
 
         // perform read in non blocking manner
         int count = recv(sock->descriptor, buf, readlen, MSG_DONTWAIT);
         if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            sock->read_cb(sock, count, NULL);
+            handler->event.read.cb(sock, count, NULL);
             return;
         }
 
         // push data into buffer
-        cbuf_push(&sock->buf_in, buf, count);
+        cbuf_push(&handler->event.read.buf, buf, count);
 
-        int buflen = cbuf_len(&sock->buf_in);
+        int buflen = cbuf_len(&handler->event.read.buf);
         uint8_t read_buf[buflen];
-        cbuf_peek(&sock->buf_in, read_buf, buflen);
+        cbuf_peek(&handler->event.read.buf, read_buf, buflen);
 
         // notify about the new data
-        readlen = sock->read_cb(sock, buflen, read_buf);
+        readlen = handler->event.read.cb(sock, buflen, read_buf);
 
-        // remove the read bytes from the buffer
-        cbuf_pop(&sock->buf_in, NULL, readlen);
+        // remove the read bytewrites from the buffer
+        cbuf_pop(&handler->event.read.buf, NULL, readlen);
     }
 }
 
 void event_do_write(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler != NULL) {
-        // if this happens there is a problem with the implementation
+        // if this happens therwritee is a problem with the implementation
         assert(handler->event.write.cb != NULL);
 
         // attempt to write remaining bytes
@@ -161,7 +163,7 @@ void event_do_write(event_sock_t *sock, event_handler_t *handler)
             handler->event.write.cb(sock, 0);
 
             // move handler to loop unused list
-            LIST_ADD(sock->loop->unused_handlers, handler);
+            LIST_PUSH(handler, sock->loop->unused_handlers);
         }
     }
 }
@@ -196,7 +198,7 @@ void event_loop_poll(event_loop_t *loop)
         }
 
         event_sock_t *sock;
-        event_handler_t *wh;
+        event_handler_t *rh, *wh;
         if (read || write || FD_ISSET(i, &loop->active_fds)) {
             // find the handle on the polling list
             sock = event_socket_find(loop->polling, i);
@@ -204,7 +206,8 @@ void event_loop_poll(event_loop_t *loop)
             // if this happens it means there is a problem with the implementation
             assert(sock != NULL);
 
-            if (cbuf_len(&sock->buf_in) > 0) {
+            rh = event_handler_find(sock->handlers, EVENT_READ_TYPE);
+            if (rh != NULL && cbuf_len(&rh->event.read.buf) > 0) {
                 read = 1;
             }
 
@@ -212,6 +215,7 @@ void event_loop_poll(event_loop_t *loop)
             if (wh != NULL && cbuf_len(&wh->event.write.buf) > 0) {
                 write = 1;
             }
+
         }
 
         if (!read && !write) {
@@ -220,7 +224,12 @@ void event_loop_poll(event_loop_t *loop)
 
         // if a read event is detected perform read operations
         if (read) {
-            event_do_read(sock);
+            if (sock->state == EVENT_SOCK_CONNECTED) {
+                event_do_read(sock, rh);
+            }
+            else {
+                event_do_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
+            }
         }
 
         // if a write event is detected perform write operations
@@ -253,8 +262,7 @@ void event_loop_close(event_loop_t *loop)
 
             // Move curr socket to unused list
             event_sock_t *next = curr->next;
-            curr->next = loop->unused;
-            loop->unused = curr;
+            LIST_PUSH(curr, loop->unused);
 
             // remove the socket from the polling list
             // and move the socket back to the unused list
@@ -267,8 +275,7 @@ void event_loop_close(event_loop_t *loop)
 
             // move socket handlers back to the unused handler list
             for (event_handler_t *h = curr->handlers; h != NULL; h = h->next) {
-                h->next = loop->unused_handlers;
-                loop->unused_handlers = h;
+                LIST_PUSH(h, loop->unused_handlers);
             }
 
             // move the head forward
@@ -338,8 +345,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     sock->state = EVENT_SOCK_LISTENING;
 
     // add socket to polling queue
-    sock->next = loop->polling;
-    loop->polling = sock;
+    LIST_PUSH(sock, loop->polling);
 
     // add event handler to socket
     event_handler_t *handler = event_handler_find_free(loop, sock);
@@ -363,8 +369,29 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    // add read callback to event
-    sock->read_cb = cb;
+    // see if there is already a read handler set
+    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
+    if (handler != NULL) {
+        // update callback
+        handler->event.read.cb = cb;
+
+        return 0;
+    }
+
+    // find free handler
+    event_loop_t *loop = sock->loop;
+    handler = event_handler_find_free(loop, sock);
+    assert(handler != NULL);
+
+    // set handler event
+    handler->type = EVENT_READ_TYPE;
+    memset(&handler->event.read, 0, sizeof(event_read_t));
+
+    // initialize read buffer
+    cbuf_init(&handler->event.read.buf, handler->event.read.buf_data, EVENT_MAX_BUF_SIZE);
+
+    // set write callback
+    handler->event.read.cb = cb;
 
     return 0;
 }
@@ -374,8 +401,12 @@ void event_read_stop(event_sock_t *sock)
     assert(sock != NULL);
     assert(sock->loop != NULL);
 
-    // do cleanup
-    sock->read_cb = NULL;
+    // see if there is already a read handler set
+    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
+    assert(handler != NULL);
+
+    // remove callback
+    handler->event.read.cb = NULL;
 }
 
 int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb cb)
@@ -438,8 +469,7 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     client->state = EVENT_SOCK_CONNECTED;
 
     // add socket to polling list
-    client->next = loop->polling;
-    loop->polling = client;
+    LIST_PUSH(client, loop->polling);
 
     return 0;
 }
@@ -497,14 +527,10 @@ event_sock_t *event_sock_create(event_loop_t *loop)
 
     // get the first unused sock
     // and remove sock from unsed list
-    event_sock_t *sock = loop->unused;
-    loop->unused = sock->next;
+    event_sock_t *sock = LIST_POP(loop->unused);
 
     // reset sock memory
     memset(sock, 0, sizeof(event_sock_t));
-
-    // initialize buffers
-    cbuf_init(&sock->buf_in, sock->buf_in_data, EVENT_MAX_BUF_SIZE);
 
     // assign sock variables
     sock->loop = loop;
