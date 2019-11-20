@@ -23,66 +23,9 @@ jobs:
   include:
     - stage: test
       script: $SH "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
-    - &h2spec
-      stage: http/2 conformance testing
-      script: $SH "make h2spec PORT=8888 SPEC=$SPEC"
+    - stage: http/2 conformance testing
+      script: $SH "make h2spec CI=1 PORT=8888"
       env: SPEC=generic/1
-    - <<: *h2spec
-      env: SPEC=generic/2/2
-    - <<: *h2spec
-      env: SPEC=generic/3.1
-    - <<: *h2spec
-      env: SPEC=generic/3.2/1
-    - <<: *h2spec
-      env: SPEC=generic/3.7
-
-      ##generic/5 Hpack
-    - <<: *h2spec
-      env: SPEC=generic/5
-
-      ##HPACK
-    - <<: *h2spec
-      env: SPEC=hpack
-
-      ##HTTP2
-    - <<: *h2spec
-      env: SPEC=http2/4.2/2
-    - <<: *h2spec
-      env: SPEC=http2/4.2/3
-    - <<: *h2spec
-      env: SPEC=http2/4.3/1
-    - <<: *h2spec
-      env: SPEC=http2/4.3/3
-    - <<: *h2spec
-      env: SPEC=http2/5.1/4
-    - <<: *h2spec
-      env: SPEC=http2/5.1/11
-    - <<: *h2spec
-      env: SPEC=http2/5.1/13
-    - <<: *h2spec
-      env: SPEC=http2/5.1.1/1
-    - <<: *h2spec
-      env: SPEC=http2/6.2/2
-    - <<: *h2spec
-      env: SPEC=http2/6.2/3
-    - <<: *h2spec
-      env: SPEC=http2/6.5/1
-    - <<: *h2spec
-      env: SPEC=http2/6.5.2/1
-    - <<: *h2spec
-      env: SPEC=http2/6.5.2/2
-    - <<: *h2spec
-      env: SPEC=http2/6.5.2/3
-    - <<: *h2spec
-      env: SPEC=http2/6.5.2/4
-    - <<: *h2spec
-      env: SPEC=http2/6.5.3/2
-    - <<: *h2spec
-      env: SPEC=http2/6.7
-
-      ##MORE HTTP2
-    - <<: *h2spec
-      env: SPEC=http2/8.1.2.3
 
 # Environment variables
 env:
