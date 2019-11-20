@@ -232,8 +232,7 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
             return rc;
         }
         default: {
-            WARN("Error: Type not found");
-            return HTTP2_RC_ERROR;
+            return HTTP2_NO_ERROR;
 
         }
     }
@@ -410,8 +409,8 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             return HTTP2_RC_NO_ERROR;
         }
         default: {
-            WARN("Error: Type not found");
-            return HTTP2_RC_ERROR;
+            WARN("handle_payload: IGNORING UNKNOWN PAYLOAD");
+            return HTTP2_RC_NO_ERROR;
         }
     }
 }

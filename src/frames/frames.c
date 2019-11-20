@@ -215,8 +215,9 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
             frame_header->callback_payload_from_bytes = read_rst_stream_payload;
             break;
         default:
-            ERROR("Frame type %d not found", frame_header->type);
-            return -1;
+            WARN("Frame type %d not found", frame_header->type);
+            frame_header->callback_payload_from_bytes = NULL;
+            return 0;
     }
 
     return 0;
