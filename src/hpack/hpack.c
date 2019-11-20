@@ -4,6 +4,9 @@
 #include "hpack/encoder.h"
 #include "hpack/tables.h"
 
+#define LOG_MODULE LOG_MODULE_HPACK
+#include "logging.h"
+
 
 /*
  * Function: decode_header_block

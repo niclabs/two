@@ -4,7 +4,10 @@
 #include "headers_frame.h"
 #include "config.h"
 #include "http2/utils.h"
+
+#define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
+
 
 /*
  * Function: create_headers_frame

@@ -7,7 +7,7 @@
 #include "http.h"
 
 // Specify to which module this file belongs
-#define LOG_MODULE LOG_MODULE_HTTP2_HANDLE
+#define LOG_MODULE LOG_MODULE_HTTP2
 #include "logging.h"
 
 int validate_pseudoheaders(header_list_t *pseudoheaders)

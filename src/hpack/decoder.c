@@ -1,10 +1,12 @@
 #include <stdint.h>             /* for int8_t, int32_t*/
 #include <string.h>             /* for memset, NULL*/
 
-#include "logging.h"            /* for ERROR */
 #include "hpack/decoder.h"
 #include "hpack/utils.h"
 #include "hpack/huffman.h"
+
+#define LOG_MODULE LOG_MODULE_HPACK
+#include "logging.h"
 
 /*
  * Function: hpack_decoder_decode_integer

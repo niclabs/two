@@ -4,6 +4,8 @@
 
 #include "data_frame.h"
 #include "http2/utils.h"
+
+#define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
 
 /*

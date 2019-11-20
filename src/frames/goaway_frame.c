@@ -3,9 +3,11 @@
 //
 
 #include "goaway_frame.h"
-#include "logging.h"
 #include "http2/utils.h"
 #include "utils.h"
+
+#define LOG_MODULE LOG_MODULE_FRAME
+#include "logging.h"
 
 /*
  * Function: goaway_payload_to_bytes

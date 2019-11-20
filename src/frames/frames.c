@@ -6,9 +6,11 @@
 #include "frames.h"
 #include "utils.h"
 #include "http2/utils.h"
-#include "logging.h"
 #include "hpack.h"
 #include "config.h"
+
+#define LOG_MODULE LOG_MODULE_FRAME
+#include "logging.h"
 
 /*
  * Function: frame_header_to_bytes

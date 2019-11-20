@@ -5,7 +5,7 @@
 #include "http2/flowcontrol.h"
 
 // Specify to which module this file belongs
-#define LOG_MODULE LOG_MODULE_HTTP2_SEND
+#define LOG_MODULE LOG_MODULE_HTTP2
 #include "logging.h"
 
 /*

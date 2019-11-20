@@ -5,7 +5,10 @@
 #include "settings_frame.h"
 #include "structs.h"
 #include "utils.h"
+
+#define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
+
 
 /*
  * Function: setting_to_bytes

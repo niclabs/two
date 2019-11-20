@@ -4,7 +4,9 @@
 #include "hpack/huffman.h"      /* for huffman_encoded_word_t, hpack_huffman_...*/
 #include "hpack/encoder.h"
 #include "hpack/utils.h"
-#include "logging.h"            /* for ERROR */
+
+#define LOG_MODULE LOG_MODULE_HPACK
+#include "logging.h"
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
 /*

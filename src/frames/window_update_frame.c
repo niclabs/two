@@ -3,8 +3,11 @@
 //
 
 #include "window_update_frame.h"
-#include "logging.h"
 #include "utils.h"
+
+#define LOG_MODULE LOG_MODULE_FRAME
+#include "logging.h"
+
 /*
  * Function: window_update_payload_to_bytes
  * Passes a window_update payload to a byte array

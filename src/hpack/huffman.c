@@ -3,6 +3,9 @@
 //
 #include "hpack/huffman.h"
 
+#define LOG_MODULE LOG_MODULE_HPACK
+#include "logging.h"
+
 #if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * This is a implementation of a compact huffman tree using the algorithm in

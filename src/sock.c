@@ -12,6 +12,8 @@
 #include <netinet/in.h>
 
 #include "sock.h"
+
+#define LOG_MODULE LOG_MODULE_SOCK
 #include "logging.h"
 
 /* From listen(2): The backlog argument defines the maximum length to which the
