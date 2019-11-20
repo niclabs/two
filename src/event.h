@@ -2,8 +2,13 @@
 #define EVENT_H
 
 #include <sys/types.h>
-#include <sys/select.h>
 #include <stdint.h>
+
+#ifndef WITH_CONTIKI
+#include <sys/select.h>
+#else
+#include "net/ipv6/tcpip.h"
+#endif
 
 #include "cbuf.h"
 
@@ -80,6 +85,9 @@ typedef struct event_write {
     uint8_t buf_data[EVENT_MAX_BUF_SIZE];
     cbuf_t buf;
     event_write_cb cb;
+#ifdef WITH_CONTIKI
+    int sending;
+#endif
 } event_write_t;
 
 typedef struct event_handler {
@@ -117,6 +125,10 @@ typedef struct event_sock {
 
     // close operation
     event_close_cb close_cb;
+
+#ifdef WITH_CONTIKI
+    struct uip_conn *uip_conn;
+#endif
 } event_sock_t;
 
 typedef struct event_loop {

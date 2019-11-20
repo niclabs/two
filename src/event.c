@@ -1,17 +1,28 @@
 #include <stdlib.h>
 #include <errno.h>
-#include <assert.h>
 #include <unistd.h>
-#include <sys/select.h>
 #include <sys/types.h>
+
+#ifdef WITH_CONTIKI
+#include "contiki-net.h"
+#include "lib/assert.h"
+#else
+#include <assert.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#endif
 
 #include "event.h"
 
 #define LOG_MODULE EVENT
 #define LOG_LEVEL_EVENT LOG_LEVEL_DEBUG
 #include "logging.h"
+
+#ifdef WITH_CONTIKI
+// Main contiki process
+PROCESS(event_loop_process, "Event loop process");
+#endif
 
 
 // List operations
@@ -112,11 +123,18 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
         uint8_t buf[readlen];
 
         // perform read in non blocking manner
+#ifdef WITH_CONTIKI
+        int count = MIN(readlen, uip_datalen());
+        memcpy(buf, uip_appdata, count);
+#else
         int count = recv(sock->descriptor, buf, readlen, MSG_DONTWAIT);
         if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             handler->event.read.cb(sock, count, NULL);
+
+            // should we call finish_write here?
             return;
         }
+#endif
 
         // push data into buffer
         cbuf_push(&handler->event.read.buf, buf, count);
@@ -133,6 +151,22 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
+void event_finish_write(event_sock_t *sock, event_handler_t *handler, int status)
+{
+    if (handler == NULL || handler->event.write.cb == NULL) {
+        return;
+    }
+
+    // remove write handler from list
+    LIST_DELETE(event_handler_t, sock->handlers, handler);
+
+    // notify of write
+    handler->event.write.cb(sock, status);
+
+    // move handler to loop unused list
+    LIST_PUSH(handler, sock->loop->unused_handlers);
+}
+
 void event_do_write(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler != NULL) {
@@ -140,34 +174,44 @@ void event_do_write(event_sock_t *sock, event_handler_t *handler)
         assert(handler->event.write.cb != NULL);
 
         // attempt to write remaining bytes
-        int len = cbuf_len(&handler->event.write.buf);
-        uint8_t buf[len];
-
-        cbuf_peek(&handler->event.write.buf, buf, len);
-        int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
-
-        if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            handler->event.write.cb(sock, -1);
+#ifdef WITH_CONTIKI
+        // do nothing if already sending
+        if (handler->event.write.sending > 0) {
             return;
         }
 
-        // remove written
+        int len = MIN(cbuf_len(&handler->event.write.buf), uip_mss());
+#else
+        int len = cbuf_len(&handler->event.write.buf);
+#endif
+        uint8_t buf[len];
+        cbuf_peek(&handler->event.write.buf, buf, len);
+
+#ifdef WITH_CONTIKI
+        // Send data
+        uip_send(buf, len);
+
+        // set sending length
+        handler->event.write.sending = len;
+#else
+        int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
+        if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            event_finish_write(sock, handler, -1);
+            return;
+        }
+
+        // remove written data from buffer
         cbuf_pop(&handler->event.write.buf, NULL, written);
 
         // notify of write when buffer is empty
         if (cbuf_len(&handler->event.write.buf) <= 0) {
-            // remove write handler from list
-            LIST_DELETE(event_handler_t, sock->handlers, handler);
-
-            // notify of write
-            handler->event.write.cb(sock, 0);
-
-            // move handler to loop unused list
-            LIST_PUSH(handler, sock->loop->unused_handlers);
+            event_finish_write(sock, handler, 0);
         }
+#endif
     }
 }
 
+#ifndef WITH_CONTIKI
 void event_loop_poll(event_loop_t *loop)
 {
     assert(loop->nfds >= 0);
@@ -238,23 +282,133 @@ void event_loop_poll(event_loop_t *loop)
         }
     }
 }
+#else
+void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
+{
+    if (handler == NULL || handler->event.write.sending == 0) {
+        return;
+    }
+
+    // remove sent data from output buffer
+    cbuf_pop(&handler->event.write.buf, NULL, handler->event.write.sending);
+
+    // update sending size
+    handler->event.write.sending = 0;
+
+    // notify of write when buffer is empty
+    if (cbuf_len(&handler->event.write.buf) <= 0) {
+        event_finish_write(sock, handler, 0);
+    }
+    else {
+        // perform write of remaining bytes
+        event_do_write(sock, handler);
+    }
+}
+
+void event_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
+{
+    if (handler == NULL || handler->event.write.sending == 0) {
+        return;
+    }
+
+    // reset send counter
+    handler->event.write.sending = 0;
+
+    // try again
+    event_do_write(sock, handler);
+}
+
+void event_handle_tcp_event(event_loop_t *loop, void *data)
+{
+    event_sock_t *sock = (event_sock_t *)data;
+
+    if (uip_connected()) {
+        if (sock == NULL) { // new client connection
+            sock = LIST_FIND(event_sock_t, loop->polling, \
+                             LIST_ELEM->state == EVENT_SOCK_LISTENING && \
+                             UIP_HTONS(LIST_ELEM->descriptor) == uip_conn->lport);
+
+            // Save the connection for when
+            // accept is called
+            sock->uip_conn = uip_conn;
+
+            // do connect
+            event_do_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
+        }
+
+        if (sock == NULL) { // no one waiting for the socket
+            uip_abort();
+        }
+        else {
+            if (uip_newdata()) {
+                DEBUG("read new data but there is no socket ready to receive it");
+                // todo: do read ?
+            }
+        }
+        return;
+    }
+
+    // no socket for the connection
+    if (sock == NULL) {
+        uip_abort();
+        return;
+    }
+
+    event_handler_t *rh = event_handler_find(sock->handlers, EVENT_READ_TYPE);
+    event_handler_t *wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
+    if (uip_timedout() || uip_aborted() || uip_closed()) { // Remote connection closed or timed out
+        // if waiting for read, notify callback with -1
+        if (rh != NULL && rh->event.read.cb != NULL) {
+            rh->event.read.cb(sock, -1, NULL);
+        }
+        else if (wh != NULL) {
+            event_finish_write(sock, wh, -1);
+        }
+
+        tcp_markconn(uip_conn, NULL);
+        return;
+    }
+
+    if (uip_newdata()) {
+        event_do_read(sock, rh);
+    }
+
+    if (uip_acked()) {
+        event_handle_ack(sock, wh);
+    }
+
+    if (uip_rexmit()) {
+        event_handle_rexmit(sock, wh);
+    }
+
+    if (uip_newdata() || uip_poll()) {
+        event_do_write(sock, wh);
+    }
+}
+#endif // WITH_CONTIKI
 
 void event_loop_close(event_loop_t *loop)
 {
     event_sock_t *curr = loop->polling;
     event_sock_t *prev = NULL;
 
+#ifndef WITH_CONTIKI
     int max_fds = -1;
+#endif
 
     while (curr != NULL) {
         // if the event is closing and we are not waiting to write
         event_handler_t *wh = event_handler_find(curr->handlers, EVENT_WRITE_TYPE);
         if (curr->state == EVENT_SOCK_CLOSING && (wh == NULL || cbuf_len(&wh->event.write.buf) <= 0)) {
+#ifndef WITH_CONTIKI
             // prevent sock to be used in polling
             FD_CLR(curr->descriptor, &loop->active_fds);
 
             // close the socket and update its status
             close(curr->descriptor);
+#else
+            // tcp_markconn()
+#endif
             curr->state = EVENT_SOCK_CLOSED;
 
             // call the close callback
@@ -283,16 +437,20 @@ void event_loop_close(event_loop_t *loop)
             continue;
         }
 
+#ifndef WITH_CONTIKI
         if (curr->descriptor > max_fds) {
             max_fds = curr->descriptor;
         }
+#endif
 
         prev = curr;
         curr = curr->next;
     }
 
+#ifndef WITH_CONTIKI
     // update the max file descriptor
     loop->nfds = max_fds + 1;
+#endif
 }
 
 int event_loop_is_alive(event_loop_t *loop)
@@ -310,6 +468,8 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     assert(sock->state == EVENT_SOCK_CLOSED);
 
     event_loop_t *loop = sock->loop;
+
+#ifndef WITH_CONTIKI
     sock->descriptor = socket(AF_INET6, SOCK_STREAM, 0);
     if (sock->descriptor < 0) {
         return -1;
@@ -340,6 +500,15 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
 
     // add socket fd to read watchlist
     FD_SET(sock->descriptor, &loop->active_fds);
+#else
+    // use port as the socket descriptor
+    sock->descriptor = port;
+
+    // Let know UIP that we are accepting connections on the specified port
+    PROCESS_CONTEXT_BEGIN(&event_loop_process);
+    tcp_listen(UIP_HTONS(port));
+    PROCESS_CONTEXT_END();
+#endif // WITH_CONTIKI
 
     // update sock state
     sock->state = EVENT_SOCK_LISTENING;
@@ -450,13 +619,23 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     assert(server->state == EVENT_SOCK_LISTENING);
     assert(client->state == EVENT_SOCK_CLOSED);
 
+    event_loop_t *loop = client->loop;
+
+#ifdef WITH_CONTIKI
+    // Check that a new connection has been established
+    assert(server->uip_conn != NULL);
+
+    // attach socket state to uip_connection
+    tcp_markconn(server->uip_conn, client);
+
+    // use same port for client
+    client->descriptor = server->descriptor;
+#else
     int clifd = accept(server->descriptor, NULL, NULL);
     if (clifd < 0) {
         ERROR("Failed to accept new client");
         return -1;
     }
-
-    event_loop_t *loop = client->loop;
 
     // update max fds value
     loop->nfds = clifd + 1;
@@ -466,6 +645,9 @@ int event_accept(event_sock_t *server, event_sock_t *client)
 
     // set client variables
     client->descriptor = clifd;
+#endif
+
+    // set client state
     client->state = EVENT_SOCK_CONNECTED;
 
     // add socket to polling list
@@ -498,8 +680,12 @@ void event_loop_init(event_loop_t *loop)
     // reset loop memory
     memset(loop, 0, sizeof(event_loop_t));
 
-    // reset socket memory
+#ifndef WITH_CONTIKI
+    // reset active file descriptor list
     FD_ZERO(&loop->active_fds);
+#endif
+
+    // reset socket memory
     memset(loop->sockets, 0, EVENT_MAX_SOCKETS * sizeof(event_sock_t));
 
     // create unused socket list
@@ -539,20 +725,52 @@ event_sock_t *event_sock_create(event_loop_t *loop)
     return sock;
 }
 
-void event_loop(event_loop_t *loop)
+#ifdef WITH_CONTIKI
+static event_loop_t * loop;
+
+void event_loop(event_loop_t *l)
 {
+    assert(l != NULL);
+
+    // set global variable
+    loop = l;
+    process_start(&event_loop_process, NULL);
+}
+
+PROCESS_THREAD(event_loop_process, ev, data)
+#else
+void event_loop(event_loop_t *loop)
+#endif
+{
+#ifdef WITH_CONTIKI
+    PROCESS_BEGIN();
+#endif
     assert(loop != NULL);
     assert(loop->running == 0);
 
     loop->running = 1;
     while (event_loop_is_alive(loop)) {
-        // perform timer events
+#ifdef WITH_CONTIKI
+        PROCESS_WAIT_EVENT();
 
+        // todo: handle timer events
+
+        if (ev == tcpip_event) {
+            // handle network events
+            event_handle_tcp_event(loop, data);
+        }
+#else
+        // todo: perform timer events
         // perform I/O events
         event_loop_poll(loop);
+#endif
 
         // perform close events
         event_loop_close(loop);
     }
     loop->running = 0;
+
+#ifdef WITH_CONTIKI
+    PROCESS_END();
+#endif
 }
