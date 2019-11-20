@@ -1,15 +1,16 @@
 #include "unit.h"
 #include "fff.h"
 #include "logging.h"
-#include "http2/structs.h"          // for h2states_t
+#include "http2/structs.h"              // for h2states_t
 #include "http2/handle.h"
-#include "frames/structs.h"          // for frame_header_t
-#include "frames/data_frame.h"      // for data_payload_t
-#include "frames/headers_frame.h"   // for headers_payload_t
-#include "frames/settings_frame.h"  // for settings_payload_t
-#include "frames/goaway_frame.h"    // for goaway_payload_t
-#include "frames/ping_frame.h"      // for ping_payload_t
-#include "cbuf.h"                   // for cbuf
+#include "frames/structs.h"             // for frame_header_t
+#include "frames/data_frame.h"          // for data_payload_t
+#include "frames/headers_frame.h"       // for headers_payload_t
+#include "frames/settings_frame.h"      // for settings_payload_t
+#include "frames/goaway_frame.h"        // for goaway_payload_t
+#include "frames/ping_frame.h"          // for ping_payload_t
+#include "frames/continuation_frame.h"  // for continuation_payload_t
+#include "cbuf.h"                       // for cbuf
 
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
 
@@ -324,6 +325,20 @@ void test_handle_ping_payload_send(void)
     TEST_ASSERT_MESSAGE(send_ping_fake.call_count == 1, "Send ping must be called once");
 }
 
+void test_handle_continuation_payload_no_flags(void)
+{
+    frame_header_t header;
+
+    header.length = 10;
+    continuation_payload_t contpl;
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.header_block_fragments_pointer = 5;
+    buffer_copy_fake.return_val = 10;
+    is_flag_set_fake.return_val = 0;
+    int rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
+}
 int main(void)
 {
     UNIT_TESTS_BEGIN();
