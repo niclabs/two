@@ -5,6 +5,9 @@
 #include <string.h>
 #include <signal.h>
 
+#ifdef WITH_CONTIKI
+#include "contiki.h"
+#endif
 
 #include "event.h"
 
@@ -339,14 +342,9 @@ int read_header(event_sock_t *client, ssize_t size, uint8_t *buf)
         frame_header_t *header = &ctx->header;
         parse_frame_header(ctx->frame, header);
 
-#ifndef WITH_CONTIKI
         DEBUG("received header = {length: %u, type: %d, flags: %d, stream_id: %u}", \
           header->length, header->type, header->flags, header->stream_id);
-#else 
-        DEBUG("received header = {length: %lu, type: %d, flags: %d, stream_id: %lu}", \
-          header->length, header->type, header->flags, header->stream_id);
-#endif
-
+        
         event_read_stop(client);
         if (process_header(client, ctx, header) < 0) {
             event_close(client, on_client_close);
@@ -463,8 +461,19 @@ void on_new_connection(event_sock_t *server, int status)
     }
 }
 
+#ifdef WITH_CONTIKI
+PROCESS(tiny_server_process, "Tiny server process");
+AUTOSTART_PROCESSES(&tiny_server_process);
+
+PROCESS_THREAD(tiny_server_process, ev, data)
+#else
 int main()
+#endif
 {
+#ifdef WITH_CONTIKI
+    PROCESS_BEGIN();
+#endif
+
     // set client memory
     memset(http2_ctx_list, 0, EVENT_MAX_DESCRIPTORS * sizeof(http2_ctx_t));
     for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
@@ -484,4 +493,8 @@ int main()
         return 1;
     }
     event_loop(&loop);
+
+#ifdef WITH_CONTIKI
+    PROCESS_END();
+#endif
 }
