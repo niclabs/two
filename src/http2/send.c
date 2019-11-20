@@ -404,7 +404,7 @@ void send_stream_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s)
  * Output: 0 if no errors were found during the creation or sending, -1 if not
  */
 
-int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
+int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, cbuf_t *buf_out, h2states_t *h2s)
 {
     int rc;
     frame_t frame;
@@ -414,7 +414,7 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
 
     create_continuation_frame(buff_read, size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
 
-    if (end_stream) {
+    if (end_headers) {
         frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
     }
     frame.frame_header = &frame_header;
