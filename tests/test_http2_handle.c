@@ -10,6 +10,7 @@
 #include "frames/goaway_frame.h"        // for goaway_payload_t
 #include "frames/ping_frame.h"          // for ping_payload_t
 #include "frames/continuation_frame.h"  // for continuation_payload_t
+#include "frames/window_update_frame.h"  // for window_update_payload_t
 #include "cbuf.h"                       // for cbuf
 
 extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
@@ -33,6 +34,7 @@ FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, header_list_t *);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, send_goaway, uint32_t, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, send_ping, uint8_t *, int8_t, cbuf_t *, h2states_t *);
+FAKE_VALUE_FUNC(int, flow_control_receive_window_update, h2states_t *, uint32_t);
 
 #define FFF_FAKES_LIST(FAKE)                                    \
     FAKE(flow_control_receive_data)                             \
@@ -50,6 +52,7 @@ FAKE_VALUE_FUNC(int, send_ping, uint8_t *, int8_t, cbuf_t *, h2states_t *);
     FAKE(read_setting_from)                                     \
     FAKE(send_goaway)                                           \
     FAKE(send_ping)                                             \
+    FAKE(flow_control_receive_window_update)                    \
 
 
 void setUp(void)
@@ -382,6 +385,17 @@ void test_handle_continuation_payload_end_headers_end_stream(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be 0, headers were read");
 }
 
+void test_handle_window_update_payload(void)
+{
+  window_update_payload_t wupl;
+  wupl.window_size_increment = 20;
+  cbuf_t bout;
+  h2states_t h2s;
+  flow_control_receive_window_update_fake.return_val = 0;
+  int rc = handle_window_update_payload(&wupl, &bout, &h2s);
+  TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
+  TEST_ASSERT_EQUAL_MESSAGE(1, flow_control_receive_window_update_fake.call_count, "Flow control must be called once");
+}
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -403,5 +417,6 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_no_flags);
     UNIT_TEST(test_handle_continuation_payload_end_headers);
     UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream);
+    UNIT_TEST(test_handle_window_update_payload);
     return UNIT_TESTS_END();
 }
