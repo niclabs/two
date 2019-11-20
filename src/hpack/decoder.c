@@ -400,6 +400,7 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
 
     /*Size is not sufficient for LITERAL HEADER FIELD*/
     if (pointer > header_size) {
+        ERROR("Size is not sufficient for LITERAL HEADER FIELD");
         return PROTOCOL_ERROR;
     }
 
@@ -416,6 +417,7 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
         pointer += hpack_utils_encoded_integer_size(encoded_header->name_length, 7);
         /*Size is not sufficient for LITERAL HEADER FIELD*/
         if (pointer > header_size) {
+            ERROR("Size is not sufficient for LITERAL HEADER FIELD");
             return PROTOCOL_ERROR;
         }
 
@@ -423,6 +425,7 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
         pointer += encoded_header->name_length;
         /*Size is not sufficient for LITERAL HEADER FIELD*/
         if (pointer > header_size) {
+            ERROR("Size is not sufficient for LITERAL HEADER FIELD");
             return PROTOCOL_ERROR;
         }
     }
@@ -439,12 +442,14 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     pointer += hpack_utils_encoded_integer_size(encoded_header->value_length, 7);
     /*Size is not sufficient for LITERAL HEADER FIELD*/
     if (pointer > header_size) {
+        ERROR("Size is not sufficient for LITERAL HEADER FIELD");
         return PROTOCOL_ERROR;
     }
     encoded_header->value_string = &header_block[pointer];
     pointer += encoded_header->value_length;
     /*Size is not sufficient for LITERAL HEADER FIELD*/
     if (pointer > header_size) {
+        ERROR("Size is not sufficient for LITERAL HEADER FIELD");
         return PROTOCOL_ERROR;
     }
     return pointer;
@@ -604,6 +609,7 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
 
         if (bytes_read < 0) {
             /*Error*/
+            ERROR("Bytes read are negative after parsing encoded header");
             return bytes_read;
         }
 
@@ -613,6 +619,7 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
         else {                                              /*it's a dynamic table size update*/
             if (!can_receive_dynamic_table_size_update) {
                 /*Error*/
+                ERROR("Received a dynamic table size update after receiving 1 or more headers");
                 return PROTOCOL_ERROR;
             }
         }
@@ -627,7 +634,10 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
             return rc;
         }
         if (states->tmp_name[0] != 0 && states->tmp_value[0] != 0) {
-            headers_add(headers, states->tmp_name, states->tmp_value);
+            rc = headers_add(headers, states->tmp_name, states->tmp_value);
+            if (rc < 0) {
+                return rc;
+            }
         }
     }
     if (pointer > header_block_size) {
