@@ -109,6 +109,31 @@ void test_rst_stream_payload_to_bytes(void)
     }
 }
 
+void test_rst_stream_payload_to_bytes_error(void)
+{
+    frame_header_t frame_header;
+
+    frame_header.length = 3;
+    frame_header.type = RST_STREAM_TYPE;
+    frame_header.flags = 0x0;
+    frame_header.stream_id = 2;
+
+    rst_stream_payload_t rst_stream_payload;
+    rst_stream_payload.error_code = 1;
+
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    uint8_t byte_array[16];
+
+    int rc = rst_stream_payload_to_bytes(&frame_header, &rst_stream_payload, byte_array);
+    TEST_ASSERT_EQUAL(-1, rc);
+
+    /*Another error*/
+    uint32_to_byte_array_fake.return_val = -1;
+    rc = rst_stream_payload_to_bytes(&frame_header, &rst_stream_payload, byte_array);
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
 
 void test_read_rst_stream_payload(void)
 {
@@ -145,6 +170,36 @@ void test_read_rst_stream_payload(void)
 }
 
 
+void test_read_rst_stream_payload_error(void)
+{
+/*expected*/
+
+    frame_header_t expected_frame_header;
+
+    expected_frame_header.type = RST_STREAM_TYPE;
+    expected_frame_header.flags = 0;
+    expected_frame_header.stream_id = 1;
+    expected_frame_header.reserved = 0;
+    expected_frame_header.length = 3;
+
+    bytes_to_uint32_fake.custom_fake = bytes_to_uint32_custom_fake;
+
+    //fill the buffer
+    uint8_t read_buffer[4] = { 0, 0, 0, 3 };/*payload*/
+/*result*/
+    rst_stream_payload_t rst_stream_payload;
+
+    int rc = read_rst_stream_payload(&expected_frame_header, (void *)&rst_stream_payload, read_buffer);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+    /*Another error*/
+    expected_frame_header.length = 4;
+    expected_frame_header.stream_id = 0;
+    rc = read_rst_stream_payload(&expected_frame_header, (void *)&rst_stream_payload, read_buffer);
+
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -152,8 +207,8 @@ int main(void)
     // Call tests here
     UNIT_TEST(test_create_rst_stream_frame);
     UNIT_TEST(test_rst_stream_payload_to_bytes);
-
     UNIT_TEST(test_read_rst_stream_payload);
-
+    UNIT_TEST(test_read_rst_stream_payload_error);
+    UNIT_TEST(test_rst_stream_payload_to_bytes_error);
     return UNIT_TESTS_END();
 }
