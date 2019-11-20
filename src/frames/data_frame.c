@@ -25,11 +25,14 @@ int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
         ERROR("Padding not implemented yet");
         return -1;
     }
+    //TODO: Modify behaviour of buffer_copy to throw an error when not possible to copy.
     int rc = buffer_copy(byte_array, data_payload->data, length);
+
+    /*
     if (rc < 0) {
         ERROR("error copying buffer");
         return -1;
-    }
+    }*/
     return rc;
 }
 
