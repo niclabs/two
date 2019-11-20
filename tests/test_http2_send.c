@@ -25,6 +25,9 @@ FAKE_VALUE_FUNC(int, flow_control_send_window_update, h2states_t *, uint32_t);
 FAKE_VOID_FUNC(create_continuation_frame, uint8_t *, int, uint32_t, frame_header_t *, continuation_payload_t *, uint8_t *);
 FAKE_VOID_FUNC(create_settings_frame, uint16_t *, uint32_t *, int, frame_header_t *, settings_payload_t *, settings_pair_t *);
 FAKE_VOID_FUNC(create_headers_frame, uint8_t *, int, uint32_t, frame_header_t *, headers_payload_t *, uint8_t *);
+FAKE_VOID_FUNC(create_ping_ack_frame, frame_header_t *, ping_payload_t *, uint8_t *);
+FAKE_VOID_FUNC(create_ping_frame, frame_header_t *, ping_payload_t *, uint8_t *);
+
 
 #define FFF_FAKES_LIST(FAKE)                \
     FAKE(cbuf_push)                         \
@@ -41,6 +44,8 @@ FAKE_VOID_FUNC(create_headers_frame, uint8_t *, int, uint32_t, frame_header_t *,
     FAKE(create_settings_frame)             \
     FAKE(create_continuation_frame)         \
     FAKE(create_headers_frame)              \
+    FAKE(create_ping_ack_frame)             \
+    FAKE(create_ping_frame)                 \
 
 void setUp(void)
 {
@@ -326,6 +331,62 @@ void test_send_settings_ack_errors(void)
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf_push called in send settings and send goaway");
     TEST_ASSERT_EQUAL(9, cbuf_push_fake.arg2_val);
 
+}
+
+void test_send_ping(void)
+{
+    uint8_t opaque_data[8];
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    frame_to_bytes_fake.return_val = 17;
+    cbuf_push_fake.return_val = 17;
+
+    int rc = send_ping(opaque_data, 0, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(create_ping_frame_fake.call_count == 1, "create_ping_frame called one time");
+    TEST_ASSERT_MESSAGE(create_ping_ack_frame_fake.call_count == 0, "create_ping_ack_frame called 0 times");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes is called one time");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push is called one time");
+    TEST_ASSERT_EQUAL(17, cbuf_push_fake.arg2_val);
+}
+
+void test_send_ping_ack(void)
+{
+    uint8_t opaque_data[8];
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    frame_to_bytes_fake.return_val = 17;
+    cbuf_push_fake.return_val = 17;
+
+    int rc = send_ping(opaque_data, 1, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(create_ping_frame_fake.call_count == 0, "create_ping_frame called 0 times");
+    TEST_ASSERT_MESSAGE(create_ping_ack_frame_fake.call_count == 1, "create_ping_ack_frame called 1 time");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes is called one time");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push is called one time");
+    TEST_ASSERT_EQUAL(17, cbuf_push_fake.arg2_val);
+}
+
+
+void test_send_ping_errors(void)
+{
+    uint8_t opaque_data[8];
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    frame_to_bytes_fake.return_val = 17;
+    int push_return[2] = { 8, 17 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 2);
+
+    int rc = send_ping(opaque_data, 1, &buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error sending)");
+    TEST_ASSERT_MESSAGE(create_ping_frame_fake.call_count == 0, "create_ping_frame called 0 times");
+    TEST_ASSERT_MESSAGE(create_ping_ack_frame_fake.call_count == 1, "create_ping_ack_frame called 1 time");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 2, "frame to bytes is called in send_ping and send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 2, "cbuf_push is called in send_ping and send_goaway");
+    TEST_ASSERT_EQUAL(17, cbuf_push_fake.arg2_val);
 }
 
 void test_send_goaway(void)
@@ -817,6 +878,9 @@ int main(void)
     UNIT_TEST(test_send_data_close_connection);
     UNIT_TEST(test_send_settings_ack);
     UNIT_TEST(test_send_settings_ack_errors);
+    UNIT_TEST(test_send_ping);
+    UNIT_TEST(test_send_ping_ack);
+    UNIT_TEST(test_send_ping_errors);
     UNIT_TEST(test_send_goaway);
     UNIT_TEST(test_send_goaway_close_connection);
     UNIT_TEST(test_send_goaway_errors);
