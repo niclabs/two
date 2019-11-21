@@ -1,12 +1,11 @@
 CONTIKI_PROJECT = tiny
 all: $(CONTIKI_PROJECT)
 
-SRC ?= ../../src
+TWO ?= ../../src
 CONTIKI ?= ../../../contiki-ng
 
-PROJECTDIRS += $(SRC)
-PROJECT_SOURCEFILES=cbuf.c \
-          event.c
+PROJECTDIRS += $(TWO)
+PROJECT_SOURCEFILES=cbuf.c event.c
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 

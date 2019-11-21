@@ -473,7 +473,6 @@ int main()
 #ifdef WITH_CONTIKI
     PROCESS_BEGIN();
 #endif
-
     // set client memory
     memset(http2_ctx_list, 0, EVENT_MAX_DESCRIPTORS * sizeof(http2_ctx_t));
     for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
@@ -488,6 +487,8 @@ int main()
     signal(SIGINT, close_server);
 
     int r = event_listen(server, 8888, on_new_connection);
+
+    INFO("Starting http/2 server in port 8888");
     if (r < 0) {
         ERROR("Could not start server");
         return 1;
