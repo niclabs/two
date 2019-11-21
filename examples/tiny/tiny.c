@@ -300,6 +300,7 @@ int read_settings_payload(event_sock_t *client, ssize_t size, uint8_t *buf)
             }
         }
 
+        DEBUG("read SETTINGS payload");
         // send settings ack
         send_settings_frame(ctx, NULL, 0, true, on_settings_ack_sent);
 
