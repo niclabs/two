@@ -242,7 +242,7 @@ void on_settings_ack_sent(event_sock_t *client, int status)
 }
 
 
-int read_settings_payload(event_sock_t *client, ssize_t size, uint8_t *buf)
+int read_settings_payload(event_sock_t *client, int size, uint8_t *buf)
 {
     // read context from client data
     assert(client->data != NULL);
@@ -330,7 +330,7 @@ int process_header(event_sock_t *client, http2_ctx_t *ctx, frame_header_t *heade
     return 0;
 }
 
-int read_header(event_sock_t *client, ssize_t size, uint8_t *buf)
+int read_header(event_sock_t *client, int size, uint8_t *buf)
 {
     if (size >= HTTP2_HEADER_SIZE) {
         // get client context from socket data
@@ -380,7 +380,7 @@ void on_settings_sent(event_sock_t *client, int status)
     event_read(client, read_header);
 }
 
-int read_preface(event_sock_t *client, ssize_t size, uint8_t *buf)
+int read_preface(event_sock_t *client, int size, uint8_t *buf)
 {
     if (size >= 24) {
         buf[size] = '\0';

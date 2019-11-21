@@ -1,9 +1,7 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include <sys/types.h>
 #include <stdint.h>
-
 #ifndef CONTIKI
 #include <sys/select.h>
 #else
@@ -47,7 +45,7 @@ typedef void (*event_connection_cb)(struct event_sock *server, int status);
 
 // Called whenever new data is available, or a read error occurrs
 // it must return the number of bytes read in order to remove them from the input buffer
-typedef int (*event_read_cb)(struct event_sock *sock, ssize_t size, uint8_t *bytes);
+typedef int (*event_read_cb)(struct event_sock *sock, int size, uint8_t *bytes);
 
 // Will be called when the output buffer is empty
 typedef void (*event_write_cb)(struct event_sock *sock, int status);
@@ -171,7 +169,7 @@ void event_read_stop(event_sock_t *sock);
 
 // Write to the output buffer, will notify the callback when all bytes are
 // written
-int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb cb);
+int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
 
 // Close the socket
 // will notify the callback after all write operations are finished

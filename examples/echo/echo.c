@@ -40,7 +40,7 @@ void echo_write(event_sock_t *client, int status) {
     }
 }
 
-int echo_read(event_sock_t *client, ssize_t nread, uint8_t *buf)
+int echo_read(event_sock_t *client, int nread, uint8_t *buf)
 {
     if (nread > 0) {
         DEBUG("Read '%.*s'", (int)nread - 1, buf);
