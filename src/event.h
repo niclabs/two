@@ -11,17 +11,21 @@
 #include "cbuf.h"
 
 #ifndef CONF_EVENT_MAX_DESCRIPTORS
-#define EVENT_MAX_DESCRIPTORS 4
+#define EVENT_MAX_DESCRIPTORS 3
 #else
 #define EVENT_MAX_DESCRIPTORS (CONF_EVENT_MAX_DESCRIPTORS)
 #endif
 
+// event max sockets should be at least 2 (1 server and 1 client)
 #ifndef CONF_EVENT_MAX_SOCKETS
 #define EVENT_MAX_SOCKETS (EVENT_MAX_DESCRIPTORS)
 #else
 #define EVENT_MAX_SOCKETS (CONF_EVENT_MAX_SOCKETS)
 #endif
 
+// event max handlers should be at least 3
+// 1 listen handler for a server socket
+// 1 read and 1 write handler for a client socket
 #ifndef CONF_EVENT_MAX_HANDLERS
 #define EVENT_MAX_HANDLERS (EVENT_MAX_SOCKETS * 2)
 #else

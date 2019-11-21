@@ -17,11 +17,11 @@
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
 
-#define TINY_MAX_CLIENTS 2
+#define TINY_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
 
 #define HTTP2_PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 #define HTTP2_HEADER_SIZE 9
-#define HTTP2_MAX_FRAME_SIZE 4096
+#define HTTP2_MAX_FRAME_SIZE 512
 
 // settings
 #define HTTP2_SETTINGS_HEADER_TABLE_SIZE (1)
