@@ -4,6 +4,9 @@
 #include <string.h>
 #include <signal.h>
 
+#ifdef WITH_CONTIKI
+#include "contiki.h"
+#endif
 
 #include "event.h"
 
@@ -16,11 +19,11 @@ event_sock_t *server;
 void on_server_close(event_sock_t *handle) {
     (void)handle;
     INFO("Server closed");
-    exit(0);
 }
 
 void close_server(int sig) {
     (void)sig;
+    DEBUG("Signal caught, closing server");
     event_close(server, on_server_close);
 }
 
@@ -69,8 +72,18 @@ void on_new_connection(event_sock_t *server, int status)
     }
 }
 
+#ifdef WITH_CONTIKI
+PROCESS(echo_server_process, "Tiny server process");
+AUTOSTART_PROCESSES(&echo_server_process);
+
+PROCESS_THREAD(echo_server_process, ev, data)
+#else
 int main()
+#endif
 {
+#ifdef WITH_CONTIKI
+    PROCESS_BEGIN();
+#endif
     event_loop_init(&loop);
     server = event_sock_create(&loop);
 
@@ -82,4 +95,8 @@ int main()
         return 1;
     }
     event_loop(&loop);
+
+#ifdef WITH_CONTIKI
+    PROCESS_END();
+#endif
 }
