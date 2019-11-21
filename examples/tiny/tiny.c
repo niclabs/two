@@ -1,18 +1,23 @@
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#include <signal.h>
 
-#ifdef CONTIKI
+#if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
+#include <stdlib.h>
+#include <signal.h>
+#endif
+
+#ifndef CONTIKI
+#include <assert.h>
+#else
 #include "contiki.h"
+#include "lib/assert.h"
 #endif
 
 #include "event.h"
 
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
+
+#define TINY_MAX_CLIENTS 2
 
 #define HTTP2_PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 #define HTTP2_HEADER_SIZE 9
@@ -103,9 +108,15 @@ http2_settings_t default_settings = {
 static event_loop_t loop;
 static event_sock_t *server;
 
-static http2_ctx_t http2_ctx_list[EVENT_MAX_DESCRIPTORS];
+static http2_ctx_t http2_ctx_list[TINY_MAX_CLIENTS];
 static http2_ctx_t *connected;
 static http2_ctx_t *unused;
+
+// define the process here
+#ifdef CONTIKI
+PROCESS(tiny_server_process, "Tiny server process");
+AUTOSTART_PROCESSES(&tiny_server_process);
+#endif
 
 // methods
 http2_ctx_t *get_unused_ctx()
@@ -152,7 +163,12 @@ void on_server_close(event_sock_t *handle)
 {
     (void)handle;
     INFO("Server closed");
+
+#if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
     exit(0);
+#elif defined(CONTIKI)
+    process_exit(&tiny_server_process);
+#endif
 }
 
 void close_server(int sig)
@@ -343,8 +359,13 @@ int read_header(event_sock_t *client, int size, uint8_t *buf)
         frame_header_t *header = &ctx->header;
         parse_frame_header(ctx->frame, header);
 
-        DEBUG("received header = {length: %u, type: %d, flags: %d, stream_id: %u}", \
+#ifdef __arm__
+        DEBUG("received header = {length: %ld, type: %d, flags: %d, stream_id: %ld}", \
           header->length, header->type, header->flags, header->stream_id);
+#else
+        DEBUG("received header = {length: %d, type: %d, flags: %d, stream_id: %d}", \
+          header->length, header->type, header->flags, header->stream_id);
+#endif
         
         event_read_stop(client);
         if (process_header(client, ctx, header) < 0) {
@@ -463,9 +484,6 @@ void on_new_connection(event_sock_t *server, int status)
 }
 
 #ifdef CONTIKI
-PROCESS(tiny_server_process, "Tiny server process");
-AUTOSTART_PROCESSES(&tiny_server_process);
-
 PROCESS_THREAD(tiny_server_process, ev, data)
 #else
 int main()
@@ -475,8 +493,8 @@ int main()
     PROCESS_BEGIN();
 #endif
     // set client memory
-    memset(http2_ctx_list, 0, EVENT_MAX_DESCRIPTORS * sizeof(http2_ctx_t));
-    for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
+    memset(http2_ctx_list, 0, TINY_MAX_CLIENTS * sizeof(http2_ctx_t));
+    for (int i = 0; i < TINY_MAX_CLIENTS - 1; i++) {
         http2_ctx_list[i].next = &http2_ctx_list[i + 1];
     }
     connected = NULL;
@@ -485,7 +503,9 @@ int main()
     event_loop_init(&loop);
     server = event_sock_create(&loop);
 
+#if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
     signal(SIGINT, close_server);
+#endif
 
     int r = event_listen(server, 8888, on_new_connection);
 
