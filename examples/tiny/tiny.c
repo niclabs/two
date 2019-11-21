@@ -5,7 +5,7 @@
 #include <string.h>
 #include <signal.h>
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
 #include "contiki.h"
 #endif
 
@@ -461,7 +461,7 @@ void on_new_connection(event_sock_t *server, int status)
     }
 }
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
 PROCESS(tiny_server_process, "Tiny server process");
 AUTOSTART_PROCESSES(&tiny_server_process);
 
@@ -470,7 +470,7 @@ PROCESS_THREAD(tiny_server_process, ev, data)
 int main()
 #endif
 {
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     PROCESS_BEGIN();
 #endif
     // set client memory
@@ -495,7 +495,7 @@ int main()
     }
     event_loop(&loop);
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     PROCESS_END();
 #endif
 }

@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
 #include <sys/select.h>
 #else
 #include "net/ipv6/tcpip.h"
@@ -56,7 +56,7 @@ typedef void (*event_write_cb)(struct event_sock *sock, int status);
 // the socket is closed
 typedef void (*event_close_cb)(struct event_sock *sock);
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
 typedef uint16_t event_descriptor_t;
 #else
 typedef int event_descriptor_t;
@@ -85,7 +85,7 @@ typedef struct event_write {
     uint8_t buf_data[EVENT_MAX_BUF_SIZE];
     cbuf_t buf;
     event_write_cb cb;
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     int sending;
 #endif
 } event_write_t;
@@ -126,7 +126,7 @@ typedef struct event_sock {
     // close operation
     event_close_cb close_cb;
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     struct uip_conn *uip_conn;
 #endif
 } event_sock_t;
@@ -145,7 +145,7 @@ typedef struct event_loop {
     // loop state
     int running;
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
     // list of file descriptors
     fd_set active_fds;
     int nfds;

@@ -4,7 +4,7 @@
 #include <sys/types.h>
 
 #include <assert.h>
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
 #include "contiki-net.h"
 #else
 #include <sys/select.h>
@@ -18,7 +18,7 @@
 #define LOG_LEVEL_EVENT LOG_LEVEL_DEBUG
 #include "logging.h"
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
 // Main contiki process
 PROCESS(event_loop_process, "Event loop process");
 #endif
@@ -133,7 +133,7 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
         uint8_t buf[readlen];
 
         // perform read in non blocking manner
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
         int count = MIN(readlen, uip_datalen());
         memcpy(buf, uip_appdata, count);
 #else
@@ -184,7 +184,7 @@ void event_do_write(event_sock_t *sock, event_handler_t *handler)
         assert(handler->event.write.cb != NULL);
 
         // attempt to write remaining bytes
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
         // do nothing if already sending
         if (handler->event.write.sending > 0) {
             return;
@@ -197,7 +197,7 @@ void event_do_write(event_sock_t *sock, event_handler_t *handler)
         uint8_t buf[len];
         cbuf_peek(&handler->event.write.buf, buf, len);
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
         // Send data
         uip_send(buf, len);
 
@@ -221,7 +221,7 @@ void event_do_write(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
 void event_loop_poll(event_loop_t *loop)
 {
     assert(loop->nfds >= 0);
@@ -401,14 +401,14 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
         event_do_write(sock, wh);
     }
 }
-#endif // WITH_CONTIKI
+#endif // CONTIKI
 
 void event_loop_close(event_loop_t *loop)
 {
     event_sock_t *curr = loop->polling;
     event_sock_t *prev = NULL;
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
     int max_fds = -1;
 #endif
 
@@ -416,7 +416,7 @@ void event_loop_close(event_loop_t *loop)
         // if the event is closing and we are not waiting to write
         event_handler_t *wh = event_handler_find(curr->handlers, EVENT_WRITE_TYPE);
         if (curr->state == EVENT_SOCK_CLOSING && (wh == NULL || cbuf_len(&wh->event.write.buf) <= 0)) {
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
             // prevent sock to be used in polling
             FD_CLR(curr->descriptor, &loop->active_fds);
 
@@ -462,7 +462,7 @@ void event_loop_close(event_loop_t *loop)
             continue;
         }
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
         if (curr->descriptor > max_fds) {
             max_fds = curr->descriptor;
         }
@@ -472,7 +472,7 @@ void event_loop_close(event_loop_t *loop)
         curr = curr->next;
     }
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
     // update the max file descriptor
     loop->nfds = max_fds + 1;
 #endif
@@ -493,7 +493,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
 
     event_loop_t *loop = sock->loop;
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
     sock->descriptor = socket(AF_INET6, SOCK_STREAM, 0);
     if (sock->descriptor < 0) {
         return -1;
@@ -532,7 +532,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     PROCESS_CONTEXT_BEGIN(&event_loop_process);
     tcp_listen(UIP_HTONS(port));
     PROCESS_CONTEXT_END();
-#endif // WITH_CONTIKI
+#endif // CONTIKI
 
     // update sock state
     sock->state = EVENT_SOCK_LISTENING;
@@ -633,7 +633,7 @@ int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb 
     // write bytes to output buffer
     int to_write = cbuf_push(&handler->event.write.buf, bytes, size);
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     tcpip_poll_tcp(sock->uip_conn);
 #endif
 
@@ -651,7 +651,7 @@ int event_accept(event_sock_t *server, event_sock_t *client)
 
     event_loop_t *loop = client->loop;
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     // Check that a new connection has been established
     assert(server->uip_conn != NULL);
 
@@ -703,7 +703,7 @@ int event_close(event_sock_t *sock, event_close_cb cb)
     sock->state = EVENT_SOCK_CLOSING;
     sock->close_cb = cb;
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     // notify the loop process
     process_post(&event_loop_process, PROCESS_EVENT_CONTINUE, NULL);
 #endif
@@ -719,7 +719,7 @@ void event_loop_init(event_loop_t *loop)
     // reset loop memory
     memset(loop, 0, sizeof(event_loop_t));
 
-#ifndef WITH_CONTIKI
+#ifndef CONTIKI
     // reset active file descriptor list
     FD_ZERO(&loop->active_fds);
 #endif
@@ -764,7 +764,7 @@ event_sock_t *event_sock_create(event_loop_t *loop)
     return sock;
 }
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
 static event_loop_t *loop;
 
 void event_loop(event_loop_t *l)
@@ -782,7 +782,7 @@ PROCESS_THREAD(event_loop_process, ev, data)
 void event_loop(event_loop_t *loop)
 #endif
 {
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     PROCESS_BEGIN();
 #endif
     assert(loop != NULL);
@@ -790,7 +790,7 @@ void event_loop(event_loop_t *loop)
 
     loop->running = 1;
     while (event_loop_is_alive(loop)) {
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
         PROCESS_WAIT_EVENT();
 
         // todo: handle timer events
@@ -809,7 +809,7 @@ void event_loop(event_loop_t *loop)
         event_loop_close(loop);
     }
     loop->running = 0;
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
     PROCESS_END();
 #endif
 }
