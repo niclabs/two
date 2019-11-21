@@ -128,7 +128,7 @@ void event_do_connect(event_sock_t *sock, event_handler_t *handler)
 
 void event_do_read(event_sock_t *sock, event_handler_t *handler)
 {
-    if (handler != NULL && handler->event.read.cb) {
+    if (handler != NULL && handler->event.read.cb != NULL) {
         int readlen = EVENT_MAX_BUF_SIZE - cbuf_len(&handler->event.read.buf);
         uint8_t buf[readlen];
 
@@ -145,11 +145,18 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
             return;
         }
 #endif
-
         // push data into buffer
         cbuf_push(&handler->event.read.buf, buf, count);
-
         int buflen = cbuf_len(&handler->event.read.buf);
+
+#ifdef CONTIKI
+        // in contiki uip_datalen == 0 does not mean that
+        // the connection is closed
+        if (buflen == 0) {
+            return;
+        }
+#endif
+
         uint8_t read_buf[buflen];
         cbuf_peek(&handler->event.read.buf, read_buf, buflen);
 
@@ -292,6 +299,17 @@ void event_loop_poll(event_loop_t *loop)
     }
 }
 #else
+void event_poll_tcp(void *data)
+{
+    event_sock_t *sock = (event_sock_t *)data;
+
+    // perform tcp poll
+    tcpip_poll_tcp(sock->uip_conn);
+
+    // reset timer
+    ctimer_reset(&sock->timer);
+}
+
 void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
@@ -385,10 +403,6 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
         return;
     }
 
-    if (uip_newdata()) {
-        event_do_read(sock, rh);
-    }
-
     if (uip_acked()) {
         event_handle_ack(sock, wh);
     }
@@ -398,6 +412,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     }
 
     if (uip_newdata() || uip_poll()) {
+        event_do_read(sock, rh);
         event_do_write(sock, wh);
     }
 }
@@ -435,6 +450,10 @@ void event_loop_close(event_loop_t *loop)
                 PROCESS_CONTEXT_BEGIN(&event_loop_process);
                 tcp_unlisten(UIP_HTONS(curr->descriptor));
                 PROCESS_CONTEXT_END();
+            }
+            else {
+                // is a client
+                ctimer_stop(&curr->timer);
             }
 #endif
             curr->state = EVENT_SOCK_CLOSED;
@@ -567,7 +586,6 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     if (handler != NULL) {
         // update callback
         handler->event.read.cb = cb;
-
         return 0;
     }
 
@@ -664,6 +682,9 @@ int event_accept(event_sock_t *server, event_sock_t *client)
 
     // use same port for client
     client->descriptor = server->descriptor;
+
+    // set tcp poll timer every 10 ms
+    ctimer_set(&client->timer, CLOCK_SECOND / 100, event_poll_tcp, client);
 #else
     int clifd = accept(server->descriptor, NULL, NULL);
     if (clifd < 0) {
