@@ -13,7 +13,9 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
+#ifndef CONTIKI
 #include <stdlib.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
@@ -72,7 +74,7 @@
 // Condition to check if logging is enabled
 #define SHOULD_LOG(level, module) level >= __LOG_LEVEL(module)
 
-#ifdef WITH_CONTIKI
+#ifdef CONTIKI
 #define LOG_EXIT(code) process_exit(PROCESS_CURRENT())
 #define LOG_PRINT(...) printf(__VA_ARGS__)
 #else
