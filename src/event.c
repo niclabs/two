@@ -3,11 +3,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+#include <assert.h>
 #ifdef WITH_CONTIKI
 #include "contiki-net.h"
-#include "lib/assert.h"
 #else
-#include <assert.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -27,11 +26,13 @@ PROCESS(event_loop_process, "Event loop process");
 
 // List operations
 #define LIST_ELEM (elem)
-#define LIST_PUSH(elem, list)   \
-    {                           \
-        elem->next = list;      \
-        list = elem;            \
-    }
+#define LIST_PUSH(elem, list)       \
+    ({                              \
+        void *next = elem->next;    \
+        elem->next = list;          \
+        list = elem;                \
+        next;                       \
+    })
 #define LIST_POP(list)          \
     ({                          \
         void *elem = list;      \
@@ -54,7 +55,16 @@ PROCESS(event_loop_process, "Event loop process");
         }                                   \
         res;                                \
     });
-
+#define LIST_COUNT(type, list)      \
+    ({                              \
+        type *elem = list;          \
+        int count = 0;              \
+        while (elem != NULL) {      \
+            count ++;                \
+            LIST_NEXT(elem);        \
+        }                           \
+        count;                      \
+    })
 #define LIST_DELETE(type, queue, elem)          \
     ({                                          \
         type *res = NULL;                       \
@@ -259,7 +269,6 @@ void event_loop_poll(event_loop_t *loop)
             if (wh != NULL && cbuf_len(&wh->event.write.buf) > 0) {
                 write = 1;
             }
-
         }
 
         if (!read && !write) {
@@ -322,6 +331,13 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
 {
     event_sock_t *sock = (event_sock_t *)data;
 
+    if (sock != NULL && sock->uip_conn != NULL && sock->uip_conn != uip_conn) {
+        /* Safe-guard: this should not happen, as the incoming event relates to
+         * a previous connection */
+        DEBUG("If you are reading this, there is an implementation error");
+        return;
+    }
+
     if (uip_connected()) {
         if (sock == NULL) { // new client connection
             sock = LIST_FIND(event_sock_t, loop->polling, \
@@ -341,14 +357,14 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
         }
         else {
             if (uip_newdata()) {
-                DEBUG("read new data but there is no socket ready to receive it");
-                // todo: do read ?
+                WARN("read new data but there is no socket ready to receive it yet");
             }
         }
         return;
     }
 
     // no socket for the connection
+    // probably it was remotely closed
     if (sock == NULL) {
         uip_abort();
         return;
@@ -408,6 +424,18 @@ void event_loop_close(event_loop_t *loop)
             close(curr->descriptor);
 #else
             // tcp_markconn()
+            if (curr->uip_conn != NULL) {
+                tcp_markconn(curr->uip_conn, NULL);
+            }
+
+            event_handler_t *ch = event_handler_find(curr->handlers, EVENT_CONNECTION_TYPE);
+            if (ch != NULL) {
+                // If server socket
+                // let UIP know that we are no longer accepting connections on the specified port
+                PROCESS_CONTEXT_BEGIN(&event_loop_process);
+                tcp_unlisten(UIP_HTONS(curr->descriptor));
+                PROCESS_CONTEXT_END();
+            }
 #endif
             curr->state = EVENT_SOCK_CLOSED;
 
@@ -415,8 +443,7 @@ void event_loop_close(event_loop_t *loop)
             curr->close_cb(curr);
 
             // Move curr socket to unused list
-            event_sock_t *next = curr->next;
-            LIST_PUSH(curr, loop->unused);
+            event_sock_t *next = LIST_PUSH(curr, loop->unused);
 
             // remove the socket from the polling list
             // and move the socket back to the unused list
@@ -428,9 +455,7 @@ void event_loop_close(event_loop_t *loop)
             }
 
             // move socket handlers back to the unused handler list
-            for (event_handler_t *h = curr->handlers; h != NULL; h = h->next) {
-                LIST_PUSH(h, loop->unused_handlers);
-            }
+            for (event_handler_t *h = curr->handlers; h != NULL; h = LIST_PUSH(h, loop->unused_handlers)) {}
 
             // move the head forward
             curr = next;
@@ -457,7 +482,6 @@ int event_loop_is_alive(event_loop_t *loop)
 {
     return loop->polling != NULL;
 }
-
 
 // Public methods
 int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
@@ -607,7 +631,13 @@ int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb 
     handler->event.write.cb = cb;
 
     // write bytes to output buffer
-    return cbuf_push(&handler->event.write.buf, bytes, size);
+    int to_write = cbuf_push(&handler->event.write.buf, bytes, size);
+
+#ifdef WITH_CONTIKI
+    tcpip_poll_tcp(sock->uip_conn);
+#endif
+
+    return to_write;
 }
 
 int event_accept(event_sock_t *server, event_sock_t *client)
@@ -625,8 +655,12 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     // Check that a new connection has been established
     assert(server->uip_conn != NULL);
 
+    // Connection belongs to the client
+    client->uip_conn = server->uip_conn;
+    server->uip_conn = NULL;
+
     // attach socket state to uip_connection
-    tcp_markconn(server->uip_conn, client);
+    tcp_markconn(client->uip_conn, client);
 
     // use same port for client
     client->descriptor = server->descriptor;
@@ -668,6 +702,11 @@ int event_close(event_sock_t *sock, event_close_cb cb)
     // set sock state and callback
     sock->state = EVENT_SOCK_CLOSING;
     sock->close_cb = cb;
+
+#ifdef WITH_CONTIKI
+    // notify the loop process
+    process_post(&event_loop_process, PROCESS_EVENT_CONTINUE, NULL);
+#endif
 
     return 0;
 }
@@ -726,11 +765,12 @@ event_sock_t *event_sock_create(event_loop_t *loop)
 }
 
 #ifdef WITH_CONTIKI
-static event_loop_t * loop;
+static event_loop_t *loop;
 
 void event_loop(event_loop_t *l)
 {
     assert(l != NULL);
+    assert(loop == NULL);
 
     // set global variable
     loop = l;
@@ -769,7 +809,6 @@ void event_loop(event_loop_t *loop)
         event_loop_close(loop);
     }
     loop->running = 0;
-
 #ifdef WITH_CONTIKI
     PROCESS_END();
 #endif
