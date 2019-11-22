@@ -1058,17 +1058,108 @@ void test_send_headers_errors_with_continuation(void)
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 9, "cbuf push call must be called in send_headers_fame, send_continuation_frame x2 and send_goaway");
 }
 
-/*
-   void test_send_response(void){}
-
-   void test_send_response_errors(void){}
-
- */
-
-void test_example(void)
+void test_send_response(void)
 {
-    TEST_FAIL();
+    cbuf_t buf_out;
+    h2states_t h2s_data;
+    h2states_t h2s_nodata;
+
+    h2s_data.data.size = 10;
+    h2s_data.data.processed = 0;
+    h2s_data.headers.n_entries = 10;
+    h2s_data.received_goaway = 0;
+    h2s_data.current_stream.state = STREAM_OPEN;
+    h2s_data.current_stream.stream_id = 24;
+
+
+    h2s_nodata.data.size = 0;
+    h2s_nodata.data.processed = 0;
+    h2s_nodata.headers.n_entries = 10;
+    h2s_nodata.received_goaway = 0;
+    h2s_nodata.current_stream.state = STREAM_OPEN;
+    h2s_nodata.current_stream.stream_id = 24;
+
+
+    headers_count_fake.return_val = 10;
+    compress_headers_fake.return_val = 20;
+    read_setting_from_fake.return_val = 20;
+    get_size_data_to_send_fake.return_val = 10;
+
+
+    int rc = send_response(&buf_out, &h2s_data);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_EQUAL(1, create_headers_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(0, create_continuation_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, create_data_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(2, set_flag_fake.call_count);
+    TEST_ASSERT_MESSAGE(h2s_data.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "stream state must be STREAM_HALF_CLOSED_LOCAL");
+    TEST_ASSERT_MESSAGE(h2s_data.data.size == 0, "data size must be 0");
+    TEST_ASSERT_MESSAGE(h2s_data.data.processed == 0, "data processed must be 0");
+
+    rc = send_response(&buf_out, &h2s_nodata);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_EQUAL(2, create_headers_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(0, create_continuation_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, create_data_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(4, set_flag_fake.call_count);
+    TEST_ASSERT_MESSAGE(h2s_nodata.current_stream.state == STREAM_HALF_CLOSED_LOCAL, "stream state must be STREAM_HALF_CLOSED_LOCAL");
+    TEST_ASSERT_MESSAGE(h2s_nodata.data.size == 0, "data size must remain 0");
+    TEST_ASSERT_MESSAGE(h2s_nodata.data.processed == 0, "data processed must remain 0");
+
+
 }
+
+void test_send_response_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+    h2states_t h2s_bad_headers;
+    h2states_t h2s_bad_headers_data;
+    h2states_t h2s_bad_data;
+
+
+    int headers_count_return[5] = { 0, 10, 10, 10, 10 };
+    SET_RETURN_SEQ(headers_count, headers_count_return, 5);
+    compress_headers_fake.return_val = 20;
+    read_setting_from_fake.return_val = 20;
+    flow_control_send_data_fake.return_val = HTTP2_RC_ERROR;
+
+    h2s_bad_headers.data.size = 0;
+    h2s_bad_headers.data.processed = 0;
+    h2s_bad_headers.received_goaway = 1;
+
+    h2s_bad_data.data.size = 20;
+    h2s_bad_data.data.processed = 0;
+    h2s_bad_data.received_goaway = 0;
+    h2s_bad_data.headers.n_entries = 10;
+    h2s_bad_data.current_stream.state = STREAM_OPEN;
+
+    h2s_bad_headers_data.data.size = 20;
+    h2s_bad_headers_data.data.processed = 0;
+    h2s_bad_headers_data.received_goaway = 1;
+
+    int rc = send_response(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (no headers)");
+    TEST_ASSERT_EQUAL(1, headers_count_fake.call_count);
+    TEST_ASSERT_EQUAL(0, create_headers_frame_fake.call_count);
+    rc = send_response(&buf_out, &h2s_bad_headers);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (goaway received)");
+    TEST_ASSERT_EQUAL(2, headers_count_fake.call_count);
+    TEST_ASSERT_EQUAL(0, create_headers_frame_fake.call_count);
+    rc = send_response(&buf_out, &h2s_bad_headers_data);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (goaway received)");
+    TEST_ASSERT_EQUAL(3, headers_count_fake.call_count);
+    TEST_ASSERT_EQUAL(0, create_headers_frame_fake.call_count);
+    rc = send_response(&buf_out, &h2s_bad_data);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error in send_data: flowcontrol)");
+    TEST_ASSERT_EQUAL(5, headers_count_fake.call_count);
+    TEST_ASSERT_EQUAL(1, create_headers_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, create_data_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(2, set_flag_fake.call_count);
+    TEST_ASSERT_EQUAL(1, flow_control_send_data_fake.call_count);
+
+}
+
 
 int main(void)
 {
@@ -1107,6 +1198,8 @@ int main(void)
     UNIT_TEST(test_send_headers_errors);
     UNIT_TEST(test_send_headers_errors_one_header);
     UNIT_TEST(test_send_headers_errors_with_continuation);
+    UNIT_TEST(test_send_response);
+    UNIT_TEST(test_send_response_errors);
 
     return UNIT_TESTS_END();
 }
