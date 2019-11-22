@@ -102,7 +102,7 @@ void test_check_incoming_data_condition_errors(void)
     head_idlt.stream_id = 2438;
     h2s.header = head_idlt;
     rc = check_incoming_data_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, (stream id invalid)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, (stream id invalid STREAM_CLOSED_ERROR)");
 
     // 6th test: Stream in IDLE
     frame_header_t head;
@@ -176,6 +176,7 @@ void test_check_incoming_headers_condition_error(void)
     head_ngt.length = 100;
     h2s_last.waiting_for_end_headers_flag = 0;
     h2s_last.last_open_stream_id = 124;
+    h2s_last.current_stream.state = STREAM_IDLE;
     h2s_last.header = head_ngt;
 
     h2states_t h2s_parity;
@@ -185,14 +186,17 @@ void test_check_incoming_headers_condition_error(void)
     h2s_parity.is_server = 1;
     h2s_parity.waiting_for_end_headers_flag = 0;
     h2s_parity.last_open_stream_id = 2;
+    h2s_parity.current_stream.state = STREAM_IDLE;
     h2s_parity.header = head_parity;
 
     h2states_t h2s_parity_c;
     frame_header_t head_parity_c;
     head_parity_c.stream_id = 17;
+    head_parity_c.length = 100;
     h2s_parity_c.is_server = 0;
     h2s_parity_c.waiting_for_end_headers_flag = 0;
     h2s_parity_c.last_open_stream_id = 3;
+    h2s_parity_c.current_stream.state = STREAM_IDLE;
     h2s_parity_c.header = head_parity_c;
 
     uint32_t read_setting_from_returns[1] = { 128 };
@@ -472,7 +476,7 @@ void test_check_incoming_continuation_condition_errors(void)
     h2s.header.length = 180;
     h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (strean not open)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream not open)");
 
     h2s.current_stream.state = STREAM_IDLE;
     rc = check_incoming_continuation_condition(&buf_out, &h2s);
