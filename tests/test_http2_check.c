@@ -3,7 +3,7 @@
 #include "logging.h"
 #include "http2/structs.h"  // for h2states_t
 #include "http2/check.h"
-#include "frames/structs.h"  // for frame_header_t
+#include "frames/structs.h" // for frame_header_t
 #include "cbuf.h"           // for cbuf
 
 
@@ -57,6 +57,13 @@ void test_check_incoming_data_condition_errors(void)
     uint32_t read_setting_from_returns[1] = { 128 };
 
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
+    // 0 test: flag waiting_for_HEADERS_frame must not
+    h2states_t h2s_waiting_headers;
+
+    h2s_waiting_headers.waiting_for_HEADERS_frame = 1;
+    rc = check_incoming_data_condition(&buf_out, &h2s_waiting_headers);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, (headers frame expected)");
 
     // 1st test: end_headers flag has not been received
     h2states_t h2s_flag;
@@ -134,6 +141,7 @@ void test_check_incoming_headers_condition(void)
     cbuf_t buf_out;
     frame_header_t head;
     h2states_t h2s;
+    h2states_t h2s_waiting_headers;
 
     head.stream_id = 2440;
     head.length = 128;
@@ -144,10 +152,25 @@ void test_check_incoming_headers_condition(void)
     h2s.header = head;
     uint32_t read_setting_from_returns[1] = { 128 };
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 1);
+
     int rc = check_incoming_headers_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be HTTP2_RC_NO_ERROR");
     TEST_ASSERT_MESSAGE(h2s.current_stream.stream_id == 2440, "Stream id must be 2440");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s.waiting_for_HEADERS_frame == 0, "waiting_for_HEADERS_frame must be 0");
+
+    h2s_waiting_headers.is_server = 0;
+    h2s_waiting_headers.waiting_for_HEADERS_frame = 1;
+    h2s_waiting_headers.waiting_for_end_headers_flag = 0;
+    h2s_waiting_headers.current_stream.stream_id = 2440;
+    h2s_waiting_headers.current_stream.state = STREAM_OPEN;
+    h2s_waiting_headers.header = head;
+    rc = check_incoming_headers_condition(&buf_out, &h2s_waiting_headers);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "Return code must be HTTP2_RC_NO_ERROR");
+    TEST_ASSERT_MESSAGE(h2s_waiting_headers.current_stream.stream_id == 2440, "Stream id must be 2440");
+    TEST_ASSERT_MESSAGE(h2s_waiting_headers.current_stream.state == STREAM_OPEN, "Stream state must be STREAM_OPEN");
+    TEST_ASSERT_MESSAGE(h2s_waiting_headers.waiting_for_HEADERS_frame == 0, "waiting_for_HEADERS_frame must be 0");
+
 }
 
 void test_check_incoming_headers_condition_error(void)
@@ -301,7 +324,7 @@ void test_check_incoming_settings_condition(void)
     h2s.header = header_ack;
     rc = check_incoming_settings_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(is_flag_set_fake.call_count == 2, "is flag set must be called for second time");
-    TEST_ASSERT_MESSAGE(rc ==HTTP2_RC_ACK_RECEIVED, "RC must be HTTP2_RC_ACK_RECEIVED. ACK flag was setted and payload size was 0");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_ACK_RECEIVED, "RC must be HTTP2_RC_ACK_RECEIVED. ACK flag was setted and payload size was 0");
     TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait must be changed to 0");
 
     rc = check_incoming_settings_condition(&buf_out, &h2s);
@@ -435,6 +458,7 @@ void test_check_incoming_continuation_condition(void)
     h2s.current_stream.stream_id = 440;
     h2s.current_stream.state = STREAM_OPEN;
     h2s.waiting_for_end_headers_flag = 1;
+    h2s.waiting_for_HEADERS_frame = 0;
     h2s.header = head;
 
     uint32_t read_setting_from_returns[1] = { 280 };
@@ -453,12 +477,18 @@ void test_check_incoming_continuation_condition_errors(void)
     head.length = 290;
     h2s.current_stream.stream_id = 440;
     h2s.current_stream.state = STREAM_OPEN;
-    h2s.waiting_for_end_headers_flag = 0;
+    h2s.waiting_for_end_headers_flag = 1;
+    h2s.waiting_for_HEADERS_frame = 1;
     h2s.header = head;
     uint32_t read_setting_from_returns[4] = { 280, 280, 280, DEFAULT_MAX_FRAME_SIZE };
     SET_RETURN_SEQ(read_setting_from, read_setting_from_returns, 4);
 
     int rc = check_incoming_continuation_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (headers frame was expected)");
+
+    h2s.waiting_for_HEADERS_frame = 0;
+    h2s.waiting_for_end_headers_flag = 0;
+    rc = check_incoming_continuation_condition(&buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (not previous headers)");
 
     h2s.waiting_for_end_headers_flag = 1;
