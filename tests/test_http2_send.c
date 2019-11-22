@@ -318,20 +318,14 @@ void test_send_settings_ack_errors(void)
 
     frame_to_bytes_fake.return_val = 9;
 
-    int push_return[3] = { 9, 4, 9 };
-    SET_RETURN_SEQ(cbuf_push, push_return, 3);
+    int push_return[2] = { 4, 9 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 2);
 
     int rc = send_settings_ack(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "RC must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, error creating");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "RC must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, error sending");
     TEST_ASSERT_MESSAGE(create_settings_ack_frame_fake.call_count == 1, "ACK creation called one time");
-    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame to bytes is called when sending goaway");
-    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push is called when sending goaway");
-
-    rc = send_settings_ack(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "RC must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, error writing to cbuf");
-    TEST_ASSERT_MESSAGE(create_settings_ack_frame_fake.call_count == 2, "ACK creation called one time");
-    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 3, "frame to bytes called in send settings and send goaway");
-    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf_push called in send settings and send goaway");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 2, "frame to bytes is called when sending goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 2, "cbuf_push is called when sending goaway");
     TEST_ASSERT_EQUAL(9, cbuf_push_fake.arg2_val);
 
 }
@@ -670,22 +664,15 @@ void test_send_local_settings_errors(void)
 
     frame_to_bytes_fake.return_val = 16;
 
-    int push_return[3] = { 16, 4, 16 };
-    SET_RETURN_SEQ(cbuf_push, push_return, 3);
+    int push_return[2] = { 4, 16 };
+    SET_RETURN_SEQ(cbuf_push, push_return, 2);
 
     int rc = send_local_settings(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_NO_ERROR, "rc must be HTTP2_NO_ERROR (success)");
-    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 1, "wait setting ack must be 1");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error writing)");
+    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 0, "wait setting ack must be 0");
     TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 1, "create_settings_frame must be called once");
-    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 1, "frame_to_bytes must be called once in send_goaway");
-    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf_push must be called once in send_goaway");
-
-    rc = send_local_settings(&buf_out, &h2s);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (create error)");
-    TEST_ASSERT_MESSAGE(h2s.wait_setting_ack == 1, "wait setting ack must be 1");
-    TEST_ASSERT_MESSAGE(create_settings_frame_fake.call_count == 2, "create_settings_frame must be called once");
-    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 3, "frame_to_bytes must be called in send_local_settings and send_goaway");
-    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf_push must be called in send_local_settings and send_goaway");
+    TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 2, "frame_to_bytes must be called once in send_goaway");
+    TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 2, "cbuf_push must be called once in send_goaway");
     TEST_ASSERT_MESSAGE(cbuf_push_fake.arg2_val == 16, "size_byte_mysettings must be 16");
 
 }
@@ -956,14 +943,14 @@ void test_send_headers_errors(void)
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 1, "cbuf push call must be called in send_goaway");
 
     rc = send_headers(1, &buf_out, &h2s_zero);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (goaway received)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (no headers)");
     TEST_ASSERT_EQUAL(0, create_headers_frame_fake.call_count);
     TEST_ASSERT_EQUAL(1, headers_count_fake.call_count);
     TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 2, "Frame to bytes must be called in send_goaway");
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 2, "cbuf push call must be called in send_goaway");
 
     rc = send_headers(1, &buf_out, &h2s_cver);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (goaway received)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error compressing)");
     TEST_ASSERT_EQUAL(0, create_headers_frame_fake.call_count);
     TEST_ASSERT_EQUAL(2, headers_count_fake.call_count);
     TEST_ASSERT_EQUAL(1, compress_headers_fake.call_count);
@@ -971,7 +958,7 @@ void test_send_headers_errors(void)
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 3, "cbuf push call must be called in send_goaway");
 
     rc = send_headers(1, &buf_out, &h2s_cver);
-    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (goaway received)");
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream error in send_..._verification)");
     TEST_ASSERT_EQUAL(0, create_headers_frame_fake.call_count);
     TEST_ASSERT_EQUAL(3, headers_count_fake.call_count);
     TEST_ASSERT_EQUAL(2, compress_headers_fake.call_count);
