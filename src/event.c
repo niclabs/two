@@ -619,7 +619,7 @@ void event_read_stop(event_sock_t *sock)
     handler->event.read.cb = NULL;
 }
 
-int event_write(event_sock_t *sock, size_t size, uint8_t *bytes, event_write_cb cb)
+int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
 {
     // check socket status
     assert(sock != NULL);
