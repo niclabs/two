@@ -242,9 +242,7 @@ void test_send_data_errors(void)
     rc = send_data(0, &buf_out, &h2s_wstate);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "wrong state for sending data");
 
-
     get_size_data_to_send_fake.return_val = 32;
-
 
     h2states_t h2s_write;
     h2s_write.data.size = 32;
@@ -258,8 +256,8 @@ void test_send_data_errors(void)
     rc = send_data(0, &buf_out, &h2s_write);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "error writing data frame");
 
-
     h2states_t h2s_fc;
+
     h2s_fc.data.size = 32;
     h2s_fc.data.processed = 0;
     h2s_fc.current_stream.state = STREAM_OPEN;
@@ -294,7 +292,6 @@ void test_send_data_close_connection(void)
     TEST_ASSERT_MESSAGE(h2s.data.size == 36, "value of data size must remain as 36");
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_CLOSED, "stream state must be STREAM_CLOSED");
 
-
 }
 
 void test_send_settings_ack(void)
@@ -318,7 +315,6 @@ void test_send_settings_ack_errors(void)
 {
     cbuf_t buf_out;
     h2states_t h2s;
-
 
     frame_to_bytes_fake.return_val = 9;
 
@@ -672,7 +668,6 @@ void test_send_local_settings_errors(void)
         h2s.remote_settings[i] = 1;
     }
 
-
     frame_to_bytes_fake.return_val = 16;
 
     int push_return[3] = { 16, 4, 16 };
@@ -744,7 +739,6 @@ void test_send_continuation_frame_errors(void)
     int push_return[2] = { 16, 32 };
     SET_RETURN_SEQ(cbuf_push, push_return, 2);
 
-
     rc = send_continuation_frame(buff, 32, 5, 1, &buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error writing)");
     TEST_ASSERT_MESSAGE(create_continuation_frame_fake.call_count == 1, "Create continuation frame call count must be 1");
@@ -780,7 +774,6 @@ void test_send_headers_frame_end_headers(void)
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
-
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
 
@@ -800,7 +793,6 @@ void test_send_headers_frame_end_stream(void)
     cbuf_t buf_out;
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
-
 
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
@@ -843,7 +835,6 @@ void test_send_headers_frame_errors(void)
     frame_to_bytes_fake.return_val = 32;
     int push_return[2] = { 16, 32 };
     SET_RETURN_SEQ(cbuf_push, push_return, 2);
-
 
     rc = send_headers_frame(buff, 32, 5, 0, 0, &buf_out, &h2s);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "Return code must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error writing)");
@@ -1071,7 +1062,6 @@ void test_send_response(void)
     h2s_data.current_stream.state = STREAM_OPEN;
     h2s_data.current_stream.stream_id = 24;
 
-
     h2s_nodata.data.size = 0;
     h2s_nodata.data.processed = 0;
     h2s_nodata.headers.n_entries = 10;
@@ -1079,12 +1069,10 @@ void test_send_response(void)
     h2s_nodata.current_stream.state = STREAM_OPEN;
     h2s_nodata.current_stream.stream_id = 24;
 
-
     headers_count_fake.return_val = 10;
     compress_headers_fake.return_val = 20;
     read_setting_from_fake.return_val = 20;
     get_size_data_to_send_fake.return_val = 10;
-
 
     int rc = send_response(&buf_out, &h2s_data);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
@@ -1117,8 +1105,8 @@ void test_send_response_errors(void)
     h2states_t h2s_bad_headers_data;
     h2states_t h2s_bad_data;
 
-
     int headers_count_return[5] = { 0, 10, 10, 10, 10 };
+
     SET_RETURN_SEQ(headers_count, headers_count_return, 5);
     compress_headers_fake.return_val = 20;
     read_setting_from_fake.return_val = 20;
