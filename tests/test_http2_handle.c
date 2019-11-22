@@ -139,7 +139,7 @@ void test_handle_headers_payload_end_stream_flag(void)
     int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(10, h2s.header_block_fragments_pointer, "Pointer must be equal to 10");
-    TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_end_stream, "Pointer must be equal to 10");
+    TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_end_stream, "Received end stream must be equal to 1");
 }
 
 void test_handle_headers_payload_end_headers_flag(void)
@@ -161,7 +161,7 @@ void test_handle_headers_payload_end_headers_flag(void)
     read_setting_from_fake.return_val = 20;
     int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
-    TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be equal to 10");
+    TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be equal to 0");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.received_end_stream, "Pointer must be equal to 10");
 }
 
