@@ -390,6 +390,36 @@ void test_check_incoming_goaway_condition_errors(void)
 
 }
 
+void test_check_incoming_ping_condition(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s;
+
+    h2s.header.stream_id = 0;
+    h2s.header.length = 8;
+    int rc = check_incoming_ping_condition(&buf_out, &h2s);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
+}
+
+void test_check_incoming_ping_condition_errors(void)
+{
+    cbuf_t buf_out;
+    h2states_t h2s_id;
+    h2states_t h2s_length;
+
+    h2s_id.header.stream_id = 24;
+    h2s_id.header.length = 8;
+
+    h2s_length.header.stream_id = 0;
+    h2s_length.header.length = 10;
+
+    int rc = check_incoming_ping_condition(&buf_out, &h2s_id);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (wrong stream id)");
+
+    rc = check_incoming_ping_condition(&buf_out, &h2s_length);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (wrong length)");
+}
+
 void test_check_incoming_continuation_condition(void)
 {
     frame_header_t head;
@@ -470,6 +500,8 @@ int main(void)
     UNIT_TEST(test_check_incoming_settings_condition_errors);
     UNIT_TEST(test_check_incoming_goaway_condition);
     UNIT_TEST(test_check_incoming_goaway_condition_errors);
+    UNIT_TEST(test_check_incoming_ping_condition);
+    UNIT_TEST(test_check_incoming_ping_condition_errors);
     UNIT_TEST(test_check_incoming_continuation_condition);
     UNIT_TEST(test_check_incoming_continuation_condition_errors);
 
