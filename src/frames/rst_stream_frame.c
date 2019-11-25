@@ -36,6 +36,7 @@ void create_rst_stream_frame(frame_header_t *frame_header, rst_stream_payload_t 
  */
 int rst_stream_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
+    (void) frame_header;
     rst_stream_payload_t *rst_stream_payload = (rst_stream_payload_t *)payload;
 
 /*    if (frame_header->length < 4) {
