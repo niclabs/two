@@ -79,10 +79,12 @@ int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *by
 {
     DEBUG("Reading GOAWAY payload");
     goaway_payload_t *goaway_payload = (goaway_payload_t *)payload;
+    /*
+     * We shouldn't check twice if the length of the header is OK
     if (frame_header->length < 4) {
         ERROR("Length < 4, FRAME_SIZE_ERROR");
         return -1;
-    }
+    }*/
     int pointer = 0;
     uint32_t last_stream_id = bytes_to_uint32_31(bytes + pointer);
     pointer += 4;
@@ -92,10 +94,11 @@ int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *by
     pointer += 4;
 
     uint32_t additional_debug_data_size = frame_header->length - 8;
-    int rc = buffer_copy(goaway_payload->additional_debug_data, bytes + pointer, additional_debug_data_size);
-    if (rc < 0) {
+    /*int rc = */
+    buffer_copy(goaway_payload->additional_debug_data, bytes + pointer, additional_debug_data_size);
+    /*if (rc < 0) {
         ERROR("error in buffer copy");
         return -1;
-    }
+    }*/
     return frame_header->length;
 }
