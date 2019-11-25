@@ -30,6 +30,6 @@ jobs:
 env:
 # Global environment variables, i.e., set for all builds
   global:
-    - DOCKER_IMG='niclabs/embeddable'
+    - DOCKER_IMG='niclabs/embeddable:minimal'
     - TWO_HOST_PATH=`pwd`
     - SH='docker exec -t embeddable bash -c'
