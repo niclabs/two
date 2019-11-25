@@ -60,6 +60,7 @@ int rst_stream_payload_to_bytes(frame_header_t *frame_header, void *payload, uin
  */
 int read_rst_stream_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
+    (void) frame_header;
     rst_stream_payload_t *rst_stream_payload = (rst_stream_payload_t *)payload;
     /*
      * useless check should be on frames
