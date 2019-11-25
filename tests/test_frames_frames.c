@@ -435,26 +435,45 @@ void test_frame_header_to_bytes_reserved(void)
 
 void test_bytes_to_frame_header(void)
 {
+    /*Test all frame types*/
+    for(int i = 1; i < 11; i++){
+        frame_header_t header;
+
+        uint32_t length = 6;
+        uint32_t stream_id = 0;
+        uint8_t type = i;
+        uint8_t flags = 0x0;
+        uint8_t bytes[9] = { 0, 0, length, type, flags, 0, 0, 0, 0 };
+
+        bytes_to_uint32_24_fake.return_val = length;
+        bytes_to_uint32_31_fake.return_val = stream_id;
+
+        frame_header_from_bytes(bytes, 9, &header);
+
+        TEST_ASSERT_EQUAL_MESSAGE(length, header.length, "wrong length.");
+        TEST_ASSERT_EQUAL_MESSAGE(flags, header.flags, "wrong flag.");
+        TEST_ASSERT_EQUAL_MESSAGE(type, header.type, "wrong type.");
+        TEST_ASSERT_EQUAL_MESSAGE(stream_id, header.stream_id, "wrong tream id.");
+        TEST_ASSERT_EQUAL_MESSAGE(0, header.reserved, "wrong Reserved bit.");
+
+    }
+}
+
+void test_bytes_to_frame_header_error(void)
+{
+    frame_header_t header;
+
     uint32_t length = 6;
     uint32_t stream_id = 0;
-    uint8_t type = 0x4;
+    uint8_t type = 1;
     uint8_t flags = 0x0;
-    uint8_t bytes[9] = { 0, 0, 6, type, flags, 0, 0, 0, 0 };
-
-
-    frame_header_t decoder_frame_header;
-
+    uint8_t bytes[9] = { 0, 0, length, type, flags, 0, 0, 0};
 
     bytes_to_uint32_24_fake.return_val = length;
     bytes_to_uint32_31_fake.return_val = stream_id;
 
-    frame_header_from_bytes(bytes, 9, &decoder_frame_header);
-
-    TEST_ASSERT_EQUAL_MESSAGE(length, decoder_frame_header.length, "wrong length.");
-    TEST_ASSERT_EQUAL_MESSAGE(flags, decoder_frame_header.flags, "wrong flag.");
-    TEST_ASSERT_EQUAL_MESSAGE(type, decoder_frame_header.type, "wrong type.");
-    TEST_ASSERT_EQUAL_MESSAGE(stream_id, decoder_frame_header.stream_id, "wrong tream id.");
-    TEST_ASSERT_EQUAL_MESSAGE(0, decoder_frame_header.reserved, "wrong Reserved bit.");
+    int rc = frame_header_from_bytes(bytes, 8, &header);
+    TEST_ASSERT_EQUAL(-1,rc);
 }
 
 
@@ -781,6 +800,7 @@ int main(void)
     UNIT_TEST(test_frame_header_to_bytes);
     UNIT_TEST(test_frame_header_to_bytes_reserved);
     UNIT_TEST(test_bytes_to_frame_header);
+    UNIT_TEST(test_bytes_to_frame_header_error);
 
     UNIT_TEST(test_frame_to_bytes_headers)
     UNIT_TEST(test_frame_to_bytes_continuation)
