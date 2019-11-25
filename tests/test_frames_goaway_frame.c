@@ -124,6 +124,34 @@ void test_goaway_payload_to_bytes(void)
     }
 }
 
+void test_goaway_payload_to_bytes_error(void)
+{
+    frame_header_t frame_header;
+
+    frame_header.length = 16;
+    frame_header.type = GOAWAY_TYPE;
+    frame_header.flags = 0x0;
+    frame_header.stream_id = 0;
+
+    goaway_payload_t goaway_payload;
+    goaway_payload.last_stream_id = 30;
+    goaway_payload.error_code = 1;
+    uint8_t additional_debug_data[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    goaway_payload.additional_debug_data = additional_debug_data;
+
+    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
+    uint32_31_to_byte_array_fake.return_val = -1;
+    uint32_to_byte_array_fake.return_val = -1;
+
+    uint8_t byte_array[16];
+
+    int rc = goaway_payload_to_bytes(&frame_header, &goaway_payload, byte_array);
+    TEST_ASSERT_EQUAL(-1, rc);
+    uint32_31_to_byte_array_fake.return_val = 0;
+    rc = goaway_payload_to_bytes(&frame_header, &goaway_payload, byte_array);
+    TEST_ASSERT_EQUAL(-1, rc);
+}
+
 
 void test_read_goaway_payload(void)
 {
@@ -176,6 +204,7 @@ int main(void)
     // Call tests here
     UNIT_TEST(test_create_goaway_frame);
     UNIT_TEST(test_goaway_payload_to_bytes);
+    UNIT_TEST(test_goaway_payload_to_bytes_error);
     UNIT_TEST(test_read_goaway_payload);
 
     return UNIT_TESTS_END();
