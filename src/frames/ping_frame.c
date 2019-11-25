@@ -25,7 +25,7 @@
 int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
     ping_payload_t *ping_payload = (ping_payload_t *)payload;
-
+/*
     if (frame_header->stream_id != 0x0) {
         //Protocol ERROR
         ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
@@ -35,6 +35,7 @@ int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
         ERROR("PING frame with Length != 8, FRAME_SIZE_ERROR");
         return -1;
     }
+    */
     int rc = buffer_copy(byte_array, ping_payload->opaque_data, frame_header->length);
     return rc;
 }
@@ -86,6 +87,8 @@ int read_ping_payload(frame_header_t *frame_header, void *payload, uint8_t *byte
 {
     ping_payload_t *ping_payload = (ping_payload_t *)payload;
 
+    /*This check should be on the frame_header*/
+    /*
     if (frame_header->length != 8) {
         ERROR("PING frame with Length != 8, FRAME_SIZE_ERROR");
         return -1;
@@ -95,7 +98,7 @@ int read_ping_payload(frame_header_t *frame_header, void *payload, uint8_t *byte
         ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
         return -1;
     }
-
+*/
     int rc = buffer_copy(ping_payload->opaque_data, bytes, 8);
     if (rc < 0) {
         ERROR("error in buffer copy");

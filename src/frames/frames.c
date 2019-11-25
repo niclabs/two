@@ -38,15 +38,40 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 }
 
 
-int check_frame_errors(uint8_t type, uint32_t length)
+int check_frame_errors(frame_header_t* frame_header)
 {
+    uint8_t type = frame_header->type;
+    uint32_t length = frame_header->length;
+    uint32_t stream_id = frame_header->stream_id;
+
     switch (type) {
         case DATA_TYPE:
         case HEADERS_TYPE:
         case CONTINUATION_TYPE:
-        case RST_STREAM_TYPE:
-        case PING_TYPE:
             return 0;
+        case RST_STREAM_TYPE: {
+            if (length != 4) {
+                ERROR("Length != 4, FRAME_SIZE_ERROR");
+                return -1;
+            }
+            if (stream_id == 0x0) {
+                ERROR("stream_id of RST STREAM FRAME is 0, PROTOCOL_ERROR");
+                return -1;
+            }
+            return 0;
+        }
+        case PING_TYPE: {
+            if (length != 8) {
+                ERROR("PING frame with Length != 8, FRAME_SIZE_ERROR");
+                return -1;
+            }
+            if (stream_id != 0x0) {
+                //Protocol ERROR
+                ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
+                return -1;
+            }
+            return 0;
+        }
         case PRIORITY_TYPE: //NOT IMPLEMENTED YET
         case PUSH_PROMISE_TYPE:
             return -1;
@@ -92,9 +117,7 @@ int check_frame_errors(uint8_t type, uint32_t length)
 int frame_to_bytes(frame_t *frame, uint8_t *bytes)
 {
     frame_header_t *frame_header = frame->frame_header;
-    uint32_t length = frame_header->length;
-    uint8_t type = frame_header->type;
-    int errors = check_frame_errors(type, length);
+    int errors = check_frame_errors(frame_header);
 
     if (errors < 0) {
         //Error in frame
@@ -103,7 +126,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
 
     uint8_t frame_header_bytes[9];
     int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-    uint8_t bytes_array[length];
+    uint8_t bytes_array[frame_header->length];
     int size = frame_header->callback_payload_to_bytes(frame_header, frame->payload, bytes_array);
     int new_size = append_byte_arrays(bytes, frame_header_bytes, bytes_array, frame_header_bytes_size, size);
     return new_size;
@@ -190,6 +213,13 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
     frame_header->flags = (uint8_t)(byte_array[4]);
     frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
     frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
+
+    int errors = check_frame_errors(frame_header);
+
+    if (errors < 0) {
+        //Error in frame
+        return errors;
+    }
 
     switch (frame_header->type) {
         case WINDOW_UPDATE_TYPE:

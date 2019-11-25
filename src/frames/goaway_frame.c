@@ -20,10 +20,6 @@ int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t
 {
     goaway_payload_t *goaway_payload = (goaway_payload_t *)payload;
 
-    if (frame_header->length < 4) {
-        ERROR("Length< 4, FRAME_SIZE_ERROR");
-        return -1;
-    }
     int pointer = 0;
     int rc = uint32_31_to_byte_array(goaway_payload->last_stream_id, byte_array + pointer);
     if (rc < 0) {

@@ -17,12 +17,9 @@
  */
 int window_update_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
+    (void) frame_header;
     window_update_payload_t *window_update_payload = (window_update_payload_t *)payload;
 
-    if (frame_header->length != 4) {
-        ERROR("Length != 4, FRAME_SIZE_ERROR");
-        return -1;
-    }
     byte_array[0] = 0;
     int rc = uint32_31_to_byte_array(window_update_payload->window_size_increment, byte_array);
     if (rc < 0) {
@@ -67,10 +64,7 @@ int read_window_update_payload(frame_header_t *frame_header, void *payload,  uin
 {
     DEBUG("Reading WINDOW UPDATE payload");
     window_update_payload_t *window_update_payload = (window_update_payload_t *)payload;
-    if (frame_header->length != 4) {
-        ERROR("Length != 4, FRAME_SIZE_ERROR");
-        return -1;
-    }
+
     uint32_t window_size_increment = bytes_to_uint32_31(buff_read);
     window_update_payload->window_size_increment = window_size_increment;
     return frame_header->length;

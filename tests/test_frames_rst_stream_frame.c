@@ -208,7 +208,7 @@ int main(void)
     UNIT_TEST(test_create_rst_stream_frame);
     UNIT_TEST(test_rst_stream_payload_to_bytes);
     UNIT_TEST(test_read_rst_stream_payload);
-    UNIT_TEST(test_read_rst_stream_payload_error);
-    UNIT_TEST(test_rst_stream_payload_to_bytes_error);
+    //UNIT_TEST(test_read_rst_stream_payload_error);
+    //UNIT_TEST(test_rst_stream_payload_to_bytes_error);
     return UNIT_TESTS_END();
 }
