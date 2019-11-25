@@ -239,10 +239,10 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
             break;
         case GOAWAY_TYPE:
             frame_header->callback_payload_from_bytes = read_goaway_payload;
-            break
+            break;
         case WINDOW_UPDATE_TYPE:
             frame_header->callback_payload_from_bytes = read_window_update_payload;
-            break;;
+            break;
         case CONTINUATION_TYPE:
             frame_header->callback_payload_from_bytes = read_continuation_payload;
             break;
