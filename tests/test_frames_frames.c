@@ -436,7 +436,7 @@ void test_frame_header_to_bytes_reserved(void)
 void test_bytes_to_frame_header(void)
 {
     /*Test all frame types*/
-    for(int i = 1; i < 11; i++){
+    for(int i = 0; i < 11; i++){
         frame_header_t header;
 
         uint32_t length = 6;
