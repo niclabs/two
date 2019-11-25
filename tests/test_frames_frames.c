@@ -482,6 +482,38 @@ void test_bytes_to_frame_header_error(void)
     TEST_ASSERT_EQUAL(-1, rc);
 }
 
+void test_check_frame_errors(void)
+{
+
+    uint8_t lengths[] = { 3, 4, 4, 8, 5, 5, 5 };
+    uint8_t stream_ids[] = { 0, 0, 0, 1, 1, 1, 1 };
+    uint8_t types[] = { RST_STREAM_TYPE,
+                        RST_STREAM_TYPE,
+                        PING_TYPE,
+                        PING_TYPE,
+                        SETTINGS_TYPE,
+                        GOAWAY_TYPE,
+                        WINDOW_UPDATE_TYPE };
+
+    /*Test all frame types*/
+    for (int i = 0; i < 7; i++) {
+        frame_header_t header;
+
+        uint32_t length = lengths[i];
+        uint32_t stream_id = stream_ids[i];
+        uint8_t type = types[i];
+        uint8_t flags = 0x0;
+        uint8_t bytes[9] = { 0, 0, length, type, flags, 0, 0, 0, 0 };
+
+        bytes_to_uint32_24_fake.return_val = length;
+        bytes_to_uint32_31_fake.return_val = stream_id;
+
+        int rc = frame_header_from_bytes(bytes, 9, &header);
+
+        TEST_ASSERT_EQUAL(-1, rc);
+    }
+}
+
 
 void test_frame_to_bytes_settings(void)
 {
@@ -814,6 +846,8 @@ int main(void)
     UNIT_TEST(test_frame_to_bytes_window_update);
     UNIT_TEST(test_frame_to_bytes_goaway);
     UNIT_TEST(test_frame_to_bytes_settings);
+
+    UNIT_TEST(test_check_frame_errors);
 
     return UNIT_TESTS_END();
 }
