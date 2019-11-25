@@ -99,10 +99,11 @@ int read_ping_payload(frame_header_t *frame_header, void *payload, uint8_t *byte
         return -1;
     }
 */
-    int rc = buffer_copy(ping_payload->opaque_data, bytes, 8);
-    if (rc < 0) {
+    /*int rc = */
+    buffer_copy(ping_payload->opaque_data, bytes, 8);
+    /*if (rc < 0) {
         ERROR("error in buffer copy");
         return -1;
-    }
+    }*/
     return frame_header->length;
 }
