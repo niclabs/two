@@ -222,29 +222,29 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
     }
 
     switch (frame_header->type) {
-        case WINDOW_UPDATE_TYPE:
-            frame_header->callback_payload_from_bytes = read_window_update_payload;
-            break;
         case DATA_TYPE:
             frame_header->callback_payload_from_bytes = read_data_payload;
-            break;
-        case GOAWAY_TYPE:
-            frame_header->callback_payload_from_bytes = read_goaway_payload;
-            break;
-        case SETTINGS_TYPE:
-            frame_header->callback_payload_from_bytes = read_settings_payload;
-            break;
-        case CONTINUATION_TYPE:
-            frame_header->callback_payload_from_bytes = read_continuation_payload;
             break;
         case HEADERS_TYPE:
             frame_header->callback_payload_from_bytes = read_headers_payload;
             break;
+        case RST_STREAM_TYPE:
+            frame_header->callback_payload_from_bytes = read_rst_stream_payload;
+            break;
+        case SETTINGS_TYPE:
+            frame_header->callback_payload_from_bytes = read_settings_payload;
+            break;
         case PING_TYPE:
             frame_header->callback_payload_from_bytes = read_ping_payload;
             break;
-        case RST_STREAM_TYPE:
-            frame_header->callback_payload_from_bytes = read_rst_stream_payload;
+        case GOAWAY_TYPE:
+            frame_header->callback_payload_from_bytes = read_goaway_payload;
+            break
+        case WINDOW_UPDATE_TYPE:
+            frame_header->callback_payload_from_bytes = read_window_update_payload;
+            break;;
+        case CONTINUATION_TYPE:
+            frame_header->callback_payload_from_bytes = read_continuation_payload;
             break;
         default:
             WARN("Frame type %d not found", frame_header->type);
