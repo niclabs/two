@@ -120,17 +120,19 @@ int window_update_payload_to_bytes_custom_fake(frame_header_t *frame_header, voi
 
 int data_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
-    data_payload_t *data_payload = (data_payload_t *) payload;
+    data_payload_t *data_payload = (data_payload_t *)payload;
     int length = frame_header->length;
     int rc = buffer_copy(byte_array, data_payload->data, length);
+
     return rc;
 }
 
 int goaway_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
-    goaway_payload_t *goaway_payload = (goaway_payload_t *) payload;
+    goaway_payload_t *goaway_payload = (goaway_payload_t *)payload;
     int pointer = 0;
     int rc = uint32_31_to_byte_array(goaway_payload->last_stream_id, byte_array + pointer);
+
     pointer += 4;
     rc = uint32_to_byte_array(goaway_payload->error_code, byte_array + pointer);
     pointer += 4;
@@ -286,16 +288,16 @@ int encode_fake_custom(hpack_states_t *hpack_states, char *name_string, char *va
 
 
     uint8_t expected_compressed_headers[] = {
-            0,      //01000000 prefix=00, index=0
-            4,      //h=0, name length = 4;
-            'h',    //name string
-            'o',    //name string
-            'l',    //name string
-            'a',    //name string
-            3,      //h=0, value length = 3;
-            'v',    //value string
-            'a',    //value string
-            'l'     //value string
+        0,          //01000000 prefix=00, index=0
+        4,          //h=0, name length = 4;
+        'h',        //name string
+        'o',        //name string
+        'l',        //name string
+        'a',        //name string
+        3,          //h=0, value length = 3;
+        'v',        //value string
+        'a',        //value string
+        'l'         //value string
     };
     buffer_copy(encoded_buffer, expected_compressed_headers, 10);
     return 10;
@@ -348,16 +350,16 @@ void test_compress_headers(void)
 
     TEST_ASSERT_EQUAL(10, rc);
     uint8_t expected_compressed_headers[] = {
-            0,      //00000000 prefix=00, index=0
-            4,      //h=0, name length = 4;
-            'h',    //name string
-            'o',    //name string
-            'l',    //name string
-            'a',    //name string
-            3,      //h=0, value length = 3;
-            'v',    //value string
-            'a',    //value string
-            'l'     //value string
+        0,          //00000000 prefix=00, index=0
+        4,          //h=0, name length = 4;
+        'h',        //name string
+        'o',        //name string
+        'l',        //name string
+        'a',        //name string
+        3,          //h=0, value length = 3;
+        'v',        //value string
+        'a',        //value string
+        'l'         //value string
     };
 
     for (int i = 0; i < rc; i++) {
@@ -435,12 +437,16 @@ void test_frame_header_to_bytes_reserved(void)
 
 void test_bytes_to_frame_header(void)
 {
+
+    uint8_t lengths[] = { 4, 4, 4, 4, 6, 8, 8, 8, 4, 4, 4 };
+    uint8_t stream_ids[] = { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 };
+
     /*Test all frame types*/
-    for(int i = 0; i < 11; i++){
+    for (int i = 0; i < 11; i++) {
         frame_header_t header;
 
-        uint32_t length = 6;
-        uint32_t stream_id = 0;
+        uint32_t length = lengths[i];
+        uint32_t stream_id = stream_ids[i];
         uint8_t type = i;
         uint8_t flags = 0x0;
         uint8_t bytes[9] = { 0, 0, length, type, flags, 0, 0, 0, 0 };
@@ -467,13 +473,13 @@ void test_bytes_to_frame_header_error(void)
     uint32_t stream_id = 0;
     uint8_t type = 1;
     uint8_t flags = 0x0;
-    uint8_t bytes[9] = { 0, 0, length, type, flags, 0, 0, 0};
+    uint8_t bytes[9] = { 0, 0, length, type, flags, 0, 0, 0 };
 
     bytes_to_uint32_24_fake.return_val = length;
     bytes_to_uint32_31_fake.return_val = stream_id;
 
     int rc = frame_header_from_bytes(bytes, 8, &header);
-    TEST_ASSERT_EQUAL(-1,rc);
+    TEST_ASSERT_EQUAL(-1, rc);
 }
 
 
@@ -511,7 +517,7 @@ void test_frame_to_bytes_settings(void)
     settings_payload.pairs = settings_pairs;
 
 
-    uint8_t expected_bytes[] = { 0, 0, 6, SETTINGS_TYPE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1};
+    uint8_t expected_bytes[] = { 0, 0, 6, SETTINGS_TYPE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1 };
 
 
     append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
