@@ -130,7 +130,6 @@ typedef struct event_sock {
 
 #ifdef CONTIKI
     struct uip_conn *uip_conn;
-    struct ctimer timer;
 #endif
 } event_sock_t;
 

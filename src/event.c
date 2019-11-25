@@ -298,17 +298,6 @@ void event_loop_poll(event_loop_t *loop)
     }
 }
 #else
-void event_poll_tcp(void *data)
-{
-    event_sock_t *sock = (event_sock_t *)data;
-
-    // perform tcp poll
-    tcpip_poll_tcp(sock->uip_conn);
-
-    // reset timer
-    ctimer_reset(&sock->timer);
-}
-
 void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
@@ -404,6 +393,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
 
     if (uip_acked()) {
         event_handle_ack(sock, wh);
+        event_do_read(sock, rh);
     }
 
     if (uip_rexmit()) {
@@ -449,10 +439,6 @@ void event_loop_close(event_loop_t *loop)
                 PROCESS_CONTEXT_BEGIN(&event_loop_process);
                 tcp_unlisten(UIP_HTONS(curr->descriptor));
                 PROCESS_CONTEXT_END();
-            }
-            else {
-                // is a client
-                ctimer_stop(&curr->timer);
             }
 #endif
             curr->state = EVENT_SOCK_CLOSED;
@@ -681,9 +667,6 @@ int event_accept(event_sock_t *server, event_sock_t *client)
 
     // use same port for client
     client->descriptor = server->descriptor;
-
-    // set tcp poll timer every 10 ms
-    ctimer_set(&client->timer, CLOCK_SECOND / 100, event_poll_tcp, client);
 #else
     int clifd = accept(server->descriptor, NULL, NULL);
     if (clifd < 0) {
