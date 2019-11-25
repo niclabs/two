@@ -35,10 +35,11 @@ int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t
     pointer += 4;
     uint32_t additional_debug_data_size = frame_header->length - 8;
     rc = buffer_copy(byte_array + pointer, goaway_payload->additional_debug_data, additional_debug_data_size);
+    /*
     if (rc < 0) {
         ERROR("error in buffer copy");
         return -1;
-    }
+    }*/
     pointer += rc;
     return pointer;
 }
