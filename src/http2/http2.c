@@ -6,6 +6,7 @@
 #include "http2/utils.h"
 #include "http2/flowcontrol.h"
 #include "http2/handle.h"
+#include "frames.h"
 #include "http.h"
 
 // Specify to which module this file belongs
@@ -108,7 +109,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 
     // Decode header
     int rc = frame_header_from_bytes(buff_read_header, 9, &header);
-    if (rc) {
+    if (rc && rc != FRAMES_FRAME_NOT_FOUND_ERROR) {
         ERROR("Failed to decode frame header. Sending INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
 
@@ -131,6 +132,11 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 
     // save header type
     h2s->header = header;
+
+    if (rc == FRAMES_FRAME_NOT_FOUND_ERROR) {
+        callback_t ret = { receive_payload, NULL };
+        return ret;
+    }
 
     // If errors are found, internal logic will handle them.
     // TODO: improve method names, it is not clear on reading the code
