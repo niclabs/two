@@ -126,7 +126,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
         return null_callback();
     }
     else if (rc == FRAMES_FRAME_SIZE_ERROR) {
-        ERROR("Failed to decode frame header. Sending INTERNAL_ERROR");
+        ERROR("Failed to decode frame header. Sending FRAME_SIZE_ERROR");
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
 
         DEBUG("Internal error response sent. Terminating connection");
