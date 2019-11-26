@@ -148,7 +148,7 @@ const hpack_static_table_t hpack_static_table = {
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  */
-int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value)
+void hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value)
 {
     assert(index > 0);
     assert(index < 62);
@@ -157,7 +157,7 @@ int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, 
     const char *table_value = hpack_static_table.value_table[index];
     strncpy(name, table_name, strlen(table_name));
     strncpy(value, table_value, strlen(table_value));
-    return 0;
+
 }
 
 /*
@@ -168,14 +168,14 @@ int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, 
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  */
-int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
+void hpack_tables_static_find_entry_name(uint8_t index, char *name)
 {
     assert(index > 0);
     assert(index < 62);
     index--;
     const char *table_name = hpack_static_table.name_table[index];
     strncpy(name, table_name, strlen(table_name));
-    return 0;
+
 }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
@@ -561,17 +561,20 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
  */
 int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
+    assert(index > 0);
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         return hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
     }
     else {
-        return hpack_tables_static_find_entry_name_and_value(index, name, value);
+        hpack_tables_static_find_entry_name_and_value(index, name, value);
     }
     #else
     (void)dynamic_table;
-    return hpack_tables_static_find_entry_name_and_value(index, name, value);
+    hpack_tables_static_find_entry_name_and_value(index, name, value);
     #endif
+
+    return 0;
 }
 
 /*
@@ -586,6 +589,7 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
  */
 int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
+    assert(index > 0);
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
@@ -595,12 +599,13 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
         return hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
     }
     else {
-        return hpack_tables_static_find_entry_name(index, name);
+        hpack_tables_static_find_entry_name(index, name);
     }
     #else
     (void)dynamic_table;
-    return hpack_tables_static_find_entry_name(index, name);
+    hpack_tables_static_find_entry_name(index, name);
     #endif
+
     return 0;
 }
 
