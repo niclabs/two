@@ -163,6 +163,19 @@ int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s)
     return HTTP2_RC_NO_ERROR;
 }
 
+int check_incoming_window_update_condition(cbuf_t *buf_out, h2states_t *h2s)
+{
+    if (h2s->header.stream_id == 0) {
+        return HTTP2_RC_NO_ERROR;
+    }
+    if (h2s->current_stream.state == STREAM_IDLE) {
+        ERROR("Received invalid frame. Sending PROTOCOL_ERROR");
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
+    return HTTP2_RC_NO_ERROR;
+}
+
 int check_incoming_ping_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
     if (h2s->header.stream_id != 0x0) {

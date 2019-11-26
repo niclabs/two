@@ -247,7 +247,8 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
             return rc;
         }
         case WINDOW_UPDATE_TYPE: {
-            return HTTP2_RC_NO_ERROR;
+            rc = check_incoming_window_update_condition(buf_out, h2s);
+            return rc;
         }
         case CONTINUATION_TYPE: {
             rc = check_incoming_continuation_condition(buf_out, h2s);
