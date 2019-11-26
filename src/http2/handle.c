@@ -217,6 +217,7 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_ou
                     send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
                     return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
                 }
+                update_window_size(&h2s->outgoing_window, value);
                 break;
             case MAX_FRAME_SIZE:
                 if (value > 16777215 || value < 16384) {
