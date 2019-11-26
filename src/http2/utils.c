@@ -1,4 +1,5 @@
 #include "http2/utils.h"
+#include <assert.h>
 
 // Specify to which module this file belongs
 #include "config.h"
@@ -30,23 +31,17 @@ void prepare_new_stream(h2states_t* st){
 * Input: -> st: pointer to h2states_t struct where settings tables are stored.
 *        -> place: must be LOCAL or REMOTE. It indicates the table to read.
 *        -> param: it indicates which parameter to read from table.
-* Output: The value read from the table. -1 if nothing was read.
+* Output: The value read from the table.
 */
 
-int read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
-  if(param < 1 || param > 6){
-    DEBUG("Invalid index from which to read the settings");
-    return HTTP2_RC_ERROR;
-  }
-  else if(place == LOCAL){
+uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
+  assert(param < 1 || param > 6);
+  assert(place == LOCAL || place == REMOTE);
+  if(place == LOCAL){
     return st->local_settings[--param];
   }
-  else if(place == REMOTE){
-    return st->remote_settings[--param];
-  }
   else{
-    DEBUG("Invalid place from where read settings");
-    return HTTP2_RC_ERROR;
+    return st->remote_settings[--param];
   }
 }
 
