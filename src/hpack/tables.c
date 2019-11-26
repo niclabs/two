@@ -150,11 +150,8 @@ const hpack_static_table_t hpack_static_table = {
  */
 int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value)
 {
-    /*
-       if (index <= 0) {
-        ERROR("Decoding error: %d index is lower than 1", index);
-        return PROTOCOL_ERROR;  //Decoding error: indexed header field with 0
-       }*/
+    assert(index > 0);
+    assert(index < 62);
     index--;                    //because static table begins at index 1
     const char *table_name = hpack_static_table.name_table[index];
     const char *table_value = hpack_static_table.value_table[index];
@@ -173,11 +170,8 @@ int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, 
  */
 int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
 {
-    /*
-       if (index <= 0) {
-        ERROR("Decoding error: %d index is lower than 1", index);
-        return PROTOCOL_ERROR; //Decoding error: indexed header field with 0
-       }*/
+    assert(index > 0);
+    assert(index < 62);
     index--;
     const char *table_name = hpack_static_table.name_table[index];
     strncpy(name, table_name, strlen(table_name));
@@ -197,6 +191,8 @@ int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name)
 int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, uint32_t index)
 {
     assert(dynamic_table != NULL);
+    assert(index > 61);
+
     uint16_t entries_counter = 0;
     uint16_t counter0 = 0;
 
