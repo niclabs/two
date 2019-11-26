@@ -125,7 +125,7 @@ frames_error_code_t check_frame_errors(frame_header_t *frame_header)
             return FRAMES_NO_ERROR;
         }
         default:
-            ERROR("Frame type %d not found", type);
+            WARN("Frame type %d not found", type);
             return FRAMES_FRAME_NOT_FOUND_ERROR;
     }
 }
