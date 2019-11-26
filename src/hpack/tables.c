@@ -718,9 +718,9 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
  *      -> *dynamic_table: Dynamic table to search
  *      -> dynamic_table_max_size: Max size in bytes of new dynamic_table, it is set in HTTP SETTING-
  * Output:
- *     0 if success
+ *     (void)
  */
-int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size)
+void hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size)
 {
     assert(dynamic_table != NULL);
     memset(dynamic_table->buffer, 0, dynamic_table_max_size);
@@ -729,6 +729,5 @@ int8_t hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uin
     dynamic_table->n_entries = 0;
     dynamic_table->first = 0;
     dynamic_table->next = 0;
-    return 0;
 }
 #endif

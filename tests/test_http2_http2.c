@@ -13,7 +13,7 @@
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_len, cbuf_t *);
 FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, void *, int);
-FAKE_VALUE_FUNC(int8_t, hpack_init_states, hpack_states_t *, uint32_t);
+FAKE_VOID_FUNC(hpack_init_states, hpack_states_t *, uint32_t);
 FAKE_VOID_FUNC(send_connection_error, cbuf_t *, uint32_t, h2states_t *);
 FAKE_VALUE_FUNC(callback_t, null_callback);
 FAKE_VOID_FUNC(headers_init, header_list_t *);

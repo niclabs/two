@@ -64,17 +64,13 @@ int encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_
  *      -> *states: hpack main struct wrapper to initialize
  *      -> settings_max_table_size: max table size set in settings frame
  * Output:
- *      returns 0 if successful
+ *      (void)
  */
-int8_t hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size)
+void hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size)
 {
     #if HPACK_INCLUDE_DYNAMIC_TABLE
-    int8_t rc_dynamic = hpack_tables_init_dynamic_table(&states->dynamic_table, settings_max_table_size);
-
-    if (rc_dynamic < 0) {
-        return rc_dynamic;
-    }
+    hpack_tables_init_dynamic_table(&states->dynamic_table, settings_max_table_size);
     #endif
     states->settings_max_table_size = settings_max_table_size;
-    return 0;
+
 }

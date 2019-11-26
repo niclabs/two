@@ -18,7 +18,7 @@ int encode(hpack_states_t *states, char *name_string, char *value_string,  uint8
 
 int encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer);
 
-int8_t hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size);
+void hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size);
 
 
 #endif //TWO_HPACK_H
