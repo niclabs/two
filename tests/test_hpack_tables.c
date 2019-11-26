@@ -546,8 +546,14 @@ int main(void)
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_find_entry);
 #if HPACK_INCLUDE_DYNAMIC_TABLE
+    //UNIT_TEST(test_hpack_tables_dynamic_pos_of_index);
+    //UNIT_TEST(test_hpack_tables_dynamic_pos_of_index_error);
+    //UNIT_TEST(test_hpack_tables_dynamic_copy_to_ext);
+    //UNIT_TEST(test_hpack_tables_dynamic_compare_string);
+    //UNIT_TEST(test_hpack_tables_dynamic_copy_from_ext);
     UNIT_TEST(test_hpack_tables_dynamic_add_find_entry_and_reset_table);
     UNIT_TEST(test_hpack_tables_dynamic_pop_old_entry);
+    //UNIT_TEST(test_hpack_tables_dynamic_pop_error);
     UNIT_TEST(test_hpack_tables_dynamic_circular_test);
     UNIT_TEST(test_hpack_tables_dynamic_resize_not_circular);
     UNIT_TEST(test_hpack_tables_dynamic_resize_circular);
