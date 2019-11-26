@@ -4,6 +4,7 @@
 #include "headers.h"
 
 extern int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
+extern int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name);
 extern const hpack_static_table_t hpack_static_table;
 extern int8_t hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value);
 extern int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name);
@@ -55,6 +56,101 @@ void test_hpack_tables_find_index(void)
         TEST_ASSERT_EQUAL(expected_index_dynamic[i], actual_index);
     }
 #endif
+}
+
+void test_hpack_tables_find_index_error(void)
+{
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
+  uint16_t dynamic_table_max_size = 500;
+  hpack_dynamic_table_t dynamic_table;
+
+  hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+
+  int actual_index = hpack_tables_find_index(&dynamic_table, "www-authenticate", "");
+  TEST_ASSERT_EQUAL(61, actual_index);
+  //now errors
+  actual_index = hpack_tables_find_index(&dynamic_table, "My Precious!", "Mr. Frodo!");
+  TEST_ASSERT_EQUAL_MESSAGE(-2, actual_index, "Header doesn't exist so it should throw an error");
+
+  hpack_tables_dynamic_table_add_entry(&dynamic_table, "My Precious!", "Mr. Frodo!");
+  actual_index = hpack_tables_find_index(&dynamic_table, "My Precious!", "Mr. Frodo!");
+  TEST_ASSERT_EQUAL(62, actual_index);
+  //now errors
+  actual_index = hpack_tables_find_index(&dynamic_table, "Wololo", "");
+  TEST_ASSERT_EQUAL_MESSAGE(-2, actual_index, "Header doesn't exist so it should throw an error");
+#else
+  int actual_index = hpack_tables_find_index(NULL, "www-authenticate", "");
+  TEST_ASSERT_EQUAL(61, actual_index);
+  //now errors
+  actual_index = hpack_tables_find_index(NULL, "My Precious!", "Mr. Frodo!");
+  TEST_ASSERT_EQUAL_MESSAGE(-2, actual_index, "Header doesn't exist so it should throw an error");
+#endif
+
+}
+
+void test_hpack_tables_find_index_name(void)
+{
+    int expected_index[] = { 2, 4, 6, 8, 16 };
+    char *names[] = { ":method",":path", ":scheme", ":status", "accept-encoding" };
+
+    for (int i = 0; i < 5; i++) {
+        int actual_index = hpack_tables_find_index_name(NULL, names[i]);
+        TEST_ASSERT_EQUAL(expected_index[i], actual_index);
+    }
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
+    //Now little test with dynamic table_length
+    uint16_t dynamic_table_max_size = 500;
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+
+    char *new_names[] = { "hola", "sol3", "bien1" };
+    char *new_values[] = { "chao", "luna4", "mal2" };
+    int expected_index_dynamic[] = { 64, 63, 62 };
+    //added to dynamic table
+    for (int i = 0; i < 3; i++) {
+        hpack_tables_dynamic_table_add_entry(&dynamic_table, new_names[i], new_values[i]);
+    }
+
+    for (int i = 0; i < 3; i++) {
+        int actual_index = hpack_tables_find_index_name(&dynamic_table, new_names[i]);
+        TEST_ASSERT_EQUAL(expected_index_dynamic[i], actual_index);
+    }
+#endif
+}
+
+void test_hpack_tables_find_index_name_error(void)
+{
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
+  uint16_t dynamic_table_max_size = 500;
+  hpack_dynamic_table_t dynamic_table;
+
+  hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+
+  int actual_index = hpack_tables_find_index_name(&dynamic_table, "www-authenticate");
+  TEST_ASSERT_EQUAL(61, actual_index);
+  //now error
+  actual_index = hpack_tables_find_index_name(&dynamic_table, "My Precious!");
+  TEST_ASSERT_EQUAL_MESSAGE(-2, actual_index, "Header doesn't exist so it should throw an error");
+
+  hpack_tables_dynamic_table_add_entry(&dynamic_table, "My Precious!", "Mr. Frodo!");
+  actual_index = hpack_tables_find_index_name(&dynamic_table, "My Precious!");
+  TEST_ASSERT_EQUAL(62, actual_index);
+  //now errors
+  actual_index = hpack_tables_find_index_name(&dynamic_table, "Wololo");
+  TEST_ASSERT_EQUAL_MESSAGE(-2, actual_index, "Header doesn't exist so it should throw an error");
+#else
+  int actual_index = hpack_tables_find_index_name(NULL, "www-authenticate");
+  TEST_ASSERT_EQUAL(61, actual_index);
+  //now errors
+  actual_index = hpack_tables_find_index_name(NULL, "My Precious!");
+  TEST_ASSERT_EQUAL_MESSAGE(-2, actual_index, "Header doesn't exist so it should throw an error");
+
+#endif
+
 }
 
 void test_hpack_tables_static_find_entry_name_and_value(void)
@@ -443,6 +539,9 @@ int main(void)
 {
     UNITY_BEGIN();
     UNIT_TEST(test_hpack_tables_find_index);
+    UNIT_TEST(test_hpack_tables_find_index_error);
+    UNIT_TEST(test_hpack_tables_find_index_name);
+    UNIT_TEST(test_hpack_tables_find_index_name_error);
     UNIT_TEST(test_hpack_tables_static_find_entry_name_and_value);
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_find_entry);
