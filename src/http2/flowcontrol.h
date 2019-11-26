@@ -3,6 +3,7 @@
 
 #include "http2/structs.h"
 
+uint32_t update_window_size(h2_window_manager_t* window_manager, uint32_t new_window_size);
 uint32_t get_window_available_size(h2_window_manager_t window_manager);
 int increase_window_used(h2_window_manager_t* window_manager, uint32_t data_size);
 int decrease_window_used(h2_window_manager_t* window_manager, uint32_t window_size_increment);

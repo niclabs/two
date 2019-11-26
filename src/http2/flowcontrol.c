@@ -18,6 +18,23 @@ uint32_t get_window_available_size(h2_window_manager_t window_manager)
 }
 
 /*
+ * Function update_window_size
+ * Update window size value and window used value if necessary.
+ * @param     window_manager     h2_window_manager_t struct where window info is stored
+ * @param     new_window_size    new value of window size
+ *
+ * @returns   1
+ */
+uint32_t update_window_size(h2_window_manager_t* window_manager, uint32_t new_window_size)
+{
+    if (window_manager->window_used > new_window_size) {
+        window_manager->window_used = new_window_size;
+    }
+    window_manager->window_size = new_window_size;
+    return HTTP2_RC_NO_ERROR;
+}
+
+/*
  * Function: increase_window_used
  * Increases the window_used value on a given window manager.
  * Input: ->window_manager: h2_window_manager_t struct pointer where window info is stored
