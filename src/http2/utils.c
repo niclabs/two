@@ -35,7 +35,7 @@ void prepare_new_stream(h2states_t* st){
 */
 
 uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
-  assert(param < 1 || param > 6);
+  assert(param >= 1 && param <= 6);
   assert(place == LOCAL || place == REMOTE);
   if(place == LOCAL){
     return st->local_settings[--param];
