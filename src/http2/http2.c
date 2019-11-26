@@ -109,9 +109,17 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 
     // Decode header
     int rc = frame_header_from_bytes(buff_read_header, 9, &header);
-    if (rc && rc != FRAMES_FRAME_NOT_FOUND_ERROR) {
+    if (rc && rc != FRAMES_PROTOCOL_ERROR && rc != FRAMES_FRAME_NOT_FOUND_ERROR) {
         ERROR("Failed to decode frame header. Sending INTERNAL_ERROR");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+
+        DEBUG("Internal error response sent. Terminating connection");
+        DEBUG("http2_receive_header returning null callback");
+        return null_callback();
+    }
+    else if (rc == FRAMES_PROTOCOL_ERROR) {
+        ERROR("Failed to decode frame header. Sending PROTOCOL_ERROR");
+        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
 
         DEBUG("Internal error response sent. Terminating connection");
         DEBUG("http2_receive_header returning null callback");
