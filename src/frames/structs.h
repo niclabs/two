@@ -37,4 +37,15 @@ typedef struct {
     void *payload;
 }frame_t;
 
+/*ERROR*/
+/*Error codes*/
+typedef enum {
+    FRAMES_NO_ERROR                     = (int32_t) 0,
+    FRAMES_PROTOCOL_ERROR               = (int32_t) - 1,
+    FRAMES_INTERNAL_ERROR               = (int32_t) - 2,
+    FRAMES_FRAME_SIZE_ERROR             = (int32_t) - 3,
+    FRAMES_FRAME_NOT_FOUND_ERROR        = (int32_t) - 4,
+    FRAMES_FRAME_NOT_IMPLEMENTED_ERROR  = (int32_t) - 5,
+}frames_error_code_t;
+
 #endif /*FRAMES_STRUCTS_H*/

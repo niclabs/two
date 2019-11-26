@@ -38,73 +38,95 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 }
 
 
-int check_frame_errors(frame_header_t* frame_header)
+
+
+frames_error_code_t check_frame_errors(frame_header_t *frame_header)
 {
     uint8_t type = frame_header->type;
     uint32_t length = frame_header->length;
     uint32_t stream_id = frame_header->stream_id;
 
     switch (type) {
-        case DATA_TYPE:
-        case HEADERS_TYPE:
-        case CONTINUATION_TYPE:
-            return 0;
+        case DATA_TYPE: {
+            if (stream_id == 0x0) {
+                ERROR("stream_id of DATA FRAME is 0, PROTOCOL_ERROR");
+                return FRAMES_PROTOCOL_ERROR;
+            }
+            return FRAMES_NO_ERROR;
+        }
+        case HEADERS_TYPE: {
+            if (stream_id == 0x0) {
+                ERROR("stream_id of HEADERS FRAME is 0, PROTOCOL_ERROR");
+                return FRAMES_PROTOCOL_ERROR;
+            }
+            return FRAMES_NO_ERROR;
+        }
         case RST_STREAM_TYPE: {
             if (length != 4) {
-                ERROR("Length != 4, FRAME_SIZE_ERROR");
-                return -1;
+                ERROR("RST STREAM FRAME with Length != 4, FRAME_SIZE_ERROR");
+                return FRAMES_FRAME_SIZE_ERROR;
             }
             if (stream_id == 0x0) {
                 ERROR("stream_id of RST STREAM FRAME is 0, PROTOCOL_ERROR");
-                return -1;
+                return FRAMES_PROTOCOL_ERROR;
             }
-            return 0;
+            return FRAMES_NO_ERROR;
+        }
+        case SETTINGS_TYPE: {
+            if (length % 6 != 0) {
+                printf("Error: length not divisible by 6, %u", length);
+                return FRAMES_FRAME_SIZE_ERROR;
+            }
+            if (stream_id != 0x0) {
+                ERROR("stream_id of SETTINGS FRAME is not 0, PROTOCOL_ERROR");
+                return FRAMES_PROTOCOL_ERROR;
+            }
+            return FRAMES_NO_ERROR;
         }
         case PING_TYPE: {
             if (length != 8) {
                 ERROR("PING frame with Length != 8, FRAME_SIZE_ERROR");
-                return -1;
+                return FRAMES_FRAME_SIZE_ERROR;
             }
             if (stream_id != 0x0) {
                 //Protocol ERROR
                 ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
-                return -1;
+                return FRAMES_PROTOCOL_ERROR;
             }
-            return 0;
+            return FRAMES_NO_ERROR;
         }
         case PRIORITY_TYPE: //NOT IMPLEMENTED YET
         case PUSH_PROMISE_TYPE:
             return -1;
-        case SETTINGS_TYPE: {
-            if (length % 6 != 0) {
-                printf("Error: length not divisible by 6, %u", length);
-                return -1;
-            }
-            else {
-                return 0;
-            }
-        }
         case GOAWAY_TYPE: {
             if (length < 8) {
                 printf("Error: length < 8, %u", length);
-                return -1;
+                return FRAMES_FRAME_SIZE_ERROR;
             }
-            else {
-                return 0;
+            if (stream_id != 0x0) {
+                //Protocol ERROR
+                ERROR("GOAWAY frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
+                return FRAMES_PROTOCOL_ERROR;
             }
+            return FRAMES_NO_ERROR;
         }
         case WINDOW_UPDATE_TYPE: {
             if (length != 4) {
                 printf("Error: length != 4, %u", length);
-                return -1;
+                return FRAMES_FRAME_SIZE_ERROR;
             }
-            else {
-                return 0;
+            return FRAMES_NO_ERROR;
+        }
+        case CONTINUATION_TYPE: {
+            if (stream_id == 0x0) {
+                ERROR("stream_id of HEADERS FRAME is 0, PROTOCOL_ERROR");
+                return FRAMES_PROTOCOL_ERROR;
             }
+            return FRAMES_NO_ERROR;
         }
         default:
             ERROR("Frame type %d not found", type);
-            return -1;
+            return FRAMES_FRAME_NOT_FOUND_ERROR;
     }
 }
 
