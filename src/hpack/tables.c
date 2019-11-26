@@ -572,6 +572,7 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
         return hpack_tables_static_find_entry_name_and_value(index, name, value);
     }
     #else
+    (void)dynamic_table;
     return hpack_tables_static_find_entry_name_and_value(index, name, value);
     #endif
 }
@@ -600,6 +601,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
         return hpack_tables_static_find_entry_name(index, name);
     }
     #else
+    (void)dynamic_table;
     return hpack_tables_static_find_entry_name(index, name);
     #endif
     return 0;
@@ -653,6 +655,8 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
             break; //not found
         }
     }
+    #else
+      (void)dynamic_table;
     #endif
     return INTERNAL_ERROR;
 }
@@ -701,6 +705,8 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
             break; //not found
         }
     }
+    #else
+      (void)dynamic_table;
     #endif
     return INTERNAL_ERROR;
 }
