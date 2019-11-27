@@ -165,6 +165,11 @@ int check_incoming_goaway_condition(cbuf_t *buf_out, h2states_t *h2s)
 
 int check_incoming_window_update_condition(cbuf_t *buf_out, h2states_t *h2s)
 {
+    if (h2s->header.length != 4) {
+        ERROR("INDOW_UPDATE frame with a length other than 4 octets. Sending FRAME_SIZE_ERROR");
+        send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
     if (h2s->header.stream_id == 0) {
         return HTTP2_RC_NO_ERROR;
     }
