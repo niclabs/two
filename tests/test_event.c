@@ -12,11 +12,12 @@ void test_event_sock_create(void) {
     event_loop_t loop;
     event_loop_init(&loop);
 
+    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "unused sockets should equal EVENT_MAX_SOCKETS after loop creation");
     for (int i = 0; i < EVENT_MAX_DESCRIPTORS; i++) {
         event_sock_create(&loop);
     }
 
-    TEST_ASSERT_EQUAL_MESSAGE(loop.unused, NULL, "at most EVENT_MAX_DESCRIPTORS sockets should be available for event");
+    TEST_ASSERT_EQUAL_MESSAGE(0, event_sock_unused(&loop), "only EVENT_MAX_SOCKETS can be created with event_sock_create");
 }
 
 

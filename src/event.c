@@ -54,12 +54,12 @@ PROCESS(event_loop_process, "Event loop process");
         }                                   \
         res;                                \
     });
-#define LIST_COUNT(type, list)      \
+#define LIST_COUNT(type, list)            \
     ({                              \
-        type *elem = list;          \
         int count = 0;              \
+        type * elem = list;   \
         while (elem != NULL) {      \
-            count ++;                \
+            count ++;               \
             LIST_NEXT(elem);        \
         }                           \
         count;                      \
@@ -765,6 +765,12 @@ event_sock_t *event_sock_create(event_loop_t *loop)
     sock->state = EVENT_SOCK_CLOSED;
 
     return sock;
+}
+
+int event_sock_unused(event_loop_t *loop) {
+    assert(loop != NULL);
+
+    return LIST_COUNT(event_sock_t, loop->unused);
 }
 
 #ifdef CONTIKI

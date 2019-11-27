@@ -190,6 +190,9 @@ void event_loop_init(event_loop_t *loop);
 // it will fail if there are no more sockets available
 event_sock_t *event_sock_create(event_loop_t *loop);
 
+// Return number of available free sockets
+int event_sock_unused(event_loop_t * loop);
+
 // Start the loop
 void event_loop(event_loop_t *loop);
 
