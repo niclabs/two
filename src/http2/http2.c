@@ -158,17 +158,14 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // TODO: improve method names, it is not clear on reading the code
     // what are the conditions checked
     rc = check_incoming_condition(buf_out, h2s);
-    if (rc < 0) {
-        DEBUG("incoming_condition returned < 0");
+    if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+        DEBUG("incoming_condition returned HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT");
         DEBUG("http2_receive_header returning null callback");
         return null_callback();
     }
-
-    // TODO: use more meaningful return values for http2 checks
-    // It is not clear immediately by reading the code what a return value 0 vs return value 1 means
-    if (rc == 1) {
+    else if (rc == HTTP2_RC_ACK_RECEIVED) {
         callback_t ret = { receive_header, NULL };
-        DEBUG("incoming_condition returned 1");
+        DEBUG("incoming_condition returned HTTP2_RC_ACK_RECEIVED");
         DEBUG("http2_receive_header returning receive_header callback");
         return ret;
     }
@@ -195,7 +192,7 @@ callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
 
     // Process payload
     int rc = handle_payload(buff_read_payload, buf_out, h2s);
-    if (rc < 0) {
+    if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT || rc == HTTP2_RC_ERROR || rc == HTTP2_RC_CLOSE_CONNECTION) {
         DEBUG("http2_receive_payload returning null callback");
         return null_callback();
     }
@@ -220,7 +217,6 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
         case HEADERS_TYPE: {
             rc = check_incoming_headers_condition(buf_out, h2s);
             return rc;
-
         }
         case PRIORITY_TYPE://Priority
             WARN("TODO: Priority Frame. Not implemented yet.");
@@ -255,8 +251,7 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
             return rc;
         }
         default: {
-            return HTTP2_NO_ERROR;
-
+            return HTTP2_RC_NO_ERROR;
         }
     }
 }
@@ -282,14 +277,19 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("ERROR reading data payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-                return HTTP2_RC_ERROR;
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
+
             rc = handle_data_payload(&(h2s->header), &data_payload, buf_out, h2s);
-            // TODO: handle different error codes for handle_data_payload
-            if (rc < 0) {
-                ERROR("ERROR in handle receive data");
-                return HTTP2_RC_ERROR;
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+                ERROR("ERROR in handle receive data.");
+                return rc;
             }
+            else if (rc == HTTP2_RC_CLOSE_CONNECTION) {
+                DEBUG("Close connection. GOAWAY received and sent");
+                return rc;
+            }
+
             DEBUG("handle_payload: RECEIVED DATA PAYLOAD OK");
             return HTTP2_RC_NO_ERROR;
         }
@@ -306,13 +306,16 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("ERROR reading headers payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-                return rc;
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
             rc = handle_headers_payload(&(h2s->header), &hpl, buf_out, h2s);
-            // TODO: handle different error codes for handle_headers_payload
-            if (rc < 0) {
-                ERROR("ERROR in handle receive data");
-                return HTTP2_RC_ERROR;
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+                ERROR("ERROR in handle receive headers.");
+                return rc;
+            }
+            else if (rc == HTTP2_RC_CLOSE_CONNECTION) {
+                DEBUG("Close connection. GOAWAY received and sent");
+                return rc;
             }
             DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD OK");
             return HTTP2_RC_NO_ERROR;
@@ -337,14 +340,16 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &spl, buff_read);
             if (rc < 0) {
                 // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
+                ERROR("ERROR: SETTINGS frame with a length other than a multiple of 6 octets. FRAME_SIZE_ERROR");
                 send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
-                return rc;
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
 
             // Use remote settings
             rc = handle_settings_payload(&spl, buf_out, h2s);
-            if (rc < 0) {
-                return HTTP2_RC_ERROR;
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+                ERROR("ERROR in handle receive settings payload.");
+                return rc;
             }
             DEBUG("SETTINGS payload received OK");
             return HTTP2_RC_NO_ERROR;
@@ -360,16 +365,16 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &ping_payload, buff_read);
             if (rc < 0) {
                 ERROR("ERROR reading ping payload");
-                send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); //Always frame size error?
-                return rc;
+                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
             rc = handle_ping_payload(&ping_payload, buf_out, h2s);
-            if (rc < 0) {
-                ERROR("ERROR in handle receive data");
-                return -1;
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+                ERROR("ERROR in handle receive ping");
+                return rc;
             }
             DEBUG("handle_payload: RECEIVED PING PAYLOAD OK");
-            return 0;
+            return HTTP2_RC_NO_ERROR;
 
         case GOAWAY_TYPE: {
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD");
@@ -383,12 +388,16 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("Error in reading goaway payload");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-                return HTTP2_RC_ERROR;
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
             rc = handle_goaway_payload(&goaway_pl, buf_out, h2s);
-            if (rc < 0) {
-                ERROR("Error during goaway handling");
-                return HTTP2_RC_ERROR;
+            if (rc == HTTP2_RC_CLOSE_CONNECTION) {
+                ERROR("Received GOAWAY. Close Connection");
+                return rc;
+            }
+            else if (rc == HTTP2_RC_ERROR){
+                ERROR("ERROR while receiving goaway");
+                return rc;
             }
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD OK");
             return HTTP2_RC_NO_ERROR;
@@ -400,11 +409,12 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
                 send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); // TODO: review - always FRAME_SIZE_ERROR ?
-                return HTTP2_RC_ERROR;
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
             rc = handle_window_update_payload(&window_update_payload, buf_out, h2s);
-            if (rc < 0) {
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("Error during window_update handling");
+                return rc;
             }
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD OK");
             return HTTP2_RC_NO_ERROR;
@@ -420,13 +430,17 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 ERROR("Error in continuation payload reading");
                 send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-                return HTTP2_RC_ERROR;
+                return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
+
             rc = handle_continuation_payload(&h2s->header, &contpl, buf_out, h2s);
-            // TODO: handle different error codes for handle_continuation_payload
-            if (rc < 0) {
-                ERROR("Error was found during continuatin payload handling");
-                return HTTP2_RC_ERROR;
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+                ERROR("ERROR in handle receive continuation payload.");
+                return rc;
+            }
+            else if (rc == HTTP2_RC_CLOSE_CONNECTION) {
+                DEBUG("Close connection. GOAWAY received and sent");
+                return rc;
             }
             DEBUG("handle_payload: RECEIVED CONTINUATION PAYLOAD OK");
             return HTTP2_RC_NO_ERROR;
