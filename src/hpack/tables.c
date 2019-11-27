@@ -207,6 +207,7 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
             return i;
         }
     }
+    ERROR("Dynamic table is not initialized right, don't have 0's between words");
     return INTERNAL_ERROR;
 }
 #endif
@@ -235,6 +236,7 @@ int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, i
 
     }
     //if copy failed
+    ERROR("Dynamic table is not used right, can't find ENDSTR in buffer");
     return INTERNAL_ERROR;
 
 }
@@ -292,6 +294,7 @@ int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table,
         dynamic_table->buffer[(dynamic_table->next + initial_position + i + dynamic_table->max_size) % dynamic_table->max_size] = ext_buffer[i - 1];
     }
     //if copy failed
+    ERROR("String given don't have ENDSTR");
     return INTERNAL_ERROR;
 
 }
@@ -312,6 +315,11 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
     uint16_t entry_length = 0;
     uint8_t counter0 = 0;
 
+    if(dynamic_table->n_entries == 0){
+        ERROR("Trying to delete entry in dynamic table when it's empty");
+        return INTERNAL_ERROR;
+    }
+
     for (uint16_t i = 1; i < dynamic_table->max_size; i++) {
         if (!dynamic_table->buffer[(dynamic_table->first + i + dynamic_table->max_size) % dynamic_table->max_size]) { // if 0, ENDSTR
 
@@ -328,7 +336,7 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
             entry_length++;
         }
     }
-    //ERROR CASE, not found 0
+    ERROR("Dynamic table is not initialized right, don't have 0's between words");
     return INTERNAL_ERROR;
 }
 #endif
@@ -661,6 +669,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     #else
       (void)dynamic_table;
     #endif
+    DEBUG("Header with name '%s', and value '%s' not found", name, value);
     return INTERNAL_ERROR;
 }
 
@@ -712,6 +721,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     #else
       (void)dynamic_table;
     #endif
+    DEBUG("Header with name '%s'not found", name);
     return INTERNAL_ERROR;
 }
 
