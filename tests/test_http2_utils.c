@@ -63,34 +63,6 @@ void test_read_setting_from_remote(void) {
     TEST_ASSERT_EQUAL( h2s.remote_settings[3], rsf);
 }
 
-
-void test_read_setting_from_fail_invalid_param(void) {
-    // Create function parameters
-    h2states_t h2s;
-
-    h2s.remote_settings[3] = 24;
-
-    // Perform request
-    int rsf = read_setting_from(&h2s, 0, 14);
-
-    // Check return value
-    TEST_ASSERT_EQUAL( -1, rsf);
-}
-
-
-void test_read_setting_from_fail_invalid_place(void) {
-    // Create function parameters
-    h2states_t h2s;
-
-    h2s.remote_settings[3] = 24;
-
-    // Perform request
-    int rsf = read_setting_from(&h2s, 2, 4);
-
-    // Check return value
-    TEST_ASSERT_EQUAL( -1, rsf);
-}
-
 int main(void)
 {
     UNIT_TESTS_BEGIN();
@@ -100,10 +72,6 @@ int main(void)
 
     UNIT_TEST(test_read_setting_from_local);
     UNIT_TEST(test_read_setting_from_remote);
-    //TODO: fix test_read_setting_from_fail_invalid_param in test_http2_utils.c
-    //UNIT_TEST(test_read_setting_from_fail_invalid_param);
-    //TODO: fix test_read_setting_from_fail_invalid_place in test_http2_utils.c
-    //UNIT_TEST(test_read_setting_from_fail_invalid_place);
 
     return UNIT_TESTS_END();
 }
