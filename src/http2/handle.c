@@ -63,7 +63,7 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
         h2s->received_end_stream = 0;
         rc = validate_pseudoheaders(&h2s->headers);
         if (rc < 0) {
-            ERROR("handle_continuation_payload: Malformed request received");
+            ERROR("handle_data_payload: Malformed request received");
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
@@ -373,7 +373,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
         if (h2s->received_end_stream == 1) {    //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
             rc = change_stream_state_end_stream_flag(0, buf_out, h2s);  //0 is for receiving
             if (rc < 0) {
-                DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
+                DEBUG("handle_continuation_payload: Close connection. GOAWAY previously received");
                 return HTTP2_RC_CLOSE_CONNECTION;
             }
             h2s->waiting_for_HEADERS_frame = 1;
