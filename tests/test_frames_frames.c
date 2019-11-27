@@ -510,7 +510,7 @@ void test_check_frame_errors(void)
 
         int rc = frame_header_from_bytes(bytes, 9, &header);
 
-        TEST_ASSERT_EQUAL(-1, rc);
+        TEST_ASSERT_TRUE(rc < 0);
     }
 }
 
@@ -847,7 +847,7 @@ int main(void)
     UNIT_TEST(test_frame_to_bytes_goaway);
     UNIT_TEST(test_frame_to_bytes_settings);
 
-    // UNIT_TEST(test_check_frame_errors);
+    UNIT_TEST(test_check_frame_errors);
 
     return UNIT_TESTS_END();
 }
