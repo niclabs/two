@@ -230,18 +230,19 @@ void test_handle_headers_payload_errors(void)
     headers_payload_t hpl;
     cbuf_t bout;
     h2states_t h2s;
+
     h2s.header_block_fragments_pointer = 0;
 
-    uint32_t get_header_block_rets[8] ={HTTP2_MAX_HBF_BUFFER +1, 10, 10, 10, 10, 10, 10, 10};
+    uint32_t get_header_block_rets[8] = { HTTP2_MAX_HBF_BUFFER + 1, 10, 10, 10, 10, 10, 10, 10 };
     SET_RETURN_SEQ(get_header_block_fragment_size, get_header_block_rets, 8);
-    int buff_copy_rets[7] = {-1, 10, 10, 10, 10, 10, 10};
+    int buff_copy_rets[7] = { -1, 10, 10, 10, 10, 10, 10 };
     SET_RETURN_SEQ(buffer_copy, buff_copy_rets, 7);
     is_flag_set_fake.return_val = 1;
-    int receive_header_rets[6] = {-1, -2, 100, 10, 10, 10};
+    int receive_header_rets[6] = { -1, -2, 100, 10, 10, 10 };
     SET_RETURN_SEQ(receive_header_block, receive_header_rets, 6);
-    int change_stream_rets[3] = {-1, 0, 0};
+    int change_stream_rets[3] = { -1, 0, 0 };
     SET_RETURN_SEQ(change_stream_state_end_stream_flag, change_stream_rets, 3)
-    char *headers_rets[2] = { NULL, "b"};
+    char *headers_rets[2] = { NULL, "b" };
     SET_RETURN_SEQ(headers_get, headers_rets, 2);
     http_server_response_fake.return_val = -1;
     int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
@@ -457,6 +458,50 @@ void test_handle_continuation_payload_end_headers_end_stream(void)
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be 0, headers were read");
 }
 
+void test_handle_continuation_errors(void)
+{
+    frame_header_t header;
+    header.length = 20;
+    frame_header_t big_header; // First error, header length
+    big_header.length = HTTP2_MAX_HBF_BUFFER;
+    continuation_payload_t contpl;
+    cbuf_t bout;
+    h2states_t h2s;
+    h2s.header_block_fragments_pointer = 10;
+    int buffer_rets[7] = {-1, 20, 20, 20, 20, 20};
+    SET_RETURN_SEQ(buffer_copy, buffer_rets, 6);
+    is_flag_set_fake.return_val = 1;
+    int receive_rets[6] = {-1, -2, 20, 30, 30, 30};
+    SET_RETURN_SEQ(receive_header_block, receive_rets, 6);
+    int change_rets[3] = {-1, 0, 0};
+    SET_RETURN_SEQ(change_stream_state_end_stream_flag, change_rets, 3);
+    char *headers_rets[2] = { NULL, "b" };
+    SET_RETURN_SEQ(headers_get, headers_rets, 2);
+    http_server_response_fake.return_val = -1;
+    int rc = handle_continuation_payload(&big_header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Header length error was forced");
+    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Buffer Copy error forced");
+    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Receive header block compression error forced");
+    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Receive header block internal error forced");
+    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Header block pointer is not equal to fragments received");
+    h2s.header_block_fragments_pointer = 10;
+    h2s.received_end_stream = 1;
+    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Return code must be 2. Close connection was forced");
+    h2s.header_block_fragments_pointer = 10;
+    h2s.received_end_stream = 1;
+    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Validate pseudo headers error was forced");
+    h2s.header_block_fragments_pointer = 10;
+    h2s.received_end_stream = 1;
+    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. http server response error forced");
+}
+
 void test_handle_window_update_payload(void)
 {
     window_update_payload_t wupl;
@@ -492,6 +537,7 @@ int main(void)
     UNIT_TEST(test_handle_continuation_payload_no_flags);
     UNIT_TEST(test_handle_continuation_payload_end_headers);
     UNIT_TEST(test_handle_continuation_payload_end_headers_end_stream);
+    UNIT_TEST(test_handle_continuation_errors);
     UNIT_TEST(test_handle_window_update_payload);
     return UNIT_TESTS_END();
 }
