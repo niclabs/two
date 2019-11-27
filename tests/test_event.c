@@ -132,7 +132,7 @@ void test_event_listen_no_sockets_available(void)
     TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count, "listen should be called once");
 
     // remove other sockets
-    for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
+    for (int i = 0; i < EVENT_MAX_SOCKETS - 1; i++) {
         event_sock_create(&loop);
     }
 
@@ -150,7 +150,7 @@ void test_event_sock_create(void)
     event_loop_init(&loop);
 
     TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "unused sockets should equal EVENT_MAX_SOCKETS after loop creation");
-    for (int i = 0; i < EVENT_MAX_DESCRIPTORS; i++) {
+    for (int i = 0; i < EVENT_MAX_SOCKETS; i++) {
         event_sock_create(&loop);
     }
 
