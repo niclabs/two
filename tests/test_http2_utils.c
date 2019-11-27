@@ -43,7 +43,7 @@ void test_read_setting_from_local(void) {
     h2s.local_settings[4] = 4;
 
     // Perform request
-    int rsf = read_setting_from(&h2s, 0, 5);
+    uint32_t rsf = read_setting_from(&h2s, 0, 5);
 
     // Check return value
     TEST_ASSERT_EQUAL( h2s.local_settings[4], rsf);
@@ -57,7 +57,7 @@ void test_read_setting_from_remote(void) {
     h2s.remote_settings[3] = 24;
 
     // Perform request
-    int rsf = read_setting_from(&h2s, 1, 4);
+    uint32_t rsf = read_setting_from(&h2s, 1, 4);
 
     // Check return value
     TEST_ASSERT_EQUAL( h2s.remote_settings[3], rsf);
