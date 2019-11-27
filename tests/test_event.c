@@ -73,6 +73,15 @@ void test_event_listen_accept_cb(struct event_sock *server, int status)
 }
 
 
+void test_event_listen_accept_no_more_sockets_cb(struct event_sock *server, int status)
+{
+    TEST_ASSERT_EQUAL_MESSAGE(1, server->descriptor, "listen socket must be equal to 1");
+    TEST_ASSERT_EQUAL_MESSAGE(-1, status, "accept status should be error if no more clients are available");
+
+    // close socket
+    event_close(server, test_event_listen_close_cb);
+}
+
 void test_event_listen(void)
 {
     event_loop_t loop;
@@ -101,6 +110,39 @@ void test_event_listen(void)
     TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
 }
 
+void test_event_listen_no_sockets_available(void)
+{
+    event_loop_t loop;
+
+    event_loop_init(&loop);
+
+    event_sock_t *sock = event_sock_create(&loop);
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+
+    // set fake functions
+    select_fake.custom_fake = test_event_listen_select_fake;
+    socket_fake.custom_fake = test_event_listen_socket_fake;
+
+    // configure sock as server socket
+    event_listen(sock, 8888, test_event_listen_accept_no_more_sockets_cb);
+
+    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port, "bind should be called with port 8888");
+    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count, "listen should be called once");
+
+    // remove other sockets
+    for (int i = 0; i < EVENT_MAX_DESCRIPTORS - 1; i++) {
+        event_sock_create(&loop);
+    }
+
+    // start loop
+    event_loop(&loop);
+
+    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(1, event_sock_unused(&loop), "server socket should be unused after loop finish");
+}
+
 void test_event_sock_create(void)
 {
     event_loop_t loop;
@@ -121,5 +163,6 @@ int main(void)
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_event_sock_create);
     UNIT_TEST(test_event_listen);
+    UNIT_TEST(test_event_listen_no_sockets_available);
     UNIT_TESTS_END();
 }
