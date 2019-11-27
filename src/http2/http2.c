@@ -136,7 +136,7 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     DEBUG("Received new frame header 0x%d", header.type);
 
     // Read max frame size from local settings
-    int local_max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+    uint32_t local_max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
     if (header.length > local_max_frame_size) {
         ERROR("Invalid received frame size %d > %d. Sending FRAME_SIZE_ERROR", header.length, local_max_frame_size);
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
@@ -379,7 +379,7 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
         case GOAWAY_TYPE: {
             DEBUG("handle_payload: RECEIVED GOAWAY PAYLOAD");
 
-            uint16_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+            uint32_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
             uint8_t debug_data[max_frame_size - 8];
             goaway_payload_t goaway_pl;
             goaway_pl.additional_debug_data = debug_data;
