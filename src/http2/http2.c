@@ -158,8 +158,8 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     // TODO: improve method names, it is not clear on reading the code
     // what are the conditions checked
     rc = check_incoming_condition(buf_out, h2s);
-    if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
-        DEBUG("incoming_condition returned HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT");
+    if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT || rc == HTTP2_RC_ERROR) {
+        DEBUG("check conditions for incoming headers returned error");
         DEBUG("http2_receive_header returning null callback");
         return null_callback();
     }
