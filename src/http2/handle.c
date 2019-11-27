@@ -356,8 +356,14 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
         rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer, &h2s->headers, &h2s->hpack_states); //TODO check this: rc is the byte read from the header
 
         if (rc < 0) {
-            ERROR("Error was found receiving header_block");
-            send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+            if (rc == -1) {
+                ERROR("Error was found receiving header_block. COMPRESSION ERROR");
+                send_connection_error(buf_out, HTTP2_COMPRESSION_ERROR, h2s);
+            }
+            else if (rc == -2) {
+                ERROR("Error was found receiving header_block. INTERNAL ERROR");
+                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+            }
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         if (rc != h2s->header_block_fragments_pointer) {
