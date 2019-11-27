@@ -847,7 +847,7 @@ int main(void)
     UNIT_TEST(test_frame_to_bytes_goaway);
     UNIT_TEST(test_frame_to_bytes_settings);
 
-    //UNIT_TEST(test_check_frame_errors);
+    // UNIT_TEST(test_check_frame_errors);
 
     return UNIT_TESTS_END();
 }

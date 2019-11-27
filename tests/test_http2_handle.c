@@ -35,6 +35,7 @@ FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
 FAKE_VALUE_FUNC(int, send_goaway, uint32_t, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, send_ping, uint8_t *, int8_t, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, flow_control_receive_window_update, h2states_t *, uint32_t);
+FAKE_VALUE_FUNC(uint32_t, update_window_size, h2_window_manager_t *, uint32_t );
 
 #define FFF_FAKES_LIST(FAKE)                                    \
     FAKE(flow_control_receive_data)                             \
@@ -53,6 +54,8 @@ FAKE_VALUE_FUNC(int, flow_control_receive_window_update, h2states_t *, uint32_t)
     FAKE(send_goaway)                                           \
     FAKE(send_ping)                                             \
     FAKE(flow_control_receive_window_update)                    \
+    FAKE(update_window_size)                                    \
+
 
 
 void setUp(void)

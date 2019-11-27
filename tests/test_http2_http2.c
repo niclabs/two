@@ -26,6 +26,7 @@ FAKE_VALUE_FUNC(int, check_incoming_settings_condition, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, check_incoming_goaway_condition, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, check_incoming_continuation_condition, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, check_incoming_ping_condition, cbuf_t *, h2states_t *);
+FAKE_VALUE_FUNC(int, check_incoming_window_update_condition, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, handle_data_payload, frame_header_t *, data_payload_t *, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, handle_headers_payload, frame_header_t *, headers_payload_t *, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, handle_settings_payload, settings_payload_t *, cbuf_t *, h2states_t *);
@@ -34,29 +35,30 @@ FAKE_VALUE_FUNC(int, handle_continuation_payload, frame_header_t *, continuation
 FAKE_VALUE_FUNC(int, handle_window_update_payload, window_update_payload_t *, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, handle_ping_payload, ping_payload_t *, cbuf_t *, h2states_t *);
 
-#define FFF_FAKES_LIST(FAKE)                    \
-    FAKE(cbuf_len)                              \
-    FAKE(cbuf_pop)                              \
-    FAKE(hpack_init_states)                     \
-    FAKE(send_connection_error)                 \
-    FAKE(null_callback)                         \
-    FAKE(headers_init)                          \
-    FAKE(send_local_settings)                   \
-    FAKE(frame_header_from_bytes)               \
-    FAKE(read_setting_from)                     \
-    FAKE(check_incoming_data_condition)         \
-    FAKE(check_incoming_headers_condition)      \
-    FAKE(check_incoming_settings_condition)     \
-    FAKE(check_incoming_goaway_condition)       \
-    FAKE(check_incoming_continuation_condition) \
-    FAKE(check_incoming_ping_condition)         \
-    FAKE(handle_data_payload)                   \
-    FAKE(handle_headers_payload)                \
-    FAKE(handle_settings_payload)               \
-    FAKE(handle_goaway_payload)                 \
-    FAKE(handle_continuation_payload)           \
-    FAKE(handle_window_update_payload)          \
-    FAKE(handle_ping_payload)                   \
+#define FFF_FAKES_LIST(FAKE)                        \
+    FAKE(cbuf_len)                                  \
+    FAKE(cbuf_pop)                                  \
+    FAKE(hpack_init_states)                         \
+    FAKE(send_connection_error)                     \
+    FAKE(null_callback)                             \
+    FAKE(headers_init)                              \
+    FAKE(send_local_settings)                       \
+    FAKE(frame_header_from_bytes)                   \
+    FAKE(read_setting_from)                         \
+    FAKE(check_incoming_data_condition)             \
+    FAKE(check_incoming_headers_condition)          \
+    FAKE(check_incoming_settings_condition)         \
+    FAKE(check_incoming_goaway_condition)           \
+    FAKE(check_incoming_continuation_condition)     \
+    FAKE(check_incoming_ping_condition)             \
+    FAKE(check_incoming_window_update_condition)    \
+    FAKE(handle_data_payload)                       \
+    FAKE(handle_headers_payload)                    \
+    FAKE(handle_settings_payload)                   \
+    FAKE(handle_goaway_payload)                     \
+    FAKE(handle_continuation_payload)               \
+    FAKE(handle_window_update_payload)              \
+    FAKE(handle_ping_payload)                       \
 
 
 // Reset fakes and memory before each test
