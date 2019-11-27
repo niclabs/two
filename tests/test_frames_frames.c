@@ -439,7 +439,7 @@ void test_bytes_to_frame_header(void)
 {
 
     uint8_t lengths[] = { 4, 4, 4, 4, 6, 8, 8, 8, 4, 4, 4 };
-    uint8_t stream_ids[] = { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 };
+    uint8_t stream_ids[] = { 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0 };
 
     /*Test all frame types*/
     for (int i = 0; i < 11; i++) {
@@ -485,18 +485,19 @@ void test_bytes_to_frame_header_error(void)
 void test_check_frame_errors(void)
 {
 
-    uint8_t lengths[] = { 3, 4, 4, 8, 5, 5, 5 };
-    uint8_t stream_ids[] = { 0, 0, 0, 1, 1, 1, 1 };
+    uint8_t lengths[] = { 3, 4, 4, 8, 5, 5, 8, 5 };
+    uint8_t stream_ids[] = { 0, 0, 0, 1, 1, 1, 1, 1 };
     uint8_t types[] = { RST_STREAM_TYPE,
                         RST_STREAM_TYPE,
                         PING_TYPE,
                         PING_TYPE,
                         SETTINGS_TYPE,
                         GOAWAY_TYPE,
+                        GOAWAY_TYPE,
                         WINDOW_UPDATE_TYPE };
 
     /*Test all frame types*/
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 8; i++) {
         frame_header_t header;
 
         uint32_t length = lengths[i];

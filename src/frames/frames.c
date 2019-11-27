@@ -240,6 +240,7 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
 
     if (errors < 0) {
         //Error in frame
+        frame_header->callback_payload_from_bytes = NULL;
         return errors;
     }
 
@@ -269,8 +270,7 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
             frame_header->callback_payload_from_bytes = read_continuation_payload;
             break;
         default:
-            WARN("Frame type %d not found", frame_header->type);
-            frame_header->callback_payload_from_bytes = NULL;
+            //This is unreachable
             return 0;
     }
 
