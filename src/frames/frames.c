@@ -74,7 +74,7 @@ frames_error_code_t check_frame_errors(frame_header_t *frame_header)
         }
         case SETTINGS_TYPE: {
             if (length % 6 != 0) {
-                printf("Error: length not divisible by 6, %u", length);
+                ERROR("SETTINGS FRAME length not divisible by 6, %u", length);
                 return FRAMES_FRAME_SIZE_ERROR;
             }
             if (stream_id != 0x0) {
@@ -100,7 +100,7 @@ frames_error_code_t check_frame_errors(frame_header_t *frame_header)
             return -1;
         case GOAWAY_TYPE: {
             if (length < 8) {
-                printf("Error: length < 8, %u", length);
+                ERROR("GOAWAY frame with length < 8, %u", length);
                 return FRAMES_FRAME_SIZE_ERROR;
             }
             if (stream_id != 0x0) {
@@ -112,14 +112,14 @@ frames_error_code_t check_frame_errors(frame_header_t *frame_header)
         }
         case WINDOW_UPDATE_TYPE: {
             if (length != 4) {
-                printf("Error: length != 4, %u", length);
+                ERROR("WINDOW UPDATE with length != 4, %u", length);
                 return FRAMES_FRAME_SIZE_ERROR;
             }
             return FRAMES_NO_ERROR;
         }
         case CONTINUATION_TYPE: {
             if (stream_id == 0x0) {
-                ERROR("stream_id of HEADERS FRAME is 0, PROTOCOL_ERROR");
+                ERROR("stream_id of CONTINUATION FRAME is 0, PROTOCOL_ERROR");
                 return FRAMES_PROTOCOL_ERROR;
             }
             return FRAMES_NO_ERROR;
