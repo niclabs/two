@@ -122,7 +122,7 @@ void test_handle_data_payload_errors(void)
     // Fake settings
     int flow_rets[4] = { -1, 0, 0, 0 };
     SET_RETURN_SEQ(flow_control_receive_data, flow_rets, 4);
-    int change_rets[3] = { -1, 0, 0 };
+    int change_rets[3] = { 2, 0, 0 };
     SET_RETURN_SEQ(change_stream_state_end_stream_flag, change_rets, 3);
     char *headers_rets[4] = { NULL, "b", "a", "a" };
     SET_RETURN_SEQ(headers_get, headers_rets, 4);
@@ -240,7 +240,7 @@ void test_handle_headers_payload_errors(void)
     is_flag_set_fake.return_val = 1;
     int receive_header_rets[6] = { -1, -2, 100, 10, 10, 10 };
     SET_RETURN_SEQ(receive_header_block, receive_header_rets, 6);
-    int change_stream_rets[3] = { -1, 0, 0 };
+    int change_stream_rets[3] = {2, 0, 0 };
     SET_RETURN_SEQ(change_stream_state_end_stream_flag, change_stream_rets, 3)
     char *headers_rets[2] = { NULL, "b" };
     SET_RETURN_SEQ(headers_get, headers_rets, 2);
@@ -473,7 +473,7 @@ void test_handle_continuation_errors(void)
     is_flag_set_fake.return_val = 1;
     int receive_rets[6] = {-1, -2, 20, 30, 30, 30};
     SET_RETURN_SEQ(receive_header_block, receive_rets, 6);
-    int change_rets[3] = {-1, 0, 0};
+    int change_rets[3] = {2, 0, 0};
     SET_RETURN_SEQ(change_stream_state_end_stream_flag, change_rets, 3);
     char *headers_rets[2] = { NULL, "b" };
     SET_RETURN_SEQ(headers_get, headers_rets, 2);
