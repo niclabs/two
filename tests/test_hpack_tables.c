@@ -12,6 +12,11 @@ extern int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynami
 extern int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
 extern int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
 extern int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t settings_max_size, uint32_t new_max_size);
+extern int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table);
+extern int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, uint32_t index);
+extern int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer);
+extern int16_t hpack_tables_dynamic_compare_string(hpack_dynamic_table_t *dynamic_table, uint16_t initial_position, char *buffer);
+extern int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer);
 
 DEFINE_FFF_GLOBALS;
 
@@ -56,6 +61,125 @@ void test_hpack_tables_find_index(void)
     }
 #endif
 }
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
+void test_hpack_tables_dynamic_pos_of_index(void)
+{
+    uint16_t dynamic_table_max_size = 500;
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+    
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, "hola", "chao");
+    TEST_ASSERT_EQUAL(10, hpack_tables_dynamic_pos_of_index(&dynamic_table, 62));
+
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, "hola", "chao");
+    
+    TEST_ASSERT_EQUAL(10, hpack_tables_dynamic_pos_of_index(&dynamic_table, 62));
+    TEST_ASSERT_EQUAL(20, hpack_tables_dynamic_pos_of_index(&dynamic_table, 63));
+
+}
+
+void test_hpack_tables_dynamic_pos_of_index_error(void)
+{
+    uint16_t dynamic_table_max_size = 30;
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+    //now we simulate a bad initialization
+    dynamic_table.n_entries=1;
+    memset(dynamic_table.buffer,1,sizeof(dynamic_table.buffer));
+
+    TEST_ASSERT_EQUAL_MESSAGE(-2, hpack_tables_dynamic_pop(&dynamic_table), "Dynamic table should throw error when doesn't find right entries in the buffer");
+    
+    
+}
+#endif
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
+void test_hpack_tables_dynamic_copy_to_ext(void)
+{
+    uint16_t dynamic_table_max_size = 500;
+    hpack_dynamic_table_t dynamic_table;
+    char test_buff[10];
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, "hola", "chao");
+
+    int16_t rc = hpack_tables_dynamic_copy_to_ext(&dynamic_table, 10, test_buff);
+    TEST_ASSERT_EQUAL(5, rc);
+    TEST_ASSERT_EQUAL_STRING("hola", test_buff);
+
+    rc = hpack_tables_dynamic_copy_to_ext(&dynamic_table, rc, test_buff);
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL_STRING("chao", test_buff);
+}
+
+void test_hpack_tables_dynamic_copy_to_ext_error(void)
+{
+    uint16_t dynamic_table_max_size = 500;
+    hpack_dynamic_table_t dynamic_table;
+    char test_buff[500];
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+    //now we simulate a bad initialization
+    dynamic_table.n_entries=1;
+    memset(dynamic_table.buffer,1,sizeof(dynamic_table.buffer));
+    dynamic_table.next=10;
+
+    TEST_ASSERT_EQUAL_MESSAGE(-2, hpack_tables_dynamic_copy_to_ext(&dynamic_table, 9, test_buff), "Dynamic table should throw error when the buffer string doesn't have ENDSTR");
+
+}
+#endif
+
+#if HPACK_INCLUDE_DYNAMIC_TABLE
+void test_hpack_tables_dynamic_copy_from_ext(void)
+{
+    uint16_t dynamic_table_max_size = 500;
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+
+    int16_t rc = hpack_tables_dynamic_copy_from_ext(&dynamic_table, 0, "hola");
+    TEST_ASSERT_EQUAL(5, rc);
+    TEST_ASSERT_EQUAL_STRING("hola", dynamic_table.buffer + 1);
+
+    rc = hpack_tables_dynamic_copy_from_ext(&dynamic_table, rc, "chao");
+    TEST_ASSERT_EQUAL(10, rc);
+    TEST_ASSERT_EQUAL_STRING("chao", dynamic_table.buffer + 6);
+}
+
+void test_hpack_tables_dynamic_copy_from_ext_error(void)
+{
+    uint16_t dynamic_table_max_size = 30;
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+    //now we simulate a bad string
+    
+    TEST_ASSERT_EQUAL_MESSAGE(-2, hpack_tables_dynamic_copy_from_ext(&dynamic_table, 0, 
+                "Hola, como estas? Este es un ejemplo de un string enorme, mayor al tamaño máximo admitido por el programa, ojala que este no resiste, jejejeje." ), 
+                "Dynamic table should throw error when the input string is too long or doesn't have ENDSTR");
+
+}
+#endif  
+
+#ifdef HPACK_INCLUDE_DYNAMIC_TABLE
+void test_hpack_tables_dynamic_compare_string(void)
+{
+    uint16_t dynamic_table_max_size = 500;
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+    hpack_tables_dynamic_table_add_entry(&dynamic_table, "hola", "chao");
+
+    int16_t rc = hpack_tables_dynamic_compare_string(&dynamic_table, 10, "hola");
+    TEST_ASSERT_EQUAL(5, rc);
+
+    rc = hpack_tables_dynamic_compare_string(&dynamic_table, 5, "chao");
+    TEST_ASSERT_EQUAL(5, rc);
+}
+#endif 
 
 void test_hpack_tables_find_index_error(void)
 {
@@ -203,7 +327,7 @@ void test_hpack_tables_dynamic_add_find_entry_and_reset_table(void)
 
     //test error case, in the beginning there isn't any entry
     int8_t rc_fail = hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 62, name, value); // 62 -> doesn't exist ...
-    TEST_ASSERT_EQUAL(-1, rc_fail);
+    TEST_ASSERT_EQUAL(PROTOCOL_ERROR, rc_fail);
 
 
     //ITERATION 1, add first entry
@@ -277,6 +401,18 @@ void test_hpack_tables_dynamic_add_find_entry_and_reset_table(void)
 
 }
 
+void test_hpack_tables_dynamic_add_entry_error(void)
+{
+    uint16_t dynamic_table_max_size = 100;
+    hpack_dynamic_table_t dynamic_table;
+
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+    TEST_ASSERT_EQUAL_MESSAGE(-2, hpack_tables_dynamic_table_add_entry(&dynamic_table, "Yo soy un header muy largo, tengo aproximadamente 60 caracteres", 
+                "Este es un value muy largo" ), 
+                "Dynamic table should throw error when input is too long");
+
+}
+
 void test_hpack_tables_dynamic_pop_old_entry(void)
 {
     uint16_t dynamic_table_max_size = 64 + 20; //aprox size of two standard entries -> 2*(32 + 10chars)
@@ -314,7 +450,20 @@ void test_hpack_tables_dynamic_pop_old_entry(void)
     hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 62, name, value);
     TEST_ASSERT_EQUAL_STRING(new_names[2], name);
     TEST_ASSERT_EQUAL_STRING(new_values[2], value);
+}
 
+void test_hpack_tables_dynamic_pop_error(void)
+{
+    uint16_t dynamic_table_max_size = 20 + 32;
+    hpack_dynamic_table_t dynamic_table;
+    hpack_tables_init_dynamic_table(&dynamic_table, dynamic_table_max_size);
+
+    TEST_ASSERT_EQUAL_MESSAGE(-2, hpack_tables_dynamic_pop(&dynamic_table), "Dynamic table should throw error when tries to delete oldest entry when it's empty");
+
+    //now we make THE bad case of the implementation
+    memset(dynamic_table.buffer, 1, sizeof(dynamic_table.buffer));
+    dynamic_table.n_entries = 1;
+    TEST_ASSERT_EQUAL_MESSAGE(-2, hpack_tables_dynamic_pop(&dynamic_table), "Dynamic table should throw error when doesn't find right entries in the buffer");
 
 }
 
@@ -545,14 +694,17 @@ int main(void)
     UNIT_TEST(test_hpack_tables_static_find_entry_name);
     UNIT_TEST(test_hpack_tables_find_entry);
 #if HPACK_INCLUDE_DYNAMIC_TABLE
-    //UNIT_TEST(test_hpack_tables_dynamic_pos_of_index);
-    //UNIT_TEST(test_hpack_tables_dynamic_pos_of_index_error);
-    //UNIT_TEST(test_hpack_tables_dynamic_copy_to_ext);
-    //UNIT_TEST(test_hpack_tables_dynamic_compare_string);
-    //UNIT_TEST(test_hpack_tables_dynamic_copy_from_ext);
+    UNIT_TEST(test_hpack_tables_dynamic_pos_of_index);
+    UNIT_TEST(test_hpack_tables_dynamic_pos_of_index_error);
+    UNIT_TEST(test_hpack_tables_dynamic_copy_to_ext);
+    UNIT_TEST(test_hpack_tables_dynamic_copy_to_ext_error);
+    UNIT_TEST(test_hpack_tables_dynamic_copy_from_ext);
+    UNIT_TEST(test_hpack_tables_dynamic_copy_from_ext_error);
+    UNIT_TEST(test_hpack_tables_dynamic_compare_string);
     UNIT_TEST(test_hpack_tables_dynamic_add_find_entry_and_reset_table);
+    UNIT_TEST(test_hpack_tables_dynamic_add_entry_error);
     UNIT_TEST(test_hpack_tables_dynamic_pop_old_entry);
-    //UNIT_TEST(test_hpack_tables_dynamic_pop_error);
+    UNIT_TEST(test_hpack_tables_dynamic_pop_error);
     UNIT_TEST(test_hpack_tables_dynamic_circular_test);
     UNIT_TEST(test_hpack_tables_dynamic_resize_not_circular);
     UNIT_TEST(test_hpack_tables_dynamic_resize_circular);
