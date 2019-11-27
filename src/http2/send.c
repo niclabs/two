@@ -505,7 +505,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint32_t stream_id = h2s->current_stream.stream_id;
-    uint16_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+    uint32_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
     int rc;
     //not being considered dependencies nor padding.
     if (size <= max_frame_size) { //if headers can be send in only one frame
