@@ -508,7 +508,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     uint32_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
     int rc;
     //not being considered dependencies nor padding.
-    if (size <= max_frame_size) { //if headers can be send in only one frame
+    if ((uint32_t)size <= max_frame_size) { //if headers can be send in only one frame
         //only send 1 header
         rc = send_headers_frame(encoded_bytes, size, stream_id, 1, end_stream, buf_out, h2s);
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
@@ -525,7 +525,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
         return rc;  // should be HTTP2_RC_NO_ERROR
     }
     else {          //if headers must be send with one or more continuation frames
-        int remaining = size;
+        uint32_t remaining = size;
         //send Header Frame
         rc = send_headers_frame(encoded_bytes, max_frame_size, stream_id, 0, end_stream, buf_out, h2s);
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
