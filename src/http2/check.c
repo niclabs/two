@@ -77,6 +77,12 @@ int check_incoming_headers_condition(cbuf_t *buf_out, h2states_t *h2s)
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (h2s->current_stream.state == STREAM_IDLE) {
+      if (h2s->header.stream_id == h2s->last_open_stream_id) {
+          ERROR("Invalid stream id: the stream was closed. STREAM CLOSED ERROR");
+          send_connection_error(buf_out, HTTP2_STREAM_CLOSED, h2s);
+          return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+        }
+
         if (h2s->header.stream_id < h2s->last_open_stream_id) {
             ERROR("Invalid stream id: not bigger than last open. PROTOCOL ERROR");
             send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
