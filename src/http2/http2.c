@@ -33,7 +33,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
     h2s->wait_setting_ack = 0;
     h2s->current_stream.stream_id = is_server ? 2 : 3;
     h2s->current_stream.state = STREAM_IDLE;
-    h2s->last_open_stream_id = 1;
+    h2s->last_open_stream_id = 0;
     h2s->header_block_fragments_pointer = 0;
     h2s->waiting_for_end_headers_flag = 0;
     h2s->waiting_for_HEADERS_frame = 0;
