@@ -198,7 +198,7 @@ int check_incoming_ping_condition(cbuf_t *buf_out, h2states_t *h2s)
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    if (h2s->header.length != 8){
+    if (h2s->header.length != 8) {
         ERROR("PING frame with a length field value other than 8. FRAME_SIZE_ERROR");
         send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
