@@ -442,6 +442,8 @@ void test_check_incoming_window_update_condition_errors(void)
     cbuf_t buf_out;
     h2states_t h2s_len;
     h2states_t h2s_stream;
+    h2states_t h2s_never_open;
+
 
     h2s_len.header.length = 6;
     h2s_len.header.stream_id = 0;
@@ -451,10 +453,19 @@ void test_check_incoming_window_update_condition_errors(void)
     h2s_stream.current_stream.stream_id = 8;
     h2s_stream.current_stream.state = STREAM_IDLE;
 
+    h2s_never_open.header.length = 4;
+    h2s_never_open.header.stream_id = 10;
+    h2s_never_open.last_open_stream_id = 8;
+    h2s_never_open.current_stream.stream_id = 8;
+    h2s_never_open.current_stream.state = STREAM_OPEN;
+
+
     int rc = check_incoming_window_update_condition(&buf_out, &h2s_len);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (length error)");
     rc = check_incoming_window_update_condition(&buf_out, &h2s_stream);
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream idle error)");
+    rc = check_incoming_window_update_condition(&buf_out, &h2s_never_open);
+    TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (stream never open)");
 }
 
 void test_check_incoming_ping_condition(void)
