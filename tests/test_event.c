@@ -277,16 +277,11 @@ void test_event_accept(void)
 
     // set fake functions
     int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_no_activity };
-    select_fake.custom_fake_seq = select_fakes;
+    SET_CUSTOM_FAKE_SEQ(select, select_fakes, 2);
     socket_fake.return_val = 1;
 
     // configure sock as server socket
     event_listen(sock, 8888, test_event_accept_listen_cb);
-
-    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port, "bind should be called with port 8888");
-    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count, "listen should be called once");
 
     // start loop
     event_loop(&loop);
@@ -298,24 +293,6 @@ void test_event_accept(void)
 //////////////////////////////////////////////////////////////////////////
 // test_event_read
 //////////////////////////////////////////////////////////////////////////
-int cbuf_peek_world(cbuf_t *cbuf, void *dst, int size)
-{
-    TEST_ASSERT_GREATER_OR_EQUAL(8, size);
-
-    memcpy(dst, ", World!", 8);
-
-    return 8;
-}
-
-int cbuf_peek_hello_world(cbuf_t *cbuf, void *dst, int size)
-{
-    TEST_ASSERT_GREATER_OR_EQUAL(13, size);
-
-    memcpy(dst, "Hello, World!", 13);
-
-    return 13;
-}
-
 int test_event_read_world_cb(struct event_sock *sock, int size, uint8_t *bytes)
 {
     TEST_ASSERT_EQUAL(8, size);
@@ -347,10 +324,8 @@ void test_event_read_listen_cb(struct event_sock *server, int status)
     // set accept return value
     accept_fake.return_val = 2;
     TEST_ASSERT_EQUAL(0, event_accept(server, client));
-    TEST_ASSERT_EQUAL(1, accept_fake.call_count);
-    TEST_ASSERT_EQUAL(2, client->descriptor);
-    TEST_ASSERT_EQUAL(EVENT_SOCK_CONNECTED, client->state);
 
+    // call read
     event_read(client, test_event_read_hello_cb);
 
     // close sockets
@@ -387,12 +362,7 @@ void test_event_read(void)
     // configure sock as server socket
     event_listen(sock, 8888, test_event_read_listen_cb);
 
-    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port, "bind should be called with port 8888");
-    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count, "listen should be called once");
-
-    // start loop
+        // start loop
     event_loop(&loop);
 
     TEST_ASSERT_EQUAL(3, select_fake.call_count);
