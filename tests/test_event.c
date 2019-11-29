@@ -13,7 +13,8 @@ FAKE_VALUE_FUNC(int, socket, int, int, int);
 FAKE_VALUE_FUNC(int, bind, int, const struct sockaddr *, socklen_t);
 FAKE_VALUE_FUNC(int, listen, int, int);
 FAKE_VALUE_FUNC(int, close, int);
-FAKE_VALUE_FUNC(int, setsockopt, int, int, int, const void*, socklen_t);
+FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, setsockopt, int, int, int, const void *, socklen_t);
 FAKE_VALUE_FUNC(int, select, int, fd_set *, fd_set *, fd_set *, struct timeval *);
 FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, cbuf_peek, cbuf_t *, void *, int);
@@ -44,12 +45,18 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-int test_event_listen_socket_fake(int domain, int type, int protocol)
+//////////////////////////////////////////////////////////////////////////
+// fake functions and generic callbacks
+//////////////////////////////////////////////////////////////////////////
+
+int select_with_no_activity(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
 {
-    return 1;
+    return 0;
 }
 
-int test_event_listen_select_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
+
+// Simulate a read event on socket 1
+int select_with_read_on_s1_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
 {
     TEST_ASSERT_GREATER_THAN_MESSAGE(1, nfds, "nfds given to select must be greater than 1");
 
@@ -58,28 +65,39 @@ int test_event_listen_select_fake(int nfds, fd_set *read_set, fd_set *write_set,
     return 0;
 }
 
-void test_event_listen_close_cb(event_sock_t *sock)
+// Simulate a read event on socket 2
+int select_with_read_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
+{
+    TEST_ASSERT_GREATER_THAN_MESSAGE(2, nfds, "nfds given to select must be greater than 2");
+
+    // Set read activity on socket
+    FD_SET(2, read_set);
+    return 0;
+}
+
+// Generic close calback check
+void close_s1_cb(event_sock_t *sock)
 {
     TEST_ASSERT_EQUAL_MESSAGE(1, sock->descriptor, "closed socket must be equal to 1");
 }
 
-void test_event_listen_accept_cb(struct event_sock *server, int status)
+// Generic close calback check
+void close_s2_cb(event_sock_t *sock)
+{
+    TEST_ASSERT_EQUAL_MESSAGE(2, sock->descriptor, "closed socket must be equal to 2");
+}
+
+//////////////////////////////////////////////////////////////////////////
+// test_event_listen
+//////////////////////////////////////////////////////////////////////////
+
+void test_event_listen_ok_cb(struct event_sock *server, int status)
 {
     TEST_ASSERT_EQUAL_MESSAGE(1, server->descriptor, "listen socket must be equal to 1");
     TEST_ASSERT_EQUAL(0, status);
 
     // close socket
-    event_close(server, test_event_listen_close_cb);
-}
-
-
-void test_event_listen_accept_no_more_sockets_cb(struct event_sock *server, int status)
-{
-    TEST_ASSERT_EQUAL_MESSAGE(1, server->descriptor, "listen socket must be equal to 1");
-    TEST_ASSERT_EQUAL_MESSAGE(-1, status, "accept status should be error if no more clients are available");
-
-    // close socket
-    event_close(server, test_event_listen_close_cb);
+    event_close(server, close_s1_cb);
 }
 
 void test_event_listen(void)
@@ -92,11 +110,11 @@ void test_event_listen(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
 
     // set fake functions
-    select_fake.custom_fake = test_event_listen_select_fake;
-    socket_fake.custom_fake = test_event_listen_socket_fake;
+    select_fake.custom_fake = select_with_read_on_s1_fake;
+    socket_fake.return_val = 1;
 
     // configure sock as server socket
-    event_listen(sock, 8888, test_event_listen_accept_cb);
+    event_listen(sock, 8888, test_event_listen_ok_cb);
 
     TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
     TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
@@ -110,6 +128,20 @@ void test_event_listen(void)
     TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+// test_event_listen_no_more_sockets
+//////////////////////////////////////////////////////////////////////////
+
+void test_event_listen_no_more_sockets_cb(struct event_sock *server, int status)
+{
+    TEST_ASSERT_EQUAL(1, server->descriptor);
+    TEST_ASSERT_EQUAL_MESSAGE(-1, status, "accept status should be error if no more clients are available");
+
+    // close socket
+    event_close(server, close_s1_cb);
+}
+
 void test_event_listen_no_sockets_available(void)
 {
     event_loop_t loop;
@@ -120,11 +152,11 @@ void test_event_listen_no_sockets_available(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
 
     // set fake functions
-    select_fake.custom_fake = test_event_listen_select_fake;
-    socket_fake.custom_fake = test_event_listen_socket_fake;
+    select_fake.custom_fake = select_with_read_on_s1_fake;
+    socket_fake.return_val = 1;
 
     // configure sock as server socket
-    event_listen(sock, 8888, test_event_listen_accept_no_more_sockets_cb);
+    event_listen(sock, 8888, test_event_listen_no_more_sockets_cb);
 
     TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
     TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
@@ -142,6 +174,61 @@ void test_event_listen_no_sockets_available(void)
     TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called once");
     TEST_ASSERT_EQUAL_MESSAGE(1, event_sock_unused(&loop), "server socket should be unused after loop finish");
 }
+
+//////////////////////////////////////////////////////////////////////////
+// test_event_accept
+//////////////////////////////////////////////////////////////////////////
+void test_event_accept_listen_cb(struct event_sock *server, int status)
+{
+    TEST_ASSERT_EQUAL(1, server->descriptor);
+    TEST_ASSERT_EQUAL(0, status);
+    TEST_ASSERT_NOT_EQUAL(NULL, server->loop);
+
+    event_sock_t *client = event_sock_create(server->loop);
+
+    // set accept return value
+    accept_fake.return_val = 2;
+    TEST_ASSERT_EQUAL(0, event_accept(server, client));
+    TEST_ASSERT_EQUAL(1, accept_fake.call_count);
+    TEST_ASSERT_EQUAL(2, client->descriptor);
+    TEST_ASSERT_EQUAL(EVENT_SOCK_CONNECTED, client->state);
+
+    // close sockets
+    event_close(client, close_s2_cb);
+    event_close(server, close_s1_cb);
+}
+
+void test_event_accept(void)
+{
+    event_loop_t loop;
+
+    event_loop_init(&loop);
+
+    event_sock_t *sock = event_sock_create(&loop);
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+
+    // set fake functions
+    select_fake.custom_fake = select_with_read_on_s1_fake;
+    socket_fake.return_val = 1;
+
+    // configure sock as server socket
+    event_listen(sock, 8888, test_event_accept_listen_cb);
+
+    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port, "bind should be called with port 8888");
+    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count, "listen should be called once");
+
+    // start loop
+    event_loop(&loop);
+
+    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
+}
+
+//////////////////////////////////////////////////////////////////////////
+// test_event_sock_create
+//////////////////////////////////////////////////////////////////////////
 
 void test_event_sock_create(void)
 {
@@ -164,5 +251,6 @@ int main(void)
     UNIT_TEST(test_event_sock_create);
     UNIT_TEST(test_event_listen);
     UNIT_TEST(test_event_listen_no_sockets_available);
+    UNIT_TEST(test_event_accept);
     UNIT_TESTS_END();
 }
