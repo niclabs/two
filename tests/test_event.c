@@ -5,7 +5,7 @@
 
 #include "event.h"
 #include "cbuf.h"
-// #define LOG_LEVEL (LOG_LEVEL_DEBUG)
+//#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 #include "unit.h"
 #include "fff.h"
 
@@ -117,6 +117,26 @@ int select_with_read_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, f
     return 0;
 }
 
+// Simulate a read event on socket 2
+int select_with_write_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
+{
+    TEST_ASSERT_GREATER_THAN(2, nfds);
+
+    // Reset read activity
+    FD_CLR(0, read_set);
+    FD_CLR(1, read_set);
+    FD_CLR(2, read_set);
+
+    // Reset write activity
+    FD_CLR(0, write_set);
+    FD_CLR(1, write_set);
+    FD_CLR(2, write_set);
+
+    // set activity on the socket 1
+    FD_SET(2, write_set);
+    return 0;
+}
+
 // Generic close calback check
 void close_s1_cb(event_sock_t *sock)
 {
@@ -144,6 +164,26 @@ ssize_t recv_hello_world(int s, void *dst, size_t len, int flags)
     memcpy(dst, "Hello, World!", 13);
 
     return 13;
+}
+
+ssize_t send_world(int s, const void *src, size_t len, int flags)
+{
+    TEST_ASSERT_EQUAL(2, s);
+    TEST_ASSERT_EQUAL(MSG_DONTWAIT, flags);
+    TEST_ASSERT_GREATER_OR_EQUAL(8, len);
+    TEST_ASSERT_EQUAL_STRING_LEN(", World!", src, 8);
+
+    return 8;
+}
+
+ssize_t send_hello(int s, const void *src, size_t len, int flags)
+{
+    TEST_ASSERT_EQUAL(2, s);
+    TEST_ASSERT_EQUAL(MSG_DONTWAIT, flags);
+    TEST_ASSERT_GREATER_OR_EQUAL(13, len);
+    TEST_ASSERT_EQUAL_STRING_LEN("Hello, World!", src, 13);
+
+    return 5;
 }
 
 int test_cbuf_len(cbuf_t *cbuf)
@@ -374,7 +414,7 @@ void test_event_read(void)
 
     // set fake functions
     int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_read_on_s2_fake, select_with_no_activity };
-    SET_CUSTOM_FAKE_SEQ(select, select_fakes, 2);
+    SET_CUSTOM_FAKE_SEQ(select, select_fakes, 3);
 
     // The call to socket should return the server socket value
     socket_fake.return_val = 1;
@@ -392,13 +432,81 @@ void test_event_read(void)
     // configure sock as server socket
     event_listen(sock, 8888, test_event_read_listen_cb);
 
-        // start loop
+    // start loop
     event_loop(&loop);
 
     TEST_ASSERT_EQUAL(3, select_fake.call_count);
     TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+// test_event_write
+//////////////////////////////////////////////////////////////////////////
+void test_event_write_hello_world_cb(struct event_sock *client, int status)
+{
+    TEST_ASSERT_EQUAL(2, client->descriptor);
+    TEST_ASSERT_EQUAL(0, status);
+
+    // close sockets
+    event_close(client, close_s2_cb);
+}
+
+void test_event_write_listen_cb(struct event_sock *server, int status)
+{
+    TEST_ASSERT_EQUAL(1, server->descriptor);
+    TEST_ASSERT_EQUAL(0, status);
+    TEST_ASSERT_NOT_EQUAL(NULL, server->loop);
+
+    event_sock_t *client = event_sock_create(server->loop);
+
+    // set accept return value
+    accept_fake.return_val = 2;
+    TEST_ASSERT_EQUAL(0, event_accept(server, client));
+    TEST_ASSERT_EQUAL(2, client->descriptor);
+
+    // call read
+    event_write(client, 13, (unsigned char *)"Hello, World!", test_event_write_hello_world_cb);
+
+    // close sockets
+    event_close(server, close_s1_cb);
+}
+
+void test_event_write(void)
+{
+    event_loop_t loop;
+
+    event_loop_init(&loop);
+
+    event_sock_t *sock = event_sock_create(&loop);
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+
+    // set fake functions
+    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_write_on_s2_fake, select_with_no_activity };
+    SET_CUSTOM_FAKE_SEQ(select, select_fakes, 3);
+
+    // The call to socket should return the server socket value
+    socket_fake.return_val = 1;
+
+    // buffer responses
+    cbuf_peek_fake.custom_fake = test_cbuf_peek;
+    cbuf_pop_fake.custom_fake = test_cbuf_pop;
+    cbuf_len_fake.custom_fake = test_cbuf_len;
+    cbuf_push_fake.custom_fake = test_cbuf_push;
+
+    // read "Hello, World!" on first read and nothing after
+    ssize_t (*send_fakes[])(int, const void *, size_t, int) = { send_hello, send_world };
+    SET_CUSTOM_FAKE_SEQ(send, send_fakes, 2);
+
+    // configure sock as server socket
+    event_listen(sock, 8888, test_event_write_listen_cb);
+
+    // start loop
+    event_loop(&loop);
+
+    TEST_ASSERT_EQUAL(2, select_fake.call_count);
+    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
+}
 //////////////////////////////////////////////////////////////////////////
 // test_event_sock_create
 //////////////////////////////////////////////////////////////////////////
@@ -426,5 +534,6 @@ int main(void)
     UNIT_TEST(test_event_listen_no_sockets_available);
     UNIT_TEST(test_event_accept);
     UNIT_TEST(test_event_read);
+    UNIT_TEST(test_event_write);
     UNIT_TESTS_END();
 }
