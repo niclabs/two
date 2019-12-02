@@ -14,13 +14,11 @@
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32, uint8_t *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)                 \
     FAKE(uint32_to_byte_array)        \
     FAKE(bytes_to_uint32)
 
@@ -34,13 +32,6 @@ void setUp(void)
 }
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
 
 int uint32_to_byte_array_custom_fake_num(uint32_t num, uint8_t *byte_array)
 {
@@ -64,8 +55,6 @@ void test_create_rst_stream_frame(void)
     rst_stream_payload_t rst_stream_payload;
     uint32_t last_stream_id = 30;
     uint32_t error_code = 1;
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     create_rst_stream_frame(&frame_header,
                                  &rst_stream_payload,
@@ -96,7 +85,6 @@ void test_rst_stream_payload_to_bytes(void)
 
     uint8_t expected_bytes[] = { 0, 0, 0, 1};
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint8_t byte_array[16];
 
@@ -121,8 +109,6 @@ void test_rst_stream_payload_to_bytes_error(void)
     rst_stream_payload_t rst_stream_payload;
     rst_stream_payload.error_code = 1;
 
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     uint8_t byte_array[16];
 
     /*Another error*/
@@ -148,7 +134,6 @@ void test_read_rst_stream_payload(void)
     //expected_headers_payload.padding = expected_padding;
 
 /*mocks*/
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     bytes_to_uint32_fake.custom_fake = bytes_to_uint32_custom_fake;
 
     //fill the buffer

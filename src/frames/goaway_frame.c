@@ -5,7 +5,7 @@
 #include "goaway_frame.h"
 #include "http2/utils.h"
 #include "utils.h"
-
+#include "string.h"
 #include "config.h"
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
@@ -34,13 +34,13 @@ int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t
     }
     pointer += 4;
     uint32_t additional_debug_data_size = frame_header->length - 8;
-    rc = buffer_copy(byte_array + pointer, goaway_payload->additional_debug_data, additional_debug_data_size);
+    memcpy(byte_array + pointer, goaway_payload->additional_debug_data, additional_debug_data_size);
     /*
     if (rc < 0) {
         ERROR("error in buffer copy");
         return -1;
     }*/
-    pointer += rc;
+    pointer += additional_debug_data_size;
     return pointer;
 }
 
@@ -61,7 +61,7 @@ void create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_
 
     goaway_payload->last_stream_id = last_stream_id;
     goaway_payload->error_code = error_code;
-    buffer_copy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
+    memcpy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
     goaway_payload->additional_debug_data = additional_debug_data_buffer;
 
 }
@@ -92,10 +92,7 @@ int read_goaway_payload(frame_header_t *frame_header, void *payload, uint8_t *by
 
     uint32_t additional_debug_data_size = frame_header->length - 8;
     /*int rc = */
-    buffer_copy(goaway_payload->additional_debug_data, bytes + pointer, additional_debug_data_size);
-    /*if (rc < 0) {
-        ERROR("error in buffer copy");
-        return -1;
-    }*/
+    memcpy(goaway_payload->additional_debug_data, bytes + pointer, additional_debug_data_size);
+
     return frame_header->length;
 }

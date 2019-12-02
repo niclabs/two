@@ -8,6 +8,7 @@
 #include "config.h"
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
+#include "string.h"
 
 /*
  * Function: data_payload_to_bytes
@@ -26,15 +27,9 @@ int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
         ERROR("Padding not implemented yet");
         return -1;
     }
-    //TODO: Modify behaviour of buffer_copy to throw an error when not possible to copy.
-    int rc = buffer_copy(byte_array, data_payload->data, length);
+    memcpy(byte_array, data_payload->data, length);
 
-    /*
-    if (rc < 0) {
-        ERROR("error copying buffer");
-        return -1;
-    }*/
-    return rc;
+    return length;
 }
 
 /*
@@ -57,7 +52,7 @@ void create_data_frame(frame_header_t *frame_header, data_payload_t *data_payloa
     frame_header->reserved = 0;
     frame_header->callback_payload_to_bytes = data_payload_to_bytes;
 
-    buffer_copy(data, data_to_send, length);
+    memcpy(data, data_to_send, length);
     data_payload->data = data; //not duplicating info
 
 }
@@ -79,8 +74,8 @@ int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *byte
     if (is_flag_set(flags, DATA_PADDED_FLAG)) {
         //TODO handle padding
         ERROR("Padding not implemented yet");
-        return -1;
+        return FRAMES_INTERNAL_ERROR;
     }
-    buffer_copy(data_payload->data, bytes, length);
+    memcpy(data_payload->data, bytes, length);
     return length;
 }

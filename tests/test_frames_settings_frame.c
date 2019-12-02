@@ -10,7 +10,6 @@
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32, uint8_t *);
 FAKE_VALUE_FUNC(uint16_t, bytes_to_uint16, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t *);
@@ -19,7 +18,6 @@ FAKE_VALUE_FUNC(int, uint16_to_byte_array, uint16_t, uint8_t *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)                 \
     FAKE(bytes_to_uint32)             \
     FAKE(bytes_to_uint16)             \
     FAKE(uint16_to_byte_array)        \
@@ -36,14 +34,6 @@ void setUp(void)
 
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
-
 uint32_t bytes_to_uint32_custom_fake_num(uint8_t *bytes)
 {
     return (uint32_t)bytes[3];

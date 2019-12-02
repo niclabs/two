@@ -46,12 +46,7 @@ uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
 }
 
 
-int buffer_copy(uint8_t* dest, uint8_t* orig, int size){
-    for(int i = 0; i < size; i++){
-        dest[i] = orig[i];
-    }
-    return size;
-}
+
 
 /*
  *

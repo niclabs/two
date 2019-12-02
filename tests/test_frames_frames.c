@@ -10,6 +10,7 @@
 #include "logging.h"
 #include "hpack.h"
 #include "headers.h"
+#include "string.h"
 
 
 //TODO: add functions of every frame to mocks
@@ -34,7 +35,6 @@ FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t *);
 FAKE_VALUE_FUNC(uint16_t, bytes_to_uint16, uint8_t *);
 
 FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t *, uint8_t *, uint8_t *, int, int);
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 
 FAKE_VALUE_FUNC(int, encode, hpack_states_t *, char *, char *,  uint8_t *);
 FAKE_VALUE_FUNC(int, decode_header_block, hpack_states_t *, uint8_t *, uint8_t, header_list_t *);
@@ -62,7 +62,6 @@ FAKE_VOID_FUNC(headers_get_all, header_list_t *, header_t *);
     FAKE(bytes_to_uint32_24)            \
     FAKE(bytes_to_uint16)               \
     FAKE(append_byte_arrays)            \
-    FAKE(buffer_copy)                   \
     FAKE(encode)                        \
     FAKE(decode_header_block)           \
     FAKE(headers_count)                 \
@@ -78,14 +77,6 @@ void setUp(void)
 }
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
-
 //int receive_header_block(uint8_t* header_block_fragments, int header_block_fragments_pointer, table_pair_t* header_list, uint8_t table_index);
 
 int headers_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
@@ -93,7 +84,7 @@ int headers_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *pay
     headers_payload_t *headers_payload = (headers_payload_t *)payload;
     int length = frame_header->length;
 
-    buffer_copy(byte_array, headers_payload->header_block_fragment, length);
+    memcpy(byte_array, headers_payload->header_block_fragment, length);
 
     return length;
 }
@@ -101,9 +92,9 @@ int headers_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *pay
 int continuation_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
     continuation_payload_t *continuation_payload = (continuation_payload_t *)payload;
-    int rc = buffer_copy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
+    memcpy(byte_array, continuation_payload->header_block_fragment, frame_header->length);
 
-    return rc;
+    return frame_header->length;
 }
 
 int window_update_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
@@ -122,24 +113,23 @@ int data_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payloa
 {
     data_payload_t *data_payload = (data_payload_t *)payload;
     int length = frame_header->length;
-    int rc = buffer_copy(byte_array, data_payload->data, length);
+    memcpy(byte_array, data_payload->data, length);
 
-    return rc;
+    return length;
 }
 
 int goaway_payload_to_bytes_custom_fake(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
     goaway_payload_t *goaway_payload = (goaway_payload_t *)payload;
     int pointer = 0;
-    int rc = uint32_31_to_byte_array(goaway_payload->last_stream_id, byte_array + pointer);
-
+    uint32_31_to_byte_array(goaway_payload->last_stream_id, byte_array + pointer);
     pointer += 4;
-    rc = uint32_to_byte_array(goaway_payload->error_code, byte_array + pointer);
+    uint32_to_byte_array(goaway_payload->error_code, byte_array + pointer);
     pointer += 4;
     uint32_t additional_debug_data_size = frame_header->length - 8;
-    rc = buffer_copy(byte_array + pointer, goaway_payload->additional_debug_data, additional_debug_data_size);
+    memcpy(byte_array + pointer, goaway_payload->additional_debug_data, additional_debug_data_size);
 
-    pointer += rc;
+    pointer += additional_debug_data_size;
     return pointer;
 }
 
@@ -284,9 +274,6 @@ int encode_fake_custom(hpack_states_t *hpack_states, char *name_string, char *va
     TEST_ASSERT_EQUAL_STRING_MESSAGE("hola", name_string, "Header name should be 'hola'");
     TEST_ASSERT_EQUAL_STRING_MESSAGE("val", value_string, "Header value should be 'val'");
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
-
-
     uint8_t expected_compressed_headers[] = {
         0,          //01000000 prefix=00, index=0
         4,          //h=0, name length = 4;
@@ -299,7 +286,7 @@ int encode_fake_custom(hpack_states_t *hpack_states, char *name_string, char *va
         'a',        //value string
         'l'         //value string
     };
-    buffer_copy(encoded_buffer, expected_compressed_headers, 10);
+    memcpy(encoded_buffer, expected_compressed_headers, 10);
     return 10;
 }
 
@@ -595,7 +582,6 @@ void test_frame_to_bytes_headers(void)
     uint32_31_to_byte_array_fake.custom_fake = uint32_31_to_byte_array_custom_fake_1;
     uint16_to_byte_array_fake.custom_fake = uint16_to_byte_array_custom_fake_num;
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     /*Create headers frame*/
     //int create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, headers_payload_t *headers_payload, uint8_t *header_block_fragment)
@@ -611,7 +597,7 @@ void test_frame_to_bytes_headers(void)
     frame_header.reserved = 0;
     frame_header.callback_payload_to_bytes = headers_payload_to_bytes_custom_fake;
 
-    buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    memcpy(header_block_fragment, headers_block, headers_block_size);
     headers_payload.header_block_fragment = header_block_fragment;
     //create_headers_frame(headers_block, headers_block_size, stream_id, &frame_header, &headers_payload, header_block_fragment);
     frame_t frame;
@@ -645,8 +631,6 @@ void test_frame_to_bytes_continuation(void)
     uint32_31_to_byte_array_fake.custom_fake = uint32_31_to_byte_array_custom_fake_1;
     uint16_to_byte_array_fake.custom_fake = uint16_to_byte_array_custom_fake_num;
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
-
 
     //create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header, &continuation_payload, header_block_fragment);
     uint8_t type = CONTINUATION_TYPE;
@@ -660,7 +644,7 @@ void test_frame_to_bytes_continuation(void)
     frame_header.reserved = 0;
     frame_header.callback_payload_to_bytes = continuation_payload_to_bytes_custom_fake;
 
-    buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    memcpy(header_block_fragment, headers_block, headers_block_size);
     continuation_payload.header_block_fragment = header_block_fragment;
 
     frame_t frame;
@@ -688,7 +672,6 @@ void test_frame_to_bytes_data(void)
     uint8_t data[10];
     uint8_t data_to_send[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_24_to_byte_array_fake.custom_fake = uint32_24_to_byte_array_custom_fake_num;
@@ -707,7 +690,7 @@ void test_frame_to_bytes_data(void)
     frame_header.reserved = 0;
     frame_header.callback_payload_to_bytes = data_payload_to_bytes_custom_fake;
 
-    buffer_copy(data, data_to_send, length);
+    memcpy(data, data_to_send, length);
     data_payload.data = data;     //not duplicating info
     frame_t frame;
     frame.frame_header = &frame_header;
@@ -738,7 +721,6 @@ void test_frame_to_bytes_window_update(void)
     uint32_t stream_id = 1;//1
     uint32_t window_size_increment = 30;
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
@@ -787,7 +769,6 @@ void test_frame_to_bytes_goaway(void)
     uint8_t additional_debug_data[] = { 1, 2, 3, 4 };
     uint8_t additional_debug_data_size = 4;
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     append_byte_arrays_fake.custom_fake = append_byte_arrays_custom_fake;
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
@@ -805,7 +786,7 @@ void test_frame_to_bytes_goaway(void)
 
     goaway_payload.last_stream_id = last_stream_id;
     goaway_payload.error_code = error_code;
-    buffer_copy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
+    memcpy(additional_debug_data_buffer, additional_debug_data, additional_debug_data_size);
     goaway_payload.additional_debug_data = additional_debug_data_buffer;
 
     frame_t frame;

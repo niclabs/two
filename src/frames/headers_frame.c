@@ -4,7 +4,7 @@
 #include "headers_frame.h"
 #include "config.h"
 #include "http2/utils.h"
-
+#include "string.h"
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
 
@@ -28,7 +28,7 @@ void create_headers_frame(uint8_t *headers_block, int headers_block_size, uint32
     frame_header->reserved = 0;
     frame_header->callback_payload_to_bytes = headers_payload_to_bytes;
 
-    buffer_copy(header_block_fragment, headers_block, headers_block_size);
+    memcpy(header_block_fragment, headers_block, headers_block_size);
     headers_payload->header_block_fragment = header_block_fragment;
 
 }
@@ -60,7 +60,7 @@ int headers_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_
     //header block fragment
     int header_block_fragment_size = get_header_block_fragment_size(frame_header, headers_payload);//7(int)frame_header->length-pad_length-pointer;
 
-    buffer_copy(byte_array + pointer, headers_payload->header_block_fragment, header_block_fragment_size);
+    memcpy(byte_array + pointer, headers_payload->header_block_fragment, header_block_fragment_size);
     pointer += header_block_fragment_size;
 
     //not implemented yet!
@@ -122,8 +122,8 @@ int read_headers_payload(frame_header_t *frame_header, void *payload, uint8_t *b
         ERROR("Header block fragment size longer than the space given.");
         return -1;
     }
-    int rc = buffer_copy(headers_payload->header_block_fragment, bytes + pointer, header_block_fragment_size);
-    pointer += rc;
+    memcpy(headers_payload->header_block_fragment, bytes + pointer, header_block_fragment_size);
+    pointer += header_block_fragment_size;
 
     //not implemented yet!
     //if(is_flag_set(frame_header->flags, HEADERS_PADDED_FLAG)) { //if padded flag is set reasd padding

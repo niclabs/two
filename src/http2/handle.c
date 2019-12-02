@@ -5,6 +5,7 @@
 #include "frames.h"
 #include "http2/send.h"
 #include "http.h"
+#include "string.h"
 
 // Specify to which module this file belongs
 #include "config.h"
@@ -47,7 +48,7 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
         send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    buffer_copy(h2s->data.buf + h2s->data.size, data_payload->data, data_length);
+    memcpy(h2s->data.buf + h2s->data.size, data_payload->data, data_length);
     h2s->data.size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)) {
         h2s->received_end_stream = 1;
@@ -107,13 +108,14 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     //first we receive fragments, so we save those on the h2s->header_block_fragments buffer
-    rc = buffer_copy(h2s->header_block_fragments + h2s->header_block_fragments_pointer, hpl->header_block_fragment, hbf_size);
-    if (rc < 1) {
+    //rc =
+    memcpy(h2s->header_block_fragments + h2s->header_block_fragments_pointer, hpl->header_block_fragment, hbf_size);
+    /*if (rc < 1) {
         ERROR("Headers' header block fragment were not written or paylaod was empty. rc = %d", rc);
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    h2s->header_block_fragments_pointer += rc;
+    }*/
+    h2s->header_block_fragments_pointer += hbf_size;
     //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
     if (is_flag_set(header->flags, HEADERS_END_STREAM_FLAG)) {
         h2s->received_end_stream = 1;
@@ -344,13 +346,14 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     //receive fragments and save those on the h2s->header_block_fragments buffer
-    rc = buffer_copy(h2s->header_block_fragments + h2s->header_block_fragments_pointer, contpl->header_block_fragment, header->length);
-    if (rc < 1) {
+    //rc =
+    memcpy(h2s->header_block_fragments + h2s->header_block_fragments_pointer, contpl->header_block_fragment, header->length);
+    /*if (rc < 1) {
         ERROR("Continuation block fragment was not written or payload was empty");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    h2s->header_block_fragments_pointer += rc;
+    }*/
+    h2s->header_block_fragments_pointer += header->length;
     if (is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)) {
         //return number of headers written on header_list, so http2 can update header_list_count
         rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer, &h2s->headers, &h2s->hpack_states); //TODO check this: rc is the byte read from the header

@@ -3,15 +3,10 @@
 //
 
 #include "ping_frame.h"
-
-//
-// Created by gabriel on 04-11-19.
-//
-
 #include "goaway_frame.h"
 #include "http2/utils.h"
 #include "utils.h"
-
+#include "string.h"
 #include "config.h"
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
@@ -25,19 +20,9 @@
 int ping_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array)
 {
     ping_payload_t *ping_payload = (ping_payload_t *)payload;
-/*
-    if (frame_header->stream_id != 0x0) {
-        //Protocol ERROR
-        ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
-        return -1;
-    }
-    if (frame_header->length != 8) {
-        ERROR("PING frame with Length != 8, FRAME_SIZE_ERROR");
-        return -1;
-    }
-    */
-    int rc = buffer_copy(byte_array, ping_payload->opaque_data, frame_header->length);
-    return rc;
+
+    memcpy(byte_array, ping_payload->opaque_data, frame_header->length);
+    return frame_header->length;
 }
 
 /*
@@ -55,7 +40,7 @@ void create_ping_frame(frame_header_t *frame_header, ping_payload_t *ping_payloa
     frame_header->reserved = 0;
     frame_header->callback_payload_to_bytes = ping_payload_to_bytes;
 
-    buffer_copy(ping_payload->opaque_data, opaque_data, frame_header->length);
+    memcpy(ping_payload->opaque_data, opaque_data, frame_header->length);
 
 }
 
@@ -74,7 +59,7 @@ void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_pa
     frame_header->reserved = 0;
     frame_header->callback_payload_to_bytes = ping_payload_to_bytes;
 
-    buffer_copy(ping_payload->opaque_data, opaque_data, frame_header->length);
+    memcpy(ping_payload->opaque_data, opaque_data, frame_header->length);
 }
 
 /*
@@ -86,24 +71,7 @@ void create_ping_ack_frame(frame_header_t *frame_header, ping_payload_t *ping_pa
 int read_ping_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes)
 {
     ping_payload_t *ping_payload = (ping_payload_t *)payload;
+    memcpy(ping_payload->opaque_data, bytes, 8);
 
-    /*This check should be on the frame_header*/
-    /*
-    if (frame_header->length != 8) {
-        ERROR("PING frame with Length != 8, FRAME_SIZE_ERROR");
-        return -1;
-    }
-    if (frame_header->stream_id != 0x0) {
-        //Protocol ERROR
-        ERROR("PING frame with stream_id %d, PROTOCOL_ERROR", frame_header->stream_id);
-        return -1;
-    }
-*/
-    /*int rc = */
-    buffer_copy(ping_payload->opaque_data, bytes, 8);
-    /*if (rc < 0) {
-        ERROR("error in buffer copy");
-        return -1;
-    }*/
     return frame_header->length;
 }

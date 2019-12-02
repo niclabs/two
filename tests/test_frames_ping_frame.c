@@ -13,7 +13,6 @@
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t *);
 FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_31, uint8_t *);
 
@@ -21,7 +20,6 @@ FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_31, uint8_t *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)                 \
     FAKE(bytes_to_uint32_24)          \
     FAKE(bytes_to_uint32_31)
 
@@ -36,14 +34,6 @@ void setUp(void)
 
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
-
 uint8_t set_flag_fake_custom(uint8_t flags, uint8_t flag_to_set)
 {
     uint8_t new_flag = flags | flag_to_set;
@@ -58,8 +48,6 @@ void test_create_ping_frame(void)
     int ping_size = 8;
     frame_header_t frame_header;
     ping_payload_t ping_payload;
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     create_ping_frame(&frame_header, &ping_payload, payload);
 
@@ -78,8 +66,6 @@ void test_create_ping_ack_frame(void)
     int ping_size = 8;
     frame_header_t frame_header;
     ping_payload_t ping_payload;
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     create_ping_ack_frame(&frame_header, &ping_payload, payload);
 
@@ -101,9 +87,6 @@ void test_ping_payload_to_bytes(void)
     int ping_size = 8;
     frame_header_t frame_header;
     ping_payload_t ping_payload;
-
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     create_ping_frame(&frame_header, &ping_payload, payload);
 
@@ -131,7 +114,6 @@ void test_read_ping_payload(void)
     //expected_headers_payload.padding = expected_padding;
 
 /*mocks*/
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     bytes_to_uint32_24_fake.return_val = expected_frame_header.length;
     bytes_to_uint32_31_fake.return_val = expected_frame_header.stream_id;
 

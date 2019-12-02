@@ -13,7 +13,6 @@
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t *);
 FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_31, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
@@ -22,7 +21,6 @@ FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)                 \
     FAKE(uint32_31_to_byte_array)     \
 
 
@@ -37,13 +35,6 @@ void setUp(void)
 
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
 
 int uint32_to_byte_array_custom_fake_num(uint32_t num, uint8_t *byte_array)
 {
@@ -62,8 +53,6 @@ void test_create_window_update_frame(void)
     window_update_payload_t window_update_payload;
     int window_size_increment = 30;
     uint32_t stream_id = 1;
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, stream_id);
 
@@ -92,7 +81,6 @@ void test_window_update_payload_to_bytes(void)
 
     uint8_t expected_bytes[] = { 0, 0, 0, 30 };
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
 
     int rc = window_update_payload_to_bytes(&frame_header, &window_update_payload, byte_array);
@@ -117,7 +105,6 @@ void test_read_window_update_payload(void)
 
     window_update_payload_t window_update_payload;
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     bytes_to_uint32_31_fake.return_val = 30;
     int rc = read_window_update_payload(&frame_header, (void*) &window_update_payload, buff_read);
 

@@ -10,7 +10,6 @@
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(int, uint32_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(int, uint32_31_to_byte_array, uint32_t, uint8_t *);
 FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32_24, uint8_t *);
@@ -19,7 +18,6 @@ FAKE_VALUE_FUNC(uint32_t, bytes_to_uint32, uint8_t *);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)                 \
     FAKE(uint32_to_byte_array)        \
     FAKE(uint32_31_to_byte_array)     \
     FAKE(bytes_to_uint32_31)          \
@@ -36,13 +34,6 @@ void setUp(void)
 }
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
 
 int uint32_to_byte_array_custom_fake_num(uint32_t num, uint8_t *byte_array)
 {
@@ -66,7 +57,6 @@ void test_create_goaway_frame(void)
     uint8_t additional_debug_data[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
     uint8_t additional_debug_data_size = 8;
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     create_goaway_frame(&frame_header,
                         &goaway_payload,
@@ -109,7 +99,6 @@ void test_goaway_payload_to_bytes(void)
                                  0, 0, 0, 1,
                                  1, 2, 3, 4, 5, 6, 7, 8 };
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     uint32_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
     uint32_31_to_byte_array_fake.custom_fake = uint32_to_byte_array_custom_fake_num;
 
@@ -139,7 +128,6 @@ void test_goaway_payload_to_bytes_error(void)
     uint8_t additional_debug_data[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
     goaway_payload.additional_debug_data = additional_debug_data;
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     uint32_31_to_byte_array_fake.return_val = -1;
     uint32_to_byte_array_fake.return_val = -1;
 
@@ -172,7 +160,6 @@ void test_read_goaway_payload(void)
 
 
     /*mocks*/
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     bytes_to_uint32_fake.return_val = expected_goaway_payload.error_code;
     bytes_to_uint32_24_fake.return_val = expected_frame_header.length;
     bytes_to_uint32_31_fake.return_val = expected_goaway_payload.last_stream_id;

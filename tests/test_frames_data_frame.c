@@ -10,12 +10,10 @@
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(int, is_flag_set, uint8_t , uint8_t);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)                 \
     FAKE(is_flag_set)
 
 void setUp(void)
@@ -28,14 +26,6 @@ void setUp(void)
 }
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
-
 int is_flag_set_fake_custom(uint8_t flags, uint8_t queried_flag)
 {
     if ((queried_flag & flags) > 0) {
@@ -54,8 +44,6 @@ void test_create_data_frame(void)
     uint8_t data_to_send[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
     int length = 10;
     uint32_t stream_id = 1;
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
 
     create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
 
@@ -79,7 +67,6 @@ void test_data_payload_to_bytes(void)
     uint8_t data[10];
     uint8_t data_to_send[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     is_flag_set_fake.custom_fake = is_flag_set_fake_custom;
     create_data_frame(&frame_header, &data_payload, data, data_to_send, length, stream_id);
     uint8_t byte_array[30];
@@ -105,9 +92,6 @@ void test_read_data_payload(void)
     data_payload_t data_payload;
     uint8_t data[10];
     data_payload.data = data;
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
-
-    //int read_data_payload(frame_header_t *frame_header, void *payload, uint8_t *bytes);
 
     int rc = read_data_payload(&frame_header, (void*) &data_payload, buff_read);
     TEST_ASSERT_EQUAL(frame_header.length, rc);

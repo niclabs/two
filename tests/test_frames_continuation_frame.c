@@ -7,11 +7,11 @@
 // Include header definitions for file to test
 DEFINE_FFF_GLOBALS;
 
-FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
+//FAKE_VALUE_FUNC(int, buffer_copy, uint8_t *, uint8_t *, int);
 
 /* List of fakes used by this unit tester */
 #define FFF_FAKES_LIST(FAKE)          \
-    FAKE(buffer_copy)
+    //FAKE(buffer_copy)
 
 void setUp(void)
 {
@@ -24,13 +24,8 @@ void setUp(void)
 
 
 /* Mocks */
-int buffer_copy_fake_custom(uint8_t *dest, uint8_t *orig, int size)
-{
-    for (int i = 0; i < size; i++) {
-        dest[i] = orig[i];
-    }
-    return size;
-}
+
+/*TEST*/
 
 void test_create_continuation_frame(void)
 {
@@ -41,9 +36,6 @@ void test_create_continuation_frame(void)
     frame_header_t frame_header;
     continuation_payload_t continuation_payload;
     uint8_t header_block_fragment[6];
-
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
-
 
     create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header,
                                        &continuation_payload, header_block_fragment);
@@ -67,8 +59,6 @@ void test_continuation_payload_to_bytes(void)
     continuation_payload_t continuation_payload;
     uint8_t header_block_fragment[6];
 
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
-
     create_continuation_frame(headers_block, headers_block_size, stream_id, &frame_header, &continuation_payload,
                               header_block_fragment);
     uint8_t byte_array[6];
@@ -84,8 +74,6 @@ void test_continuation_payload_to_bytes(void)
 void test_read_continuation_payload(void)
 {
 
-    /*mocks*/
-    buffer_copy_fake.custom_fake = buffer_copy_fake_custom;
     /*expected*/
     frame_header_t expected_frame_header;
     expected_frame_header.type = 0x9;
