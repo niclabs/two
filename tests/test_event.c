@@ -64,6 +64,15 @@ void setUp(void)
 
 int select_with_no_activity(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
 {
+    // Reset read activity
+    FD_CLR(0, read_set);
+    FD_CLR(1, read_set);
+    FD_CLR(2, read_set);
+
+    // Reset write activity
+    FD_CLR(0, write_set);
+    FD_CLR(1, write_set);
+    FD_CLR(2, write_set);
     return 0;
 }
 
@@ -71,9 +80,19 @@ int select_with_no_activity(int nfds, fd_set *read_set, fd_set *write_set, fd_se
 // Simulate a read event on socket 1
 int select_with_read_on_s1_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
 {
-    TEST_ASSERT_GREATER_THAN_MESSAGE(1, nfds, "nfds given to select must be greater than 1");
+    TEST_ASSERT_GREATER_THAN(1, nfds);
 
-    // Set read activity on socket
+    // Reset read activity
+    FD_CLR(0, read_set);
+    FD_CLR(1, read_set);
+    FD_CLR(2, read_set);
+
+    // Reset write activity
+    FD_CLR(0, write_set);
+    FD_CLR(1, write_set);
+    FD_CLR(2, write_set);
+
+    // set activity on the socket 1
     FD_SET(1, read_set);
     return 0;
 }
@@ -81,9 +100,19 @@ int select_with_read_on_s1_fake(int nfds, fd_set *read_set, fd_set *write_set, f
 // Simulate a read event on socket 2
 int select_with_read_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
 {
-    TEST_ASSERT_GREATER_THAN_MESSAGE(2, nfds, "nfds given to select must be greater than 2");
+    TEST_ASSERT_GREATER_THAN(2, nfds);
 
-    // Set read activity on socket
+    // Reset read activity
+    FD_CLR(0, read_set);
+    FD_CLR(1, read_set);
+    FD_CLR(2, read_set);
+
+    // Reset write activity
+    FD_CLR(0, write_set);
+    FD_CLR(1, write_set);
+    FD_CLR(2, write_set);
+
+    // set activity on the socket 1
     FD_SET(2, read_set);
     return 0;
 }
@@ -324,6 +353,7 @@ void test_event_read_listen_cb(struct event_sock *server, int status)
     // set accept return value
     accept_fake.return_val = 2;
     TEST_ASSERT_EQUAL(0, event_accept(server, client));
+    TEST_ASSERT_EQUAL(2, client->descriptor);
 
     // call read
     event_read(client, test_event_read_hello_cb);
@@ -343,7 +373,7 @@ void test_event_read(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
 
     // set fake functions
-    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_no_activity };
+    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_read_on_s2_fake, select_with_no_activity };
     SET_CUSTOM_FAKE_SEQ(select, select_fakes, 2);
 
     // The call to socket should return the server socket value
