@@ -4,6 +4,7 @@
 #include "http2/structs.h"
 #include "http2/flowcontrol.h"
 
+/*
 void test_get_window_available_size(void)
 {
     // Create function parameters
@@ -166,6 +167,7 @@ void test_flow_control_send_window_update_fail(void)
     // Check if outgoing_window have the correct content
     TEST_ASSERT_EQUAL( 5, h2s.incoming_window.window_used);
 }
+*/
 
 
 void test_flow_control_receive_window_update_success_id0(void)
@@ -227,6 +229,7 @@ void test_flow_control_receive_window_update_fail(void)
 }
 
 
+/*
 void test_get_size_data_to_send_v1(void)
 {
     // Create function parameters
@@ -261,6 +264,7 @@ void test_get_size_data_to_send_v2(void)
     // Return value should be 8
     TEST_ASSERT_EQUAL(8, gsds);
 }
+*/
 
 
 
@@ -268,25 +272,25 @@ int main(void)
 {
     UNIT_TESTS_BEGIN();
 
-    UNIT_TEST(test_get_window_available_size);
-    UNIT_TEST(test_increase_window_used);
-    UNIT_TEST(test_decrease_window_used);
+    //UNIT_TEST(test_get_window_available_size);
+    //UNIT_TEST(test_increase_window_used);
+    //UNIT_TEST(test_decrease_window_used);
 
-    UNIT_TEST(test_flow_control_receive_data_success);
-    UNIT_TEST(test_flow_control_receive_data_fail);
+    //UNIT_TEST(test_flow_control_receive_data_success);
+    //UNIT_TEST(test_flow_control_receive_data_fail);
 
-    UNIT_TEST(test_flow_control_send_data_success);
-    UNIT_TEST(test_flow_control_send_data_fail);
+    //UNIT_TEST(test_flow_control_send_data_success);
+    //UNIT_TEST(test_flow_control_send_data_fail);
 
-    UNIT_TEST(test_flow_control_send_window_update_success);
-    UNIT_TEST(test_flow_control_send_window_update_fail);
+    //UNIT_TEST(test_flow_control_send_window_update_success);
+    //UNIT_TEST(test_flow_control_send_window_update_fail);
 
     UNIT_TEST(test_flow_control_receive_window_update_success_id0);
     UNIT_TEST(test_flow_control_receive_window_update_success);
     UNIT_TEST(test_flow_control_receive_window_update_fail);
 
-    UNIT_TEST(test_get_size_data_to_send_v1);
-    UNIT_TEST(test_get_size_data_to_send_v2);
+    //UNIT_TEST(test_get_size_data_to_send_v1);
+    //UNIT_TEST(test_get_size_data_to_send_v2);
 
 
     return UNIT_TESTS_END();
