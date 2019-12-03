@@ -168,12 +168,13 @@ void test_flow_control_send_window_update_fail(void)
 }
 
 
-void test_flow_control_receive_window_update_success(void)
+void test_flow_control_receive_window_update_success_id0(void)
 {
     // Create function parameters
     h2states_t h2s;
 
-    h2s.outgoing_window.window_used = 10;
+    h2s.header.stream_id = 0;
+    h2s.remote_window.connection_window = 10;
 
     // Perform request
     int rwu = flow_control_receive_window_update(&h2s, 7);
@@ -181,9 +182,30 @@ void test_flow_control_receive_window_update_success(void)
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, rwu);
 
-    // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 3, h2s.outgoing_window.window_used);
+    // Check if connection_window have the correct content
+    TEST_ASSERT_EQUAL( 17, h2s.remote_window.connection_window);
 }
+
+
+void test_flow_control_receive_window_update_success(void)
+{
+    // Create function parameters
+    h2states_t h2s;
+
+    h2s.header.stream_id = 5;
+    h2s.current_stream.stream_id = 5;
+    h2s.remote_window.stream_window = 10;
+
+    // Perform request
+    int rwu = flow_control_receive_window_update(&h2s, 7);
+
+    // Return value should be 0
+    TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, rwu);
+
+    // Check if connection_window have the correct content
+    TEST_ASSERT_EQUAL( 17, h2s.remote_window.stream_window);
+}
+
 
 
 void test_flow_control_receive_window_update_fail(void)
@@ -191,7 +213,8 @@ void test_flow_control_receive_window_update_fail(void)
     // Create function parameters
     h2states_t h2s;
 
-    h2s.outgoing_window.window_used = 5;
+    h2s.header.stream_id = 0;
+    h2s.remote_window.connection_window = -8;
 
     // Perform request
     int rwu = flow_control_receive_window_update(&h2s, 7);
@@ -200,7 +223,7 @@ void test_flow_control_receive_window_update_fail(void)
     TEST_ASSERT_EQUAL(HTTP2_RC_ERROR, rwu);
 
     // Check if outgoing_window have the correct content
-    TEST_ASSERT_EQUAL( 5, h2s.outgoing_window.window_used);
+    TEST_ASSERT_EQUAL( -1, h2s.remote_window.connection_window);
 }
 
 
@@ -258,8 +281,9 @@ int main(void)
     UNIT_TEST(test_flow_control_send_window_update_success);
     UNIT_TEST(test_flow_control_send_window_update_fail);
 
-    // UNIT_TEST(test_flow_control_receive_window_update_success);
-    // UNIT_TEST(test_flow_control_receive_window_update_fail);
+    UNIT_TEST(test_flow_control_receive_window_update_success_id0);
+    UNIT_TEST(test_flow_control_receive_window_update_success);
+    UNIT_TEST(test_flow_control_receive_window_update_fail);
 
     UNIT_TEST(test_get_size_data_to_send_v1);
     UNIT_TEST(test_get_size_data_to_send_v2);
