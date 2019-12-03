@@ -142,6 +142,7 @@ net_return_code_t disconnect_client(net_client_t *p_client, size_t data_buffer_s
 
     if (sock_destroy(&p_client->socket) < 0) {
         rc = NET_SOCKET_ERROR;
+        ERROR("An error ocurred while disconnecting client");
     }
     DEBUG("Client disconnected");
 
