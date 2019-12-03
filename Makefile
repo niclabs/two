@@ -9,7 +9,6 @@ MODULES	+= hpack http2 frames
 all: server echo tiny
 
 PORT ?= 8888
-CI ?= 0
 
 # Get specs from configuration file
 ALL_SPECS = $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" h2spec.conf)
