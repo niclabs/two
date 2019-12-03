@@ -79,6 +79,11 @@ typedef struct HTTP2_WINDOW_MANAGER {
     uint32_t window_used;
 } h2_window_manager_t;
 
+typedef struct HTTP2_FLOW_CONTROL_WINDOW {
+    int connection_window;
+    int stream_window;
+} h2_flow_control_window_t;
+
 typedef struct HTTP2_DATA {
     uint32_t size;
     uint8_t buf[DEFAULT_INITIAL_WINDOW_SIZE];     /*Placeholder*/
@@ -102,6 +107,8 @@ typedef struct HTTP2_STATES {
     uint8_t received_end_stream;
     h2_window_manager_t incoming_window;
     h2_window_manager_t outgoing_window;
+    h2_flow_control_window_t remote_window;
+    h2_flow_control_window_t local_window;
     uint8_t sent_goaway;
     uint8_t received_goaway;        // bool
     uint8_t debug_data_buffer[0];   // TODO not implemented yet
