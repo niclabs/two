@@ -258,8 +258,8 @@ int main(void)
     UNIT_TEST(test_flow_control_send_window_update_success);
     UNIT_TEST(test_flow_control_send_window_update_fail);
 
-    UNIT_TEST(test_flow_control_receive_window_update_success);
-    UNIT_TEST(test_flow_control_receive_window_update_fail);
+    // UNIT_TEST(test_flow_control_receive_window_update_success);
+    // UNIT_TEST(test_flow_control_receive_window_update_fail);
 
     UNIT_TEST(test_get_size_data_to_send_v1);
     UNIT_TEST(test_get_size_data_to_send_v2);
