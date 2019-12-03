@@ -25,12 +25,24 @@ uint32_t get_window_available_size(h2_window_manager_t window_manager)
  *
  * @returns   1
  */
-uint32_t update_window_size(h2_window_manager_t* window_manager, uint32_t new_window_size)
+uint32_t update_window_size(h2states_t *h2s, uint32_t initial_window_size, uint8_t place)
 {
-    if (window_manager->window_used > new_window_size) {
-        window_manager->window_used = new_window_size;
+    int id = INITIAL_WINDOW_SIZE;
+    if (place == LOCAL) {
+        h2s->local_window.stream_window += initial_window_size - h2s->local_settings[--id];
+        // An endpoint MUST treat a change to SETTINGS_INITIAL_WINDOW_SIZE that
+        // causes any flow-control window to exceed the maximum size as a
+        // connection error of type FLOW_CONTROL_ERROR.
+        if (h2s->local_window.stream_window > 2147483647) {
+            return HTTP2_RC_ERROR;
+        }
     }
-    window_manager->window_size = new_window_size;
+    else if (place == REMOTE) {
+        h2s->remote_window.stream_window += initial_window_size - h2s->remote_settings[--id];
+        if (h2s->remote_window.stream_window > 2147483647) {
+            return HTTP2_RC_ERROR;
+        }
+    }
     return HTTP2_RC_NO_ERROR;
 }
 
