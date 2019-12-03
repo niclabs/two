@@ -24,7 +24,7 @@ h2spec-pre:
 .PHONY: $(ALL_SPECS)
 $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi 
-	@(./bin/server $(PORT) 2> server.log & echo $$! > server.pid) && \
+	@(./bin/server $(PORT) 2> server.log & echo $$! > server.pid) && sleep 0.5 && \
 		(h2spec $@ -p $(PORT) > h2spec.log && rm h2spec.log) || true && \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt) && \
 		FAILURES=$$(awk '{print $$2}' summary.txt) && \
