@@ -42,6 +42,10 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
     h2s->incoming_window.window_used = 0;
     h2s->outgoing_window.window_size = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->outgoing_window.window_used = 0;
+    h2s->remote_window.connection_window = DEFAULT_INITIAL_WINDOW_SIZE;
+    h2s->remote_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
+    h2s->local_window.connection_window = DEFAULT_INITIAL_WINDOW_SIZE;
+    h2s->local_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->sent_goaway = 0;
     h2s->received_goaway = 0;
     h2s->debug_size = 0;
