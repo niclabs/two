@@ -428,12 +428,13 @@ int handle_window_update_payload(window_update_payload_t *wupl, cbuf_t *buf_out,
     uint32_t window_size_increment = wupl->window_size_increment;
 
     if (window_size_increment == 0) {
-        ERROR("Flow-control window increment is 0. Stream Error. PROTOCOL_ERROR");
+        ERROR("Flow-control window increment is 0. PROTOCOL_ERROR");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     int rc = flow_control_receive_window_update(h2s, window_size_increment);
     if (rc < 0) {
+        ERROR("Window size exceeds maximum allowed. FLOW_CONTROL_ERROR");
         send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
