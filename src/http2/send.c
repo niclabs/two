@@ -274,11 +274,14 @@ int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
+    //TODO: Check the validity of this error
+    /*
     if (window_size_increment > h2s->incoming_window.window_used) {
         ERROR("send_window_update: Trying to send window increment greater than used");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
+    */
     frame.frame_header = &frame_header;
     frame.payload = (void *)&window_update_payload;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];

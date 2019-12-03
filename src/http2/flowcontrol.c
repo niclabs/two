@@ -12,9 +12,9 @@
  * Input: ->window_manager: h2_window_manager_t struct where window info is stored
  * Output: The available window size
  */
-uint32_t get_window_available_size(h2_window_manager_t window_manager)
+int32_t get_window_available_size(h2_flow_control_window_t flow_control_window)
 {
-    return window_manager.window_size - window_manager.window_used;
+    return flow_control_window.stream_window;
 }
 
 /*
@@ -49,26 +49,26 @@ uint32_t update_window_size(h2states_t *h2s, uint32_t initial_window_size, uint8
 /*
  * Function: increase_window_used
  * Increases the window_used value on a given window manager.
- * Input: ->window_manager: h2_window_manager_t struct pointer where window info is stored
+ * Input: ->flow_control_window: h2_flow_control_window_t struct pointer where window info is stored
  *        ->data_size: the corresponding increment on the window used
  * Output: 0
  */
-int increase_window_used(h2_window_manager_t *window_manager, uint32_t data_size)
+int decrease_window_available(h2_flow_control_window_t *flow_control_window, uint32_t data_size)
 {
-    window_manager->window_used += data_size;
+    flow_control_window->stream_window -= data_size;
     return HTTP2_RC_NO_ERROR;
 }
 
 /*
  * Function: decrease_window_used
  * Decreases the window_used value on a given window manager.
- * Input: ->window_manager: h2h2_window_manager_t struct where window info is stored
+ * Input: ->flow_control_window: h2_flow_control_window_t struct where window info is stored
  *        ->data_size: the corresponding decrement on the window used
  * Output: 0
  */
-int decrease_window_used(h2_window_manager_t *window_manager, uint32_t window_size_increment)
+int increase_window_available(h2_flow_control_window_t *flow_control_window, uint32_t window_size_increment)
 {
-    window_manager->window_used -= window_size_increment;
+    flow_control_window->stream_window += window_size_increment;
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -81,13 +81,13 @@ int decrease_window_used(h2_window_manager_t *window_manager, uint32_t window_si
  */
 int flow_control_receive_data(h2states_t *h2s, uint32_t length)
 {
-    uint32_t window_available = get_window_available_size(h2s->incoming_window);
+    uint32_t window_available = get_window_available_size(h2s->remote_window);
 
     if (length > window_available) {
         ERROR("Available window is smaller than data received. FLOW_CONTROL_ERROR");
         return HTTP2_RC_ERROR;
     }
-    increase_window_used(&h2s->incoming_window, length);
+    decrease_window_available(&h2s->local_window, length);
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -100,21 +100,24 @@ int flow_control_receive_data(h2states_t *h2s, uint32_t length)
  */
 int flow_control_send_data(h2states_t *h2s, uint32_t data_sent)
 {
-    if (data_sent > get_window_available_size(h2s->outgoing_window)) {
+    if ((int)data_sent > get_window_available_size(h2s->remote_window)) {
         ERROR("Trying to send more data than allowed by window.");
         return HTTP2_RC_ERROR;
     }
-    increase_window_used(&h2s->outgoing_window, data_sent);
+    decrease_window_available(&h2s->remote_window, data_sent);
     return HTTP2_RC_NO_ERROR;
 }
 
 int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increment)
 {
-    if (window_size_increment > h2s->incoming_window.window_used) {
+    //TODO: Check the validity of this error
+    /*
+    if (window_size_increment > h2s->local_window.window_used) {
         ERROR("Increment to big. PROTOCOL_ERROR");
         return HTTP2_RC_ERROR;
     }
-    decrease_window_used(&h2s->incoming_window, window_size_increment);
+    */
+    increase_window_available(&h2s->local_window, window_size_increment);
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -140,7 +143,7 @@ int flow_control_receive_window_update(h2states_t *h2s, uint32_t window_size_inc
 
 uint32_t get_size_data_to_send(h2states_t *h2s)
 {
-    uint32_t available_window = get_window_available_size(h2s->outgoing_window);
+    uint32_t available_window = get_window_available_size(h2s->remote_window);
 
     if (available_window <= h2s->data.size - h2s->data.processed) {
         return available_window;

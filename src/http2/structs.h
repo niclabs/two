@@ -80,11 +80,6 @@ typedef struct HTTP2_STREAM {
     h2_stream_state_t state;
 } h2_stream_t;
 
-typedef struct HTTP2_WINDOW_MANAGER {
-    uint32_t window_size;
-    uint32_t window_used;
-} h2_window_manager_t;
-
 typedef struct HTTP2_FLOW_CONTROL_WINDOW {
     int connection_window;
     int stream_window;
@@ -111,8 +106,6 @@ typedef struct HTTP2_STATES {
     uint8_t waiting_for_end_headers_flag;       //bool
     uint8_t waiting_for_HEADERS_frame;
     uint8_t received_end_stream;
-    h2_window_manager_t incoming_window;
-    h2_window_manager_t outgoing_window;
     h2_flow_control_window_t remote_window;
     h2_flow_control_window_t local_window;
     uint8_t sent_goaway;
