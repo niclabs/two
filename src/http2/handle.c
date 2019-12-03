@@ -114,7 +114,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
         ERROR("Headers' header block fragment were not written or paylaod was empty. rc = %d", rc);
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }*/
+       }*/
     h2s->header_block_fragments_pointer += hbf_size;
     //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
     if (is_flag_set(header->flags, HEADERS_END_STREAM_FLAG)) {
@@ -215,7 +215,12 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_ou
                     send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
                     return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
                 }
-                update_window_size(&h2s->outgoing_window, value);
+                int rc = update_window_size(h2s, value, place);
+                if (rc == HTTP2_RC_ERROR) {
+                    ERROR("Change in SETTINGS_INITIAL_WINDOW_SIZE caused a window to exceed the maximum size. FLOW_CONTROL_ERROR");
+                    send_connection_error(buf_out, HTTP2_FLOW_CONTROL_ERROR, h2s);
+                    return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+                }
                 break;
             case MAX_FRAME_SIZE:
                 if (value > 16777215 || value < 16384) {
@@ -352,7 +357,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
         ERROR("Continuation block fragment was not written or payload was empty");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }*/
+       }*/
     h2s->header_block_fragments_pointer += header->length;
     if (is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)) {
         //return number of headers written on header_list, so http2 can update header_list_count
@@ -379,7 +384,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
         }
         //st->hd_lists.header_list_count_in = rc;
         h2s->waiting_for_end_headers_flag = 0;
-        if (h2s->received_end_stream == 1) {    //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
+        if (h2s->received_end_stream == 1) {                            //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
             rc = change_stream_state_end_stream_flag(0, buf_out, h2s);  //0 is for receiving
             if (rc == 2) {
                 DEBUG("handle_continuation_payload: Close connection. GOAWAY previously received");
