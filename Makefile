@@ -33,10 +33,10 @@ $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 			kill `cat server.pid`; \
 			if test -f h2spec.log; then \
 				echo "FAIL"; \
-				echo "Client output: " && \
+				echo "  Client output: " && \
 				FAILURES=$$(($$FAILURES + 1)); \
 				cat h2spec.log | sed -e/^Failures:/\{ -e:1 -en\;b1 -e\} -ed | grep -a -B 1 -A 2 "×"; \
-				if test -s server.log; then echo "Server output:"; cat server.log | sed "s/^/    /"; fi; \
+				if test -s server.log; then echo "  Server output:"; cat server.log | sed "s/^/    /"; fi; \
 				rm h2spec.log; \
 			else \
 				echo "PASS"; \
@@ -44,7 +44,7 @@ $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 		else \
 			FAILURES=$$(($$FAILURES + 1)); \
 			echo "FAIL"; \
-			cat server.log; \
+			echo "  Server output:"; cat server.log | sed "s/^/    /" ; \
 		fi && \
 		echo "$$TOTAL $$FAILURES" > summary.txt && \
 		rm server.pid server.log
