@@ -283,6 +283,9 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
     if (goaway_pl->error_code != HTTP2_NO_ERROR) {
         INFO("Received GOAWAY with ERROR");
         // i guess that is closed on the other side, are you?
+        if (goaway_pl->error_code > 13) {
+            return HTTP2_RC_NO_ERROR;
+        }
         return HTTP2_RC_CLOSE_CONNECTION;
     }
     if (h2s->sent_goaway == 1) { // received answer to goaway
