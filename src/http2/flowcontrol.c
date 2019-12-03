@@ -56,19 +56,7 @@ uint32_t update_window_size(h2states_t *h2s, uint32_t initial_window_size, uint8
 int decrease_window_available(h2_flow_control_window_t *flow_control_window, uint32_t data_size)
 {
     flow_control_window->stream_window -= data_size;
-    return HTTP2_RC_NO_ERROR;
-}
-
-/*
- * Function: decrease_window_used
- * Decreases the window_used value on a given window manager.
- * Input: ->flow_control_window: h2_flow_control_window_t struct where window info is stored
- *        ->data_size: the corresponding decrement on the window used
- * Output: 0
- */
-int increase_window_available(h2_flow_control_window_t *flow_control_window, uint32_t window_size_increment)
-{
-    flow_control_window->stream_window += window_size_increment;
+    flow_control_window->connection_window -= data_size;
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -110,14 +98,13 @@ int flow_control_send_data(h2states_t *h2s, uint32_t data_sent)
 
 int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increment)
 {
-    //TODO: Check the validity of this error
-    /*
-    if (window_size_increment > h2s->local_window.window_used) {
+    h2s->local_window.stream_window += window_size_increment;
+    h2s->local_window.connection_window += window_size_increment;
+    if (h2s->local_window.stream_window > 2147483647 || h2s->local_window.connection_window > 2147483647) {
         ERROR("Increment to big. PROTOCOL_ERROR");
         return HTTP2_RC_ERROR;
     }
-    */
-    increase_window_available(&h2s->local_window, window_size_increment);
+    
     return HTTP2_RC_NO_ERROR;
 }
 

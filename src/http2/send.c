@@ -264,31 +264,24 @@ int send_rst_stream(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s)
  */
 int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_t *h2s)
 {
+    //TODO: Refactor this function to avoid duplicated code
     frame_t frame;
     frame_header_t frame_header;
     window_update_payload_t window_update_payload;
     int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, 0);
-
     if (rc < 0) {
         ERROR("send_window_update: error creating window_update frame");
         send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    //TODO: Check the validity of this error
-    /*
-    if (window_size_increment > h2s->incoming_window.window_used) {
-        ERROR("send_window_update: Trying to send window increment greater than used");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    */
+
     frame.frame_header = &frame_header;
     frame.payload = (void *)&window_update_payload;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     rc = cbuf_push(buf_out, buff_bytes, bytes_size);
 
-    INFO("Sending WINDOW UPDATE");
+    INFO("Sending connection WINDOW UPDATE");
 
     if (rc != bytes_size) {
         ERROR("send_window_update: Error writting window_update frame. INTERNAL ERROR");
@@ -299,6 +292,26 @@ int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_
     if (rc != HTTP2_RC_NO_ERROR) {
         ERROR("send_window_update: ERROR in flow control when sending WU - increment too big");
         send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
+
+    rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, h2s->current_stream.stream_id);
+    if (rc < 0) {
+        ERROR("send_window_update: error creating window_update frame");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
+
+    frame.frame_header = &frame_header;
+    frame.payload = (void *)&window_update_payload;
+    bytes_size = frame_to_bytes(&frame, buff_bytes);
+    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+
+    INFO("Sending stream WINDOW UPDATE");
+
+    if (rc != bytes_size) {
+        ERROR("send_window_update: Error writting window_update frame. INTERNAL ERROR");
+        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     return HTTP2_RC_NO_ERROR;
