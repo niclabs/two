@@ -28,7 +28,7 @@ void test_increase_window_used(void)
     wm.window_used = 5;
 
     // Perform request
-    int iwu = increase_window_used(&wm, 3);
+    int iwu = decrease_window_available(&wm, 3);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, iwu);
@@ -46,7 +46,7 @@ void test_decrease_window_used(void)
     wm.window_used = 15;
 
     // Perform request
-    int dwu = decrease_window_used(&wm, 13);
+    int dwu = increase_window_available(&wm, 13);
 
     // Return value should be 0
     TEST_ASSERT_EQUAL(HTTP2_RC_NO_ERROR, dwu);
