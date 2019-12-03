@@ -120,11 +120,20 @@ int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increm
 
 int flow_control_receive_window_update(h2states_t *h2s, uint32_t window_size_increment)
 {
-    if (window_size_increment > h2s->outgoing_window.window_used) {
-        ERROR("Flow control: window increment bigger than window used. PROTOCOL_ERROR");
-        return HTTP2_RC_ERROR;
+    if (h2s->header.stream_id == 0) {
+        h2s->remote_window.connection_window += window_size_increment;
+        if (h2s->remote_window.connection_window < 0) {
+            DEBUG("flow_control_receive_window_update: Remote connection window overflow!");
+            return HTTP2_RC_ERROR;
+        }
     }
-    decrease_window_used(&h2s->outgoing_window, window_size_increment);
+    else if (h2s->header.stream_id == h2s->current_stream.stream_id) {
+        h2s->remote_window.stream_window += window_size_increment;
+        if (h2s->remote_window.stream_window < 0) {
+            DEBUG("flow_control_receive_window_update: Remote stream window overflow!");
+            return HTTP2_RC_ERROR;
+        }
+    }
     return HTTP2_RC_NO_ERROR;
 }
 
