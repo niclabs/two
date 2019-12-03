@@ -8,11 +8,6 @@
 #include "http2/structs.h"
 
 
-/*Macros for table update*/
-// TODO: rename LOCAL,REMOTE constants to LOCAL_SETTINGS, REMOTE_SETTINGS
-#define LOCAL 0
-#define REMOTE 1
-
 /*
 * Function: prepare_new_stream
 * Prepares a new stream, setting its state as STREAM_IDLE.
