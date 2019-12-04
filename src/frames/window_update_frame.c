@@ -4,8 +4,6 @@
 
 #include "window_update_frame.h"
 #include "utils.h"
-
-#include "config.h"
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
 

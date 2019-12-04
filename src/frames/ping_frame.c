@@ -3,13 +3,8 @@
 //
 
 #include "ping_frame.h"
-#include "goaway_frame.h"
-#include "http2/utils.h"
-#include "utils.h"
 #include "string.h"
-#include "config.h"
 #define LOG_MODULE LOG_MODULE_FRAME
-#include "logging.h"
 
 /*
  * Function: ping_payload_to_bytes

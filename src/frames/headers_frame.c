@@ -2,7 +2,6 @@
 // Created by gabriel on 04-11-19.
 //
 #include "headers_frame.h"
-#include "config.h"
 #include "http2/utils.h"
 #include "string.h"
 #define LOG_MODULE LOG_MODULE_FRAME
