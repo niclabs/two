@@ -1,11 +1,8 @@
 #include <stdint.h>             /* for int8_t, int32_t*/
 #include <string.h>             /* for memset, NULL*/
-
 #include "hpack/decoder.h"
 #include "hpack/utils.h"
 #include "hpack/huffman.h"
-
-#include "config.h"
 #define LOG_MODULE LOG_MODULE_HPACK
 #include "logging.h"
 

@@ -2,8 +2,6 @@
 #include "headers.h"                                    /* for MAX_HEADER_NAME_LEN, MAX_HEADER_VALUE_LEN  */
 #include <string.h>                                     /* for strlen, strncmp, memset*/
 #include <assert.h>
-
-#include "config.h"
 #define LOG_MODULE LOG_MODULE_HPACK
 #include "logging.h"
 
