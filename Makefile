@@ -24,16 +24,16 @@ h2spec-pre:
 .PHONY: $(ALL_SPECS)
 $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi 
-	@(./bin/server $(PORT) 2> server.log & echo $$! > server.pid) && sleep 0.5 && \
-		(h2spec $@ -p $(PORT) > h2spec.log && rm h2spec.log) || true && \
-		TOTAL=$$(awk '{print $$1 + 1}' summary.txt) && \
-		FAILURES=$$(awk '{print $$2}' summary.txt) && \
-		echo -n "$@: " && \
+	@(./bin/server $(PORT) 2> server.log & echo $$! > server.pid) && sleep 0.2 && \
+		(h2spec $@ -p $(PORT) > h2spec.log && rm h2spec.log); \
+		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
+		FAILURES=$$(awk '{print $$2}' summary.txt); \
+		echo -n "$@: "; \
 		if test -e /proc/`cat server.pid`; then \
 			kill `cat server.pid`; \
 			if test -f h2spec.log; then \
 				echo "FAIL"; \
-				echo "  Client output: " && \
+				echo "  Client output: "; \
 				FAILURES=$$(($$FAILURES + 1)); \
 				cat h2spec.log | sed -e/^Failures:/\{ -e:1 -en\;b1 -e\} -ed | grep -a -B 1 -A 2 "×"; \
 				if test -s server.log; then echo "  Server output:"; cat server.log | sed "s/^/    /"; fi; \
@@ -45,15 +45,15 @@ $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 			FAILURES=$$(($$FAILURES + 1)); \
 			echo "FAIL"; \
 			echo "  Server output:"; cat server.log | sed "s/^/    /" ; \
-		fi && \
-		echo "$$TOTAL $$FAILURES" > summary.txt && \
+		fi; \
+		echo "$$TOTAL $$FAILURES" > summary.txt; \
 		rm server.pid server.log
 
 h2spec: h2spec-pre $(SPEC)
 	@echo "------------------------------"
-	@awk '{printf "total: %d, passed: %d, failed: %d\n", $$1,$$1 - $$2,$$2}' summary.txt && \
-		FAILED=$$(awk '{print $$2}' summary.txt) && \
-		rm summary.txt && \
+	@awk '{printf "total: %d, passed: %d, failed: %d\n", $$1,$$1 - $$2,$$2}' summary.txt; \
+		FAILED=$$(awk '{print $$2}' summary.txt); \
+		rm summary.txt; \
 		test $$FAILED -eq 0
 
 include $(TWO)/Makefile.include
