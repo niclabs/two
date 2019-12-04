@@ -395,9 +395,9 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
         return pointer;
     }
 
-    /*Size is not sufficient for LITERAL HEADER FIELD*/
+    /*Bytes read exceeded the header block size specified  at the beggining*/
     if (pointer > header_size) {
-        ERROR("Size is not sufficient for LITERAL HEADER FIELD");
+        ERROR("Bytes read exceeded the header block size specified  at the beggining");
         return PROTOCOL_ERROR;
     }
 
@@ -412,17 +412,17 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
         }
         encoded_header->name_length = (uint32_t)name_length;
         pointer += hpack_utils_encoded_integer_size(encoded_header->name_length, 7);
-        /*Size is not sufficient for LITERAL HEADER FIELD*/
+        /*Bytes read exceeded the header block size specified  at the beggining*/
         if (pointer > header_size) {
-            ERROR("Size is not sufficient for LITERAL HEADER FIELD");
+            ERROR("Bytes read exceeded the header block size specified  at the beggining");
             return PROTOCOL_ERROR;
         }
 
         encoded_header->name_string = &header_block[pointer];
         pointer += encoded_header->name_length;
-        /*Size is not sufficient for LITERAL HEADER FIELD*/
+        /*Bytes read exceeded the header block size specified  at the beggining*/
         if (pointer > header_size) {
-            ERROR("Size is not sufficient for LITERAL HEADER FIELD");
+            ERROR("Bytes read exceeded the header block size specified  at the beggining");
             return PROTOCOL_ERROR;
         }
     }
@@ -437,16 +437,16 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
 
     encoded_header->value_length = value_length;
     pointer += hpack_utils_encoded_integer_size(encoded_header->value_length, 7);
-    /*Size is not sufficient for LITERAL HEADER FIELD*/
+    /*Bytes read exceeded the header block size specified  at the beggining*/
     if (pointer > header_size) {
-        ERROR("Size is not sufficient for LITERAL HEADER FIELD");
+        ERROR("Bytes read exceeded the header block size specified  at the beggining");
         return PROTOCOL_ERROR;
     }
     encoded_header->value_string = &header_block[pointer];
     pointer += encoded_header->value_length;
-    /*Size is not sufficient for LITERAL HEADER FIELD*/
+    /*Bytes read exceeded the header block size specified  at the beggining*/
     if (pointer > header_size) {
-        ERROR("Size is not sufficient for LITERAL HEADER FIELD");
+        ERROR("Bytes read exceeded the header block size specified  at the beggining");
         return PROTOCOL_ERROR;
     }
     return pointer;
