@@ -35,7 +35,7 @@ $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 				echo "FAIL"; \
 				echo "  Client output: "; \
 				FAILURES=$$(($$FAILURES + 1)); \
-				cat h2spec.log | sed -e/^Failures:/\{ -e:1 -en\;b1 -e\} -ed | grep -a -B 1 -A 2 "×"; \
+				cat h2spec.log | sed -e/^Failures:/\{ -e:1 -en\;b1 -e\} -ed | grep -a -B 1 -A 4 "×"; \
 				if test -s server.log; then echo "  Server output:"; cat server.log | sed "s/^/    /"; fi; \
 				rm h2spec.log; \
 			else \
