@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdint.h>
+
 int uint32_to_byte_array(uint32_t x, uint8_t* bytes);
 
 int uint32_31_to_byte_array(uint32_t x, uint8_t* bytes);
