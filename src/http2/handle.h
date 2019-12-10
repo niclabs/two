@@ -6,7 +6,7 @@
 
 
 
-int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, cbuf_t *buf_out, h2states_t* h2s);
+int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_payload, h2states_t* h2s);
 
 /*
 * Function: handle_headers_payload
@@ -16,7 +16,7 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
 *        -> st: pointer to h2states_t struct where connection variables are stored
 * Output: 0 if no error was found, -1 if not.
 */
-int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_t *buf_out, h2states_t *h2s);
+int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2states_t *h2s);
 
 /*
 * Function: handle_settings_payload
@@ -28,7 +28,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, cbuf_
         -> st: pointer to h2states_t struct where connection variables are stored
 * Output: 0 if operations are done successfully, -1 if not.
 */
-int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t *h2s);
+int handle_settings_payload(settings_payload_t *spl, h2states_t *h2s);
 
 /*
 * Function: handle_goaway_payload
@@ -40,7 +40,7 @@ int handle_settings_payload(settings_payload_t *spl, cbuf_t *buf_out, h2states_t
 * last_stream_id, it assumes that the next value received is going to be the same.
 * Output: 0 if no error were found during the handling, 1 if not
 */
-int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states_t *h2s);
+int handle_goaway_payload(goaway_payload_t *goaway_pl, h2states_t *h2s);
 
 /*
 * Function: handle_continuation_payload
@@ -50,7 +50,7 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, cbuf_t *buf_out, h2states
 *        -> st: pointer to h2states_t struct where connection variables are stored
 * Output: 0 if no error was found, -1 if not.
 */
-int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, cbuf_t *buf_out, h2states_t *h2s);
+int handle_continuation_payload(frame_header_t *header, continuation_payload_t *contpl, h2states_t *h2s);
 
 /*
 * Function: handle_window_update_payload
@@ -60,7 +60,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
 *        ->
 * Output: 0 if no error was found, -1 if not.
 */
-int handle_window_update_payload(window_update_payload_t *wupl, cbuf_t *buf_out, h2states_t *h2s);
+int handle_window_update_payload(window_update_payload_t *wupl, h2states_t *h2s);
 
 /*
  * Function: handle_ping_payload
@@ -71,6 +71,6 @@ int handle_window_update_payload(window_update_payload_t *wupl, cbuf_t *buf_out,
  * IMPORTANT: this implementation doesn't check the correctness of the last stream
  * Output: HTTP2_RC_NO_ERROR if no error were found during the handling.
  */
-int handle_ping_payload(ping_payload_t *ping_payload, cbuf_t *buf_out, h2states_t *h2s);
+int handle_ping_payload(ping_payload_t *ping_payload, h2states_t *h2s);
 
 #endif

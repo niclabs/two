@@ -29,5 +29,5 @@ uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param);
 
 callback_t null_callback(void);
 
-int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2states_t *h2s);
+int change_stream_state_end_stream_flag(uint8_t sending, h2states_t *h2s);
 #endif

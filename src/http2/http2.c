@@ -14,15 +14,17 @@
 #include "logging.h"
 
 
-callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
-callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
-callback_t receive_payload_wait_settings_ack(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
-callback_t receive_payload_goaway(cbuf_t *buf_in, cbuf_t *buf_out, void *state);
-int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s);
-int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s);
+int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes);
+int receive_header(event_sock_t * client, int size, uint8_t *bytes);
+int receive_payload(event_sock_t * client, int size, uint8_t *bytes);
+int receive_payload_wait_settings_ack(event_sock_t * client, int size, uint8_t *bytes);
+int receive_payload_goaway(event_sock_t * client, int size, uint8_t *bytes);
+int check_incoming_condition(h2states_t *h2s);
+int handle_payload(uint8_t *buff_read, h2states_t *h2s);
 
-int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
+int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
 {
+    h2s->socket = socket;
     h2s->is_server = is_server;
     h2s->remote_settings[0] = h2s->local_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
     h2s->remote_settings[1] = h2s->local_settings[1] = DEFAULT_ENABLE_PUSH;
@@ -53,85 +55,103 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server)
     return HTTP2_RC_NO_ERROR;
 }
 
-callback_t http2_server_init_connection(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
+void clean_h2s(event_sock_t *client)
 {
-    if (cbuf_len(buf_in) < 24) {
-        callback_t ret = { http2_server_init_connection, NULL };
-        return ret;
+    memset(client->data, 0, sizeof(h2states_t));
+}
+
+void http2_server_init_connection(event_sock_t *client, int status)
+{
+    (void)status;
+    // Cast h2states from state
+    h2states_t *h2s = (h2states_t *)client->data;
+
+    // Initialize http2 state
+    init_variables_h2s(h2s, 1, client);
+
+    event_read(client, exchange_prefaces);
+}
+
+int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
+{
+    // Cast h2states from state
+    h2states_t *h2s = (h2states_t *)client->data;
+
+    int bytes_read = 0;
+
+    if (size < 24) {
+        return bytes_read;
     }
 
-    // Cast h2states from state
-    h2states_t *h2s = (h2states_t *)state;
-
-    // Get preface from input buffer
     char preface[25];
-    cbuf_pop(buf_in, preface, 24);
+    memcpy(preface, bytes, 24);
+    bytes_read = 24;
 
-    // Check preface
     if (strncmp(preface, "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", 24) != 0) {
         ERROR("Bad preface (%s) received from client", preface);
-        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
+        event_close(h2s->socket, clean_h2s);
         DEBUG("http2_server_init_connection returning null callback");
-        return null_callback();
+        return bytes_read;
     }
     DEBUG("Received HTTP/2 connection preface. Sending local settings");
 
-    // Initialize http2 state
-    init_variables_h2s(h2s, 1);
-    int rc = send_local_settings(buf_out, h2s);
+    // Send local settings
+    int rc = send_local_settings(h2s);
     if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
         DEBUG("Error sending local settings in http2_server_init_connection");
-        return null_callback();
+        return bytes_read;
     }
+
     h2s->waiting_for_HEADERS_frame = 1;
     DEBUG("Local settings sent. http2_server_init_connection returning receive_header callback");
-    // If no error were found, http2 is ready to receive frames
-    callback_t ret = { receive_header, NULL };
-    return ret;
+
+    // If no errors were found, http2 is ready to receive frames
+    event_read(client, receive_header);
+    return bytes_read;
 }
 
-callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
+int receive_header(event_sock_t * client, int size, uint8_t *bytes)
 {
+    // Cast h2states from state
+    h2states_t *h2s = (h2states_t *)client->data;
+
+    int bytes_read = 0;
+
     // Wait until header length is received
-    if (cbuf_len(buf_in) < 9) {
-        callback_t ret = { receive_header, NULL };
-        DEBUG("http2_receive_header returning receive_header callback");
-        return ret;
+    if (size < 9) {
+        DEBUG("http2_receive_header didn't receive anough bytes");
+        return bytes_read;
     }
 
-    // Get h2states from parameters
-    h2states_t *h2s = (h2states_t *)state;
-
-    // Red header data from input buffer
+    // Read header data from input buffer and decode it
     frame_header_t header;
-    uint8_t buff_read_header[10];
-    cbuf_pop(buf_in, buff_read_header, 9);
+    int rc = frame_header_from_bytes(bytes, 9, &header);
+    bytes_read = 9;
 
-    // Decode header
-    int rc = frame_header_from_bytes(buff_read_header, 9, &header);
     if (rc && rc != FRAMES_PROTOCOL_ERROR && rc != FRAMES_FRAME_SIZE_ERROR && rc != FRAMES_FRAME_NOT_FOUND_ERROR) {
         ERROR("Failed to decode frame header. Sending INTERNAL_ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+        event_close(h2s->socket, clean_h2s);
 
         DEBUG("Internal error response sent. Terminating connection");
-        DEBUG("http2_receive_header returning null callback");
-        return null_callback();
+        return bytes_read;
     }
     else if (rc == FRAMES_PROTOCOL_ERROR) {
         ERROR("Failed to decode frame header. Sending PROTOCOL_ERROR");
-        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
+        event_close(h2s->socket, clean_h2s);
 
         DEBUG("Internal error response sent. Terminating connection");
-        DEBUG("http2_receive_header returning null callback");
-        return null_callback();
+        return bytes_read;
     }
     else if (rc == FRAMES_FRAME_SIZE_ERROR) {
         ERROR("Failed to decode frame header. Sending FRAME_SIZE_ERROR");
-        send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+        send_connection_error(HTTP2_FRAME_SIZE_ERROR, h2s);
+        event_close(h2s->socket, clean_h2s);
 
         DEBUG("Internal error response sent. Terminating connection");
-        DEBUG("http2_receive_header returning null callback");
-        return null_callback();
+        return bytes_read;
     }
     DEBUG("Received new frame header 0x%d", header.type);
 
@@ -139,11 +159,12 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     uint32_t local_max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
     if (header.length > local_max_frame_size) {
         ERROR("Invalid received frame size %d > %d. Sending FRAME_SIZE_ERROR", header.length, local_max_frame_size);
-        send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+        send_connection_error(HTTP2_FRAME_SIZE_ERROR, h2s);
+        event_close(h2s->socket, clean_h2s);
 
         DEBUG("FRAME_SIZE_ERROR sent. Terminating connection");
         DEBUG("http2_receive_header returning null callback");
-        return null_callback();
+        return bytes_read;
     }
 
     // save header type
@@ -152,75 +173,75 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     if (rc == FRAMES_FRAME_NOT_FOUND_ERROR) {
         if (h2s->waiting_for_end_headers_flag) {
             ERROR("Unknown/extension frame type in the middle of a header block. PROTOCOL_ERROR");
-            send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
-            return null_callback();
+            send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
+            event_close(client, clean_h2s);
+            return bytes_read;
         }
-        callback_t ret = { receive_payload, NULL };
-        return ret;
+        event_read(client, receive_payload);
+        return bytes_read;
     }
 
     // If errors are found, internal logic will handle them.
     // TODO: improve method names, it is not clear on reading the code
     // what are the conditions checked
-    rc = check_incoming_condition(buf_out, h2s);
+    rc = check_incoming_condition(h2s);
     if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT || rc == HTTP2_RC_ERROR) {
         DEBUG("check conditions for incoming headers returned error");
-        DEBUG("http2_receive_header returning null callback");
-        return null_callback();
+        return bytes_read;
     }
     else if (rc == HTTP2_RC_ACK_RECEIVED) {
-        callback_t ret = { receive_header, NULL };
+        event_read(client, receive_header);
         DEBUG("incoming_condition returned HTTP2_RC_ACK_RECEIVED");
         DEBUG("http2_receive_header returning receive_header callback");
-        return ret;
+        event_close(client, clean_h2s);
+        return bytes_read;
     }
     DEBUG("http2_receive_header returning receive_payload callback");
-    callback_t ret = { receive_payload, NULL };
-    return ret;
+    
+    event_read(client, receive_payload);
+    return bytes_read;
 }
 
-callback_t receive_payload(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
+int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
 {
-    (void)buf_out;
-    h2states_t *h2s = (h2states_t *)state;
+    // Cast h2states from state
+    h2states_t *h2s = (h2states_t *)client->data;
+
+    int bytes_read = 0;
 
     // Wait until all payload data has been received
-    if (cbuf_len(buf_in) < h2s->header.length) {
-        callback_t ret = { receive_payload, NULL };
-        DEBUG("http2_receive_payload returning receive_payload callback");
-        return ret;
+    if (size < h2s->header.length) {
+        DEBUG("http2_receive_payload didn't receive anough bytes");
+        return bytes_read;
     }
 
-    // Read payload
-    uint8_t buff_read_payload[HTTP2_MAX_BUFFER_SIZE];
-    cbuf_pop(buf_in, buff_read_payload, h2s->header.length);
-
     // Process payload
-    int rc = handle_payload(buff_read_payload, buf_out, h2s);
+    int rc = handle_payload(bytes, h2s);
     if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT || rc == HTTP2_RC_ERROR || rc == HTTP2_RC_CLOSE_CONNECTION) {
         DEBUG("http2_receive_payload returning null callback");
-        return null_callback();
+        event_close(h2s->socket, clean_h2s);
+        return bytes_read;
     }
 
     // Wait for next header
     DEBUG("http2_receive_payload returning receive_header callback");
-    callback_t ret = { receive_header, NULL };
-    return ret;
+    event_read(client, receive_header);
+    return bytes_read;
 }
 
 
 
-int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
+int check_incoming_condition(h2states_t *h2s)
 {
     int rc;
 
     switch (h2s->header.type) {
         case DATA_TYPE: {
-            rc = check_incoming_data_condition(buf_out, h2s);
+            rc = check_incoming_data_condition(h2s);
             return rc;
         }
         case HEADERS_TYPE: {
-            rc = check_incoming_headers_condition(buf_out, h2s);
+            rc = check_incoming_headers_condition(h2s);
             return rc;
         }
         case PRIORITY_TYPE://Priority
@@ -232,7 +253,7 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
             return HTTP2_RC_ERROR;
 
         case SETTINGS_TYPE: {
-            rc = check_incoming_settings_condition(buf_out, h2s);
+            rc = check_incoming_settings_condition(h2s);
             return rc;
         }
         case PUSH_PROMISE_TYPE://Push promise
@@ -240,19 +261,19 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
             return HTTP2_RC_ERROR;
 
         case PING_TYPE: {//Ping
-            rc = check_incoming_ping_condition(buf_out, h2s);
+            rc = check_incoming_ping_condition(h2s);
             return rc;
         }
         case GOAWAY_TYPE: {
-            rc = check_incoming_goaway_condition(buf_out, h2s);
+            rc = check_incoming_goaway_condition(h2s);
             return rc;
         }
         case WINDOW_UPDATE_TYPE: {
-            rc = check_incoming_window_update_condition(buf_out, h2s);
+            rc = check_incoming_window_update_condition(h2s);
             return rc;
         }
         case CONTINUATION_TYPE: {
-            rc = check_incoming_continuation_condition(buf_out, h2s);
+            rc = check_incoming_continuation_condition(h2s);
             return rc;
         }
         default: {
@@ -266,7 +287,7 @@ int check_incoming_condition(cbuf_t *buf_out, h2states_t *h2s)
  *
  *
  */
-int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
+int handle_payload(uint8_t *buff_read, h2states_t *h2s)
 {
     int rc;
 
@@ -281,11 +302,11 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &data_payload, buff_read);
             if (rc < 0) {
                 ERROR("ERROR reading data payload");
-                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
                 return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
 
-            rc = handle_data_payload(&(h2s->header), &data_payload, buf_out, h2s);
+            rc = handle_data_payload(&(h2s->header), &data_payload, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("ERROR in handle receive data.");
                 return rc;
@@ -310,10 +331,10 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &hpl, buff_read);
             if (rc < 0) {
                 ERROR("ERROR reading headers payload");
-                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
                 return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
-            rc = handle_headers_payload(&(h2s->header), &hpl, buf_out, h2s);
+            rc = handle_headers_payload(&(h2s->header), &hpl, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("ERROR in handle receive headers.");
                 return rc;
@@ -346,12 +367,12 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             if (rc < 0) {
                 // bytes_to_settings_payload returns -1 if length is not a multiple of 6. RFC 6.5
                 ERROR("ERROR: SETTINGS frame with a length other than a multiple of 6 octets. FRAME_SIZE_ERROR");
-                send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s);
+                send_connection_error(HTTP2_FRAME_SIZE_ERROR, h2s);
                 return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
 
             // Use remote settings
-            rc = handle_settings_payload(&spl, buf_out, h2s);
+            rc = handle_settings_payload(&spl, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("ERROR in handle receive settings payload.");
                 return rc;
@@ -370,10 +391,10 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &ping_payload, buff_read);
             if (rc < 0) {
                 ERROR("ERROR reading ping payload");
-                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
                 return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
-            rc = handle_ping_payload(&ping_payload, buf_out, h2s);
+            rc = handle_ping_payload(&ping_payload, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("ERROR in handle receive ping");
                 return rc;
@@ -392,10 +413,10 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &goaway_pl, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading goaway payload");
-                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
                 return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
-            rc = handle_goaway_payload(&goaway_pl, buf_out, h2s);
+            rc = handle_goaway_payload(&goaway_pl, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION) {
                 ERROR("Received GOAWAY. Close Connection");
                 return rc;
@@ -413,10 +434,10 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             int rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &window_update_payload, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
-                send_connection_error(buf_out, HTTP2_FRAME_SIZE_ERROR, h2s); // TODO: review - always FRAME_SIZE_ERROR ?
+                send_connection_error(HTTP2_FRAME_SIZE_ERROR, h2s); // TODO: review - always FRAME_SIZE_ERROR ?
                 return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
-            rc = handle_window_update_payload(&window_update_payload, buf_out, h2s);
+            rc = handle_window_update_payload(&window_update_payload, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("Error during window_update handling");
                 return rc;
@@ -434,11 +455,11 @@ int handle_payload(uint8_t *buff_read, cbuf_t *buf_out, h2states_t *h2s)
             rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &contpl, buff_read);
             if (rc < 0) {
                 ERROR("Error in continuation payload reading");
-                send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+                send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
                 return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
             }
 
-            rc = handle_continuation_payload(&h2s->header, &contpl, buf_out, h2s);
+            rc = handle_continuation_payload(&h2s->header, &contpl, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("ERROR in handle receive continuation payload.");
                 return rc;

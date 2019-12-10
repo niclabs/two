@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "event.h"
 #include "headers.h"
 #include "frames.h"
 
@@ -94,6 +95,7 @@ typedef struct HTTP2_DATA {
 
 /*Struct for storing HTTP2 states*/
 typedef struct HTTP2_STATES {
+    event_sock_t *socket;
     uint8_t is_server;
     uint32_t remote_settings[6];
     uint32_t local_settings[6];

@@ -17,7 +17,7 @@
  *        ->sending: boolean like uint8_t that indicates if current flag is sent or received
  * Output: -1 if connection must be closed, 0 otherwise
  */
-int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2states_t *h2s)
+int change_stream_state_end_stream_flag(uint8_t sending, h2states_t *h2s)
 {
     if (sending) { // Change stream status if end stream flag is sending
         if (h2s->current_stream.state == STREAM_OPEN) {
@@ -26,7 +26,7 @@ int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2stat
         else if (h2s->current_stream.state == STREAM_HALF_CLOSED_REMOTE) {
             h2s->current_stream.state = STREAM_CLOSED;
             if (h2s->received_goaway) {
-                send_goaway(HTTP2_NO_ERROR, buf_out, h2s);
+                send_goaway(HTTP2_NO_ERROR, h2s);
                 DEBUG("change_stream_state_end_stream_flag: Close connection. GOAWAY frame was previously received");
                 return HTTP2_RC_CLOSE_CONNECTION;
             }
@@ -42,7 +42,7 @@ int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2stat
         else if (h2s->current_stream.state == STREAM_HALF_CLOSED_LOCAL) {
             h2s->current_stream.state = STREAM_CLOSED;
             if (h2s->received_goaway) {
-                send_goaway(HTTP2_NO_ERROR, buf_out, h2s);
+                send_goaway(HTTP2_NO_ERROR, h2s);
                 DEBUG("change_stream_state_end_stream_flag: Close connection. GOAWAY frame was previously received");
                 return HTTP2_RC_CLOSE_CONNECTION;
             }
@@ -65,17 +65,17 @@ int change_stream_state_end_stream_flag(uint8_t sending, cbuf_t *buf_out, h2stat
  * Output: 0 if no error were found in the process, -1 if not
  *
  */
-int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
+int send_data(uint8_t end_stream, h2states_t *h2s)
 {
     if (h2s->data.size <= 0) {
         ERROR("No data to be sent. INTERNAL_ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     h2_stream_state_t state = h2s->current_stream.state;
     if (state != STREAM_OPEN && state != STREAM_HALF_CLOSED_REMOTE) {
         ERROR("Wrong state for sending DATA. INTERNAL_ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint32_t stream_id = h2s->current_stream.stream_id;
@@ -94,20 +94,20 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     INFO("Sending DATA");
-    int rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    int rc = event_write(h2s->socket, bytes_size, buff_bytes, NULL); 
     if (rc != bytes_size) {
         ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     rc = flow_control_send_data(h2s, count_data_to_send);
     if (rc == HTTP2_RC_ERROR) {
         ERROR("send_data: Trying to send more data than allowed ");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (end_stream) {
-        rc = change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+        rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
         if (rc == HTTP2_RC_CLOSE_CONNECTION) {
             DEBUG("send_data: Close connection. GOAWAY previously received");
             return rc;
@@ -129,7 +129,7 @@ int send_data(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
  * stored
  * Output: 0 if sent was successfully made, -1 if not.
  */
-int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
+int send_settings_ack(h2states_t *h2s)
 {
     frame_t ack_frame;
     frame_header_t ack_frame_header;
@@ -140,11 +140,11 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
     uint8_t byte_ack[9 + 0]; /*Settings ACK frame only has a header*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     // We write the ACK to NET
-    rc = cbuf_push(buf_out, byte_ack, size_byte_ack);
+    rc = event_write(h2s->socket, size_byte_ack, byte_ack, NULL);
     INFO("Sending settings ACK");
     if (rc != size_byte_ack) {
         ERROR("Error in Settings ACK sending");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     return HTTP2_RC_NO_ERROR;
@@ -161,7 +161,7 @@ int send_settings_ack(cbuf_t *buf_out, h2states_t *h2s)
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping(uint8_t *opaque_data, int8_t ack, cbuf_t *buf_out, h2states_t *h2s)
+int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
 {
     frame_t ack_frame;
     frame_header_t ack_frame_header;
@@ -179,11 +179,11 @@ int send_ping(uint8_t *opaque_data, int8_t ack, cbuf_t *buf_out, h2states_t *h2s
     uint8_t byte_ack[9 + 8]; /*Settings ACK frame has a header and a payload of 8 bytes*/
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     // We write the ACK to NET
-    rc = cbuf_push(buf_out, byte_ack, size_byte_ack);
+    rc = event_write(h2s->socket, size_byte_ack, byte_ack, NULL);
     INFO("Sending PING");
     if (rc != size_byte_ack) {
         ERROR("Error in PING sending");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     return HTTP2_RC_NO_ERROR;
@@ -202,7 +202,7 @@ int send_ping(uint8_t *opaque_data, int8_t ack, cbuf_t *buf_out, h2states_t *h2s
  *        ->error_code: error code for GOAWAY FRAME (RFC 7540 section 7)
  * Output: 0 if no errors were found, -1 if not
  */
-int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8_t *debug_data_buff, uint8_t debug_size){
+int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_buff, uint8_t debug_size){
 {
     int rc;
     frame_t frame;
@@ -215,7 +215,7 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
     frame.payload = (void *)&goaway_pl;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    rc = event_write(h2s->socket, bytes_size, buff_bytes, NULL);
     DEBUG("Sending GOAWAY, error code: %u", error_code);
 
     if (rc != bytes_size) {
@@ -231,7 +231,7 @@ int send_goaway(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s) //, uint8
 
 }
 
-int send_rst_stream(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s)
+int send_rst_stream(uint32_t error_code, h2states_t *h2s)
 {
     int rc;
     frame_t frame;
@@ -243,7 +243,7 @@ int send_rst_stream(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s)
     frame.payload = (void *)&rst_stream_pl;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    rc = event_write(h2s->socket, bytes_size, buff_bytes, NULL);
     INFO("Sending RST_STREAM, error code: %u", error_code);
 
     if (rc != bytes_size) {
@@ -262,7 +262,7 @@ int send_rst_stream(uint32_t error_code, cbuf_t *buf_out, h2states_t *h2s)
  *        -> window_size_increment: increment to put on window_update frame
  * Output: 0 if no errors were found, -1 if not.
  */
-int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_t *h2s)
+int send_window_update(uint8_t window_size_increment, h2states_t *h2s)
 {
     //TODO: Refactor this function to avoid duplicated code
     frame_t frame;
@@ -271,7 +271,7 @@ int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_
     int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, 0);
     if (rc < 0) {
         ERROR("send_window_update: error creating window_update frame");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
 
@@ -279,39 +279,39 @@ int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_
     frame.payload = (void *)&window_update_payload;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    rc = event_write(h2s->socket, bytes_size, buff_bytes, NULL);
 
     INFO("Sending connection WINDOW UPDATE");
 
     if (rc != bytes_size) {
         ERROR("send_window_update: Error writting window_update frame. INTERNAL ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     rc = flow_control_send_window_update(h2s, window_size_increment);
     if (rc != HTTP2_RC_NO_ERROR) {
         ERROR("send_window_update: ERROR in flow control when sending WU - increment too big");
-        send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+        send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
 
     rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, h2s->current_stream.stream_id);
     if (rc < 0) {
         ERROR("send_window_update: error creating window_update frame");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
 
     frame.frame_header = &frame_header;
     frame.payload = (void *)&window_update_payload;
     bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = cbuf_push(buf_out, buff_bytes, bytes_size);
+    rc = event_write(h2s->socket, bytes_size, buff_bytes, NULL);
 
     INFO("Sending stream WINDOW UPDATE");
 
     if (rc != bytes_size) {
         ERROR("send_window_update: Error writting window_update frame. INTERNAL ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     return HTTP2_RC_NO_ERROR;
@@ -325,12 +325,12 @@ int send_window_update(uint8_t window_size_increment, cbuf_t *buf_out, h2states_
  * Input: ->st: hstates_t struct where current stream is stored
  * Output: 0 if no errors were found, -1 if not
  */
-int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s)
+int send_headers_stream_verification(h2states_t *h2s)
 {
     if (h2s->current_stream.state == STREAM_CLOSED ||
         h2s->current_stream.state == STREAM_HALF_CLOSED_LOCAL) {
         ERROR("Current stream was closed! Send request error. INTERNAL_ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->current_stream.state == STREAM_IDLE) {
@@ -352,7 +352,7 @@ int send_headers_stream_verification(cbuf_t *buf_out, h2states_t *h2s)
  * Input: -> st: pointer to hstates_t struct where local settings are stored
  * Output: 0 if settings were sent. -1 if not.
  */
-int send_local_settings(cbuf_t *buf_out, h2states_t *h2s)
+int send_local_settings(h2states_t *h2s)
 {
     int rc;
     uint16_t ids[6] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
@@ -369,11 +369,11 @@ int send_local_settings(cbuf_t *buf_out, h2states_t *h2s)
 
     uint8_t byte_mysettings[9 + 6 * 6]; /*header: 9 bytes + 6 * setting: 6 bytes */
     int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
-    rc = cbuf_push(buf_out, byte_mysettings, size_byte_mysettings);
+    rc = event_write(h2s->socket, size_byte_mysettings, byte_mysettings, NULL);
     INFO("Sending settings");
     if (rc != size_byte_mysettings) {
         ERROR("Error in local settings writing");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     /*Settings were sent, so we expect an ack*/
@@ -390,18 +390,18 @@ int send_local_settings(cbuf_t *buf_out, h2states_t *h2s)
  * Output: void
  */
 
-void send_connection_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s)
+void send_connection_error(uint32_t error_code, h2states_t *h2s)
 {
-    int rc = send_goaway(error_code, buf_out, h2s);
+    int rc = send_goaway(error_code, h2s);
 
     if (rc < 0) {
         WARN("Error sending GOAWAY frame to endpoint.");
     }
 }
 
-void send_stream_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s)
+void send_stream_error(uint32_t error_code, h2states_t *h2s)
 {
-    int rc = send_rst_stream(error_code, buf_out, h2s);
+    int rc = send_rst_stream(error_code, h2s);
 
     if (rc < 0) {
         WARN("Error sending RST_STREAM frame to endpoint.");
@@ -420,7 +420,7 @@ void send_stream_error(cbuf_t *buf_out, uint32_t error_code, h2states_t *h2s)
  * Output: 0 if no errors were found during the creation or sending, -1 if not
  */
 
-int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, cbuf_t *buf_out, h2states_t *h2s)
+int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, h2states_t *h2s)
 {
     int rc;
     frame_t frame;
@@ -436,11 +436,11 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     frame.frame_header = &frame_header;
     frame.payload = (void *)&continuation_payload;
     int bytes_size = frame_to_bytes(&frame, buff_read);
-    rc = cbuf_push(buf_out, buff_read, bytes_size);
+    rc = event_write(h2s->socket, bytes_size, buff_read, NULL);
     INFO("Sending continuation");
     if (rc != bytes_size) {
         ERROR("Error writting continuation frame. INTERNAL ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     return HTTP2_RC_NO_ERROR;
@@ -459,7 +459,7 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
  * Output: 0 if no errors were found during frame creation/sending, -1 if not
  */
 
-int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
+int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream, h2states_t *h2s)
 {
     int rc;
     frame_t frame;
@@ -479,11 +479,11 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
     frame.frame_header = &frame_header;
     frame.payload = (void *)&headers_payload;
     int bytes_size = frame_to_bytes(&frame, buff_read);
-    rc = cbuf_push(buf_out, buff_read, bytes_size);
+    rc = event_write(h2s->socket, bytes_size, buff_read, NULL);
     INFO("Sending headers");
     if (rc != bytes_size) {
         ERROR("Error writting headers frame. INTERNAL ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     return HTTP2_RC_NO_ERROR;
@@ -497,26 +497,26 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
         -> end_stream: boolean that indicates if end_stream flag needs to be set
  * Output: 0 if process was made successfully, -1 if not.
  */
-int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
+int send_headers(uint8_t end_stream, h2states_t *h2s)
 {
     if (h2s->received_goaway) {
         ERROR("send_headers: GOAWAY was received. Current process must not open a new stream");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     if (headers_count(&(h2s->headers)) == 0) {
         ERROR("send_headers called when there are no headers to send");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
     int size = compress_headers(&h2s->headers, encoded_bytes, &h2s->hpack_states);
     if (size < 0) {
         ERROR("Error was found compressing headers. INTERNAL ERROR");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    if (send_headers_stream_verification(buf_out, h2s) < 0) {
+    if (send_headers_stream_verification(h2s) < 0) {
         ERROR("Stream error during the headers sending. INTERNAL ERROR"); // error already handled
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
@@ -526,13 +526,13 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     //not being considered dependencies nor padding.
     if ((uint32_t)size <= max_frame_size) { //if headers can be send in only one frame
         //only send 1 header
-        rc = send_headers_frame(encoded_bytes, size, stream_id, 1, end_stream, buf_out, h2s);
+        rc = send_headers_frame(encoded_bytes, size, stream_id, 1, end_stream, h2s);
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error found sending headers frame");
             return rc;
         }
         if (end_stream) {
-            rc = change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+            rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
             if (rc == HTTP2_RC_CLOSE_CONNECTION) {
                 DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
                 return rc;
@@ -543,7 +543,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
     else {          //if headers must be send with one or more continuation frames
         uint32_t remaining = size;
         //send Header Frame
-        rc = send_headers_frame(encoded_bytes, max_frame_size, stream_id, 0, end_stream, buf_out, h2s);
+        rc = send_headers_frame(encoded_bytes, max_frame_size, stream_id, 0, end_stream, h2s);
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error found sending headers frame");
             return rc;
@@ -551,7 +551,7 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
         remaining -= max_frame_size;
         //Send continuation Frames
         while (remaining > max_frame_size) {
-            rc = send_continuation_frame(encoded_bytes + (size - remaining), max_frame_size, stream_id, 0, buf_out, h2s);
+            rc = send_continuation_frame(encoded_bytes + (size - remaining), max_frame_size, stream_id, 0, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
                 ERROR("Error found sending continuation frame");
                 return rc;
@@ -559,13 +559,13 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
             remaining -= max_frame_size;
         }
         //send last continuation frame
-        rc = send_continuation_frame(encoded_bytes + (size - remaining), remaining, stream_id, 1, buf_out, h2s);
+        rc = send_continuation_frame(encoded_bytes + (size - remaining), remaining, stream_id, 1, h2s);
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error found sending continuation frame");
             return rc;
         }
         if (end_stream) {
-            rc = change_stream_state_end_stream_flag(1, buf_out, h2s); // 1 is for sending
+            rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
             if (rc == HTTP2_RC_CLOSE_CONNECTION) {
                 DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
                 return rc;
@@ -581,22 +581,21 @@ int send_headers(uint8_t end_stream, cbuf_t *buf_out, h2states_t *h2s)
  * to be send to endpoint. The message is a response, so it must be sent through
  * an existent stream, closing the current stream.
  *
- * @param    buf_out   pointer to hstates_t struct where headers are stored
  * @param    h2s       pointer to hstates_t struct where headers are stored
  *
  * @return   0         Successfully generation and sent of the message
  * @return   -1        There was an error in the process
  */
-int send_response(cbuf_t *buf_out, h2states_t *h2s)
+int send_response(h2states_t *h2s)
 {
     if (headers_count(&(h2s->headers)) == 0) {
         ERROR("There were no headers to write");
-        send_connection_error(buf_out, HTTP2_INTERNAL_ERROR, h2s);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     int rc;
     if (h2s->data.size > 0) {
-        rc = send_headers(0, buf_out, h2s); // CLOSE CONN, CLOSE CONN SENT, NO ERROR
+        rc = send_headers(0, h2s); // CLOSE CONN, CLOSE CONN SENT, NO ERROR
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error was found sending headers on response");
             return rc;
@@ -605,14 +604,14 @@ int send_response(cbuf_t *buf_out, h2states_t *h2s)
             DEBUG("send_response: Close connection. GOAWAY sent while on send_headers.");
             return rc;
         }
-        rc = send_data(1, buf_out, h2s); // CLOSE CONN, CLOSE CONN SENT, NO ERROR
+        rc = send_data(1, h2s); // CLOSE CONN, CLOSE CONN SENT, NO ERROR
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error was found sending data on response");
             return rc;
         }
     }
     else {
-        rc = send_headers(1, buf_out, h2s);
+        rc = send_headers(1, h2s);
         if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
             ERROR("Error was found sending headers on response");
             return rc;

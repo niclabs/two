@@ -3,6 +3,8 @@
 
 #include "cbuf.h"
 #include "config.h"
+#include "event.h"
 
-callback_t http2_server_init_connection(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
+void http2_server_init_connection(event_sock_t *client, int status);
+
 #endif
