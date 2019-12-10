@@ -15,15 +15,15 @@
  * Output:
  *      returns the decoded integer if succesful, -1 otherwise
  */
-int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
+int32_t hpack_decoder_decode_integer(const uint8_t *bytes, uint8_t prefix)
 {
     uint8_t b0 = bytes[0];
 
-    b0 = b0 << (8 - prefix);
-    b0 = b0 >> (8 - prefix);
-    uint8_t p = 255;
-    p = p << (8 - prefix);
-    p = p >> (8 - prefix);
+    b0 = b0 << (8u - prefix);
+    b0 = b0 >> (8u - prefix);
+    uint8_t p = 255u;
+    p = p << (8u - prefix);
+    p = p >> (8u - prefix);
     if (b0 != p) {
         /*Special case, when HPACK_MAXIMUM_INTEGER is less than 256
          * it will evaluate whether b0 is within limits*/
@@ -54,8 +54,8 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
                 }
             }
             else {
-                bi = bi << 1;
-                bi = bi >> 1;
+                bi = bi << 1u;
+                bi = bi >> 1u;
                 integer += (uint32_t)bi * ((uint32_t)1 << depth);
             }
             depth = depth + 7;
@@ -80,7 +80,7 @@ int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix)
  *      Stores the result in the first byte of str and returns the size in bits of
  *      the encoded word (e.g. 5 or 6 or 7 ...), if an error occurs the return value is -1.
  */
-int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position)
+int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint32_t encoded_string_size, uint16_t bit_position)
 {
     huffman_encoded_word_t encoded_word;
     uint8_t length = 30;
@@ -88,14 +88,14 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
 
     /*Check if can read buffer*/
     if (bit_position + length > 8 * encoded_string_size) {
-        uint8_t bits_left = (8 * encoded_string_size) - bit_position;
+        uint8_t bits_left = (uint8_t)((8u * encoded_string_size) - bit_position);
         if (bits_left < 5) {
             /*This is not a true error, just for checking*/
             return INTERNAL_ERROR;
         }
         else {
-            uint8_t number_of_padding_bits = length - bits_left;
-            uint32_t padding = (1 << (number_of_padding_bits)) - 1;
+            uint8_t number_of_padding_bits = (uint8_t)(length - bits_left);
+            uint32_t padding = (1u << (number_of_padding_bits)) - 1u;
             result = hpack_utils_read_bits_from_bytes(bit_position, bits_left, encoded_string);
             result <<= number_of_padding_bits;
             result |= padding;
@@ -134,13 +134,13 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
  *      returns the number of bytes read from encoded_buffer is succesful, if it fails throws an error.
  */
 
-int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size)
+int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, const uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size)
 {
-    uint8_t bits_left = 8 * str_length - bit_position;
+    uint8_t bits_left = (uint8_t)(8 * str_length - bit_position);
     uint8_t last_byte = encoded_buffer[str_length - 1];
 
     if (bits_left < 8) {
-        uint8_t mask = (1 << bits_left) - 1; /*padding of encoding*/
+        uint8_t mask = (uint8_t)((1u << bits_left) - 1u); /*padding of encoding*/
         if ((last_byte & mask) == mask) {
             return str_length + str_length_size;
         }
@@ -201,11 +201,11 @@ int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, 
  * Output:
  *      return the number of bytes written in str if succesful or -1 otherwise
  */
-int32_t hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length)
+int32_t hpack_decoder_decode_non_huffman_string(char *str, const uint8_t *encoded_string, uint32_t str_length)
 {
     uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
 
-    for (uint16_t i = 0; i < str_length; i++) {
+    for (uint32_t i = 0; i < str_length; i++) {
         str[i] = (char)encoded_string[i];
     }
     return str_length + str_length_size;
@@ -311,7 +311,7 @@ int hpack_decoder_decode_literal_header_field(hpack_states_t *states)
     if (states->encoded_header.preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
 #if HPACK_INCLUDE_DYNAMIC_TABLE
         //Here we add it to the dynamic table
-        int rc = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, states->tmp_name, states->tmp_value);
+        rc = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, states->tmp_name, states->tmp_value);
         if (rc < 0) {
             DEBUG("Couldn't add to dynamic table");
             return rc;
@@ -357,7 +357,7 @@ int hpack_decoder_decode_dynamic_table_size_update(hpack_states_t *states)
  */
 uint8_t get_huffman_bit(uint8_t num)
 {
-    return 128u & num;
+    return (uint8_t)(128u & num);
 }
 
 /*
@@ -370,12 +370,12 @@ uint8_t get_huffman_bit(uint8_t num)
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size)
+int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size)
 {
     int32_t pointer = 0;
 
     encoded_header->preamble = hpack_utils_get_preamble(header_block[pointer]);
-    int16_t index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
+    int32_t index = hpack_decoder_decode_integer(&header_block[pointer], hpack_utils_find_prefix_size(encoded_header->preamble));//decode index
     /*Integer exceed implementations limits*/
     if (index < 0) {
         ERROR("Integer exceeds implementations limits");
@@ -390,7 +390,7 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
     }
 
     if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
-        encoded_header->dynamic_table_size = encoded_header->index;
+        encoded_header->dynamic_table_size = (uint16_t)encoded_header->index;
         encoded_header->index = 0;
         return pointer;
     }
@@ -435,7 +435,7 @@ int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header
         return PROTOCOL_ERROR;
     }
 
-    encoded_header->value_length = value_length;
+    encoded_header->value_length = (uint32_t)value_length;
     pointer += hpack_utils_encoded_integer_size(encoded_header->value_length, 7);
     /*Bytes read exceeded the header block size specified  at the beggining*/
     if (pointer > header_size) {
@@ -499,7 +499,7 @@ int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
     const uint32_t eos = 0x3fffffff;
     uint8_t eos_bit_length = 30;
 
-    for (int32_t bit_position = 0; (bit_position + eos_bit_length) / 8 < buffer_length; bit_position++) {     //search through all lengths possible
+    for (uint16_t bit_position = 0; (bit_position + eos_bit_length) / 8 < buffer_length; bit_position++) {     //search through all lengths possible
 
         uint32_t result = hpack_utils_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
         if ((result & eos) == eos) {
@@ -540,7 +540,7 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
 
     if ((encoded_header->index == 0) && (encoded_header->name_length >= 4)) {
         /*Check if it's the EOS Symbol in name_string*/
-        int rc = hpack_check_eos_symbol(encoded_header->name_string, encoded_header->name_length);
+        int8_t rc = hpack_check_eos_symbol(encoded_header->name_string, (uint8_t)encoded_header->name_length);
         if (rc < 0) {
             return rc;
         }
@@ -548,7 +548,7 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
 
     if (encoded_header->value_length >= 4) {
         /*Check if it's the EOS Symbol in value_string*/
-        int rc = hpack_check_eos_symbol(encoded_header->value_string, encoded_header->value_length);
+        int8_t rc = hpack_check_eos_symbol(encoded_header->value_string, (uint8_t)encoded_header->value_length);
         if (rc < 0) {
             return rc;
         }
@@ -601,7 +601,9 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
         memset(states->tmp_name, 0, MAX_HEADER_NAME_LEN);
         memset(states->tmp_value, 0, MAX_HEADER_VALUE_LEN);
 
-        int bytes_read = hpack_decoder_parse_encoded_header(&states->encoded_header, header_block + pointer, header_block_size - pointer);
+        int bytes_read = hpack_decoder_parse_encoded_header(&states->encoded_header,
+                                                            header_block + pointer,
+                                                            (uint8_t)(header_block_size - pointer));
         DEBUG("Decoding a %d", states->encoded_header.preamble);
 
         if (bytes_read < 0) {

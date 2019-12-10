@@ -15,36 +15,36 @@
  *      -> buffer_size: Size of the buffer
  * output: returns the bits read from the buffer
  */
-uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer)
+uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, const uint8_t *buffer)
 {
-    uint32_t byte_offset = current_bit_pointer / 8;
-    uint8_t bit_offset = current_bit_pointer - 8 * byte_offset;
-    uint8_t num_bytes = ((number_of_bits_to_read + current_bit_pointer - 1) / 8) - (current_bit_pointer / 8) + 1;
-    uint32_t code = 0;
+    uint16_t byte_offset = (uint16_t)(current_bit_pointer / 8u);
+    uint16_t bit_offset = (uint16_t)(current_bit_pointer - 8u * byte_offset);
+    uint16_t num_bytes = (uint16_t)(((number_of_bits_to_read + current_bit_pointer - 1u) / 8) - (current_bit_pointer / 8u) + 1u);
+    uint32_t code = 0u;
     uint8_t first_byte_mask = 255u;
 
     if (num_bytes == 1) {
         first_byte_mask <<= bit_offset;
         first_byte_mask >>= bit_offset;
-        first_byte_mask >>= (8 - bit_offset - number_of_bits_to_read);
-        first_byte_mask <<= (8 - bit_offset - number_of_bits_to_read);
-        code |= first_byte_mask & buffer[byte_offset];
-        code >>= (8 - bit_offset - number_of_bits_to_read);
+        first_byte_mask >>= (8u - bit_offset - number_of_bits_to_read);
+        first_byte_mask <<= (8u - bit_offset - number_of_bits_to_read);
+        code |= (uint8_t)(first_byte_mask & buffer[byte_offset]);
+        code >>= (8u - bit_offset - number_of_bits_to_read);
     }
     else {
         first_byte_mask >>= bit_offset;
-        code |= first_byte_mask & buffer[byte_offset];
+        code |= (uint8_t)(first_byte_mask & buffer[byte_offset]);
 
         for (int i = 1; i < num_bytes - 1; i++) {
-            code <<= 8;
+            code <<= 8u;
             code |= buffer[i + byte_offset];
         }
 
-        uint8_t last_bit_offset = (current_bit_pointer + number_of_bits_to_read) % 8;
-        last_bit_offset = last_bit_offset == 0 ? 8 : last_bit_offset;
-        uint8_t last_byte_mask = 255u << (8 - last_bit_offset);
+        uint8_t last_bit_offset = (uint8_t)((current_bit_pointer + number_of_bits_to_read) % 8u);
+        last_bit_offset = (uint8_t)(last_bit_offset == 0u ? 8u : last_bit_offset);
+        uint8_t last_byte_mask = (uint8_t)(255u << (8u - last_bit_offset));
         uint8_t last_byte = last_byte_mask & buffer[byte_offset + num_bytes - 1];
-        last_byte >>= (8 - last_bit_offset);
+        last_byte >>= (8u - last_bit_offset);
         code <<= last_bit_offset;
         code |= last_byte;
     }
@@ -59,13 +59,13 @@ uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t 
  * Output:
  *      returns log128(x)
  */
-int hpack_utils_log128(uint32_t x)
+uint32_t hpack_utils_log128(uint32_t x)
 {
     uint32_t n = 0;
     uint32_t m = 1;
 
     while (m < x) {
-        m = 1 << (7 * (++n));
+        m = 1u << (7u * (++n));
     }
 
     if (m == x) {
@@ -134,7 +134,7 @@ uint8_t hpack_utils_find_prefix_size(hpack_preamble_t octet)
  */
 uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix)
 {
-    uint8_t p = (1 << prefix) - 1;
+    uint8_t p = (uint8_t)((1u << prefix) - 1u);
 
     if (num < p) {
         return 1;

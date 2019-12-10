@@ -13,16 +13,13 @@ extern int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_s
 extern int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint8_t encoded_string_size, uint16_t bit_position);
 #endif
 extern int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit);
-extern int32_t hpack_decoder_decode_non_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length);
+extern int32_t hpack_decoder_decode_non_huffman_string(char *str, const uint8_t *encoded_string, uint32_t str_length);
 extern int hpack_decoder_decode_indexed_header_field(hpack_states_t *states);
-extern int32_t hpack_decoder_decode_integer(uint8_t *bytes, uint8_t prefix);
-extern int hpack_decoder_encoded_integer_size(uint32_t num, uint8_t prefix);
-extern int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block);
-//extern int hpack_decoder_decode_literal_header_field_with_incremental_indexing(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, char *name, char *value);
-extern int8_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size);
+extern int32_t hpack_decoder_decode_integer(const uint8_t *bytes, uint8_t prefix);
+extern int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size);
 extern int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length);
 extern int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header);
-extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size);
+extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, const uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size);
 
 #if(INCLUDE_HUFFMAN_COMPRESSION==0)
 typedef struct {}huffman_encoded_word_t; /*this is for compilation of hpack_huffman_decode_fake when huffman_compression is not included*/
@@ -43,7 +40,7 @@ void pad_code(uint32_t *code, uint8_t length)
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
 FAKE_VALUE_FUNC(int,  headers_add, header_list_t *, const char *, const char * );
-FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t, uint8_t, uint8_t *);
+FAKE_VALUE_FUNC(uint32_t, hpack_utils_read_bits_from_bytes, uint16_t , uint8_t, const uint8_t *);
 FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_dynamic_table_t *, char *, char *,  uint8_t *);

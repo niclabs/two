@@ -3,8 +3,8 @@
 #include "logging.h"
 #include "hpack/utils.h"
 
-extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, uint8_t *buffer);
-extern int hpack_utils_log128(uint32_t x);
+extern uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, const uint8_t *buffer);
+extern uint32_t hpack_utils_log128(uint32_t x);
 extern hpack_preamble_t hpack_utils_get_preamble(uint8_t preamble);
 extern uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix);
 

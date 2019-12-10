@@ -6,10 +6,13 @@
 #include "hpack/utils.h"
 
 #include "config.h"
+
 #define LOG_MODULE LOG_MODULE_HPACK
+
 #include "logging.h"
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
+
 /*
  * Function: hpack_encoder_pack_encoded_words_to_bytes
  * Writes bits from 'code' (the representation in huffman)
@@ -22,50 +25,52 @@
  * - buffer_size: Size of the buffer
  * output: 0 if the bits are stored correctly ; -1 if it fails because the size of the buffer is less than the required to store the result
  */
-int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size)
+int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint32_t encoded_words_size,
+                                                 uint8_t *buffer, uint32_t buffer_size)
 {
     int32_t sum = 0;
 
-    for (int i = 0; i < encoded_words_size; i++) {
+    for (uint32_t i = 0; i < encoded_words_size; i++) {
         sum += encoded_words[i].length;
     }
 
-    uint8_t required_bytes = (sum % 8) ? (sum / 8) + 1 : sum / 8;
+    uint32_t required_bytes = (sum % 8) ? (sum / 8) + 1 : sum / 8;
 
     if (required_bytes > buffer_size) {
         ERROR("Buffer size is less than the required amount in hpack_encoder_pack_encoded_words_to_bytes");
         return INTERNAL_ERROR;
     }
 
-    int cur = 0;
-    int byte_offset = 0;
-    int bit_offset = 0;
+    uint32_t cur = 0;
+    uint32_t byte_offset = 0;
+    uint32_t bit_offset = 0;
 
-    for (int i = 0; i < encoded_words_size; i++) {
+    for (uint32_t i = 0; i < encoded_words_size; i++) {
         huffman_encoded_word_t word = encoded_words[i];
         uint32_t code = word.code;
         uint8_t code_length = word.length;
-        code <<= (32 - code_length);
+        code <<= (32u - code_length);
         while (code_length) {
-            uint8_t bits_to_write = 8 - bit_offset > code_length ? code_length : (8 - bit_offset);
-            uint32_t mask = (1 << bits_to_write) - 1;
-            mask <<= (32 - bits_to_write);
+            uint32_t bits_to_write = 8 - bit_offset > code_length ? code_length : (8 - bit_offset);
+            uint32_t mask = (1u << bits_to_write) - 1u;
+            mask <<= (32u - bits_to_write);
             uint32_t bits = mask & code;
-            bits >>= (32 - (8 - bit_offset));
+            bits >>= (32u - (8u - bit_offset));
             buffer[byte_offset] |= bits;
             code <<= bits_to_write;
             code_length -= bits_to_write;
             cur += bits_to_write;
-            byte_offset = cur / 8;
-            bit_offset = cur - 8 * byte_offset;
+            byte_offset = cur / 8u;
+            bit_offset = cur - 8u * byte_offset;
         }
     }
     if (bit_offset > 0) {
-        uint8_t padding = (1 << (8 - bit_offset)) - 1;
+        uint8_t padding = (uint8_t) ((1u << (8u - bit_offset)) - 1u);
         buffer[byte_offset] |= padding;
     }
     return 0;
 }
+
 #endif
 
 /*
@@ -86,14 +91,14 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
         return -1;
     }
     int octets_size = hpack_utils_encoded_integer_size(integer, prefix);
-    uint8_t max_first_octet = (1 << prefix) - 1;
+    uint8_t max_first_octet = (uint8_t) ((1u << prefix) - 1u);
 
     if (integer < max_first_octet) {
-        encoded_integer[0] = (uint8_t)(integer << (8 - prefix));
-        encoded_integer[0] = (uint8_t)encoded_integer[0] >> (8 - prefix);
+        encoded_integer[0] = (uint8_t) (integer << (8u - prefix));
+        encoded_integer[0] = encoded_integer[0] >> (8u - prefix);
     }
     else {
-        uint8_t b0 = (1 << prefix) - 1;
+        uint8_t b0 = (uint8_t) ((1u << prefix) - 1u);
         integer = integer - b0;
         encoded_integer[0] = b0;
         int i = 1;
@@ -107,7 +112,7 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
             integer = integer / 128;
         }
 
-        uint8_t bi = (uint8_t)integer & 0xff;
+        uint8_t bi = (uint8_t) (integer & 0xffu);
         encoded_integer[i] = bi;
     }
     return octets_size;
@@ -124,8 +129,9 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
  */
 int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
-    int str_length = strlen(str);
-    int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7, encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
+    uint32_t str_length = (uint32_t) strlen(str);
+    int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7,
+                                                                  encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
 
     if (encoded_string_length_size < 0) {
         ERROR("Integer exceeds implementations limits");
@@ -136,13 +142,15 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
         DEBUG("String too big, does not fit on the encoded_string");
         return -2;
     }
-    for (int i = 0; i < str_length; i++) {                                          //TODO check if strlen is ok to use here
-        encoded_string[i + encoded_string_length_size] = str[i];
+    for (uint32_t i = 0;
+         i < str_length; i++) {                                          //TODO check if strlen is ok to use here
+        encoded_string[i + encoded_string_length_size] = (uint8_t)str[i];
     }
-    return str_length + encoded_string_length_size;
+    return (int)str_length + encoded_string_length_size;
 }
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
+
 /*
  * Function: hpack_encoder_encode_huffman_word
  * Encodes an Array of char using huffman tree compression
@@ -155,19 +163,21 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
  * Output:
  *      Returns the sum of all bit lengths of the encoded_words
  */
-uint32_t hpack_encoder_encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words)
+uint32_t hpack_encoder_encode_huffman_word(char *str, uint32_t str_length, huffman_encoded_word_t *encoded_words)
 {
     uint32_t encoded_word_bit_length = 0;
 
-    for (uint16_t i = 0; i < str_length; i++) {
+    for (uint32_t i = 0; i < str_length; i++) {
         hpack_huffman_encode(&encoded_words[i], (uint8_t)str[i]);
         encoded_word_bit_length += encoded_words[i].length;
     }
     return encoded_word_bit_length;
 }
+
 #endif
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
+
 /*
  * Function: hpack_encoder_encode_huffman_string
  * Encodes an Array of char using huffman tree compression
@@ -180,12 +190,13 @@ uint32_t hpack_encoder_encode_huffman_word(char *str, int str_length, huffman_en
  */
 int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
 {
-    uint32_t str_length = strlen(str); //TODO check if strlen is ok to use here
+    uint32_t str_length = (uint32_t) strlen(str); //TODO check if strlen is ok to use here
     huffman_encoded_word_t encoded_words[str_length];
 
     uint32_t encoded_word_bit_length = hpack_encoder_encode_huffman_word(str, str_length, encoded_words);
 
-    uint32_t encoded_word_byte_length = (encoded_word_bit_length % 8) ? (encoded_word_bit_length / 8) + 1 : (encoded_word_bit_length / 8);
+    uint32_t encoded_word_byte_length = (encoded_word_bit_length % 8) ? (encoded_word_bit_length / 8) + 1 : (
+        encoded_word_bit_length / 8);
     int encoded_word_length_size = hpack_encoder_encode_integer(encoded_word_byte_length, 7, encoded_string);
 
     if (encoded_word_length_size < 0) {
@@ -204,14 +215,15 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
     hpack_encoder_pack_encoded_words_to_bytes(encoded_words, str_length, encoded_buffer, encoded_word_byte_length);
 
     /*Set huffman bool*/
-    encoded_string[0] |= 128;
+    encoded_string[0] |= 128u;
 
     for (uint32_t i = 0; i < encoded_word_byte_length; i++) {
         encoded_string[i + encoded_word_length_size] = encoded_buffer[i];
     }
 
-    return encoded_word_byte_length + encoded_word_length_size;
+    return (int)encoded_word_byte_length + encoded_word_length_size;
 }
+
 #endif
 
 /*
@@ -263,7 +275,7 @@ void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *
         //make indexed header field
         DEBUG("Encoding an indexed header field");
         states->encoded_header.preamble = INDEXED_HEADER_FIELD;
-        states->encoded_header.index = index;
+        states->encoded_header.index = (uint32_t)index;
     }
     else {
         //check if the name of entry is already in the dynamic table
@@ -274,10 +286,10 @@ void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *
             states->encoded_header.index = 0;
         }
         else {
-            states->encoded_header.index = index;
+            states->encoded_header.index = (uint32_t)index;
         }
 
-        #if HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
         int8_t added = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, name_string, value_string);
         if (added < 0) {
             DEBUG("Couldn't add to dynamic table");
@@ -289,14 +301,12 @@ void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *
             DEBUG("Encoding a literal header field with incremental indexing");
             states->encoded_header.preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
         }
-        #else
+#else
         //No dynamic table, encode the string withouth index
         states->encoded_header.preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
         DEBUG("Encoding a literal header field never indexed");
-        #endif
+#endif
     }
-    return;
-
 }
 
 /*
@@ -310,7 +320,8 @@ void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *
  * Output:
  *      Returns the number of bytes written in encoded_buffer
  */
-int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *name_string, char *value_string, uint8_t *encoded_buffer)
+int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *name_string, char *value_string,
+                                uint8_t *encoded_buffer)
 {
 
     int pointer = 0;
@@ -374,7 +385,7 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
+int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string, uint8_t *encoded_buffer)
 {
     //this gets the info required to encode into the encoded_header, also decides which header type to use
     hpack_encoder_pack_header(states,
@@ -412,8 +423,8 @@ int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t ma
     encoded_buffer[0] |= preamble;
 
     return encoded_max_size_length;
-    #else
+#else
     DEBUG("Trying to resize dynamic table while in No dynamic table mode");
     return -2;
-    #endif
+#endif
 }

@@ -2,6 +2,7 @@
 // Created by Gabriel Norambuena on 18-07-19.
 //
 #include "hpack/huffman.h"
+
 #define LOG_MODULE LOG_MODULE_HPACK
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
@@ -71,10 +72,10 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
         return 0;
     }
 
-    for (int i = 1; i < NUMBER_OF_CODE_LENGTHS; i++) {
+    for (uint8_t i = 1; i < NUMBER_OF_CODE_LENGTHS; i++) {
         if (huffman_tree.L_inverse[sym] < huffman_tree.F[i]) {
             result->code = huffman_tree.L_inverse[sym] - huffman_tree.F[i - 1] + huffman_tree.C[i - 1];
-            result->length = i - 1;
+            result->length = (uint8_t)(i - 1u);
             return 0;
         }
     }
@@ -97,11 +98,11 @@ int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
     uint32_t code = encoded->code;
 
     for (uint8_t i = 5; i < h; i++) {
-        uint32_t offset = (1 << (h - i - 1));
+        uint32_t offset = (1u << (h - i - 1u));
         uint32_t upper_bound = ((uint32_t)huffman_tree.C[i + 1]) * offset;
         if (code < upper_bound) {
             length = i;
-            code >>= (h - i);
+            code >>= (uint8_t)(h - i);
             break;
         }
     }

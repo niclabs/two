@@ -8,8 +8,8 @@
 #include "hpack/utils.h"
 
 #ifdef INCLUDE_HUFFMAN_COMPRESSION
-extern int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint8_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
-extern uint32_t hpack_encoder_encode_huffman_word(char *str, int str_length, huffman_encoded_word_t *encoded_words);
+extern int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint32_t encoded_words_size, uint8_t *buffer, uint8_t buffer_size);
+extern uint32_t hpack_encoder_encode_huffman_word(char *str, uint32_t str_length, huffman_encoded_word_t *encoded_words);
 extern int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string);
 #endif
 extern int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string);

@@ -16,8 +16,7 @@ extern int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table);
 extern int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, uint32_t index);
 extern int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer);
 extern int16_t hpack_tables_dynamic_compare_string(hpack_dynamic_table_t *dynamic_table, uint16_t initial_position, char *buffer);
-extern int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer);
-
+extern int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, const char *ext_buffer);
 DEFINE_FFF_GLOBALS;
 
 void setUp(void)
