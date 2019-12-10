@@ -14,7 +14,7 @@
 #include "cbuf.h"                       // for cbuf
 #include "string.h"
 
-extern int update_settings_table(settings_payload_t *spl, uint8_t place, cbuf_t *buf_out, h2states_t *h2s);
+extern int update_settings_table(settings_payload_t *spl, uint8_t place, h2states_t *h2s);
 
 #define LOCAL_SETTINGS 0
 #define REMOTE_SETTINGS 1
@@ -33,7 +33,7 @@ FAKE_VALUE_FUNC(uint32_t, get_header_block_fragment_size, frame_header_t *, head
 FAKE_VALUE_FUNC(int, receive_header_block, uint8_t *, int, header_list_t *, hpack_states_t *);
 FAKE_VALUE_FUNC(uint32_t, headers_get_header_list_size, header_list_t *);
 FAKE_VALUE_FUNC(uint32_t, read_setting_from, h2states_t *, uint8_t, uint8_t);
-FAKE_VALUE_FUNC(int, send_goaway, uint32_t, cbuf_t *, h2states_t *);
+FAKE_VALUE_FUNC(int, send_goaway, uint32_t, h2states_t *);
 FAKE_VALUE_FUNC(int, send_ping, uint8_t *, int8_t, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, flow_control_receive_window_update, h2states_t *, uint32_t);
 FAKE_VALUE_FUNC(uint32_t, update_window_size, h2states_t*, uint32_t, uint8_t);
@@ -73,13 +73,12 @@ void test_handle_data_payload_no_flags(void)
 
     head.length = 10;
     data_payload_t dpl;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.data.size = 0;
     // Fake settings
     flow_control_receive_data_fake.return_val = 0;
     is_flag_set_fake.return_val = 0;
-    int rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    int rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, head.length, "Data size must be equal to header payload's length");
 }
@@ -90,7 +89,6 @@ void test_handle_data_payload_multi_data(void)
 
     head.length = 12;
     data_payload_t dpl;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.data.size = 0;
     // Fake settings
@@ -100,11 +98,11 @@ void test_handle_data_payload_multi_data(void)
     http_server_response_fake.return_val = 0;
     send_response_fake.return_val = 0;
     headers_get_fake.return_val = "value";
-    int rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    int rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
-    rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
-    rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(rc, 0, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(h2s.data.size, 3 * head.length, "Data size must be equal to 3 times payload's length");
 }
@@ -115,7 +113,6 @@ void test_handle_data_payload_errors(void)
 
     head.length = 12;
     data_payload_t dpl;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.data.size = 0;
     h2s.received_end_stream = 1;
@@ -130,13 +127,13 @@ void test_handle_data_payload_errors(void)
     SET_RETURN_SEQ(is_flag_set, flag_set_returns, 3);
     http_server_response_fake.return_val = -1;
     headers_get_fake.return_val = "value";
-    int rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    int rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
-    rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Method should return 0. No errors were set");
-    rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
-    rc = handle_data_payload(&head, &dpl, &bout, &h2s);
+    rc = handle_data_payload(&head, &dpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
 }
 
@@ -144,14 +141,13 @@ void test_handle_headers_payload_no_flags(void)
 {
     frame_header_t head;
     headers_payload_t hpl;
-    cbuf_t bout;
     h2states_t h2s;
 
     h2s.header_block_fragments_pointer = 0;
     // Set fake returns
     get_header_block_fragment_size_fake.return_val = 10;
     is_flag_set_fake.return_val = 0;
-    int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    int rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(10, h2s.header_block_fragments_pointer, "Pointer must be equal to 10");
 }
@@ -160,7 +156,6 @@ void test_handle_headers_payload_end_stream_flag(void)
 {
     frame_header_t head;
     headers_payload_t hpl;
-    cbuf_t bout;
     h2states_t h2s;
 
     h2s.header_block_fragments_pointer = 0;
@@ -168,7 +163,7 @@ void test_handle_headers_payload_end_stream_flag(void)
     get_header_block_fragment_size_fake.return_val = 10;
     int flag_set_returns[2] = { 1, 0 };
     SET_RETURN_SEQ(is_flag_set, flag_set_returns, 2);
-    int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    int rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(10, h2s.header_block_fragments_pointer, "Pointer must be equal to 10");
     TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_end_stream, "Received end stream must be equal to 1");
@@ -178,7 +173,6 @@ void test_handle_headers_payload_end_headers_flag(void)
 {
     frame_header_t head;
     headers_payload_t hpl;
-    cbuf_t bout;
     h2states_t h2s;
 
     h2s.header_block_fragments_pointer = 0;
@@ -190,7 +184,7 @@ void test_handle_headers_payload_end_headers_flag(void)
     receive_header_block_fake.return_val = 10;
     headers_get_header_list_size_fake.return_val = 10;
     read_setting_from_fake.return_val = 20;
-    int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    int rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be equal to 0");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.received_end_stream, "Received end stream must be 0");
@@ -200,7 +194,6 @@ void test_handle_headers_payload_end_stream_and_headers(void)
 {
     frame_header_t head;
     headers_payload_t hpl;
-    cbuf_t bout;
     h2states_t h2s;
 
     h2s.header_block_fragments_pointer = 0;
@@ -214,7 +207,7 @@ void test_handle_headers_payload_end_stream_and_headers(void)
     headers_get_fake.return_val = (char *)'a';
     http_server_response_fake.return_val = 0;
     send_response_fake.return_val = 0;
-    int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    int rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be equal to 0");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.received_end_stream, "Received end stream must be 0");
@@ -224,7 +217,6 @@ void test_handle_headers_payload_errors(void)
 {
     frame_header_t head;
     headers_payload_t hpl;
-    cbuf_t bout;
     h2states_t h2s;
 
     h2s.header_block_fragments_pointer = 0;
@@ -239,22 +231,22 @@ void test_handle_headers_payload_errors(void)
     char *headers_rets[2] = { NULL, "b" };
     SET_RETURN_SEQ(headers_get, headers_rets, 2);
     http_server_response_fake.return_val = -1;
-    int rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    int rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2 (HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT)");
-    rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2 (HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT)");
-    rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2 (HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT)");
-    rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2 (HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT)");
     //TODO: fix test_handle_headers_payload_errors
-    rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2 (HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT)");
-    rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Return code must be 22 (HTTP2_RC_CLOSE_CONNECTION)");
-    rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2 (HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT)");
-    rc = handle_headers_payload(&head, &hpl, &bout, &h2s);
+    rc = handle_headers_payload(&head, &hpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2 (HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT)");
 }
 
@@ -273,7 +265,6 @@ void test_update_settings_table(void)
     settings_payload_t spl;
     spl.pairs = pairs;
     spl.count = 4;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.remote_settings[0] = h2s.local_settings[0] = 1;
     h2s.remote_settings[1] = h2s.local_settings[1] = 1;
@@ -281,7 +272,7 @@ void test_update_settings_table(void)
     h2s.remote_settings[3] = h2s.local_settings[3] = 1;
     h2s.remote_settings[4] = h2s.local_settings[4] = 1;
     h2s.remote_settings[5] = h2s.local_settings[5] = 1;
-    int rc = update_settings_table(&spl, LOCAL_SETTINGS, &bout, &h2s);
+    int rc = update_settings_table(&spl, LOCAL_SETTINGS, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Method should return 0. No errors were set");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.local_settings[1], "Setting value was set to 0");
     TEST_ASSERT_EQUAL_MESSAGE(1024, h2s.local_settings[3], "Setting value was set to 1024");
@@ -310,7 +301,6 @@ void test_update_settings_table_errors(void)
     settings_payload_t spl3;
     spl3.pairs = pairs3;
     spl3.count = 1;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.remote_settings[0] = h2s.local_settings[0] = 1;
     h2s.remote_settings[1] = h2s.local_settings[1] = 1;
@@ -318,11 +308,11 @@ void test_update_settings_table_errors(void)
     h2s.remote_settings[3] = h2s.local_settings[3] = 1;
     h2s.remote_settings[4] = h2s.local_settings[4] = 1;
     h2s.remote_settings[5] = h2s.local_settings[5] = 1;
-    int rc = update_settings_table(&spl1, LOCAL_SETTINGS, &bout, &h2s);
+    int rc = update_settings_table(&spl1, LOCAL_SETTINGS, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
-    rc = update_settings_table(&spl2, LOCAL_SETTINGS, &bout, &h2s);
+    rc = update_settings_table(&spl2, LOCAL_SETTINGS, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
-    rc = update_settings_table(&spl3, LOCAL_SETTINGS, &bout, &h2s);
+    rc = update_settings_table(&spl3, LOCAL_SETTINGS, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Method should return 0. No errors were set");
 }
 
@@ -332,9 +322,8 @@ void test_handle_goaway_payload_error_received(void)
 
     gapl.last_stream_id = 15;
     gapl.error_code = 0x1; // Error code
-    cbuf_t bout;
     h2states_t h2s;
-    int rc = handle_goaway_payload(&gapl, &bout, &h2s);
+    int rc = handle_goaway_payload(&gapl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Return code must be 2 (HTTP2_RC_CLOSE_CONNECTION)");
 }
 
@@ -344,12 +333,11 @@ void test_handle_goaway_payload_no_error_stream_smaller(void)
 
     gapl.last_stream_id = 15;
     gapl.error_code = 0x0; // No error code
-    cbuf_t bout;
     h2states_t h2s;
     h2s.current_stream.stream_id = 12;
     h2s.current_stream.state = 2;
     send_goaway_fake.return_val = 0;
-    int rc = handle_goaway_payload(&gapl, &bout, &h2s);
+    int rc = handle_goaway_payload(&gapl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
     TEST_ASSERT_EQUAL_MESSAGE(2, h2s.current_stream.state, "Current stream must be closed.");
     TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_goaway, "GOAWAY was received.");
@@ -361,12 +349,11 @@ void test_handle_goaway_payload_no_error_stream_bigger(void)
 
     gapl.last_stream_id = 15;
     gapl.error_code = 0x0; // No error code
-    cbuf_t bout;
     h2states_t h2s;
     h2s.current_stream.stream_id = 16;
     h2s.current_stream.state = 2;
     send_goaway_fake.return_val = 0;
-    int rc = handle_goaway_payload(&gapl, &bout, &h2s);
+    int rc = handle_goaway_payload(&gapl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
     TEST_ASSERT_EQUAL_MESSAGE(4, h2s.current_stream.state, "Current stream must be closed.");
     TEST_ASSERT_EQUAL_MESSAGE(1, h2s.received_goaway, "GOAWAY was received.");
@@ -375,23 +362,21 @@ void test_handle_goaway_payload_no_error_stream_bigger(void)
 void test_handle_ping_payload_ack(void)
 {
     ping_payload_t ppl;
-    cbuf_t bout;
     h2states_t h2s;
 
     h2s.header.flags = 0x1;
-    int rc = handle_ping_payload(&ppl, &bout, &h2s);
+    int rc = handle_ping_payload(&ppl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
 }
 
 void test_handle_ping_payload_send(void)
 {
     ping_payload_t ppl;
-    cbuf_t bout;
     h2states_t h2s;
 
     h2s.header.flags = 0x0;
     send_ping_fake.return_val = 0;
-    int rc = handle_ping_payload(&ppl, &bout, &h2s);
+    int rc = handle_ping_payload(&ppl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
     TEST_ASSERT_MESSAGE(send_ping_fake.call_count == 1, "Send ping must be called once");
 }
@@ -402,11 +387,10 @@ void test_handle_continuation_payload_no_flags(void)
 
     header.length = 10;
     continuation_payload_t contpl;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.header_block_fragments_pointer = 5;
     is_flag_set_fake.return_val = 0;
-    int rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    int rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
 }
 
@@ -416,7 +400,6 @@ void test_handle_continuation_payload_end_headers(void)
 
     header.length = 10;
     continuation_payload_t contpl;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.header_block_fragments_pointer = 5;
     h2s.received_end_stream = 0;
@@ -424,7 +407,7 @@ void test_handle_continuation_payload_end_headers(void)
     receive_header_block_fake.return_val = 15;
     headers_get_header_list_size_fake.return_val = 15;
     read_setting_from_fake.return_val = 30;
-    int rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    int rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be 0, headers were read");
 }
@@ -435,7 +418,6 @@ void test_handle_continuation_payload_end_headers_end_stream(void)
 
     header.length = 10;
     continuation_payload_t contpl;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.header_block_fragments_pointer = 5;
     h2s.received_end_stream = 1;
@@ -445,7 +427,7 @@ void test_handle_continuation_payload_end_headers_end_stream(void)
     headers_get_fake.return_val = (char *)'a';
     http_server_response_fake.return_val = 0;
     send_response_fake.return_val = 0;
-    int rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    int rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
     TEST_ASSERT_EQUAL_MESSAGE(0, h2s.header_block_fragments_pointer, "Pointer must be 0, headers were read");
 }
@@ -457,7 +439,6 @@ void test_handle_continuation_errors(void)
     frame_header_t big_header; // First error, header length
     big_header.length = HTTP2_MAX_HBF_BUFFER;
     continuation_payload_t contpl;
-    cbuf_t bout;
     h2states_t h2s;
     h2s.header_block_fragments_pointer = 10;
     is_flag_set_fake.return_val = 1;
@@ -468,27 +449,27 @@ void test_handle_continuation_errors(void)
     char *headers_rets[2] = { NULL, "b" };
     SET_RETURN_SEQ(headers_get, headers_rets, 2);
     http_server_response_fake.return_val = -1;
-    int rc = handle_continuation_payload(&big_header, &contpl, &bout, &h2s);
+    int rc = handle_continuation_payload(&big_header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Header length error was forced");
-    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Buffer Copy error forced");
-    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Receive header block compression error forced");
-    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Receive header block internal error forced");
-    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Header block pointer is not equal to fragments received");
     h2s.header_block_fragments_pointer = 10;
     h2s.received_end_stream = 1;
-    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(2, rc, "Return code must be 2. Close connection was forced");
     h2s.header_block_fragments_pointer = 10;
     h2s.received_end_stream = 1;
-    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. Validate pseudo headers error was forced");
     h2s.header_block_fragments_pointer = 10;
     h2s.received_end_stream = 1;
-    rc = handle_continuation_payload(&header, &contpl, &bout, &h2s);
+    rc = handle_continuation_payload(&header, &contpl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(-2, rc, "Return code must be -2. http server response error forced");
 }
 
@@ -497,10 +478,9 @@ void test_handle_window_update_payload(void)
     window_update_payload_t wupl;
 
     wupl.window_size_increment = 20;
-    cbuf_t bout;
     h2states_t h2s;
     flow_control_receive_window_update_fake.return_val = 0;
-    int rc = handle_window_update_payload(&wupl, &bout, &h2s);
+    int rc = handle_window_update_payload(&wupl, &h2s);
     TEST_ASSERT_EQUAL_MESSAGE(0, rc, "Return code must be 0 (HTTP2_RC_NO_ERROR)");
     TEST_ASSERT_EQUAL_MESSAGE(1, flow_control_receive_window_update_fake.call_count, "Flow control must be called once");
 }

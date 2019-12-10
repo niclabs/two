@@ -13,6 +13,8 @@
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_len, cbuf_t *);
 FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, void *, int);
+FAKE_VALUE_FUNC(int, event_read, event_sock_t *, event_read_cb);
+FAKE_VALUE_FUNC(int, event_close, event_sock_t *, event_close_cb);
 FAKE_VOID_FUNC(hpack_init_states, hpack_states_t *, uint32_t);
 FAKE_VOID_FUNC(send_connection_error, cbuf_t *, uint32_t, h2states_t *);
 FAKE_VALUE_FUNC(callback_t, null_callback);
@@ -38,6 +40,8 @@ FAKE_VALUE_FUNC(int, handle_ping_payload, ping_payload_t *, cbuf_t *, h2states_t
 #define FFF_FAKES_LIST(FAKE)                        \
     FAKE(cbuf_len)                                  \
     FAKE(cbuf_pop)                                  \
+    FAKE(event_read)                                \
+    FAKE(event_close)                               \
     FAKE(hpack_init_states)                         \
     FAKE(send_connection_error)                     \
     FAKE(null_callback)                             \
@@ -82,16 +86,19 @@ int cbuf_pop_preface_fake(cbuf_t *cbuf, void *dst, int len)
 void test_http2_server_init_connection_good_preface(void)
 {
     // Initialize variable memory
-    cbuf_t cbuf_in;
-    cbuf_t cbuf_out;
+    event_sock_t client[1];
+    int status = EVENT_SOCK_OPENED;
     h2states_t state;
+    client->data = &state;
 
     // Set correct return value for http2 functions
     cbuf_len_fake.return_val = 24;
     cbuf_pop_fake.custom_fake = cbuf_pop_preface_fake;
 
     // Call function
-    http2_server_init_connection(&cbuf_in, &cbuf_out, &state);
+    http2_server_init_connection(client, status);
+
+    state = *((h2states_t*)client->data);
 
     TEST_ASSERT_EQUAL_MESSAGE(1, state.is_server, "On correct preface given http2_server_init_connection should initialize state memory as a server");
     TEST_ASSERT_EQUAL_MESSAGE(DEFAULT_MAX_FRAME_SIZE, state.remote_settings[4], "On correct preface given http2_server_init_connection should initialize base settings");
