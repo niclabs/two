@@ -102,13 +102,13 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
  * Output:
  *      0 if success, -1 if error
  */
-
+/*
     if (name_len > MAX_HEADER_NAME_LEN || value_len > MAX_HEADER_VALUE_LEN) {
         errno = EINVAL;
         ERROR("Invalid name/value of new header");
         return -1;
     }
-
+*/
     if (name_len + 1 > MAX_HEADER_BUFFER_SIZE || value_len + 1 > MAX_HEADER_BUFFER_SIZE) {
         errno = EINVAL;
         ERROR("Invalid name/value of new header");

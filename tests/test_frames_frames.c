@@ -37,7 +37,7 @@ FAKE_VALUE_FUNC(uint16_t, bytes_to_uint16, uint8_t *);
 FAKE_VALUE_FUNC(int, append_byte_arrays, uint8_t *, uint8_t *, uint8_t *, int, int);
 
 FAKE_VALUE_FUNC(int, encode, hpack_states_t *, char *, char *,  uint8_t *);
-FAKE_VALUE_FUNC(int, decode_header_block, hpack_states_t *, uint8_t *, uint8_t, header_list_t *);
+FAKE_VALUE_FUNC(int, decode_header_block, hpack_states_t *, uint8_t *, uint8_t, header_list_t *) int;
 
 // Headers functions
 FAKE_VALUE_FUNC(int, headers_count, header_list_t *);

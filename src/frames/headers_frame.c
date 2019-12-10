@@ -4,6 +4,7 @@
 #include "headers_frame.h"
 #include "http2/utils.h"
 #include "string.h"
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
 

@@ -8,6 +8,6 @@
 
 
 
-int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, header_list_t *headers);
+int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, int32_t header_block_size, header_list_t *headers);
 
 #endif //TWO_HPACK_DECODER_H

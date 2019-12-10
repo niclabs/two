@@ -6,9 +6,7 @@
 #include "hpack/utils.h"
 
 #include "config.h"
-
 #define LOG_MODULE LOG_MODULE_HPACK
-
 #include "logging.h"
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)

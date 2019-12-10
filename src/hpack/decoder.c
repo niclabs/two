@@ -3,6 +3,7 @@
 #include "hpack/decoder.h"
 #include "hpack/utils.h"
 #include "hpack/huffman.h"
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_HPACK
 #include "logging.h"
 
@@ -370,7 +371,7 @@ uint8_t get_huffman_bit(uint8_t num)
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size)
+int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, int32_t header_size)
 {
     int32_t pointer = 0;
 
@@ -446,7 +447,7 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
     pointer += encoded_header->value_length;
     /*Bytes read exceeded the header block size specified  at the beggining*/
     if (pointer > header_size) {
-        ERROR("Bytes read exceeded the header block size specified  at the beggining");
+        ERROR("Bytes read exceeded the header block size specified  at the beginning");
         return PROTOCOL_ERROR;
     }
     return pointer;
@@ -590,7 +591,7 @@ void init_hpack_encoded_header_t(hpack_encoded_header_t *encoded_header)
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, uint8_t header_block_size, header_list_t *headers)
+int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, int32_t header_block_size, header_list_t *headers)
 {
     int pointer = 0;
 
@@ -603,7 +604,7 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
 
         int bytes_read = hpack_decoder_parse_encoded_header(&states->encoded_header,
                                                             header_block + pointer,
-                                                            (uint8_t)(header_block_size - pointer));
+                                                            (int32_t)(header_block_size - pointer));
         DEBUG("Decoding a %d", states->encoded_header.preamble);
 
         if (bytes_read < 0) {

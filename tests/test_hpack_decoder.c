@@ -16,7 +16,7 @@ extern int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, u
 extern int32_t hpack_decoder_decode_non_huffman_string(char *str, const uint8_t *encoded_string, uint32_t str_length);
 extern int hpack_decoder_decode_indexed_header_field(hpack_states_t *states);
 extern int32_t hpack_decoder_decode_integer(const uint8_t *bytes, uint8_t prefix);
-extern int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, uint8_t header_size);
+extern int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_header, uint8_t *header_block, int32_t header_size);
 extern int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length);
 extern int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header);
 extern int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, const uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size);

@@ -1,5 +1,6 @@
 #include <stdint.h>     /* for int8_t */
 #include "hpack/utils.h"
+#include "config.h"
 #define LOG_MODULE LOG_MODULE_HPACK
 #include "logging.h"
 
