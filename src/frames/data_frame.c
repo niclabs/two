@@ -38,14 +38,11 @@ int data_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *
  */
 void create_data_frame(frame_header_t *frame_header, data_payload_t *data_payload, uint8_t *data, uint8_t *data_to_send, int length, uint32_t stream_id)
 {
-    uint8_t type = DATA_TYPE;
-    uint8_t flags = 0x0;
-
     //uint32_t length = length; //no padding, no dependency. fix if this is implemented
 
     frame_header->length = length;
-    frame_header->type = type;
-    frame_header->flags = flags;
+    frame_header->type = DATA_TYPE;
+    frame_header->flags = 0x0;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
     frame_header->callback_payload_to_bytes = data_payload_to_bytes;

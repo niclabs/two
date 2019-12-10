@@ -53,7 +53,7 @@ int settings_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8
             byte_array[i * 6 + j] = setting_bytes[j];
         }
     }
-    return 6 * count;
+    return 6 * (int32_t) count;
 }
 
 /*

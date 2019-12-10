@@ -32,13 +32,9 @@ int continuation_payload_to_bytes(frame_header_t *frame_header, void *payload, u
  */
 void create_continuation_frame(uint8_t *headers_block, int headers_block_size, uint32_t stream_id, frame_header_t *frame_header, continuation_payload_t *continuation_payload, uint8_t *header_block_fragment)
 {
-    uint8_t type = CONTINUATION_TYPE;
-    uint8_t flags = 0x0;
-    uint8_t length = headers_block_size; //no padding, no dependency. fix if this is implemented
-
-    frame_header->length = length;
-    frame_header->type = type;
-    frame_header->flags = flags;
+    frame_header->length = headers_block_size;
+    frame_header->type = CONTINUATION_TYPE;
+    frame_header->flags = 0x0;
     frame_header->stream_id = stream_id;
     frame_header->reserved = 0;
     frame_header->callback_payload_to_bytes = continuation_payload_to_bytes;

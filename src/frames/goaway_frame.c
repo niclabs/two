@@ -3,7 +3,6 @@
 //
 
 #include "goaway_frame.h"
-#include "http2/utils.h"
 #include "utils.h"
 #include "string.h"
 #define LOG_MODULE LOG_MODULE_FRAME

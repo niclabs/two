@@ -28,7 +28,7 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
     for (int i = 0; i < 4; i++) {
         byte_array[5 + i] = stream_id_bytes[i];                     //stream_id 31
     }
-    byte_array[5] = byte_array[5] | (frame_header->reserved << 7);  // reserved 1
+    byte_array[5] = byte_array[5] | (frame_header->reserved << (uint8_t) 7);  // reserved 1
     return 9;
 }
 
@@ -42,13 +42,7 @@ frames_error_code_t check_frame_errors(frame_header_t *frame_header)
     uint32_t stream_id = frame_header->stream_id;
 
     switch (type) {
-        case DATA_TYPE: {
-            if (stream_id == 0x0) {
-                ERROR("stream_id of DATA FRAME is 0, PROTOCOL_ERROR");
-                return FRAMES_PROTOCOL_ERROR;
-            }
-            return FRAMES_NO_ERROR;
-        }
+        case DATA_TYPE:
         case HEADERS_TYPE: {
             if (stream_id == 0x0) {
                 ERROR("stream_id of HEADERS FRAME is 0, PROTOCOL_ERROR");
@@ -92,7 +86,7 @@ frames_error_code_t check_frame_errors(frame_header_t *frame_header)
         }
         case PRIORITY_TYPE: //NOT IMPLEMENTED YET
         case PUSH_PROMISE_TYPE:
-            return -1;
+            return FRAMES_FRAME_NOT_IMPLEMENTED_ERROR;
         case GOAWAY_TYPE: {
             if (length < 8) {
                 ERROR("GOAWAY frame with length < 8, %u", length);
@@ -193,7 +187,7 @@ int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hp
 
     headers_get_all(headers_out, headers_array);
 
-    for (uint8_t i = 0; i < headers_count(headers_out); i++) {
+    for (uint32_t i = 0; i < headers_count(headers_out); i++) {
         int rc = encode(hpack_states, headers_array[i].name, headers_array[i].value, compressed_headers + pointer);
         pointer += rc;
     }
@@ -226,10 +220,10 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
         return -1;
     }
     frame_header->length = bytes_to_uint32_24(byte_array);
-    frame_header->type = (uint8_t)(byte_array[3]);
+    frame_header->type = (frame_type_t)(byte_array[3]);
     frame_header->flags = (uint8_t)(byte_array[4]);
     frame_header->stream_id = bytes_to_uint32_31(byte_array + 5);
-    frame_header->reserved = (uint8_t)((byte_array[5]) >> 7);
+    frame_header->reserved = (uint8_t)((byte_array[5]) >> (uint8_t) 7);
 
     int errors = check_frame_errors(frame_header);
 
