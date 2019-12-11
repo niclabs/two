@@ -17,7 +17,6 @@ FAKE_VALUE_FUNC(int, event_read, event_sock_t *, event_read_cb);
 FAKE_VALUE_FUNC(int, event_close, event_sock_t *, event_close_cb);
 FAKE_VOID_FUNC(hpack_init_states, hpack_states_t *, uint32_t);
 FAKE_VOID_FUNC(send_connection_error, cbuf_t *, uint32_t, h2states_t *);
-FAKE_VALUE_FUNC(callback_t, null_callback);
 FAKE_VOID_FUNC(headers_init, header_list_t *);
 FAKE_VALUE_FUNC(int, send_local_settings, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, frame_header_from_bytes, uint8_t *, int, frame_header_t *);
@@ -44,7 +43,6 @@ FAKE_VALUE_FUNC(int, handle_ping_payload, ping_payload_t *, cbuf_t *, h2states_t
     FAKE(event_close)                               \
     FAKE(hpack_init_states)                         \
     FAKE(send_connection_error)                     \
-    FAKE(null_callback)                             \
     FAKE(headers_init)                              \
     FAKE(send_local_settings)                       \
     FAKE(frame_header_from_bytes)                   \

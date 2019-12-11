@@ -44,15 +44,3 @@ uint32_t read_setting_from(h2states_t *st, uint8_t place, uint8_t param){
     return st->remote_settings[--param];
   }
 }
-
-
-
-
-/*
- *
- *
- */
-callback_t null_callback(void){
-  callback_t null_ret = {NULL, NULL};
-  return null_ret;
-}

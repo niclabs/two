@@ -2,7 +2,7 @@
 #define NET_H
 
 #include <stdio.h>
-#include "config.h"
+#include "cbuf.h"
 
 /*
 * Amount of clients.
@@ -21,6 +21,18 @@ typedef enum
     NET_READ_ERROR = -2,
     NET_WRITE_ERROR = -3,
 } net_return_code_t;
+
+/*
+* Signature of a callback, wrapped in a stuct
+*
+* buf_in:       circular buffer, net writes into it
+* buf_out:      circular buffer, net reads from it
+* state:        net allocates memory for this, but doesn't touch it. inits to 0
+*/
+typedef struct CALLBACK {
+  struct CALLBACK (* func)(cbuf_t* buf_in, cbuf_t* buf_out, void* state);
+  void* debug_info; // just in case
+} callback_t;
 
 /*
 * Main loop of a server.
