@@ -188,7 +188,7 @@ int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hp
 
     headers_get_all(headers_out, headers_array);
 
-    for (uint32_t i = 0; i < headers_count(headers_out); i++) {
+    for (int32_t i = 0; i < headers_count(headers_out); i++) {
         int rc = encode(hpack_states, headers_array[i].name, headers_array[i].value, compressed_headers + pointer);
         pointer += rc;
     }
