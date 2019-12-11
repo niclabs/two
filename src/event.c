@@ -612,6 +612,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
 
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
+    assert(size < EVENT_MAX_BUF_SIZE);
 
     // see if there is already a write handler set
     event_handler_t *handler = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
