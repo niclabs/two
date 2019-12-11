@@ -174,6 +174,9 @@ void event_read_stop(event_sock_t *sock);
 // written
 int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
 
+// Remove the read callback and set a write callback
+int event_read_stop_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
+
 // Close the socket
 // will notify the callback after all write operations are finished
 int event_close(event_sock_t *sock, event_close_cb cb);

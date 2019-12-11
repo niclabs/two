@@ -643,6 +643,11 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     return to_write;
 }
 
+int event_read_stop_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb) {
+    event_read_stop(sock);
+    return event_write(sock, size, bytes, cb);
+}
+
 int event_accept(event_sock_t *server, event_sock_t *client)
 {
     assert(server != NULL && client != NULL);
