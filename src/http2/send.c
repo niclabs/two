@@ -289,7 +289,7 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
     DEBUG("Sending GOAWAY, error code: %u", error_code);
 
     if (rc != bytes_size) {
-        ERROR("Error writting goaway frame. INTERNAL ERROR");
+        ERROR("Error writing goaway frame. INTERNAL ERROR");
         //TODO shutdown connection
         return HTTP2_RC_ERROR;
     }
