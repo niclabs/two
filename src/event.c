@@ -169,15 +169,17 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
 
 void event_finish_write(event_sock_t *sock, event_handler_t *handler, int status)
 {
-    if (handler == NULL || handler->event.write.cb == NULL) {
+    if (handler == NULL) {
         return;
     }
 
     // remove write handler from list
     LIST_DELETE(event_handler_t, sock->handlers, handler);
 
-    // notify of write
-    handler->event.write.cb(sock, status);
+    // notify of write if a handler is available
+    if (handler->event.write.cb != NULL) {
+        handler->event.write.cb(sock, status);
+    }
 
     // move handler to loop unused list
     LIST_PUSH(handler, sock->loop->unused_handlers);
@@ -186,9 +188,6 @@ void event_finish_write(event_sock_t *sock, event_handler_t *handler, int status
 void event_do_write(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler != NULL) {
-        // if this happens therwritee is a problem with the implementation
-        assert(handler->event.write.cb != NULL);
-
         // attempt to write remaining bytes
 #ifdef CONTIKI
         // do nothing if already sending
