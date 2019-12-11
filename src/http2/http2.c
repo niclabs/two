@@ -150,6 +150,11 @@ callback_t receive_header(cbuf_t *buf_in, cbuf_t *buf_out, void *state)
     h2s->header = header;
 
     if (rc == FRAMES_FRAME_NOT_FOUND_ERROR) {
+        if (h2s->waiting_for_end_headers_flag) {
+            ERROR("Unknown/extension frame type in the middle of a header block. PROTOCOL_ERROR");
+            send_connection_error(buf_out, HTTP2_PROTOCOL_ERROR, h2s);
+            return null_callback();
+        }
         callback_t ret = { receive_payload, NULL };
         return ret;
     }
