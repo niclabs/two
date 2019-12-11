@@ -31,8 +31,13 @@ int two_server_start(unsigned int port);
  *
  * Attempting to define a malformed path, or a path for an unsupported method
  * will result in an error return
+ * 
+ * @param   method      HTTP method for the resource
+ * @param   path        Path string, as described above
+ * @param   handler     Callback handler
  *
- * @return 0 if ok, -1 if error
+ * @return  0           if ok 
+ * @return  -1          if error
  */
 int two_register_resource(char *method, char *path, http_resource_handler_t handler);
 
