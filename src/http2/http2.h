@@ -6,5 +6,5 @@
 #include "event.h"
 
 void http2_server_init_connection(event_sock_t *client, int status);
-
+void http2_on_read_continue(event_sock_t *client, int status);
 #endif

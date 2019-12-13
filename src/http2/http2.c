@@ -40,6 +40,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     h2s->waiting_for_end_headers_flag = 0;
     h2s->waiting_for_HEADERS_frame = 0;
     h2s->received_end_stream = 0;
+    h2s->write_callback_is_set = 0;
     h2s->remote_window.connection_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->remote_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->local_window.connection_window = DEFAULT_INITIAL_WINDOW_SIZE;
@@ -72,6 +73,12 @@ void http2_server_init_connection(event_sock_t *client, int status)
     event_read(client, exchange_prefaces);
 }
 
+void http2_on_read_continue(event_sock_t *client, int status)
+{
+    (void)status;
+    event_read(client, receive_header);
+}
+
 int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
 {
     // Cast h2states from state
@@ -83,12 +90,10 @@ int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
         return bytes_read;
     }
 
-    char preface[25];
-    memcpy(preface, bytes, 24);
     bytes_read = 24;
 
-    if (strncmp(preface, "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", 24) != 0) {
-        ERROR("Bad preface (%s) received from client", preface);
+    if (strncmp((char*)bytes, "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", 24) != 0) {
+        ERROR("Bad preface (%.5s) received from client", bytes);
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         event_close(h2s->socket, clean_h2s);
         DEBUG("http2_server_init_connection returning null callback");
@@ -107,7 +112,6 @@ int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
     DEBUG("Local settings sent. http2_server_init_connection returning receive_header callback");
 
     // If no errors were found, http2 is ready to receive frames
-    event_read(client, receive_header);
     return bytes_read;
 }
 
@@ -115,7 +119,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
 {
     // Cast h2states from state
     h2states_t *h2s = (h2states_t *)client->data;
-
+    h2s->write_callback_is_set = 0;
     int bytes_read = 0;
 
     // Wait until header length is received
@@ -187,18 +191,20 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     rc = check_incoming_condition(h2s);
     if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT || rc == HTTP2_RC_ERROR) {
         DEBUG("check conditions for incoming headers returned error");
+        event_close(client, clean_h2s);
         return bytes_read;
     }
     else if (rc == HTTP2_RC_ACK_RECEIVED) {
         event_read(client, receive_header);
         DEBUG("incoming_condition returned HTTP2_RC_ACK_RECEIVED");
         DEBUG("http2_receive_header returning receive_header callback");
-        event_close(client, clean_h2s);
         return bytes_read;
     }
     DEBUG("http2_receive_header returning receive_payload callback");
     
-    event_read(client, receive_payload);
+    if (!h2s->write_callback_is_set) {
+        event_read(client, receive_payload);
+    }
     return bytes_read;
 }
 
@@ -215,6 +221,8 @@ int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
         return bytes_read;
     }
 
+    bytes_read = h2s->header.length;
+
     // Process payload
     int rc = handle_payload(bytes, h2s);
     if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT || rc == HTTP2_RC_ERROR || rc == HTTP2_RC_CLOSE_CONNECTION) {
@@ -225,7 +233,9 @@ int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
 
     // Wait for next header
     DEBUG("http2_receive_payload returning receive_header callback");
-    event_read(client, receive_header);
+    if (!h2s->write_callback_is_set) {
+        event_read(client, receive_header);
+    }
     return bytes_read;
 }
 

@@ -18,6 +18,24 @@ static event_loop_t loop;
 static event_sock_t *server;
 
 static h2states_t http2_client_list[TWO_MAX_CLIENTS];
+int n_clients = 0;
+
+void two_on_new_connection(event_sock_t *server, int status)
+{
+    (void) status;
+    INFO("NEW CONNECTION!")
+    event_sock_t * client = event_sock_create(server->loop);
+    client->data = http2_client_list + (n_clients%TWO_MAX_CLIENTS);
+    
+    //TODO: make circular and check number of clients
+    n_clients++;
+    if (event_accept(server, client) == 0) {
+        http2_server_init_connection(client, status);
+    }
+    else {
+        ; //event_close(client, on_client_close);
+    }
+}
 
 int two_server_start(unsigned int port)
 {
@@ -26,7 +44,7 @@ int two_server_start(unsigned int port)
     event_loop_init(&loop);
     server = event_sock_create(&loop);
 
-    int r = event_listen(server, port, http2_server_init_connection);
+    int r = event_listen(server, port, two_on_new_connection);
 
     INFO("Starting http/2 server in port 8888");
     if (r < 0) {

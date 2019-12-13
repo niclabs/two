@@ -108,6 +108,7 @@ typedef struct HTTP2_STATES {
     uint8_t waiting_for_end_headers_flag;       //bool
     uint8_t waiting_for_HEADERS_frame;
     uint8_t received_end_stream;
+    uint8_t write_callback_is_set;
     h2_flow_control_window_t remote_window;
     h2_flow_control_window_t local_window;
     uint8_t sent_goaway;

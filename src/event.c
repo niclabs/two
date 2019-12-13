@@ -561,7 +561,7 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     assert(sock != NULL);
     assert(sock->loop != NULL);
     assert(cb != NULL);
-
+    DEBUG("FUCKING DOING A EVENT READDD!!!!");
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
@@ -609,7 +609,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
-
+    DEBUG("FUCKING DOING A EVENT WRITE!!!!");
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
     assert(size < EVENT_MAX_BUF_SIZE);
