@@ -122,9 +122,14 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     h2s->write_callback_is_set = 0;
     int bytes_read = 0;
 
+    if (size < 0) {
+        event_close(client, clean_h2s);
+        return 0;
+    }
+
     // Wait until header length is received
     if (size < 9) {
-        DEBUG("http2_receive_header didn't receive anough bytes");
+        DEBUG("http2_receive_header didn't receive anough bytes, received %d out of 9", size);
         return bytes_read;
     }
 

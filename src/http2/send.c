@@ -96,7 +96,12 @@ int send_data(uint8_t end_stream, h2states_t *h2s)
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     INFO("Sending DATA");
-    int rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue); 
+    int rc;
+    if(end_stream){
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+    } else {
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
+    }
     h2s->write_callback_is_set = 1;
     if (rc != bytes_size) {
         ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
@@ -446,7 +451,12 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     frame.frame_header = &frame_header;
     frame.payload = (void *)&continuation_payload;
     int bytes_size = frame_to_bytes(&frame, buff_read);
-    rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
+
+    if(end_headers){
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
+    } else {
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, NULL);
+    }
     h2s->write_callback_is_set = 1;
     INFO("Sending continuation");
     if (rc != bytes_size) {
@@ -490,7 +500,11 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
     frame.frame_header = &frame_header;
     frame.payload = (void *)&headers_payload;
     int bytes_size = frame_to_bytes(&frame, buff_read);
-    rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
+    if(end_headers && end_stream){
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
+    } else {
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, NULL);
+    }
     h2s->write_callback_is_set = 1;
     INFO("Sending headers");
     if (rc != bytes_size) {

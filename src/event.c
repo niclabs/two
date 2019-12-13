@@ -258,7 +258,7 @@ void event_loop_poll(event_loop_t *loop)
 
         event_sock_t *sock;
         event_handler_t *rh, *wh;
-        if (read || write || FD_ISSET(i, &loop->active_fds)) {
+        if (FD_ISSET(i, &read_fds) || FD_ISSET(i, &write_fds) || FD_ISSET(i, &loop->active_fds)) {
             // find the handle on the polling list
             sock = event_socket_find(loop->polling, i);
 
@@ -561,7 +561,6 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     assert(sock != NULL);
     assert(sock->loop != NULL);
     assert(cb != NULL);
-    DEBUG("FUCKING DOING A EVENT READDD!!!!");
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
@@ -609,19 +608,18 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
-    DEBUG("FUCKING DOING A EVENT WRITE!!!!");
+    
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
     assert(size < EVENT_MAX_BUF_SIZE);
 
-    // see if there is already a write handler set
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
-    assert(handler == NULL);
-
     // find free handler
     event_loop_t *loop = sock->loop;
-    handler = event_handler_find_free(loop, sock);
-    assert(handler != NULL);
+    event_handler_t * handler = event_handler_find_free(loop, sock);
+    if (handler == NULL) { 
+        ERROR("No more available handlers for event_write operation. Increase EVENT_MAX_HANDLERS macro"); // TODO: Borrar esta linea
+    }
+    assert(handler != NULL); // no more handlers available
 
     // set handler event
     handler->type = EVENT_WRITE_TYPE;
