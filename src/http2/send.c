@@ -225,7 +225,11 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
     frame.payload = (void *)&goaway_pl;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+    if(error_code != 0 || h2s->received_goaway){
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
+    } else {
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+    }
     h2s->write_callback_is_set = 1;
     DEBUG("Sending GOAWAY, error code: %u", error_code);
 
