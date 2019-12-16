@@ -86,6 +86,11 @@ int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
 
     int bytes_read = 0;
 
+    if (size <= 0) {
+        event_close(client, clean_h2s);
+        return bytes_read;
+    }
+
     if (size < 24) {
         return bytes_read;
     }
@@ -122,9 +127,9 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     h2s->write_callback_is_set = 0;
     int bytes_read = 0;
 
-    if (size < 0) {
+    if (size <= 0) {
         event_close(client, clean_h2s);
-        return 0;
+        return bytes_read;
     }
 
     // Wait until header length is received
@@ -219,6 +224,11 @@ int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
     h2states_t *h2s = (h2states_t *)client->data;
 
     int bytes_read = 0;
+
+    if (size <= 0) {
+        event_close(client, clean_h2s);
+        return bytes_read;
+    }
 
     // Wait until all payload data has been received
     if (size < h2s->header.length) {
