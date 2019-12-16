@@ -128,7 +128,7 @@ void event_do_connect(event_sock_t *sock, event_handler_t *handler)
 void event_do_read(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler != NULL && handler->event.read.cb != NULL) {
-        int readlen = EVENT_MAX_BUF_SIZE - cbuf_len(&handler->event.read.buf);
+        int readlen = EVENT_MAX_BUF_READ_SIZE - cbuf_len(&handler->event.read.buf);
         uint8_t buf[readlen];
 
         // perform read in non blocking manner
@@ -143,7 +143,15 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
             // should we call finish_write here?
             return;
         }
+
+        if (count == 0) {
+            handler->event.read.cb(sock, count, NULL);
+
+            // should we call finish_write here?
+            return;
+        }
 #endif
+        
         // push data into buffer
         cbuf_push(&handler->event.read.buf, buf, count);
         int buflen = cbuf_len(&handler->event.read.buf);
@@ -319,7 +327,7 @@ void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
-void event_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
+void event_handle_rexmit(event_1sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
         return;
@@ -582,7 +590,7 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     memset(&handler->event.read, 0, sizeof(event_read_t));
 
     // initialize read buffer
-    cbuf_init(&handler->event.read.buf, handler->event.read.buf_data, EVENT_MAX_BUF_SIZE);
+    cbuf_init(&handler->event.read.buf, handler->event.read.buf_data, EVENT_MAX_BUF_READ_SIZE);
 
     // set write callback
     handler->event.read.cb = cb;
@@ -611,7 +619,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
-    assert(size < EVENT_MAX_BUF_SIZE);
+    assert(size < EVENT_MAX_BUF_WRITE_SIZE);
 
     // find free handler
     event_loop_t *loop = sock->loop;
@@ -626,7 +634,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     memset(&handler->event.write, 0, sizeof(event_write_t));
 
     // initialize write buffer
-    cbuf_init(&handler->event.write.buf, handler->event.write.buf_data, EVENT_MAX_BUF_SIZE);
+    cbuf_init(&handler->event.write.buf, handler->event.write.buf_data, EVENT_MAX_BUF_WRITE_SIZE);
 
     // set write callback
     handler->event.write.cb = cb;

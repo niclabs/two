@@ -32,10 +32,16 @@
 #define EVENT_MAX_HANDLERS (CONF_EVENT_MAX_HANDLERS)
 #endif
 
-#ifndef CONF_EVENT_MAX_BUF_SIZE
-#define EVENT_MAX_BUF_SIZE 128
+#ifndef CONF_EVENT_MAX_BUF_READ_SIZE
+#define EVENT_MAX_BUF_READ_SIZE 4096
 #else
-#define EVENT_MAX_BUF_SIZE (CONF_EVENT_MAX_BUF_SIZE)
+#define EVENT_MAX_BUF_READ_SIZE (CONF_EVENT_MAX_BUF_READ_SIZE)
+#endif
+
+#ifndef CONF_EVENT_MAX_BUF_WRITE_SIZE
+#define EVENT_MAX_BUF_WRITE_SIZE 64
+#else
+#define EVENT_MAX_BUF_WRITE_SIZE (CONF_EVENT_MAX_BUF_WRITE_SIZE)
 #endif
 
 struct event;
@@ -77,14 +83,14 @@ typedef struct event_connection {
 
 typedef struct event_read {
     // type variables
-    uint8_t buf_data[EVENT_MAX_BUF_SIZE];
+    uint8_t buf_data[EVENT_MAX_BUF_READ_SIZE];
     cbuf_t buf;
     event_read_cb cb;
 } event_read_t;
 
 typedef struct event_write {
     // type variables
-    uint8_t buf_data[EVENT_MAX_BUF_SIZE];
+    uint8_t buf_data[EVENT_MAX_BUF_WRITE_SIZE];
     cbuf_t buf;
     event_write_cb cb;
 #ifdef CONTIKI
