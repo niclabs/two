@@ -7,7 +7,7 @@
 
 #include "event.h"
 #include "headers.h"
-#include "frames.h"
+#include "frames/frames.h"
 
 /*Macros for table update*/
 // TODO: rename LOCAL,REMOTE constants to LOCAL_SETTINGS, REMOTE_SETTINGS

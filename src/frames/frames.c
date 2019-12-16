@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "frames.h"
 #include "utils.h"
-#include "hpack.h"
+#include "hpack/hpack.h"
 #include "config.h"
 
 #define LOG_MODULE LOG_MODULE_FRAME
