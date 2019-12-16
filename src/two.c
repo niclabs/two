@@ -16,9 +16,18 @@
 // static variables
 static event_loop_t loop;
 static event_sock_t *server;
+static two_close_cb global_close_cb;
 
 static h2states_t http2_client_list[TWO_MAX_CLIENTS];
 int n_clients = 0;
+
+void two_on_server_close(event_sock_t * server) {
+    (void)server;
+    INFO("Server closed");
+    if (global_close_cb != NULL) {
+        global_close_cb();
+    }
+}
 
 void two_on_new_connection(event_sock_t *server, int status)
 {
@@ -56,6 +65,11 @@ int two_server_start(unsigned int port)
     return 0;
 }
 
+void two_server_stop(two_close_cb close_cb)
+{
+    global_close_cb = close_cb;
+    event_close(server, two_on_server_close);
+}
 
 int two_register_resource(char *method, char *path, http_resource_handler_t handler)
 {

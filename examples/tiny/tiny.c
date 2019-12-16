@@ -322,7 +322,7 @@ int read_settings_payload(event_sock_t *client, int size, uint8_t *buf)
 
         return ctx->header.length;
     }
-    else if (size < 0) {
+    else if (size <= 0) {
         INFO("Remote client closed");
         event_close(client, on_client_close);
     }
@@ -374,7 +374,7 @@ int read_header(event_sock_t *client, int size, uint8_t *buf)
 
         return HTTP2_HEADER_SIZE;
     }
-    else if (size < 0) {
+    else if (size <= 0) {
         INFO("Remote client closed");
         event_close(client, on_client_close);
     }

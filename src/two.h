@@ -1,11 +1,7 @@
 #ifndef TWO_H
 #define TWO_H
 
-#include <stdint.h>
-
 #include "resource_handler.h"
-
-
 
 /*
  * Given a port number, this function start a server
@@ -40,6 +36,20 @@ int two_server_start(unsigned int port);
  * @return  -1          if error
  */
 int two_register_resource(char *method, char *path, http_resource_handler_t handler);
+
+
+/**
+ * Callback to be called on  server close
+ */
+typedef void (*two_close_cb)();
+
+/**
+ * Stop the server as soon as possible
+ *
+ * This only stops the server from receiving more clients, it does not disconnect
+ * already connected clients
+ */
+void two_server_stop(two_close_cb close_cb);
 
 
 #endif /* TWO_H */
