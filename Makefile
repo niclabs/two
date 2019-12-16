@@ -46,6 +46,7 @@ $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 			echo "FAIL"; \
 			echo "  Server output:"; cat server.log | sed "s/^/    /" ; \
 		fi; \
+		sleep 0.3; \
 		echo "$$TOTAL $$FAILURES" > summary.txt; \
 		rm server.pid server.log
 
