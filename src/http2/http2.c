@@ -87,6 +87,7 @@ int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
     int bytes_read = 0;
 
     if (size <= 0) {
+        INFO("Client's socket disconnected");
         event_close(client, clean_h2s);
         return bytes_read;
     }
@@ -128,6 +129,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     int bytes_read = 0;
 
     if (size <= 0) {
+        INFO("Client's socket disconnected");
         event_close(client, clean_h2s);
         return bytes_read;
     }
@@ -226,6 +228,7 @@ int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
     int bytes_read = 0;
 
     if (size <= 0) {
+        INFO("Client's socket disconnected");
         event_close(client, clean_h2s);
         return bytes_read;
     }
