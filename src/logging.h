@@ -31,6 +31,7 @@
 // Log modules
 #define LOG_MODULE_SOCK    SOCK
 #define LOG_MODULE_NET     NET
+#define LOG_MODULE_EVENT     EVENT
 #define LOG_MODULE_HTTP2   HTTP2
 #define LOG_MODULE_HTTP    HTTP
 #define LOG_MODULE_FRAME   FRAME
@@ -42,6 +43,10 @@
 
 #ifndef LOG_LEVEL_NET
 #define LOG_LEVEL_NET (LOG_LEVEL_OFF)
+#endif
+
+#ifndef LOG_LEVEL_EVENT
+#define LOG_LEVEL_EVENT (LOG_LEVEL_OFF)
 #endif
 
 #ifndef LOG_LEVEL_HTTP2

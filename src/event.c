@@ -14,7 +14,7 @@
 #include "event.h"
 
 #define LOG_MODULE EVENT
-#define LOG_LEVEL_EVENT LOG_LEVEL_DEBUG
+
 #include "logging.h"
 
 #ifdef CONTIKI
