@@ -235,7 +235,7 @@ int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
 
     // Wait until all payload data has been received
     if (size < h2s->header.length) {
-        DEBUG("http2_receive_payload didn't receive anough bytes");
+        DEBUG("http2_receive_payload didn't receive enough bytes, received %d out of %d", size, h2s->header.length);
         return bytes_read;
     }
 
