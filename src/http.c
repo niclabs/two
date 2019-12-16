@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <strings.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "http.h"
 #include "resource_handler.h"
