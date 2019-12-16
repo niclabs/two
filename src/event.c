@@ -327,7 +327,7 @@ void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
-void event_handle_rexmit(event_1sock_t *sock, event_handler_t *handler)
+void event_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
         return;
