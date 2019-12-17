@@ -709,8 +709,6 @@ int event_close(event_sock_t *sock, event_close_cb cb)
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
-    assert(sock->state == EVENT_SOCK_CONNECTED || \
-           sock->state == EVENT_SOCK_LISTENING);
     assert(cb != NULL);
 
     // set sock state and callback
