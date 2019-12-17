@@ -79,7 +79,7 @@ PROCESS(event_loop_process, "Event loop process");
                 res = curr;                     \
                 break;                          \
             }                                   \
-            LIST_NEXT(elem);                    \
+            LIST_NEXT(curr);                    \
         }                                       \
         res;                                    \
     });
