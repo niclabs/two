@@ -70,9 +70,14 @@ int decrease_window_available(h2_flow_control_window_t *flow_control_window, uin
  */
 int flow_control_receive_data(h2states_t *h2s, uint32_t length)
 {
-    uint32_t window_available = get_window_available_size(h2s->remote_window);
+    int window_available = get_window_available_size(h2s->local_window);
 
-    if (length > window_available) {
+    if (window_available < 0) {
+        DEBUG("Local available window is negative. No data can be processed");
+        return HTTP2_RC_ERROR;
+    }
+
+    if (length > (uint32_t)window_available) {
         ERROR("Available window is smaller than data received. FLOW_CONTROL_ERROR");
         return HTTP2_RC_ERROR;
     }
