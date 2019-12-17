@@ -215,7 +215,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
         return bytes_read;
     }
     DEBUG("http2_receive_header returning receive_payload callback");
-    
+
     if (!h2s->write_callback_is_set) {
         event_read(client, receive_payload);
     }
@@ -448,7 +448,7 @@ int handle_payload(uint8_t *buff_read, h2states_t *h2s)
             }
             rc = handle_goaway_payload(&goaway_pl, h2s);
             if (rc == HTTP2_RC_CLOSE_CONNECTION) {
-                ERROR("Received GOAWAY. Close Connection");
+                INFO("Received GOAWAY. Close Connection");
                 return rc;
             }
             else if (rc == HTTP2_RC_ERROR){

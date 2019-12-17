@@ -306,9 +306,8 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, h2states_t *h2s)
         }
         int rc = send_goaway(HTTP2_NO_ERROR, h2s); // We send a goaway to close the connection
         // TODO: review error code from send_goaway in handle_goaway_payload
-        if (rc < 0) {
-            ERROR("Error sending GOAWAY FRAME");            // TODO shutdown_connection
-            return HTTP2_RC_CLOSE_CONNECTION;
+        if (rc == HTTP2_RC_CLOSE_CONNECTION || rc == HTTP2_RC_ERROR) {
+            return rc;
         }
     }
     return HTTP2_RC_NO_ERROR;
