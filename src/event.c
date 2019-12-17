@@ -445,6 +445,9 @@ void event_loop_close(event_loop_t *loop)
             // prevent sock to be used in polling
             FD_CLR(curr->descriptor, &loop->active_fds);
 
+            // notify the client of socket closing
+            shutdown(curr->descriptor, SHUT_WR);
+
             // close the socket and update its status
             close(curr->descriptor);
 #else
