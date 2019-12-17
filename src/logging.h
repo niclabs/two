@@ -29,7 +29,7 @@
 #define LOG_LEVEL_OFF   (6)
 
 // Log modules
-#define LOG_MODULE_EVENT     EVENT
+#define LOG_MODULE_EVENT   EVENT
 #define LOG_MODULE_HTTP2   HTTP2
 #define LOG_MODULE_HTTP    HTTP
 #define LOG_MODULE_FRAME   FRAME
