@@ -28,6 +28,7 @@ int get_window_available_size(h2_flow_control_window_t flow_control_window)
 uint32_t update_window_size(h2states_t *h2s, uint32_t initial_window_size, uint8_t place)
 {
     int id = INITIAL_WINDOW_SIZE;
+
     if (place == LOCAL) {
         h2s->local_window.stream_window += initial_window_size - h2s->local_settings[--id];
         // An endpoint MUST treat a change to SETTINGS_INITIAL_WINDOW_SIZE that
@@ -104,7 +105,7 @@ int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increm
         ERROR("Increment to big. PROTOCOL_ERROR");
         return HTTP2_RC_ERROR;
     }
-    
+
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -130,13 +131,16 @@ int flow_control_receive_window_update(h2states_t *h2s, uint32_t window_size_inc
 
 uint32_t get_size_data_to_send(h2states_t *h2s)
 {
-    uint32_t available_window = get_window_available_size(h2s->remote_window);
+    int available_window = get_window_available_size(h2s->remote_window);
 
-    if (available_window <= h2s->data.size - h2s->data.processed) {
+    // Window is 0 or negative
+    if (available_window < 1) {
+        return 0;
+    }
+    else if ((uint32_t)available_window <= h2s->data.size - h2s->data.processed) {
         return available_window;
     }
     else {
         return h2s->data.size - h2s->data.processed;
     }
-    return HTTP2_RC_NO_ERROR;
 }
