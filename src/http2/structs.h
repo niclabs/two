@@ -94,7 +94,7 @@ typedef struct HTTP2_DATA {
 
 
 /*Struct for storing HTTP2 states*/
-typedef struct HTTP2_STATES {
+typedef struct http2_states {
     event_sock_t *socket;
     uint8_t is_server;
     uint32_t remote_settings[6];
