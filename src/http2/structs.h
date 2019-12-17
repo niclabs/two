@@ -121,6 +121,9 @@ typedef struct http2_states {
     frame_header_t header;
     http2_data_t data;
     header_list_t headers;
+
+    // make a http2_states a linked list
+    struct http2_states *next;
 } h2states_t;
 
 
