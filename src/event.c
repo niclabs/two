@@ -13,7 +13,7 @@
 
 #include "event.h"
 
-#define LOG_MODULE EVENT
+#define LOG_MODULE LOG_MODULE_EVENT
 
 #include "logging.h"
 
@@ -79,7 +79,8 @@ PROCESS(event_loop_process, "Event loop process");
                 res = curr;                     \
                 break;                          \
             }                                   \
-            LIST_NEXT(curr);                    \
+            prev = curr;                        \
+            curr = curr->next;                  \
         }                                       \
         res;                                    \
     });
