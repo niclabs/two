@@ -54,10 +54,10 @@ PROCESS(event_loop_process, "Event loop process");
         }                                   \
         res;                                \
     });
-#define LIST_COUNT(type, list)            \
+#define LIST_COUNT(type, list)      \
     ({                              \
         int count = 0;              \
-        type * elem = list;   \
+        type *elem = list;          \
         while (elem != NULL) {      \
             count ++;               \
             LIST_NEXT(elem);        \
@@ -151,7 +151,7 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
             return;
         }
 #endif
-        
+
         // push data into buffer
         cbuf_push(&handler->event.read.buf, buf, count);
         int buflen = cbuf_len(&handler->event.read.buf);
@@ -305,6 +305,18 @@ void event_loop_poll(event_loop_t *loop)
     }
 }
 #else
+#ifdef EVENT_SOCK_POLL_TIMER
+void event_poll_tcp(void *data)
+{
+    event_sock_t *sock = (event_sock_t *)data;
+
+    // perform tcp poll
+    tcpip_poll_tcp(sock->uip_conn);
+
+    // reset timer
+    ctimer_reset(&sock->timer);
+}
+#endif
 void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
@@ -447,6 +459,12 @@ void event_loop_close(event_loop_t *loop)
                 tcp_unlisten(UIP_HTONS(curr->descriptor));
                 PROCESS_CONTEXT_END();
             }
+#ifdef EVENT_SOCK_POLL_TIMER
+            else {
+                // is a client
+                ctimer_stop(&curr->timer);
+            }
+#endif
 #endif
             curr->state = EVENT_SOCK_CLOSED;
 
@@ -616,18 +634,18 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
-    
+
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
     assert(size < EVENT_MAX_BUF_WRITE_SIZE);
 
     // find free handler
     event_loop_t *loop = sock->loop;
-    event_handler_t * handler = event_handler_find_free(loop, sock);
-    if (handler == NULL) { 
-        ERROR("No more available handlers for event_write operation. Increase EVENT_MAX_HANDLERS macro"); // TODO: Borrar esta linea
+    event_handler_t *handler = event_handler_find_free(loop, sock);
+    if (handler == NULL) {
+        ERROR("No more available handlers for event_write operation. Increase EVENT_MAX_HANDLERS macro");   // TODO: Borrar esta linea
     }
-    assert(handler != NULL); // no more handlers available
+    assert(handler != NULL);                                                                                // no more handlers available
 
     // set handler event
     handler->type = EVENT_WRITE_TYPE;
@@ -649,7 +667,8 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     return to_write;
 }
 
-int event_read_stop_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb) {
+int event_read_stop_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
+{
     event_read_stop(sock);
     return event_write(sock, size, bytes, cb);
 }
@@ -678,6 +697,11 @@ int event_accept(event_sock_t *server, event_sock_t *client)
 
     // use same port for client
     client->descriptor = server->descriptor;
+
+#ifdef EVENT_SOCK_POLL_TIMER
+    // set tcp poll timer every 10 ms
+    ctimer_set(&client->timer, CLOCK_SECOND / EVENT_SOCK_POLL_TIMER_FREQ, event_poll_tcp, client);
+#endif
 #else
     int clifd = accept(server->descriptor, NULL, NULL);
     if (clifd < 0) {
@@ -776,7 +800,8 @@ event_sock_t *event_sock_create(event_loop_t *loop)
     return sock;
 }
 
-int event_sock_unused(event_loop_t *loop) {
+int event_sock_unused(event_loop_t *loop)
+{
     assert(loop != NULL);
 
     return LIST_COUNT(event_sock_t, loop->unused);

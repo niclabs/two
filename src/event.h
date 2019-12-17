@@ -44,6 +44,14 @@
 #define EVENT_MAX_BUF_WRITE_SIZE (CONF_EVENT_MAX_BUF_WRITE_SIZE)
 #endif
 
+#ifdef EVENT_SOCK_POLL_TIMER
+#ifndef CONF_EVENT_SOCK_POLL_TIMER_FREQ
+#define EVENT_SOCK_POLL_TIMER_FREQ (100)
+#else
+#define EVENT_SOCK_POLL_TIMER_FREQ (CONF_EVENT_SOCK_POLL_TIMER_FREQ)
+#endif
+#endif
+
 struct event;
 struct event_sock;
 struct event_loop;
@@ -136,6 +144,9 @@ typedef struct event_sock {
 
 #ifdef CONTIKI
     struct uip_conn *uip_conn;
+#ifdef EVENT_SOCK_POLL_TIMER
+    struct ctimer timer;
+#endif
 #endif
 } event_sock_t;
 
@@ -200,7 +211,7 @@ void event_loop_init(event_loop_t *loop);
 event_sock_t *event_sock_create(event_loop_t *loop);
 
 // Return number of available free sockets
-int event_sock_unused(event_loop_t * loop);
+int event_sock_unused(event_loop_t *loop);
 
 // Start the loop
 void event_loop(event_loop_t *loop);
