@@ -103,6 +103,7 @@ int send_data_frame(uint32_t data_to_send, uint8_t end_stream, h2states_t *h2s)
  */
 int send_data(uint8_t end_stream, h2states_t *h2s)
 {
+    (void) end_stream;
     if (h2s->data.size <= 0) {
         ERROR("No data to be sent. INTERNAL_ERROR");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
@@ -114,34 +115,60 @@ int send_data(uint8_t end_stream, h2states_t *h2s)
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    // If count data is 0, there is no available window (negative or zero)
-    uint32_t count_data_to_send = get_size_data_to_send(h2s);
-    if (count_data_to_send == 0) {
-        return HTTP2_RC_NO_ERROR;
-    }
     int rc;
-    rc = send_data_frame(count_data_to_send, end_stream, h2s);
-    if(rc != HTTP2_RC_NO_ERROR){
-      DEBUG("Error sending data frame on send_data");
-      return rc;
-    }
-    rc = flow_control_send_data(h2s, count_data_to_send);
-    if (rc == HTTP2_RC_ERROR) {
-        ERROR("send_data: Trying to send more data than allowed ");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    if (end_stream) {
-        rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
-        if (rc == HTTP2_RC_CLOSE_CONNECTION) {
-            DEBUG("send_data: Close connection. GOAWAY previously received");
+    // Check available window
+    uint32_t available_data_to_send = get_sending_available_window(h2s);
+    uint32_t data_to_send = h2s->data.size - h2s->data.processed;
+    uint32_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+    // There is enough window to send all
+    if (data_to_send <= available_data_to_send) {
+        available_data_to_send = data_to_send;
+        if (data_to_send > max_frame_size) {
+            while (data_to_send > max_frame_size) {
+                rc = send_data_frame(max_frame_size, 0, h2s);
+                if (rc != HTTP2_RC_NO_ERROR) {
+                    return rc;
+                }
+                data_to_send -= max_frame_size;
+            }
+        }
+        rc = send_data_frame(data_to_send, 1, h2s);
+        if (rc != HTTP2_RC_NO_ERROR) {
             return rc;
         }
     }
-    h2s->data.processed += count_data_to_send;
+    // There is not enough window to send it all
+    else{
+        if(available_data_to_send == 0){
+          return HTTP2_RC_NO_ERROR;
+        }
+        data_to_send = available_data_to_send;
+        if (data_to_send > max_frame_size) {
+            while (data_to_send > max_frame_size) {
+                rc = send_data_frame(max_frame_size, 0, h2s);
+                if (rc != HTTP2_RC_NO_ERROR) {
+                    return rc;
+                }
+                data_to_send -= max_frame_size;
+            }
+        }
+        rc = send_data_frame(data_to_send, 0, h2s);
+        if (rc != HTTP2_RC_NO_ERROR) {
+            return rc;
+        }
+
+    }
+    decrease_window_available(&h2s->remote_window, available_data_to_send);
+    h2s->data.processed += available_data_to_send;
+    // All data was processed, data buffer is reset
     if (h2s->data.size == h2s->data.processed) {
         h2s->data.size = 0;
         h2s->data.processed = 0;
+        rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
+        if (rc == HTTP2_RC_CLOSE_CONNECTION) {
+          DEBUG("send_data: Close connection. GOAWAY previously received");
+          return rc;
+        }
     }
     return HTTP2_RC_NO_ERROR;
 }
