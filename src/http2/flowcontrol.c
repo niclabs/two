@@ -52,13 +52,12 @@ uint32_t update_window_size(h2states_t *h2s, uint32_t initial_window_size, uint8
  * Increases the window_used value on a given window manager.
  * Input: ->flow_control_window: h2_flow_control_window_t struct pointer where window info is stored
  *        ->data_size: the corresponding increment on the window used
- * Output: 0
+ * Output:
  */
-int decrease_window_available(h2_flow_control_window_t *flow_control_window, uint32_t data_size)
+void decrease_window_available(h2_flow_control_window_t *flow_control_window, uint32_t data_size)
 {
     flow_control_window->stream_window -= data_size;
     flow_control_window->connection_window -= data_size;
-    return HTTP2_RC_NO_ERROR;
 }
 
 /*
