@@ -134,7 +134,7 @@ int flow_control_receive_window_update(h2states_t *h2s, uint32_t window_size_inc
 }
 
 
-uint32_t get_size_data_to_send(h2states_t *h2s)
+uint32_t get_sending_available_window(h2states_t *h2s)
 {
     int available_window = get_window_available_size(h2s->remote_window);
 
@@ -142,10 +142,6 @@ uint32_t get_size_data_to_send(h2states_t *h2s)
     if (available_window < 1) {
         return 0;
     }
-    else if ((uint32_t)available_window <= h2s->data.size - h2s->data.processed) {
-        return available_window;
-    }
-    else {
-        return h2s->data.size - h2s->data.processed;
-    }
+    return (uint32_t)available_window;
+
 }
