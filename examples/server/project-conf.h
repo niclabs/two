@@ -1,6 +1,13 @@
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
 
+// Contiki logs
 #define LOG_CONF_LEVEL_IPV6 LOG_LEVEL_NONE
+
+// Application logs
+#define LOG_LEVEL_HTTP2 LOG_LEVEL_DEBUG
+#define LOG_LEVEL_NET LOG_LEVEL_DEBUG
+#define LOG_LEVEL_FRAME LOG_LEVEL_DEBUG
+
 
 #endif
