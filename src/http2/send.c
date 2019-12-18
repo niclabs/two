@@ -80,8 +80,12 @@ int send_data(uint8_t end_stream, h2states_t *h2s)
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
+    // If count data is 0, there is no available window (negative or zero)
+    uint32_t count_data_to_send = get_size_data_to_send(h2s);
+    if (count_data_to_send == 0) {
+        return HTTP2_RC_NO_ERROR;
+    }
     uint32_t stream_id = h2s->current_stream.stream_id;
-    uint8_t count_data_to_send = get_size_data_to_send(h2s);
     frame_t frame;
     frame_header_t frame_header;
     data_payload_t data_payload;
@@ -97,9 +101,10 @@ int send_data(uint8_t end_stream, h2states_t *h2s)
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     INFO("Sending DATA");
     int rc;
-    if(end_stream){
+    if (end_stream) {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-    } else {
+    }
+    else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
     }
     h2s->write_callback_is_set = 1;
@@ -225,9 +230,10 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
     frame.payload = (void *)&goaway_pl;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    if(error_code != 0 || h2s->received_goaway){
+    if (error_code != 0 || h2s->received_goaway) {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
-    } else {
+    }
+    else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
     }
     h2s->write_callback_is_set = 1;
@@ -285,6 +291,7 @@ int send_window_update(uint8_t window_size_increment, h2states_t *h2s)
     frame_header_t frame_header;
     window_update_payload_t window_update_payload;
     int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, 0);
+
     if (rc < 0) {
         ERROR("send_window_update: error creating window_update frame");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
@@ -456,9 +463,10 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     frame.payload = (void *)&continuation_payload;
     int bytes_size = frame_to_bytes(&frame, buff_read);
 
-    if(end_headers){
+    if (end_headers) {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
-    } else {
+    }
+    else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, NULL);
     }
     h2s->write_callback_is_set = 1;
@@ -504,9 +512,10 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
     frame.frame_header = &frame_header;
     frame.payload = (void *)&headers_payload;
     int bytes_size = frame_to_bytes(&frame, buff_read);
-    if(end_headers && end_stream){
+    if (end_headers && end_stream) {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
-    } else {
+    }
+    else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, NULL);
     }
     h2s->write_callback_is_set = 1;
