@@ -33,6 +33,21 @@ PROCESS(event_loop_process, "Event loop process");
         list = elem;                \
         next;                       \
     })
+#define LIST_APPEND(type, elem, list)               \
+    ({                                              \
+        type * curr = list;                         \
+        while (curr != NULL && curr->next != NULL)  \
+        {                                           \
+            curr = curr->next;                      \
+        }                                           \
+        if (curr == NULL) {                         \
+            list = elem;                            \
+        }                                           \
+        else {                                      \
+            curr->next = elem;                      \
+        }                                           \
+        elem;                                       \
+    })
 #define LIST_POP(list)          \
     ({                          \
         void *elem = list;      \
@@ -112,7 +127,7 @@ event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
         memset(handler, 0, sizeof(event_handler_t));
 
         // link handler to sock memory
-        LIST_PUSH(handler, sock->handlers);
+        LIST_APPEND(event_handler_t, handler, sock->handlers);
     }
 
     return handler;
