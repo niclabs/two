@@ -408,6 +408,11 @@ int handle_payload(uint8_t *buff_read, h2states_t *h2s)
                 return rc;
             }
             DEBUG("SETTINGS payload received OK");
+            rc = send_try_continue_data_sending(h2s);
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+                ERROR("Error trying to send data");
+                return rc;
+            }
             return HTTP2_RC_NO_ERROR;
         }
         case PUSH_PROMISE_TYPE://Push promise
@@ -473,6 +478,11 @@ int handle_payload(uint8_t *buff_read, h2states_t *h2s)
                 return rc;
             }
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD OK");
+            rc = send_try_continue_data_sending(h2s);
+            if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+                ERROR("Error trying to send data");
+                return rc;
+            }
             return HTTP2_RC_NO_ERROR;
         }
         case CONTINUATION_TYPE: {
