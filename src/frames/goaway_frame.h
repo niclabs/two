@@ -7,6 +7,8 @@
 
 #include "structs.h"
 
+#pragma pack(push, 1)
+
 /*GOAWAY FRAME*/
 typedef struct {
     uint8_t reserved : 1;
@@ -15,7 +17,7 @@ typedef struct {
     uint8_t *additional_debug_data;
 }goaway_payload_t;
 
-
+#pragma pack(pop)
 /*goaway payload methods*/
 void create_goaway_frame(frame_header_t *frame_header, goaway_payload_t *goaway_payload, uint8_t *additional_debug_data_buffer, uint32_t last_stream_id, uint32_t error_code,  uint8_t *additional_debug_data, uint8_t additional_debug_data_size);
 int goaway_payload_to_bytes(frame_header_t *frame_header, void *payload, uint8_t *byte_array);

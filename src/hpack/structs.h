@@ -25,7 +25,7 @@
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (4096)
 #endif
 
-typedef enum {
+typedef enum __attribute__((__packed__)) {
     INDEXED_HEADER_FIELD                            = (uint8_t) 128,
     LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING  = (uint8_t) 64,
     LITERAL_HEADER_FIELD_WITHOUT_INDEXING           = (uint8_t) 0,
@@ -33,18 +33,21 @@ typedef enum {
     DYNAMIC_TABLE_SIZE_UPDATE                       = (uint8_t) 32
 } hpack_preamble_t;
 
+#pragma pack(push, 1)
+
 typedef struct {
     uint32_t index;
     uint32_t name_length;
     uint32_t value_length;
     uint8_t *name_string;
     uint8_t *value_string;
+    uint16_t dynamic_table_size;
     uint8_t huffman_bit_of_name;
     uint8_t huffman_bit_of_value;
-    uint16_t dynamic_table_size;
     hpack_preamble_t preamble;
 } hpack_encoded_header_t;
 
+#pragma pack(pop)
 //typedefs for dinamic
 //size: 10 bytes in params + size of buffer
 typedef
@@ -65,6 +68,8 @@ hpack_dynamic_table_t;
 /* Hpack Struct: Hpack states
     It contains all the required structs or fields for hpack functionality
  */
+#pragma pack(push, 1)
+
 typedef struct {
     hpack_dynamic_table_t dynamic_table;
     hpack_encoded_header_t encoded_header;
@@ -73,7 +78,9 @@ typedef struct {
     uint32_t settings_max_table_size;
 } hpack_states_t;
 
-typedef enum {
+#pragma pack(pop)
+
+typedef enum __attribute__((__packed__)){
     PROTOCOL_ERROR  = (int8_t) - 1,
     INTERNAL_ERROR  = (int8_t) - 2
 } hpack_error_t;

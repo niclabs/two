@@ -6,8 +6,9 @@
    frameheader (data that identifies a frame of any type) and
    headersframe(type of frame that contains http headers)*/
 
+#pragma pack(push, 1)
 /*FRAME TYPES*/
-typedef enum {
+typedef enum __attribute__((__packed__)){
     DATA_TYPE           = (uint8_t) 0x0,
     HEADERS_TYPE        = (uint8_t) 0x1,
     PRIORITY_TYPE       = (uint8_t) 0x2,
@@ -37,15 +38,18 @@ typedef struct {
     void *payload;
 }frame_t;
 
+
 /*ERROR*/
 /*Error codes*/
-typedef enum {
-    FRAMES_NO_ERROR                     = (int32_t) 0,
-    FRAMES_PROTOCOL_ERROR               = (int32_t) - 1,
-    FRAMES_INTERNAL_ERROR               = (int32_t) - 2,
-    FRAMES_FRAME_SIZE_ERROR             = (int32_t) - 3,
-    FRAMES_FRAME_NOT_FOUND_ERROR        = (int32_t) - 4,
-    FRAMES_FRAME_NOT_IMPLEMENTED_ERROR  = (int32_t) - 5,
+typedef enum __attribute__((__packed__)){
+    FRAMES_NO_ERROR                     = (int8_t) 0,
+    FRAMES_PROTOCOL_ERROR               = (int8_t) - 1,
+    FRAMES_INTERNAL_ERROR               = (int8_t) - 2,
+    FRAMES_FRAME_SIZE_ERROR             = (int8_t) - 3,
+    FRAMES_FRAME_NOT_FOUND_ERROR        = (int8_t) - 4,
+    FRAMES_FRAME_NOT_IMPLEMENTED_ERROR  = (int8_t) - 5,
 }frames_error_code_t;
 
+
+#pragma pack(pop)
 #endif /*FRAMES_STRUCTS_H*/

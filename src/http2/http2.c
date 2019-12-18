@@ -466,7 +466,7 @@ int handle_payload(uint8_t *buff_read, h2states_t *h2s)
         case WINDOW_UPDATE_TYPE: {
             DEBUG("handle_payload: RECEIVED WINDOW_UPDATE PAYLOAD");
             window_update_payload_t window_update_payload;
-            int rc = h2s->header.callback_payload_from_bytes(&(h2s->header), &window_update_payload, buff_read);
+            rc= h2s->header.callback_payload_from_bytes(&(h2s->header), &window_update_payload, buff_read);
             if (rc < 0) {
                 ERROR("Error in reading window_update_payload. FRAME_SIZE_ERROR");
                 send_connection_error(HTTP2_FRAME_SIZE_ERROR, h2s); // TODO: review - always FRAME_SIZE_ERROR ?

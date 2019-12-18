@@ -12,7 +12,7 @@ typedef struct {
     uint8_t *header_block_fragment; // only if length > 0. Size = frame size
 }continuation_payload_t;
 
-typedef enum {
+typedef enum __attribute__((__packed__)){
     CONTINUATION_END_HEADERS_FLAG = 0x4//bit 2
 }continuation_flag_t;
 

@@ -13,7 +13,7 @@ typedef struct {
     uint8_t opaque_data[8];//64 bits
 } ping_payload_t;
 
-typedef enum {
+typedef enum __attribute__((__packed__)){
     PING_ACK_FLAG = 0x1
 }ping_flag_t;
 

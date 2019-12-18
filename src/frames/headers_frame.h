@@ -7,6 +7,7 @@
 #include "structs.h"
 /*HEADERS FRAME*/
 
+#pragma pack(push, 1)
 typedef struct {
     uint8_t pad_length;                 // only if padded flag is set
     uint8_t exclusive_dependency : 1;   // only if priority flag is set
@@ -15,8 +16,9 @@ typedef struct {
     uint8_t *header_block_fragment;     // only if length > 0. Size = frame size - (4+1)[if priority is set]-(4+pad_length)[if padded flag is set]
     uint8_t *padding;                   //only if padded flag is set. Size = pad_length
 }headers_payload_t;                     //48+32+32 bits -> 14 bytes
+#pragma pack(pop)
 
-typedef enum {
+typedef enum __attribute__((__packed__)){
     HEADERS_END_STREAM_FLAG     = 0x1,  //bit 0
     HEADERS_END_HEADERS_FLAG    = 0x4,  //bit 2
     HEADERS_PADDED_FLAG         = 0x8,  //bit 3

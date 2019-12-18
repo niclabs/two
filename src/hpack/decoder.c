@@ -596,7 +596,7 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
     int pointer = 0;
 
     uint8_t can_receive_dynamic_table_size_update = 1;    //TRUE
-
+    
     while (pointer < header_block_size) {
         init_hpack_encoded_header_t(&states->encoded_header);
         memset(states->tmp_name, 0, MAX_HEADER_NAME_LEN);

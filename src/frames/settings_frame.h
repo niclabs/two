@@ -17,7 +17,7 @@ typedef struct {
     int count;
 }settings_payload_t; //32 bits -> 4 bytes
 
-typedef enum {
+typedef enum __attribute__((__packed__)){
     SETTINGS_ACK_FLAG = 0x1
 }setting_flag_t;
 
