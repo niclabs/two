@@ -42,6 +42,7 @@ PROJECT_SOURCEFILES=two.c \
 # Disable UDP
 DEFINES += UIP_CONF_TCP=1
 DEFINES += UIP_CONF_UDP=0
+DEFINES += PROJECT_CONF_H=\"project-conf.h\"
 
 CFLAGS += -ffunction-sections -I$(SRC)
 ifeq ($(word 1, $(shell uname -m -s)),Darwin)
