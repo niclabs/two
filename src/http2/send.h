@@ -11,6 +11,7 @@
 
 
 int send_data(uint8_t end_stream, h2states_t *h2s);
+int send_try_continue_data_sending(h2states_t* h2s);
 int send_settings_ack(h2states_t *h2s);
 int send_local_settings(h2states_t *h2s);
 int send_goaway(uint32_t error_code, h2states_t *h2s);

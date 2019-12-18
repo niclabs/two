@@ -173,6 +173,16 @@ int send_data(uint8_t end_stream, h2states_t *h2s)
     return HTTP2_RC_NO_ERROR;
 }
 
+int send_try_continue_data_sending(h2states_t* h2s)
+{
+  if(h2s->data.size == 0){
+    INFO("try_continue_data_sending: No data left to send.");
+    return HTTP2_RC_NO_ERROR;
+  }
+  int rc = send_data(1, h2s);
+  return rc;
+}
+
 
 /*
  * Function: send_settings_ack
