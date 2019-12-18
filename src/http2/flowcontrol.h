@@ -9,7 +9,6 @@ int decrease_window_available(h2_flow_control_window_t* flow_control_window, uin
 int increase_window_available(h2_flow_control_window_t* flow_control_window, uint32_t window_size_increment);
 
 int flow_control_receive_data(h2states_t* st, uint32_t length);
-int flow_control_send_data(h2states_t *st, uint32_t data_sent);
 int flow_control_send_window_update(h2states_t* st, uint32_t window_size_increment);
 int flow_control_receive_window_update(h2states_t* st, uint32_t window_size_increment);
 

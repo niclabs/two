@@ -85,23 +85,6 @@ int flow_control_receive_data(h2states_t *h2s, uint32_t length)
     return HTTP2_RC_NO_ERROR;
 }
 
-/*
- * Function: flow_control_send_data
- * Updates the outgoing window when certain amount of data is sent.
- * Input: -> st: hstates_t struct pointer where connection windows are stored
- *        -> data_sent: the size of the outgoing data.
- * Output: 0 if window increment was successfull. -1 if not
- */
-int flow_control_send_data(h2states_t *h2s, uint32_t data_sent)
-{
-    if ((int)data_sent > get_window_available_size(h2s->remote_window)) {
-        ERROR("Trying to send more data than allowed by window.");
-        return HTTP2_RC_ERROR;
-    }
-    decrease_window_available(&h2s->remote_window, data_sent);
-    return HTTP2_RC_NO_ERROR;
-}
-
 int flow_control_send_window_update(h2states_t *h2s, uint32_t window_size_increment)
 {
     h2s->local_window.stream_window += window_size_increment;
