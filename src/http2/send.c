@@ -77,11 +77,11 @@ int send_data_frame(uint32_t data_to_send, uint8_t end_stream, h2states_t *h2s)
     int rc;
     if (end_stream) {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+        h2s->write_callback_is_set = 1;
     }
     else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
     }
-    h2s->write_callback_is_set = 1;
     if (rc != bytes_size) {
         ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
@@ -274,8 +274,8 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
     }
     else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+        h2s->write_callback_is_set = 1;
     }
-    h2s->write_callback_is_set = 1;
     DEBUG("Sending GOAWAY, error code: %u", error_code);
 
     if (rc != bytes_size) {
@@ -504,11 +504,11 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
 
     if (end_headers) {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
+        h2s->write_callback_is_set = 1;
     }
     else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, NULL);
     }
-    h2s->write_callback_is_set = 1;
     INFO("Sending continuation");
     if (rc != bytes_size) {
         ERROR("Error writting continuation frame. INTERNAL ERROR");
@@ -553,11 +553,11 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
     int bytes_size = frame_to_bytes(&frame, buff_read);
     if (end_headers && end_stream) {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
+        h2s->write_callback_is_set = 1;
     }
     else {
         rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_read, NULL);
     }
-    h2s->write_callback_is_set = 1;
     INFO("Sending headers");
     if (rc != bytes_size) {
         ERROR("Error writting headers frame. INTERNAL ERROR");
