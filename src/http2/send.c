@@ -56,6 +56,40 @@ int change_stream_state_end_stream_flag(uint8_t sending, h2states_t *h2s)
     return HTTP2_RC_NO_ERROR;
 }
 
+int send_data_frame(uint32_t data_to_send, uint8_t end_stream, h2states_t *h2s)
+{
+    uint32_t stream_id = h2s->current_stream.stream_id;
+    frame_t frame;
+    frame_header_t frame_header;
+    data_payload_t data_payload;
+    uint8_t data[data_to_send];
+
+    create_data_frame(&frame_header, &data_payload, data, h2s->data.buf + h2s->data.processed, data_to_send, stream_id);
+
+    if (end_stream) {
+        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
+    }
+    frame.frame_header = &frame_header;
+    frame.payload = (void *)&data_payload;
+    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
+    int bytes_size = frame_to_bytes(&frame, buff_bytes);
+    INFO("Sending DATA");
+    int rc;
+    if (end_stream) {
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+    }
+    else {
+        rc = event_read_stop_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
+    }
+    h2s->write_callback_is_set = 1;
+    if (rc != bytes_size) {
+        ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
+    return HTTP2_RC_NO_ERROR;
+}
+
 /*
  * Function: send_data
  * Sends a data frame with the current data written in the given hstates_t struct.
