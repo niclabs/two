@@ -24,6 +24,7 @@ FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, cbuf_peek, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, cbuf_len, cbuf_t *);
+FAKE_VOID_FUNC(cbuf_end, cbuf_t *);
 
 
 /* List of fakes used by this unit tester */
@@ -41,10 +42,12 @@ FAKE_VALUE_FUNC(int, cbuf_len, cbuf_t *);
     FAKE(cbuf_peek)             \
     FAKE(cbuf_pop)              \
     FAKE(cbuf_len)              \
+    FAKE(cbuf_end)              \
     FAKE(select)
 
 
 int fake_cbuf_len;
+int fake_cbuf_ended;
 
 void setUp(void)
 {
@@ -56,6 +59,7 @@ void setUp(void)
 
     // reset cbuf len
     fake_cbuf_len = 0;
+    fake_cbuf_ended = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -206,7 +210,7 @@ int test_cbuf_pop(cbuf_t *cb, void *dst, int size)
 
 int test_cbuf_push(cbuf_t *cb, void *dst, int size)
 {
-    if (size > 0) {
+    if (size > 0 && !fake_cbuf_ended) {
         fake_cbuf_len += size;
         return size;
     }
@@ -221,6 +225,10 @@ int test_cbuf_peek(cbuf_t *cb, void *dst, int size)
     memcpy(dst, str + 13 - size, size);
 
     return size;
+}
+
+void test_cbuf_end(cbuf_t *cb) {
+    fake_cbuf_ended = 1;
 }
 
 
@@ -424,6 +432,7 @@ void test_event_read(void)
     cbuf_pop_fake.custom_fake = test_cbuf_pop;
     cbuf_len_fake.custom_fake = test_cbuf_len;
     cbuf_push_fake.custom_fake = test_cbuf_push;
+    cbuf_end_fake.custom_fake = test_cbuf_end;
 
     // read "Hello, World!" on first read and nothing after
     ssize_t (*recv_fakes[])(int, void *, size_t, int) = { recv_hello_world, recv_nothing };
@@ -493,6 +502,7 @@ void test_event_write(void)
     cbuf_pop_fake.custom_fake = test_cbuf_pop;
     cbuf_len_fake.custom_fake = test_cbuf_len;
     cbuf_push_fake.custom_fake = test_cbuf_push;
+    cbuf_end_fake.custom_fake = test_cbuf_end;
 
     // read "Hello, World!" on first read and nothing after
     ssize_t (*send_fakes[])(int, const void *, size_t, int) = { send_hello, send_world };
