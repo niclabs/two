@@ -35,7 +35,7 @@ PROCESS(event_loop_process, "Event loop process");
     })
 #define LIST_APPEND(type, elem, list)               \
     ({                                              \
-        type * curr = list;                         \
+        type *curr = list;                          \
         while (curr != NULL && curr->next != NULL)  \
         {                                           \
             curr = curr->next;                      \
