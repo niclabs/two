@@ -23,8 +23,8 @@ typedef struct {
     int len;
 
     // read and write pointer
-    void * readptr;
-    void * writeptr;
+    int head; // write index
+    int tail; // read index
 } cbuf_t;
 
 

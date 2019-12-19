@@ -3,15 +3,14 @@
 #include "cbuf.h"
 #include "logging.h"
 
-#ifndef MIN
+#undef MIN
 #define MIN(n, m)   (((n) < (m)) ? (n) : (m))
-#endif
 
 void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen)
 {
     cbuf->ptr = buf;
-    cbuf->readptr = buf;
-    cbuf->writeptr = buf;
+    cbuf->head = 0;
+    cbuf->tail = 0;
     cbuf->maxlen = maxlen;
     cbuf->len = 0;
 }
@@ -20,14 +19,14 @@ int cbuf_push(cbuf_t *cbuf, void *src, int len)
 {
     int bytes = 0;
     while (len > 0 && cbuf->len < cbuf->maxlen) {
-        int copylen = MIN(len, cbuf->maxlen - (cbuf->writeptr - cbuf->ptr));
-        if (cbuf->writeptr < cbuf->readptr) {
-            copylen = MIN(len, cbuf->readptr - cbuf->writeptr);
+        int copylen = MIN(len, cbuf->maxlen - cbuf->head);
+        if (cbuf->head < cbuf->tail) {
+            copylen = MIN(len, cbuf->tail - cbuf->head);
         }
-        memcpy(cbuf->writeptr, src, copylen);
+        memcpy(cbuf->ptr + cbuf->head, src, copylen);
 
-        // Update write pointer
-        cbuf->writeptr = cbuf->ptr + (cbuf->writeptr - cbuf->ptr + copylen) % cbuf->maxlen;
+        // Update write index
+        cbuf->head = (cbuf->head + copylen) % cbuf->maxlen;
 
         // Update used count
         cbuf->len += copylen;
@@ -48,18 +47,18 @@ int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
     int bytes = 0;
 
     while (len > 0 && cbuf->len > 0) {
-        int copylen = MIN(len, cbuf->maxlen - (cbuf->readptr - cbuf->ptr));
-        if (cbuf->readptr < cbuf->writeptr) {
-            copylen = MIN(len, cbuf->writeptr - cbuf->readptr);
+        int copylen = MIN(len, cbuf->maxlen - cbuf->tail);
+        if (cbuf->tail < cbuf->head) {
+            copylen = MIN(len, cbuf->head - cbuf->tail);
         }
        
         // if dst is NULL, calls to read will only increase the read pointer
         if (dst != NULL) { 
-            memcpy(dst, cbuf->readptr, copylen);
+            memcpy(dst, cbuf->ptr + cbuf->tail, copylen);
         }
 
         // Update read pointer
-        cbuf->readptr = cbuf->ptr + (cbuf->readptr - cbuf->ptr + copylen) % cbuf->maxlen;
+        cbuf->tail = (cbuf->tail + copylen) % cbuf->maxlen; 
 
         // Update used count
         cbuf->len -= copylen;
@@ -79,17 +78,17 @@ int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
 {
     int bytes = 0;
     int cbuflen = cbuf->len;
-    void * readptr = cbuf->readptr;
+    int tail = cbuf->tail;
 
     while (len > 0 && cbuflen > 0) {
-        int copylen = MIN(len, cbuf->maxlen - (readptr - cbuf->ptr));
-        if (readptr < cbuf->writeptr) {
-            copylen = MIN(len, cbuf->writeptr - readptr);
+        int copylen = MIN(len, cbuf->maxlen - tail);
+        if (tail < cbuf->head) {
+            copylen = MIN(len, cbuf->head - tail);
         }
-        memcpy(dst, readptr, copylen);
+        memcpy(dst, cbuf->ptr + tail, copylen);
 
         // Update read pointer
-        readptr = cbuf->ptr + (readptr - cbuf->ptr + copylen) % cbuf->maxlen;
+        tail = (tail + copylen) % cbuf->maxlen; 
 
         // Update used count
         cbuflen -= copylen;
