@@ -13,13 +13,13 @@ void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen)
     cbuf->tail = 0;
     cbuf->maxlen = maxlen;
     cbuf->len = 0;
-    cbuf->eob = 0;
+    cbuf->state = CBUF_OPEN;
 }
 
 int cbuf_push(cbuf_t *cbuf, void *src, int len)
 {
     int bytes = 0;
-    while (len > 0 && cbuf->len < cbuf->maxlen && !cbuf->eob) {
+    while (len > 0 && cbuf->len < cbuf->maxlen && cbuf->state == CBUF_OPEN) {
         int copylen = MIN(len, cbuf->maxlen - cbuf->head);
         if (cbuf->head < cbuf->tail) {
             copylen = MIN(len, cbuf->tail - cbuf->head);
@@ -115,5 +115,5 @@ int cbuf_maxlen(cbuf_t * cbuf) {
 }
 
 void cbuf_end(cbuf_t * cbuf) {
-    cbuf->eob = 1;
+    cbuf->state = CBUF_ENDED;
 }

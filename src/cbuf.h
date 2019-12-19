@@ -27,7 +27,10 @@ typedef struct {
     int tail; // read index
 
     // end of buffer
-    int eob;
+    enum {
+        CBUF_OPEN,
+        CBUF_ENDED
+    } state;
 } cbuf_t;
 
 
