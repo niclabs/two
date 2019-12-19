@@ -144,7 +144,7 @@ void event_do_connect(event_sock_t *sock, event_handler_t *handler)
 
 void event_do_read(event_sock_t *sock, event_handler_t *handler)
 {
-    if (handler != NULL && handler->event.read.cb != NULL) {
+    if (handler != NULL) {
         int readlen = EVENT_MAX_BUF_READ_SIZE - cbuf_len(&handler->event.read.buf);
         uint8_t buf[readlen];
 
@@ -154,41 +154,25 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
         memcpy(buf, uip_appdata, count);
 #else
         int count = recv(sock->descriptor, buf, readlen, MSG_DONTWAIT);
-        if (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            handler->event.read.cb(sock, count, NULL);
-
-            // should we call finish_write here?
-            return;
-        }
-
-        if (count == 0) {
-            handler->event.read.cb(sock, count, NULL);
-
-            // should we call finish_write here?
-            return;
+        if ((count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) || count == 0) {
+            cbuf_end(&handler->event.read.buf);
         }
 #endif
-
         // push data into buffer
         cbuf_push(&handler->event.read.buf, buf, count);
         int buflen = cbuf_len(&handler->event.read.buf);
 
-#ifdef CONTIKI
-        // in contiki uip_datalen == 0 does not mean that
-        // the connection is closed
-        if (buflen == 0) {
-            return;
+        // if a read is not paused notify about the new data
+        if (handler->event.read.cb != NULL) {
+            uint8_t read_buf[buflen];
+            cbuf_peek(&handler->event.read.buf, read_buf, buflen);
+
+            readlen = handler->event.read.cb(sock, buflen, read_buf);
+
+            // remove the read bytewrites from the buffer
+            cbuf_pop(&handler->event.read.buf, NULL, readlen);
         }
-#endif
 
-        uint8_t read_buf[buflen];
-        cbuf_peek(&handler->event.read.buf, read_buf, buflen);
-
-        // notify about the new data
-        readlen = handler->event.read.cb(sock, buflen, read_buf);
-
-        // remove the read bytewrites from the buffer
-        cbuf_pop(&handler->event.read.buf, NULL, readlen);
     }
 }
 
@@ -415,9 +399,10 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     event_handler_t *rh = event_handler_find(sock->handlers, EVENT_READ_TYPE);
     event_handler_t *wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
     if (uip_timedout() || uip_aborted() || uip_closed()) { // Remote connection closed or timed out
-        // if waiting for read, notify callback with -1
-        if (rh != NULL && rh->event.read.cb != NULL) {
-            rh->event.read.cb(sock, -1, NULL);
+        // if waiting for read close the read buffer
+        if (rh != NULL) {
+            // do not allow more data in read buffer
+            cbuf_end(&rh->event.read.buf);
         }
         else if (wh != NULL) {
             event_finish_write(sock, wh, -1);
@@ -429,7 +414,6 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
 
     if (uip_acked()) {
         event_handle_ack(sock, wh);
-        event_do_read(sock, rh);
     }
 
     if (uip_rexmit()) {
