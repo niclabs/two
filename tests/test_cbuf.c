@@ -29,6 +29,21 @@ void test_write_after_end_buffer(void)
     bytes = cbuf_push(&cbuf, "ijk", 3);
     TEST_ASSERT_EQUAL_MESSAGE(0, bytes, "Should not keep writing after end of buffer");
     TEST_ASSERT_EQUAL_STRING_LEN("abcdefgh", buf, 8);
+    
+    char readbuf[8];
+    bytes = cbuf_pop(&cbuf, readbuf , 3);
+    TEST_ASSERT_EQUAL_MESSAGE(3, bytes, "Should read 3 bytes");
+    TEST_ASSERT_EQUAL_STRING_LEN("abc", readbuf, 3);
+
+    // end the buffer
+    cbuf_end(&cbuf);
+    bytes = cbuf_push(&cbuf, "lmn", 3);
+    TEST_ASSERT_EQUAL_MESSAGE(0, bytes, "Should not keep writing after cbuf_end is called");
+
+    bytes = cbuf_pop(&cbuf, readbuf , 3);
+    TEST_ASSERT_EQUAL_MESSAGE(3, bytes, "Should read 3 bytes even after cbuf_end is called");
+    TEST_ASSERT_EQUAL_STRING_LEN("def", readbuf, 3);
+
 }
 
 void test_write_and_read(void)

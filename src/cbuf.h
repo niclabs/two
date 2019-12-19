@@ -25,6 +25,9 @@ typedef struct {
     // read and write pointer
     int head; // write index
     int tail; // read index
+
+    // end of buffer
+    int eob;
 } cbuf_t;
 
 
@@ -59,4 +62,13 @@ int cbuf_len(cbuf_t * cbuf);
  * Return maximum read size
  */
 int cbuf_maxlen(cbuf_t * cbuf);
+
+
+/**
+ * Mark the buffer as ended. Ended buffers can only be read
+ * and push operations will return the same number of bytes
+ * as pushed
+ */
+void cbuf_end(cbuf_t * cbuf);
+
 #endif /* CBUF_H */
