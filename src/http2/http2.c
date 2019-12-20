@@ -13,7 +13,7 @@
 #define LOG_MODULE LOG_MODULE_HTTP2
 #include "logging.h"
 
-extern void two_free_client(h2states_t *ctx);
+extern void two_on_client_close(event_sock_t *client);
 
 int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes);
 int receive_header(event_sock_t * client, int size, uint8_t *bytes);
@@ -60,7 +60,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
 void clean_h2s(event_sock_t *client)
 {
     // release the client from the list
-    two_free_client(client->data);
+    two_on_client_close(client);
 }
 
 void http2_server_init_connection(event_sock_t *client, int status)
@@ -77,8 +77,12 @@ void http2_server_init_connection(event_sock_t *client, int status)
 
 void http2_on_read_continue(event_sock_t *client, int status)
 {
-    (void)status;
-    event_read(client, receive_header);
+    if (status < 0) {
+        event_close(client, clean_h2s);
+    }
+    else {
+        event_read(client, receive_header);
+    }
 }
 
 int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
