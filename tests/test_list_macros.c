@@ -1,5 +1,5 @@
 #include "unit.h"
-#include "list.h"
+#include "list_macros.h"
 
 struct li {
     struct li *next;
