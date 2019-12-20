@@ -9,7 +9,11 @@
 #include "event.h"
 #include "http2/http2.h"
 #include "http2/structs.h"
+
+#define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"
+
+#include "list_macros.h"
 
 #ifndef TWO_MAX_CLIENTS
 #define TWO_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
@@ -28,44 +32,20 @@ static h2states_t *unused;
 // methods
 h2states_t *get_unused_state()
 {
-    if (unused == NULL) {
-        return NULL;
+    h2states_t *ctx = LIST_POP(unused);
+    if (ctx != NULL) {
+        memset(ctx, 0, sizeof(h2states_t));
+        LIST_PUSH(ctx, connected);
     }
 
-    h2states_t *ctx = unused;
-    unused = ctx->next;
-
-    ctx->next = connected;
-    connected = ctx;
-
-    // reset memory
-    memset(ctx, 0, sizeof(h2states_t));
     return ctx;
 }
 
 void two_free_client(h2states_t *ctx)
 {
-    h2states_t *curr = connected, *prev = NULL;
-
-    while (curr != NULL) {
-        if (curr == ctx) {
-            if (prev == NULL) {
-                connected = curr->next;
-            }
-            else {
-                prev->next = curr->next;
-            }
-
-            curr->next = unused;
-            unused = curr;
-
-            return;
-        }
-
-        prev = curr;
-        curr = curr->next;
+    if (LIST_DELETE(ctx, connected) != NULL) {
+        LIST_PUSH(ctx, unused);
     }
-
 }
 
 void two_on_server_close(event_sock_t *server)

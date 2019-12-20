@@ -95,6 +95,11 @@ typedef struct HTTP2_DATA {
 
 /*Struct for storing HTTP2 states*/
 typedef struct http2_states {
+    // make a http2_states a linked list
+    // IMPORTANT: this pointer must be the first of the struct 
+    // in order to use the list macros
+    struct http2_states *next;
+
     event_sock_t *socket;
     uint8_t is_server;
     uint32_t remote_settings[6];
@@ -121,9 +126,6 @@ typedef struct http2_states {
     frame_header_t header;
     http2_data_t data;
     header_list_t headers;
-
-    // make a http2_states a linked list
-    struct http2_states *next;
 } h2states_t;
 
 
