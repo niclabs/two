@@ -62,7 +62,9 @@ void event_do_connect(event_sock_t *sock, event_handler_t *handler)
     if (handler != NULL) {
         // if this happens there is an error with the implementation
         assert(handler->event.connection.cb != NULL);
-        handler->event.connection.cb(sock, sock->loop->unused == NULL ? -1 : 0);
+        if (sock->loop->unused != NULL) {
+            handler->event.connection.cb(sock, 0);
+        }
     }
 }
 
