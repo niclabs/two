@@ -53,7 +53,7 @@ void two_free_client(h2states_t *ctx)
                 connected = curr->next;
             }
             else {
-                prev = prev->next;
+                prev->next = curr->next;
             }
 
             curr->next = unused;
