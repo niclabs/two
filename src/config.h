@@ -7,8 +7,6 @@
 
 // Logging per module
 /* 
-#undef LOG_LEVEL_NET
-#define LOG_LEVEL_NET   (LOG_LEVEL_DEBUG)
 #undef LOG_LEVEL_EVENT
 #define LOG_LEVEL_EVENT (LOG_LEVEL_DEBUG)
 #undef LOG_LEVEL_FRAME
