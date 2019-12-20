@@ -201,6 +201,9 @@ int event_close(event_sock_t *sock, event_close_cb cb);
 // Accept a new client
 int event_accept(event_sock_t *server, event_sock_t *client);
 
+// Reject incoming connection if any
+int event_reject(event_sock_t *server);
+
 // Loop operations
 
 // Initialize a new event_loop
