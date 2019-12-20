@@ -163,7 +163,7 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
         int buflen = cbuf_len(&handler->event.read.buf);
 
         // if a read is not paused notify about the new data
-        if (handler->event.read.cb != NULL) {
+        if (handler->event.read.cb != NULL && (buflen > 0 || cbuf_has_ended(&handler->event.read.buf))) {
             uint8_t read_buf[buflen];
             cbuf_peek(&handler->event.read.buf, read_buf, buflen);
 
@@ -172,7 +172,6 @@ void event_do_read(event_sock_t *sock, event_handler_t *handler)
             // remove the read bytewrites from the buffer
             cbuf_pop(&handler->event.read.buf, NULL, readlen);
         }
-
     }
 }
 
@@ -404,16 +403,16 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
             // do not allow more data in read buffer
             cbuf_end(&rh->event.read.buf);
         }
-        else if (wh != NULL) {
-            event_finish_write(sock, wh, -1);
-        }
+        
+        event_do_read(sock, rh);
+        event_finish_write(sock, wh, -1);
 
-        tcp_markconn(uip_conn, NULL);
         return;
     }
 
     if (uip_acked()) {
         event_handle_ack(sock, wh);
+        event_do_read(sock, rh);
     }
 
     if (uip_rexmit()) {
