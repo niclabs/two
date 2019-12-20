@@ -15,6 +15,7 @@ void test_write_after_end_buffer(void)
     cbuf_t cbuf;
 
     cbuf_init(&cbuf, buf, 8);
+    TEST_ASSERT_EQUAL_MESSAGE(0, cbuf_has_ended(&cbuf), "cbuf_has_ended should return 0 after cbuf init");
 
     int bytes = 0;
 
@@ -42,6 +43,7 @@ void test_write_after_end_buffer(void)
 
     bytes = cbuf_pop(&cbuf, readbuf , 3);
     TEST_ASSERT_EQUAL_MESSAGE(3, bytes, "Should read 3 bytes even after cbuf_end is called");
+    TEST_ASSERT_EQUAL_MESSAGE(1, cbuf_has_ended(&cbuf), "cbuf_has_ended should return 1");
     TEST_ASSERT_EQUAL_STRING_LEN("def", readbuf, 3);
 
 }

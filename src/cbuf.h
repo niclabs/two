@@ -66,12 +66,16 @@ int cbuf_len(cbuf_t * cbuf);
  */
 int cbuf_maxlen(cbuf_t * cbuf);
 
-
 /**
  * Mark the buffer as ended. Ended buffers can only be read
  * and push operations will return the same number of bytes
  * as pushed
  */
 void cbuf_end(cbuf_t * cbuf);
+
+/**
+ * Return 1 if end of buffer has been set
+ */
+int cbuf_has_ended(cbuf_t * cbuf);
 
 #endif /* CBUF_H */

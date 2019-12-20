@@ -117,3 +117,7 @@ int cbuf_maxlen(cbuf_t * cbuf) {
 void cbuf_end(cbuf_t * cbuf) {
     cbuf->state = CBUF_ENDED;
 }
+
+int cbuf_has_ended(cbuf_t * cbuf) {
+    return cbuf->state == CBUF_ENDED;
+}
