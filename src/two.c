@@ -67,7 +67,6 @@ void two_on_new_connection(event_sock_t *server, int status)
 {
     if (status < 0) {
         ERROR("Cannot receive more clients");
-        event_reject(server);
         return;
     }
 

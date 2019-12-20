@@ -600,20 +600,6 @@ int event_read_stop_and_write(event_sock_t *sock, unsigned int size, uint8_t *by
     return event_write(sock, size, bytes, cb);
 }
 
-int event_reject(event_sock_t * server) {
-    assert(server != NULL );
-
-    // check correct socket state
-    assert(server->state == EVENT_SOCK_LISTENING);
-
-    int clifd = accept(server->descriptor, NULL, NULL);
-    if (clifd < 0) {
-        return -1;
-    }
-    close(clifd);
-    return 0;
-}
-
 int event_accept(event_sock_t *server, event_sock_t *client)
 {
     assert(server != NULL && client != NULL);
