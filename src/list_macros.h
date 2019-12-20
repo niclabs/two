@@ -1,5 +1,5 @@
-#ifndef LIST_H_
-#define LIST_H_
+#ifndef LIST_MACROS_H_
+#define LIST_MACROS_H_
 
 /**
  * Generic list operation macros, a list is any

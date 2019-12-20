@@ -17,103 +17,27 @@
 #define LOG_MODULE LOG_MODULE_EVENT
 
 #include "logging.h"
+#include "list_macros.h"
 
 #ifdef CONTIKI
 // Main contiki process
 PROCESS(event_loop_process, "Event loop process");
 #endif
 
-
-// List operations
-#define LIST_ELEM (elem)
-#define LIST_PUSH(elem, list)       \
-    ({                              \
-        void *next = elem->next;    \
-        elem->next = list;          \
-        list = elem;                \
-        next;                       \
-    })
-#define LIST_APPEND(type, elem, list)               \
-    ({                                              \
-        type *curr = list;                          \
-        while (curr != NULL && curr->next != NULL)  \
-        {                                           \
-            curr = curr->next;                      \
-        }                                           \
-        if (curr == NULL) {                         \
-            list = elem;                            \
-        }                                           \
-        else {                                      \
-            curr->next = elem;                      \
-        }                                           \
-        elem;                                       \
-    })
-#define LIST_POP(list)          \
-    ({                          \
-        void *elem = list;      \
-        if (list != NULL) {     \
-            list = list->next;  \
-        }                       \
-        elem;                   \
-    })
-#define LIST_NEXT(elem) elem = elem->next;
-#define LIST_FIND(type, queue, condition)   \
-    ({                                      \
-        type *elem = queue;                 \
-        type *res = NULL;                   \
-        while (elem != NULL) {              \
-            if (condition) {                \
-                res = elem;                 \
-                break;                      \
-            }                               \
-            LIST_NEXT(elem);                \
-        }                                   \
-        res;                                \
-    });
-#define LIST_COUNT(type, list)      \
-    ({                              \
-        int count = 0;              \
-        type *elem = list;          \
-        while (elem != NULL) {      \
-            count ++;               \
-            LIST_NEXT(elem);        \
-        }                           \
-        count;                      \
-    })
-#define LIST_DELETE(type, queue, elem)          \
-    ({                                          \
-        type *res = NULL;                       \
-        type *curr = queue, *prev = NULL;       \
-        while (curr != NULL) {                  \
-            if (curr == elem) {                 \
-                if (prev == NULL) {             \
-                    queue = curr->next;         \
-                }                               \
-                else {                          \
-                    prev->next = curr->next;    \
-                }                               \
-                res = curr;                     \
-                break;                          \
-            }                                   \
-            prev = curr;                        \
-            curr = curr->next;                  \
-        }                                       \
-        res;                                    \
-    });
-
+/////////////////////////////////////////////////////
 // Private methods
-
+/////////////////////////////////////////////////////
 
 // find socket file descriptor in socket queue
 event_sock_t *event_socket_find(event_sock_t *queue, event_descriptor_t descriptor)
 {
-    return LIST_FIND(event_sock_t, queue, LIST_ELEM->descriptor == descriptor);
+    return LIST_FIND(queue, LIST_ELEM(event_sock_t)->descriptor == descriptor);
 }
 
 // find socket file descriptor in socket queue
 event_handler_t *event_handler_find(event_handler_t *queue, event_type_t type)
 {
-    return LIST_FIND(event_handler_t, queue, LIST_ELEM->type == type);
+    return LIST_FIND(queue, LIST_ELEM(event_handler_t)->type == type);
 }
 
 // find free handler in loop memory
@@ -127,7 +51,7 @@ event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
         memset(handler, 0, sizeof(event_handler_t));
 
         // link handler to sock memory
-        LIST_APPEND(event_handler_t, handler, sock->handlers);
+        LIST_APPEND(handler, sock->handlers);
     }
 
     return handler;
@@ -182,7 +106,7 @@ void event_finish_write(event_sock_t *sock, event_handler_t *handler, int status
     }
 
     // remove write handler from list
-    LIST_DELETE(event_handler_t, sock->handlers, handler);
+    LIST_DELETE(handler, sock->handlers);
 
     // notify of write if a handler is available
     if (handler->event.write.cb != NULL) {
@@ -365,9 +289,9 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
 
     if (uip_connected()) {
         if (sock == NULL) { // new client connection
-            sock = LIST_FIND(event_sock_t, loop->polling, \
-                             LIST_ELEM->state == EVENT_SOCK_LISTENING && \
-                             UIP_HTONS(LIST_ELEM->descriptor) == uip_conn->lport);
+            sock = LIST_FIND(loop->polling, \
+                             LIST_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING && \
+                             UIP_HTONS(LIST_ELEM(event_sock_t)->descriptor) == uip_conn->lport);
 
             // Save the connection for when
             // accept is called
@@ -807,7 +731,7 @@ int event_sock_unused(event_loop_t *loop)
 {
     assert(loop != NULL);
 
-    return LIST_COUNT(event_sock_t, loop->unused);
+    return LIST_COUNT(loop->unused);
 }
 
 #ifdef CONTIKI
