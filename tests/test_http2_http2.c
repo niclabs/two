@@ -35,6 +35,7 @@ FAKE_VALUE_FUNC(int, handle_goaway_payload, goaway_payload_t *, cbuf_t *, h2stat
 FAKE_VALUE_FUNC(int, handle_continuation_payload, frame_header_t *, continuation_payload_t *, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, handle_window_update_payload, window_update_payload_t *, cbuf_t *, h2states_t *);
 FAKE_VALUE_FUNC(int, handle_ping_payload, ping_payload_t *, cbuf_t *, h2states_t *);
+FAKE_VOID_FUNC(two_on_client_close, event_sock_t *);
 
 #define FFF_FAKES_LIST(FAKE)                        \
     FAKE(cbuf_len)                                  \
@@ -61,6 +62,7 @@ FAKE_VALUE_FUNC(int, handle_ping_payload, ping_payload_t *, cbuf_t *, h2states_t
     FAKE(handle_continuation_payload)               \
     FAKE(handle_window_update_payload)              \
     FAKE(handle_ping_payload)                       \
+    FAKE(two_on_client_close)                       \
 
 
 // Reset fakes and memory before each test
