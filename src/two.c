@@ -59,7 +59,7 @@ void two_on_server_close(event_sock_t *server)
 
 void two_on_client_close(event_sock_t *client)
 {
-    INFO("Client connection closed");
+    INFO("Client connection closed on descriptor %d", client->descriptor);
     two_free_client(client->data);
 }
 
@@ -78,7 +78,7 @@ void two_on_new_connection(event_sock_t *server, int status)
         // if this happens there is an implementation error
         assert(data != NULL);
 
-        INFO("New client connection");
+        INFO("New client connection on descriptor %d", client->descriptor);
 
         // Configure data
         client->data = data;
