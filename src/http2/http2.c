@@ -164,7 +164,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         event_close(h2s->socket, clean_h2s);
 
-        DEBUG("Internal error response sent. Terminating connection");
+        DEBUG("Protocol error response sent. Terminating connection");
         return bytes_read;
     }
     else if (rc == FRAMES_FRAME_SIZE_ERROR) {
@@ -172,7 +172,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
         send_connection_error(HTTP2_FRAME_SIZE_ERROR, h2s);
         event_close(h2s->socket, clean_h2s);
 
-        DEBUG("Internal error response sent. Terminating connection");
+        DEBUG("Frame size error response sent. Terminating connection");
         return bytes_read;
     }
     DEBUG("Received new frame header 0x%d", header.type);
