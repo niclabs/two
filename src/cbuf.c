@@ -56,6 +56,7 @@ int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
         // if dst is NULL, calls to read will only increase the read pointer
         if (dst != NULL) { 
             memcpy(dst, cbuf->ptr + cbuf->tail, copylen);
+            dst += copylen;
         }
 
         // Update read pointer
@@ -68,7 +69,6 @@ int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
         bytes += copylen;
 
         // Update pointers
-        dst += copylen;
         len -= copylen;
     }
 
@@ -86,7 +86,11 @@ int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
         if (tail < cbuf->head) {
             copylen = MIN(len, cbuf->head - tail);
         }
-        memcpy(dst, cbuf->ptr + tail, copylen);
+
+        if (dst != NULL) {
+            memcpy(dst, cbuf->ptr + tail, copylen);
+            dst += copylen;
+        }
 
         // Update read pointer
         tail = (tail + copylen) % cbuf->maxlen; 
@@ -98,7 +102,6 @@ int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
         bytes += copylen;
 
         // Update pointers
-        dst += copylen;
         len -= copylen;
     }
 
