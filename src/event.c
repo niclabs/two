@@ -94,7 +94,7 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
     DEBUG("READ %d bytes", count);
 }
 
-void event_sock_read_handle(event_sock_t *sock, event_handler_t *handler)
+void event_sock_read_notify(event_sock_t *sock, event_handler_t *handler)
 {
     assert(sock != NULL);
     if (handler == NULL) {
@@ -117,7 +117,7 @@ void event_sock_read_handle(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
-void event_sock_write_handle(event_sock_t *sock, event_handler_t *handler, int status)
+void event_sock_write_notify(event_sock_t *sock, event_handler_t *handler, int status)
 {
     assert(sock != NULL);
     if (handler == NULL) {
@@ -166,7 +166,7 @@ void event_sock_write(event_sock_t *sock, event_handler_t *handler)
 #else
     int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
     if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-        event_sock_write_handle(sock, handler, -1);
+        event_sock_write_notify(sock, handler, -1);
         return;
     }
 
@@ -175,7 +175,7 @@ void event_sock_write(event_sock_t *sock, event_handler_t *handler)
 
     // notify of write when buffer is empty
     if (cbuf_len(&handler->event.write.buf) <= 0) {
-        event_sock_write_handle(sock, handler, 0);
+        event_sock_write_notify(sock, handler, 0);
     }
 #endif
 }
@@ -227,7 +227,7 @@ void event_loop_pending(event_loop_t *loop)
     for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
         event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
         if (handler != NULL) {
-            event_sock_read_handle(sock, handler);
+            event_sock_read_notify(sock, handler);
         }
     }
 }
@@ -258,7 +258,7 @@ void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
 
     // notify of write when buffer is empty
     if (cbuf_len(&handler->event.write.buf) <= 0) {
-        event_sock_write_handle(sock, handler, 0);
+        event_sock_write_notify(sock, handler, 0);
     }
     else {
         // perform write of remaining bytes
@@ -332,11 +332,11 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
         }
 
         // Handle pending reads
-        event_sock_read_handle(sock, rh);
+        event_sock_read_notify(sock, rh);
 
         while (wh != NULL) {
             // notify all pending write handlers
-            event_sock_write_handle(sock, wh, -1);
+            event_sock_write_notify(sock, wh, -1);
             wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
         }
 
@@ -364,7 +364,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
 
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
-    event_sock_read_handle(sock, rh);
+    event_sock_read_notify(sock, rh);
     event_sock_write(sock, wh);
 }
 #endif // CONTIKI
