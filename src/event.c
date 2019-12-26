@@ -334,8 +334,15 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
         // Handle pending reads
         event_sock_read_handle(sock, rh);
 
-        // what if there are multiple pending writes here?
-        event_sock_write_handle(sock, wh, -1);
+        while (wh != NULL) {
+            // notify all pending write handlers
+            event_sock_write_handle(sock, wh, -1);
+            wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
+        }
+
+        // Finish connection
+        tcp_markconn(uip_conn, NULL);
+        uip_close();
 
         return;
     }
@@ -354,7 +361,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     if (uip_newdata()) {
         event_sock_read(sock, rh);
     }
-    
+
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
     event_sock_read_handle(sock, rh);
