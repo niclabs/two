@@ -177,6 +177,14 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     }
     DEBUG("Received new frame header 0x%d", header.type);
 
+    // Reject frames with payload bigger than the read buffer
+    if(header.length > EVENT_MAX_BUF_READ_SIZE){
+      ERROR("Frame with payload bigger than reading buffer");
+      send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+      event_close(h2s->socket, clean_h2s);
+      return bytes_read;
+    }
+
     // Read max frame size from local settings
     uint32_t local_max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
     if (header.length > local_max_frame_size) {
