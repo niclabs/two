@@ -57,7 +57,7 @@ event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
     return handler;
 }
 
-void event_do_connect(event_sock_t *sock, event_handler_t *handler)
+void event_sock_connect(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler != NULL) {
         // if this happens there is an error with the implementation
@@ -68,41 +68,58 @@ void event_do_connect(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
-void event_do_read(event_sock_t *sock, event_handler_t *handler)
+void event_sock_read(event_sock_t *sock, event_handler_t *handler)
 {
-    if (handler != NULL) {
-        int readlen = EVENT_MAX_BUF_READ_SIZE - cbuf_len(&handler->event.read.buf);
-        uint8_t buf[readlen];
+    assert(sock != NULL);
+    if (handler == NULL) {
+        return;
+    }
 
-        // perform read in non blocking manner
+    // check available buffer data
+    int readlen = EVENT_MAX_BUF_READ_SIZE - cbuf_len(&handler->event.read.buf);
+    uint8_t buf[readlen];
+
 #ifdef CONTIKI
-        int count = MIN(readlen, uip_datalen());
-        memcpy(buf, uip_appdata, count);
+    int count = MIN(readlen, uip_datalen());
+    memcpy(buf, uip_appdata, count);
 #else
-        int count = recv(sock->descriptor, buf, readlen, MSG_DONTWAIT);
-        if ((count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) || count == 0) {
-            cbuf_end(&handler->event.read.buf);
-        }
+    // perform read in non blocking manner
+    int count = recv(sock->descriptor, buf, readlen, MSG_DONTWAIT);
+    if ((count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) || count == 0) {
+        cbuf_end(&handler->event.read.buf);
+    }
 #endif
-        // push data into buffer
-        cbuf_push(&handler->event.read.buf, buf, count);
-        int buflen = cbuf_len(&handler->event.read.buf);
+    // push data into buffer
+    cbuf_push(&handler->event.read.buf, buf, count);
+    DEBUG("READ %d bytes", count);
+}
 
-        // if a read is not paused notify about the new data
-        if (handler->event.read.cb != NULL && (buflen > 0 || cbuf_has_ended(&handler->event.read.buf))) {
-            uint8_t read_buf[buflen];
-            cbuf_peek(&handler->event.read.buf, read_buf, buflen);
+void event_sock_read_handle(event_sock_t *sock, event_handler_t *handler)
+{
+    assert(sock != NULL);
+    if (handler == NULL) {
+        return;
+    }
 
-            readlen = handler->event.read.cb(sock, buflen, read_buf);
+    int buflen = cbuf_len(&handler->event.read.buf);
 
-            // remove the read bytewrites from the buffer
-            cbuf_pop(&handler->event.read.buf, NULL, readlen);
-        }
+    // if a read is not paused notify about the new data
+    if (handler->event.read.cb != NULL && (buflen > 0 || cbuf_has_ended(&handler->event.read.buf))) {
+        uint8_t read_buf[buflen];
+        cbuf_peek(&handler->event.read.buf, read_buf, buflen);
+
+        DEBUG("Calling read callback with %d bytes", buflen);
+        int readlen = handler->event.read.cb(sock, buflen, read_buf);
+        DEBUG("Read callback read %d bytes", readlen);
+
+        // remove the read bytes from the buffer
+        cbuf_pop(&handler->event.read.buf, NULL, readlen);
     }
 }
 
-void event_finish_write(event_sock_t *sock, event_handler_t *handler, int status)
+void event_sock_write_handle(event_sock_t *sock, event_handler_t *handler, int status)
 {
+    assert(sock != NULL);
     if (handler == NULL) {
         return;
     }
@@ -119,55 +136,58 @@ void event_finish_write(event_sock_t *sock, event_handler_t *handler, int status
     LIST_PUSH(handler, sock->loop->unused_handlers);
 }
 
-void event_do_write(event_sock_t *sock, event_handler_t *handler)
+void event_sock_write(event_sock_t *sock, event_handler_t *handler)
 {
-    if (handler != NULL) {
-        // attempt to write remaining bytes
-#ifdef CONTIKI
-        // do nothing if already sending
-        if (handler->event.write.sending > 0) {
-            return;
-        }
-
-        int len = MIN(cbuf_len(&handler->event.write.buf), uip_mss());
-#else
-        int len = cbuf_len(&handler->event.write.buf);
-#endif
-        uint8_t buf[len];
-        cbuf_peek(&handler->event.write.buf, buf, len);
-
-#ifdef CONTIKI
-        // Send data
-        uip_send(buf, len);
-
-        // set sending length
-        handler->event.write.sending = len;
-#else
-        int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
-        if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            event_finish_write(sock, handler, -1);
-            return;
-        }
-
-        // remove written data from buffer
-        cbuf_pop(&handler->event.write.buf, NULL, written);
-
-        // notify of write when buffer is empty
-        if (cbuf_len(&handler->event.write.buf) <= 0) {
-            event_finish_write(sock, handler, 0);
-        }
-#endif
+    assert(sock != NULL);
+    if (handler == NULL) {
+        return;
     }
+
+    // attempt to write remaining bytes
+#ifdef CONTIKI
+    // do nothing if already sending
+    if (handler->event.write.sending > 0) {
+        return;
+    }
+
+    int len = MIN(cbuf_len(&handler->event.write.buf), uip_mss());
+#else
+    int len = cbuf_len(&handler->event.write.buf);
+#endif
+    uint8_t buf[len];
+    cbuf_peek(&handler->event.write.buf, buf, len);
+
+#ifdef CONTIKI
+    // Send data
+    uip_send(buf, len);
+
+    // set sending length
+    handler->event.write.sending = len;
+#else
+    int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
+    if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+        event_sock_write_handle(sock, handler, -1);
+        return;
+    }
+
+    // remove written data from buffer
+    cbuf_pop(&handler->event.write.buf, NULL, written);
+
+    // notify of write when buffer is empty
+    if (cbuf_len(&handler->event.write.buf) <= 0) {
+        event_sock_write_handle(sock, handler, 0);
+    }
+#endif
 }
 
 #ifndef CONTIKI
-void event_loop_poll(event_loop_t *loop)
+void event_loop_io(event_loop_t *loop, int millis)
 {
     assert(loop->nfds >= 0);
 
     fd_set read_fds = loop->active_fds;
     fd_set write_fds = loop->active_fds;
-    struct timeval tv = { 0, 0 };     // how much time should we block?
+    struct timeval tv = { 0, millis * 1000 };
 
     // poll list of file descriptors with select
     if (select(loop->nfds, &read_fds, &write_fds, NULL, &tv) < 0) {
@@ -178,55 +198,36 @@ void event_loop_poll(event_loop_t *loop)
     }
 
     for (int i = 0; i < loop->nfds; i++) {
-        int read = 0,  write = 0;
+        event_sock_t *sock;
+        if (FD_ISSET(i, &loop->active_fds)) {
+            sock = event_socket_find(loop->polling, i);
+        }
 
         // check read operations
         if (FD_ISSET(i, &read_fds)) {
-            read = 1;
+            if (sock->state == EVENT_SOCK_CONNECTED) {
+                // read into sock buffer if any
+                event_sock_read(sock, event_handler_find(sock->handlers, EVENT_READ_TYPE));
+            }
+            else {
+                event_sock_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
+            }
         }
 
         // check write operations
         if (FD_ISSET(i, &write_fds)) {
-            write = 1;
+            // write from buffer if possible
+            event_sock_write(sock, event_handler_find(sock->handlers, EVENT_WRITE_TYPE));
         }
+    }
+}
 
-        event_sock_t *sock;
-        event_handler_t *rh, *wh;
-        if (FD_ISSET(i, &read_fds) || FD_ISSET(i, &write_fds) || FD_ISSET(i, &loop->active_fds)) {
-            // find the handle on the polling list
-            sock = event_socket_find(loop->polling, i);
-
-            // if this happens it means there is a problem with the implementation
-            assert(sock != NULL);
-
-            rh = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-            if (rh != NULL && cbuf_len(&rh->event.read.buf) > 0) {
-                read = 1;
-            }
-
-            wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
-            if (wh != NULL && cbuf_len(&wh->event.write.buf) > 0) {
-                write = 1;
-            }
-        }
-
-        if (!read && !write) {
-            continue;
-        }
-
-        // if a read event is detected perform read operations
-        if (read) {
-            if (sock->state == EVENT_SOCK_CONNECTED) {
-                event_do_read(sock, rh);
-            }
-            else {
-                event_do_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
-            }
-        }
-
-        // if a write event is detected perform write operations
-        if (write) {
-            event_do_write(sock, wh);
+void event_loop_pending(event_loop_t *loop)
+{
+    for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
+        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
+        if (handler != NULL) {
+            event_sock_read_handle(sock, handler);
         }
     }
 }
@@ -257,11 +258,11 @@ void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
 
     // notify of write when buffer is empty
     if (cbuf_len(&handler->event.write.buf) <= 0) {
-        event_finish_write(sock, handler, 0);
+        event_sock_write_handle(sock, handler, 0);
     }
     else {
         // perform write of remaining bytes
-        event_do_write(sock, handler);
+        event_sock_write(sock, handler);
     }
 }
 
@@ -275,7 +276,7 @@ void event_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
     handler->event.write.sending = 0;
 
     // try again
-    event_do_write(sock, handler);
+    event_sock_write(sock, handler);
 }
 
 void event_handle_tcp_event(event_loop_t *loop, void *data)
@@ -300,7 +301,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
             sock->uip_conn = uip_conn;
 
             // do connect
-            event_do_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
+            event_sock_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
         }
 
         if (sock == NULL) { // no one waiting for the socket
@@ -329,26 +330,35 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
             // do not allow more data in read buffer
             cbuf_end(&rh->event.read.buf);
         }
-        
-        event_do_read(sock, rh);
-        event_finish_write(sock, wh, -1);
+
+        // Handle pending reads
+        event_sock_read_handle(sock, rh);
+
+        // what if there are multiple pending writes here?
+        event_sock_write_handle(sock, wh, -1);
 
         return;
     }
 
     if (uip_acked()) {
         event_handle_ack(sock, wh);
-        event_do_read(sock, rh);
+
+        // look for a new handler
+        wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
     }
 
     if (uip_rexmit()) {
         event_handle_rexmit(sock, wh);
     }
 
-    if (uip_newdata() || uip_poll()) {
-        event_do_read(sock, rh);
-        event_do_write(sock, wh);
+    if (uip_newdata()) {
+        event_sock_read(sock, rh);
     }
+    
+    // Handle pending reads and writes if available
+    // if it is a poll event, it will jump to here
+    event_sock_read_handle(sock, rh);
+    event_sock_write(sock, wh);
 }
 #endif // CONTIKI
 
@@ -773,8 +783,11 @@ void event_loop(event_loop_t *loop)
         }
 #else
         // todo: perform timer events
-        // perform I/O events
-        event_loop_poll(loop);
+        // perform I/O events with 0 timeout
+        event_loop_io(loop, 0);
+
+        // handle unprocessed read data
+        event_loop_pending(loop);
 #endif
 
         // perform close events

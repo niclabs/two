@@ -5,6 +5,7 @@
 
 #include "event.h"
 #include "cbuf.h"
+//#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 #include "unit.h"
 #include "fff.h"
 
@@ -294,6 +295,7 @@ void test_event_listen_no_more_sockets_cb(struct event_sock *server, int status)
 
 void test_event_listen_no_sockets_available(void)
 {
+    TEST_IGNORE();
     event_loop_t loop;
 
     event_loop_init(&loop);
@@ -475,8 +477,6 @@ void test_event_write_listen_cb(struct event_sock *server, int status)
 
     event_sock_t *client = event_sock_create(server->loop);
 
-    // set accept return value
-    accept_fake.return_val = 2;
     TEST_ASSERT_EQUAL(0, event_accept(server, client));
     TEST_ASSERT_EQUAL(2, client->descriptor);
 
@@ -497,11 +497,14 @@ void test_event_write(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
 
     // set fake functions
-    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_write_on_s2_fake, select_with_no_activity };
-    SET_CUSTOM_FAKE_SEQ(select, select_fakes, 3);
+    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_write_on_s2_fake };
+    SET_CUSTOM_FAKE_SEQ(select, select_fakes, 2);
 
     // The call to socket should return the server socket value
     socket_fake.return_val = 1;
+
+    // set accept return value
+    accept_fake.return_val = 2;
 
     // buffer responses
     cbuf_peek_fake.custom_fake = test_cbuf_peek;
@@ -521,7 +524,7 @@ void test_event_write(void)
     // start loop
     event_loop(&loop);
 
-    TEST_ASSERT_EQUAL(2, select_fake.call_count);
+    TEST_ASSERT_EQUAL(3, select_fake.call_count);
     TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
 }
 //////////////////////////////////////////////////////////////////////////
@@ -548,8 +551,7 @@ int main(void)
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_event_sock_create);
     UNIT_TEST(test_event_listen);
-    //TODO: fix test_event_listen_no_sockets_available on test_event.c
-    //UNIT_TEST(test_event_listen_no_sockets_available);
+    UNIT_TEST(test_event_listen_no_sockets_available);
     UNIT_TEST(test_event_accept);
     UNIT_TEST(test_event_read);
     UNIT_TEST(test_event_write);
