@@ -136,15 +136,17 @@ void test_change_stream_state_end_stream_flag_close_connection(void)
 
 }
 
-/*
+
 void test_send_data(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     http2_data_t data;
 
     data.size = 36;
     data.processed = 0;
-    h2s.outgoing_window.window_size = 30;
+    h2s.remote_window.connection_window = 30;
     h2s.current_stream.state = STREAM_OPEN;
     h2s.current_stream.stream_id = 24;
     h2s.data = data;
@@ -164,12 +166,14 @@ void test_send_data(void)
 
 void test_send_data_end_stream(void)
 {
+    TEST_IGNORE();
+
     http2_data_t data;
     h2states_t h2s_open;
 
     data.size = 36;
     data.processed = 0;
-    h2s_open.outgoing_window.window_size = 30;
+    h2s_open.remote_window.connection_window = 30;
     h2s_open.current_stream.state = STREAM_OPEN;
     h2s_open.current_stream.stream_id = 24;
     h2s_open.data = data;
@@ -188,7 +192,7 @@ void test_send_data_end_stream(void)
 
     h2states_t h2s_hcr;
 
-    h2s_hcr.outgoing_window.window_size = 30;
+    h2s_hcr.remote_window.connection_window = 30;
     h2s_hcr.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
     h2s_hcr.current_stream.stream_id = 24;
     h2s_hcr.received_goaway = 0;
@@ -205,12 +209,14 @@ void test_send_data_end_stream(void)
 
 void test_send_data_full_sending(void)
 {
+    TEST_IGNORE();
+
     http2_data_t data;
     h2states_t h2s;
 
     data.size = 36;
     data.processed = 0;
-    h2s.outgoing_window.window_size = 50;
+    h2s.remote_window.connection_window = 50;
     h2s.current_stream.state = STREAM_OPEN;
     h2s.current_stream.stream_id = 24;
     h2s.data = data;
@@ -227,11 +233,12 @@ void test_send_data_full_sending(void)
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_OPEN, "stream state must remain as STREAM_OPEN");
 
 }
-*/
 
 
 void test_send_data_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s_nodata;
 
     h2s_nodata.data.size = 0;
@@ -276,12 +283,13 @@ void test_send_data_errors(void)
     TEST_ASSERT_EQUAL(32, flow_control_send_data_fake.arg1_val);
 }
 
-/*
 void test_send_data_close_connection(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
-    h2s.outgoing_window.window_size = 30;
+    h2s.remote_window.connection_window = 30;
     h2s.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
     h2s.current_stream.stream_id = 24;
     h2s.received_goaway = 1;
@@ -300,10 +308,11 @@ void test_send_data_close_connection(void)
     TEST_ASSERT_MESSAGE(h2s.current_stream.state == STREAM_CLOSED, "stream state must be STREAM_CLOSED");
 
 }
-*/
 
 void test_send_settings_ack(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     frame_to_bytes_fake.return_val = 9;
@@ -320,6 +329,8 @@ void test_send_settings_ack(void)
 
 void test_send_settings_ack_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     frame_to_bytes_fake.return_val = 9;
@@ -338,6 +349,8 @@ void test_send_settings_ack_errors(void)
 
 void test_send_ping(void)
 {
+    TEST_IGNORE();
+
     uint8_t opaque_data[8];
     h2states_t h2s;
 
@@ -355,6 +368,8 @@ void test_send_ping(void)
 
 void test_send_ping_ack(void)
 {
+    TEST_IGNORE();
+
     uint8_t opaque_data[8];
     h2states_t h2s;
 
@@ -373,6 +388,8 @@ void test_send_ping_ack(void)
 
 void test_send_ping_errors(void)
 {
+    TEST_IGNORE();
+
     uint8_t opaque_data[8];
     h2states_t h2s;
 
@@ -391,6 +408,8 @@ void test_send_ping_errors(void)
 
 void test_send_goaway(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     h2s.sent_goaway = 0;
@@ -408,6 +427,8 @@ void test_send_goaway(void)
 
 void test_send_goaway_close_connection(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     h2s.sent_goaway = 0;
@@ -437,12 +458,13 @@ void test_send_goaway_errors(void)
 
 }
 
-/*
 void test_send_window_update(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
-    h2s.incoming_window.window_used = 24;
+    h2s.local_window.connection_window = 24;
 
     frame_to_bytes_fake.return_val = 32;
     cbuf_push_fake.return_val = 32;
@@ -452,14 +474,14 @@ void test_send_window_update(void)
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_NO_ERROR, "rc must be HTTP2_RC_NO_ERROR");
     TEST_ASSERT_EQUAL(16, flow_control_send_window_update_fake.arg1_val);
 }
-*/
 
-/*
 void test_send_window_update_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
-    h2s.incoming_window.window_used = 24;
+    h2s.local_window.connection_window = 24;
 
     int create_wu_return[4] = { -1, 0, 0, 0 };
     SET_RETURN_SEQ(create_window_update_frame, create_wu_return, 4);
@@ -490,10 +512,7 @@ void test_send_window_update_errors(void)
     TEST_ASSERT_MESSAGE(rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT, "rc must be HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT (error sending frame)");
     TEST_ASSERT_MESSAGE(frame_to_bytes_fake.call_count == 6, "frame to bytes must be called by send_window_update and send_goaway");
     TEST_ASSERT_MESSAGE(cbuf_push_fake.call_count == 6, "cbuf_push must be called by send_window_update and send_goaway");
-
-
 }
-*/
 
 void test_send_headers_stream_verification_server(void)
 {
@@ -608,6 +627,8 @@ void test_send_headers_stream_verification_client(void)
 
 void test_send_headers_stream_verification_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s_closed;
     h2states_t h2s_hcl;
 
@@ -631,6 +652,8 @@ void test_send_headers_stream_verification_errors(void)
 
 void test_send_local_settings(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     for (int i = 0; i < 6; i++) {
@@ -651,6 +674,8 @@ void test_send_local_settings(void)
 
 void test_send_local_settings_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     h2s.wait_setting_ack = 0;
@@ -676,6 +701,8 @@ void test_send_local_settings_errors(void)
 
 void test_send_continuation_frame(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
@@ -694,6 +721,8 @@ void test_send_continuation_frame(void)
 
 void test_send_continuation_frame_end_headers(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
@@ -712,6 +741,8 @@ void test_send_continuation_frame_end_headers(void)
 
 void test_send_continuation_frame_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
     int rc;
@@ -732,6 +763,8 @@ void test_send_continuation_frame_errors(void)
 
 void test_send_headers_frame(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
@@ -750,6 +783,8 @@ void test_send_headers_frame(void)
 
 void test_send_headers_frame_end_headers(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
@@ -769,6 +804,8 @@ void test_send_headers_frame_end_headers(void)
 
 void test_send_headers_frame_end_stream(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
 
@@ -804,6 +841,8 @@ void test_send_headers_frame_all_branches(void)
 
 void test_send_headers_frame_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     uint8_t buff[HTTP2_MAX_BUFFER_SIZE];
     int rc;
@@ -903,6 +942,8 @@ void test_send_headers_with_continuation(void)
 
 void test_send_headers_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s_ga;
     h2states_t h2s_zero;
     h2states_t h2s_cver;
@@ -954,6 +995,8 @@ void test_send_headers_errors(void)
 
 void test_send_headers_errors_one_header(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     h2s.current_stream.state = STREAM_OPEN;
@@ -979,6 +1022,8 @@ void test_send_headers_errors_one_header(void)
 
 void test_send_headers_errors_with_continuation(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
 
     h2s.current_stream.state = STREAM_OPEN;
@@ -1022,6 +1067,8 @@ void test_send_headers_errors_with_continuation(void)
 
 void test_send_response(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s_data;
     h2states_t h2s_nodata;
 
@@ -1069,6 +1116,8 @@ void test_send_response(void)
 
 void test_send_response_errors(void)
 {
+    TEST_IGNORE();
+
     h2states_t h2s;
     h2states_t h2s_bad_headers;
     h2states_t h2s_bad_headers_data;
@@ -1123,41 +1172,40 @@ int main(void)
     UNIT_TESTS_BEGIN();
     UNIT_TEST(test_change_stream_state_end_stream_flag);
     UNIT_TEST(test_change_stream_state_end_stream_flag_close_connection);
-    //TODO: Fix tests in test_http2_send
-    //UNIT_TEST(test_send_data);
-    //UNIT_TEST(test_send_data_end_stream);
-    //UNIT_TEST(test_send_data_full_sending);
-    //UNIT_TEST(test_send_data_errors);
-    //UNIT_TEST(test_send_data_close_connection);
-    //UNIT_TEST(test_send_settings_ack);
-    //UNIT_TEST(test_send_settings_ack_errors);
-    //UNIT_TEST(test_send_ping);
-    //UNIT_TEST(test_send_ping_ack);
-    //UNIT_TEST(test_send_ping_errors);
-    //UNIT_TEST(test_send_goaway);
-    //UNIT_TEST(test_send_goaway_close_connection);
+    UNIT_TEST(test_send_data);
+    UNIT_TEST(test_send_data_end_stream);
+    UNIT_TEST(test_send_data_full_sending);
+    UNIT_TEST(test_send_data_errors);
+    UNIT_TEST(test_send_data_close_connection);
+    UNIT_TEST(test_send_settings_ack);
+    UNIT_TEST(test_send_settings_ack_errors);
+    UNIT_TEST(test_send_ping);
+    UNIT_TEST(test_send_ping_ack);
+    UNIT_TEST(test_send_ping_errors);
+    UNIT_TEST(test_send_goaway);
+    UNIT_TEST(test_send_goaway_close_connection);
     UNIT_TEST(test_send_goaway_errors);
-    //UNIT_TEST(test_send_window_update);
-    //UNIT_TEST(test_send_window_update_errors);
+    UNIT_TEST(test_send_window_update);
+    UNIT_TEST(test_send_window_update_errors);
     UNIT_TEST(test_send_headers_stream_verification_server);
     UNIT_TEST(test_send_headers_stream_verification_client);
-    //UNIT_TEST(test_send_headers_stream_verification_errors);
-    //UNIT_TEST(test_send_local_settings);
-    //UNIT_TEST(test_send_local_settings_errors);
-    //UNIT_TEST(test_send_continuation_frame);
-    //UNIT_TEST(test_send_continuation_frame_end_headers);
-    //UNIT_TEST(test_send_continuation_frame_errors);
-    //UNIT_TEST(test_send_headers_frame);
-    //UNIT_TEST(test_send_headers_frame_end_stream);
-    //UNIT_TEST(test_send_headers_frame_end_headers);
-    //UNIT_TEST(test_send_headers_frame_errors);
+    UNIT_TEST(test_send_headers_stream_verification_errors);
+    UNIT_TEST(test_send_local_settings);
+    UNIT_TEST(test_send_local_settings_errors);
+    UNIT_TEST(test_send_continuation_frame);
+    UNIT_TEST(test_send_continuation_frame_end_headers);
+    UNIT_TEST(test_send_continuation_frame_errors);
+    UNIT_TEST(test_send_headers_frame);
+    UNIT_TEST(test_send_headers_frame_end_stream);
+    UNIT_TEST(test_send_headers_frame_end_headers);
+    UNIT_TEST(test_send_headers_frame_errors);
     UNIT_TEST(test_send_headers_one_header);
     UNIT_TEST(test_send_headers_with_continuation);
-    //UNIT_TEST(test_send_headers_errors);
-    //UNIT_TEST(test_send_headers_errors_one_header);
-    //UNIT_TEST(test_send_headers_errors_with_continuation);
-    //UNIT_TEST(test_send_response);
-    //UNIT_TEST(test_send_response_errors);
+    UNIT_TEST(test_send_headers_errors);
+    UNIT_TEST(test_send_headers_errors_one_header);
+    UNIT_TEST(test_send_headers_errors_with_continuation);
+    UNIT_TEST(test_send_response);
+    UNIT_TEST(test_send_response_errors);
 
     return UNIT_TESTS_END();
 }
