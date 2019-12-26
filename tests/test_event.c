@@ -5,7 +5,6 @@
 
 #include "event.h"
 #include "cbuf.h"
-//#define LOG_LEVEL (LOG_LEVEL_DEBUG)
 #include "unit.h"
 #include "fff.h"
 
