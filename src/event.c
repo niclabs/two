@@ -89,6 +89,7 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
         cbuf_end(&handler->event.read.buf);
     }
 #endif
+    DEBUG("received %d bytes from remote endpoint", count);
     // push data into buffer
     cbuf_push(&handler->event.read.buf, buf, count);
 }
@@ -107,7 +108,9 @@ void event_sock_read_notify(event_sock_t *sock, event_handler_t *handler)
         uint8_t read_buf[buflen];
         cbuf_peek(&handler->event.read.buf, read_buf, buflen);
 
+        DEBUG("passing %d bytes to callback", buflen);
         int readlen = handler->event.read.cb(sock, buflen, read_buf);
+        DEBUG("callback used %d bytes", readlen);
 
         // remove the read bytes from the buffer
         cbuf_pop(&handler->event.read.buf, NULL, readlen);
@@ -345,9 +348,6 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     
     if (uip_acked()) {
         event_handle_ack(sock, wh);
-
-        // look for a new handler
-        wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
     }
 
     if (uip_rexmit()) {
@@ -361,6 +361,9 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
     event_sock_read_notify(sock, rh);
+    
+    // find the handler again just in case
+    wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
     event_sock_write(sock, wh);
 
     // Close connection cleanly
