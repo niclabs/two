@@ -331,22 +331,21 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
             cbuf_end(&rh->event.read.buf);
         }
 
-        // Handle pending reads
+        // Handle pending reads one last time
         event_sock_read_notify(sock, rh);
 
+        // notify all pending write handlers
         while (wh != NULL) {
-            // notify all pending write handlers
             event_sock_write_notify(sock, wh, -1);
             wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
         }
 
         // Finish connection
-        tcp_markconn(uip_conn, NULL);
         uip_close();
 
         return;
     }
-
+    
     if (uip_acked()) {
         event_handle_ack(sock, wh);
 
@@ -366,6 +365,11 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     // if it is a poll event, it will jump to here
     event_sock_read_notify(sock, rh);
     event_sock_write(sock, wh);
+
+    // Close connection cleanly
+    if (sock->state == EVENT_SOCK_CLOSING && wh == NULL) {
+        uip_close();
+    }
 }
 #endif // CONTIKI
 
