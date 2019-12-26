@@ -3,7 +3,7 @@
 
 #include "cbuf.h"
 
-#define HTTP2_MAX_HBF_BUFFER 16384
+#define HTTP2_MAX_HBF_BUFFER 4096
 
 // Logging per module
 /* 

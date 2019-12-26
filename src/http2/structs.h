@@ -16,16 +16,16 @@
 
 
 /*Definition of max headers frame buffer size*/
-#define HTTP2_MAX_HBF_BUFFER 16384
+#define HTTP2_MAX_HBF_BUFFER 4096
 /*Definition of max buffer size*/
-#define HTTP2_MAX_BUFFER_SIZE 16384
+#define HTTP2_MAX_BUFFER_SIZE 4096
 
 
 /*Default settings values*/
 #define DEFAULT_HEADER_TABLE_SIZE 4096
 #define DEFAULT_ENABLE_PUSH 0
 #define DEFAULT_MAX_CONCURRENT_STREAMS 1
-#define DEFAULT_INITIAL_WINDOW_SIZE 16384
+#define DEFAULT_INITIAL_WINDOW_SIZE 4096
 #define DEFAULT_MAX_FRAME_SIZE 16384
 #define DEFAULT_MAX_HEADER_LIST_SIZE 512
 

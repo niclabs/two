@@ -365,7 +365,7 @@ int handle_payload(uint8_t *buff_read, h2states_t *h2s)
             DEBUG("handle_payload: RECEIVED HEADERS PAYLOAD");
 
             headers_payload_t hpl;
-            uint8_t headers_block_fragment[HTTP2_MAX_HBF_BUFFER];
+            uint8_t headers_block_fragment[h2s->header.length];
             uint8_t padding[32];
             hpl.header_block_fragment = headers_block_fragment;
             hpl.padding = padding;
