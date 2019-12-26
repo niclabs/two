@@ -91,7 +91,6 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
 #endif
     // push data into buffer
     cbuf_push(&handler->event.read.buf, buf, count);
-    DEBUG("READ %d bytes", count);
 }
 
 void event_sock_read_notify(event_sock_t *sock, event_handler_t *handler)
@@ -108,9 +107,7 @@ void event_sock_read_notify(event_sock_t *sock, event_handler_t *handler)
         uint8_t read_buf[buflen];
         cbuf_peek(&handler->event.read.buf, read_buf, buflen);
 
-        DEBUG("Calling read callback with %d bytes", buflen);
         int readlen = handler->event.read.cb(sock, buflen, read_buf);
-        DEBUG("Read callback read %d bytes", readlen);
 
         // remove the read bytes from the buffer
         cbuf_pop(&handler->event.read.buf, NULL, readlen);
