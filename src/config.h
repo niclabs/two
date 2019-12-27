@@ -3,10 +3,10 @@
 
 #include "cbuf.h"
 
-#define HTTP2_MAX_HBF_BUFFER 4096
+#define HTTP2_MAX_HBF_BUFFER 256
 
 // Logging per module
-/* 
+/*
 #undef LOG_LEVEL_EVENT
 #define LOG_LEVEL_EVENT (LOG_LEVEL_DEBUG)
 #undef LOG_LEVEL_FRAME
