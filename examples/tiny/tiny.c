@@ -91,6 +91,8 @@ typedef struct http2_ctx {
     http2_settings_t settings;
 
     struct http2_ctx *next;
+
+    uint8_t event_buf[HTTP2_MAX_FRAME_SIZE];
 } http2_ctx_t;
 
 
@@ -367,7 +369,7 @@ int read_header(event_sock_t *client, int size, uint8_t *buf)
           header->length, header->type, header->flags, header->stream_id);
 #endif
         
-        event_read_stop(client);
+        event_read_pause(client);
         if (process_header(client, ctx, header) < 0) {
             event_close(client, on_client_close);
         }
@@ -476,7 +478,7 @@ void on_new_connection(event_sock_t *server, int status)
         client->data = ctx;
         ctx->settings = default_settings;
 
-        event_read(client, read_preface);
+        event_read_start(client, ctx->event_buf, HTTP2_MAX_FRAME_SIZE, read_preface);
     }
     else {
         event_close(client, on_client_close);
