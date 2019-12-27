@@ -11,7 +11,7 @@ static const uint32_t HPACK_TABLES_FIRST_INDEX_DYNAMIC = 62;   // Changed type t
 
 //HeaderPairs in static table
 
-static hpack_static_table_t hpack_static_table_v2 = {
+static hpack_static_table_t hpack_static_table = {
     .name_table = NAME_TABLE_LITERAL,
     .value_table = VALUE_TABLE_LITERAL,
 };
@@ -29,8 +29,8 @@ void hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, ch
     assert(index > 0);
     assert(index < 62);
     index--;                    //because static table begins at index 1
-    char *table_name_pointer = hpack_static_table_v2.name_table;
-    char *table_value_pointer = hpack_static_table_v2.value_table;
+    char *table_name_pointer = hpack_static_table.name_table;
+    char *table_value_pointer = hpack_static_table.value_table;
 
     for (uint8_t i = 0; i < index; i++) {
         size_t sz = strlen(table_name_pointer);
@@ -59,7 +59,7 @@ void hpack_tables_static_find_entry_name(uint8_t index, char *name)
     assert(index > 0);
     assert(index < 62);
     index--;
-    char *table_name_pointer = hpack_static_table_v2.name_table;
+    char *table_name_pointer = hpack_static_table.name_table;
 
     for (uint8_t i = 0; i < index; i++) {
         size_t sz = strlen(table_name_pointer);
@@ -562,8 +562,8 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
 int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
     //Search first in static table
-    char *table_name = hpack_static_table_v2.name_table;
-    char *table_value = hpack_static_table_v2.value_table;
+    char *table_name = hpack_static_table.name_table;
+    char *table_value = hpack_static_table.value_table;
 
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         if ((strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) &&
@@ -620,7 +620,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
 {
 
     //Search first in static table
-    char *table_name = hpack_static_table_v2.name_table;
+    char *table_name = hpack_static_table.name_table;
 
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
         if (strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) {
