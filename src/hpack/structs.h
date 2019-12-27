@@ -22,7 +22,7 @@
 #ifdef HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (HPACK_CONF_MAX_DYNAMIC_TABLE_SIZE)
 #else
-#define HPACK_MAX_DYNAMIC_TABLE_SIZE (4096)
+#define HPACK_MAX_DYNAMIC_TABLE_SIZE (256)
 #endif
 
 typedef enum __attribute__((__packed__)) {
