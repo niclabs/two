@@ -54,6 +54,8 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
 
     headers_init(&(h2s->headers));
 
+    h2s->data.buf = h2s->header_block_fragments;
+
     return HTTP2_RC_NO_ERROR;
 }
 

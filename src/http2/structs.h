@@ -89,7 +89,7 @@ typedef struct HTTP2_FLOW_CONTROL_WINDOW {
 
 typedef struct HTTP2_DATA {
     uint32_t size;
-    uint8_t buf[DEFAULT_INITIAL_WINDOW_SIZE];     /*Placeholder*/
+    uint8_t *buf;
     uint32_t processed;
 } http2_data_t;
 
@@ -97,7 +97,7 @@ typedef struct HTTP2_DATA {
 /*Struct for storing HTTP2 states*/
 typedef struct http2_states {
     // make a http2_states a linked list
-    // IMPORTANT: this pointer must be the first of the struct 
+    // IMPORTANT: this pointer must be the first of the struct
     // in order to use the list macros
     struct http2_states *next;
 
