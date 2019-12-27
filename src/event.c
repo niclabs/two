@@ -76,7 +76,7 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
     }
 
     // check available buffer data
-    int readlen = EVENT_MAX_BUF_READ_SIZE - cbuf_len(&handler->event.read.buf);
+    int readlen = cbuf_maxlen(&handler->event.read.buf) - cbuf_len(&handler->event.read.buf);
     uint8_t buf[readlen];
 
 #ifdef CONTIKI
@@ -345,7 +345,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
 
         return;
     }
-    
+
     if (uip_acked()) {
         event_handle_ack(sock, wh);
     }
@@ -361,7 +361,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
     event_sock_read_notify(sock, rh);
-    
+
     // find the handler again just in case
     wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
     event_sock_write(sock, wh);
@@ -531,52 +531,88 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     return 0;
 }
 
-int event_read(event_sock_t *sock, event_read_cb cb)
+int event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, event_read_cb cb)
 {
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
-    assert(cb != NULL);
+    assert(buf != NULL);
+
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    // see if there is already a read handler set
     event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-    if (handler != NULL) {
-        // update callback
-        handler->event.read.cb = cb;
-        return 0;
-    }
+    assert(handler == NULL); // read stop must be called before call to event_read_start
 
     // find free handler
     event_loop_t *loop = sock->loop;
     handler = event_handler_find_free(loop, sock);
-    assert(handler != NULL);
+    assert(handler != NULL); // should we return -1 instead?
 
     // set handler event
     handler->type = EVENT_READ_TYPE;
     memset(&handler->event.read, 0, sizeof(event_read_t));
 
     // initialize read buffer
-    cbuf_init(&handler->event.read.buf, handler->event.read.buf_data, EVENT_MAX_BUF_READ_SIZE);
+    cbuf_init(&handler->event.read.buf, buf, bufsize);
 
-    // set write callback
+    // set read callback
     handler->event.read.cb = cb;
 
     return 0;
 }
 
-void event_read_stop(event_sock_t *sock)
+int event_read(event_sock_t *sock, event_read_cb cb)
 {
+    // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
 
+    // read can only be performed on connected sockets
+    assert(sock->state == EVENT_SOCK_CONNECTED);
+
     // see if there is already a read handler set
     event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-    assert(handler != NULL);
+    assert(handler != NULL); // event_read_start() must be called before
 
-    // remove callback
+    // Update read callback
+    handler->event.read.cb = cb;
+
+    return 0;
+}
+
+void event_read_pause(event_sock_t *sock)
+{
+    event_read(sock, NULL);
+}
+
+int event_read_stop(event_sock_t *sock)
+{
+    // check socket status
+    assert(sock != NULL);
+    assert(sock->loop != NULL);
+    
+    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
+    assert(handler != NULL); // event_read_start() must have been called before
+
+    // remove read handler from list
+    LIST_DELETE(handler, sock->handlers);
+    
+    // reset read callback
     handler->event.read.cb = NULL;
+
+    // Move data to the beginning of the buffer
+    int len = cbuf_len(&handler->event.read.buf);
+    uint8_t buf[len];
+    cbuf_pop(&handler->event.read.buf, buf, len);
+
+    // Copy memory back to cbuf pointer
+    memcpy(handler->event.read.buf.ptr, buf, len);
+
+    // move handler to loop unused list
+    LIST_PUSH(handler, sock->loop->unused_handlers);
+
+    return len;
 }
 
 int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
@@ -617,9 +653,9 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     return to_write;
 }
 
-int event_read_stop_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
+int event_read_pause_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
 {
-    event_read_stop(sock);
+    event_read_pause(sock);
     return event_write(sock, size, bytes, cb);
 }
 

@@ -72,7 +72,7 @@ void http2_server_init_connection(event_sock_t *client, int status)
     // Initialize http2 state
     init_variables_h2s(h2s, 1, client);
 
-    event_read(client, exchange_prefaces);
+    event_read_start(client, h2s->input_buf, HTTP2_MAX_BUFFER_SIZE, exchange_prefaces);
 }
 
 void http2_on_read_continue(event_sock_t *client, int status)
@@ -178,7 +178,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     DEBUG("Received new frame header 0x%d", header.type);
 
     // Reject frames with payload bigger than the read buffer
-    if(header.length > EVENT_MAX_BUF_READ_SIZE){
+    if(header.length > HTTP2_MAX_BUFFER_SIZE){
       ERROR("Frame with payload bigger than reading buffer");
       send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
       event_close(h2s->socket, clean_h2s);

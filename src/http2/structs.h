@@ -123,6 +123,9 @@ typedef struct http2_states {
     //Hpack dynamic table
     hpack_states_t hpack_states;
 
+    // input buffer for event_read
+    uint8_t input_buf[HTTP2_MAX_BUFFER_SIZE];
+
     frame_header_t header;
     http2_data_t data;
     header_list_t headers;

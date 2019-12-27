@@ -24,6 +24,7 @@ FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, cbuf_peek, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, cbuf_len, cbuf_t *);
+FAKE_VALUE_FUNC(int, cbuf_maxlen, cbuf_t *);
 FAKE_VOID_FUNC(cbuf_end, cbuf_t *);
 FAKE_VALUE_FUNC(int, cbuf_has_ended, cbuf_t *);
 
@@ -44,12 +45,14 @@ FAKE_VALUE_FUNC(int, cbuf_has_ended, cbuf_t *);
     FAKE(cbuf_pop)              \
     FAKE(cbuf_len)              \
     FAKE(cbuf_end)              \
-    FAKE(cbuf_has_ended)              \
+    FAKE(cbuf_has_ended)        \
+    FAKE(cbuf_maxlen)           \
     FAKE(select)
 
 
 int fake_cbuf_len;
 int fake_cbuf_ended;
+uint8_t buf[32];
 
 void setUp(void)
 {
@@ -62,6 +65,7 @@ void setUp(void)
     // reset cbuf len
     fake_cbuf_len = 0;
     fake_cbuf_ended = 0;
+    memset(buf, 0, 32);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -195,6 +199,11 @@ ssize_t send_hello(int s, const void *src, size_t len, int flags)
 int test_cbuf_len(cbuf_t *cbuf)
 {
     return fake_cbuf_len;
+}
+
+int test_cbuf_maxlen(cbuf_t *cbuf)
+{
+    return 32;
 }
 
 int test_cbuf_pop(cbuf_t *cb, void *dst, int size)
@@ -410,8 +419,8 @@ void test_event_read_listen_cb(struct event_sock *server, int status)
     TEST_ASSERT_EQUAL(0, event_accept(server, client));
     TEST_ASSERT_EQUAL(2, client->descriptor);
 
-    // call read
-    event_read(client, test_event_read_hello_cb);
+    // call read start
+    event_read_start(client, buf, 32, test_event_read_hello_cb);
 
     // close sockets
     event_close(server, close_s1_cb);
@@ -438,6 +447,7 @@ void test_event_read(void)
     cbuf_peek_fake.custom_fake = test_cbuf_peek;
     cbuf_pop_fake.custom_fake = test_cbuf_pop;
     cbuf_len_fake.custom_fake = test_cbuf_len;
+    cbuf_maxlen_fake.custom_fake = test_cbuf_maxlen;
     cbuf_push_fake.custom_fake = test_cbuf_push;
     cbuf_end_fake.custom_fake = test_cbuf_end;
     cbuf_has_ended_fake.custom_fake = test_cbuf_has_ended;
@@ -480,7 +490,7 @@ void test_event_write_listen_cb(struct event_sock *server, int status)
     TEST_ASSERT_EQUAL(0, event_accept(server, client));
     TEST_ASSERT_EQUAL(2, client->descriptor);
 
-    // call read
+    // call write
     event_write(client, 13, (unsigned char *)"Hello, World!", test_event_write_hello_world_cb);
 
     // close sockets
@@ -510,6 +520,7 @@ void test_event_write(void)
     cbuf_peek_fake.custom_fake = test_cbuf_peek;
     cbuf_pop_fake.custom_fake = test_cbuf_pop;
     cbuf_len_fake.custom_fake = test_cbuf_len;
+    cbuf_maxlen_fake.custom_fake = test_cbuf_maxlen;
     cbuf_push_fake.custom_fake = test_cbuf_push;
     cbuf_end_fake.custom_fake = test_cbuf_end;
     cbuf_has_ended_fake.custom_fake = test_cbuf_has_ended;

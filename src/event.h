@@ -32,12 +32,6 @@
 #define EVENT_MAX_HANDLERS (CONF_EVENT_MAX_HANDLERS)
 #endif
 
-#ifndef CONF_EVENT_MAX_BUF_READ_SIZE
-#define EVENT_MAX_BUF_READ_SIZE 4096
-#else
-#define EVENT_MAX_BUF_READ_SIZE (CONF_EVENT_MAX_BUF_READ_SIZE)
-#endif
-
 #ifndef CONF_EVENT_MAX_BUF_WRITE_SIZE
 #define EVENT_MAX_BUF_WRITE_SIZE 64
 #else
@@ -91,8 +85,7 @@ typedef struct event_connection {
 
 typedef struct event_read {
     // type variables
-    uint8_t buf_data[EVENT_MAX_BUF_READ_SIZE];
-    cbuf_t buf;
+        cbuf_t buf;
     event_read_cb cb;
 } event_read_t;
 
@@ -180,19 +173,38 @@ typedef struct event_loop {
 // client slots are available
 int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb);
 
-// Be notified on read operations on the socket
-// event_read_stop must be called before assigning a new read callback
+// Start reading events in the socket. This configures the given buffer for reading, 
+// this will configure the buffer as a circular buffer until event_read_stop is called, 
+// where the handler will be released and writing on the buffer will stop. Memory 
+// allocation/freeing is responsibility of the user of the library
+//
+// event_read_cb will be called on new data 
+int event_read_start(event_sock_t *sock, uint8_t * buf, unsigned int bufsize, event_read_cb cb);
+
+// Update the notification callback for read operations in the given socket
+// event_read_start MUST be called first
 int event_read(event_sock_t *sock, event_read_cb cb);
 
+// Pause read notifications on the given socket. This effectively
+// removes the callback from the read handler. Read restart must
+// be performed with a call to event_read()
+void event_read_pause(event_sock_t *sock);
+
 // Stop receiving read notifications
-void event_read_stop(event_sock_t *sock);
+// this releases the read handler and stops writing
+// in the buffer given at event_read_start.
+// If any data are left in the buffer, this will 
+// leave them untouched at the beginning of the memory pointed
+// by the buffer and return the number of bytes available
+int event_read_stop(event_sock_t *sock);
 
 // Write to the output buffer, will notify the callback when all bytes are
 // written
 int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
 
-// Remove the read callback and set a write callback
-int event_read_stop_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
+// Pause read event notifications on the socket for writing the contents of the given buffer
+// read event notifications will not restart until event_read() is called again
+int event_read_pause_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
 
 // Close the socket
 // will notify the callback after all write operations are finished

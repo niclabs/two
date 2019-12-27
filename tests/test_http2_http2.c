@@ -14,6 +14,7 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_len, cbuf_t *);
 FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, event_read, event_sock_t *, event_read_cb);
+FAKE_VALUE_FUNC(int, event_read_start, event_sock_t *, uint8_t *, unsigned int, event_read_cb);
 FAKE_VALUE_FUNC(int, event_close, event_sock_t *, event_close_cb);
 FAKE_VOID_FUNC(hpack_init_states, hpack_states_t *, uint32_t);
 FAKE_VOID_FUNC(send_connection_error, cbuf_t *, uint32_t, h2states_t *);
@@ -41,6 +42,7 @@ FAKE_VOID_FUNC(two_on_client_close, event_sock_t *);
     FAKE(cbuf_len)                                  \
     FAKE(cbuf_pop)                                  \
     FAKE(event_read)                                \
+    FAKE(event_read_start)                          \
     FAKE(event_close)                               \
     FAKE(hpack_init_states)                         \
     FAKE(send_connection_error)                     \

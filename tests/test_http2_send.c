@@ -16,7 +16,7 @@ typedef unsigned int uint;
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
 FAKE_VALUE_FUNC(int, event_write, event_sock_t *, uint, uint8_t *, event_write_cb);
-FAKE_VALUE_FUNC(int, event_read_stop_and_write, event_sock_t *, uint, uint8_t *, event_write_cb);
+FAKE_VALUE_FUNC(int, event_read_pause_and_write, event_sock_t *, uint, uint8_t *, event_write_cb);
 FAKE_VOID_FUNC(http2_on_read_continue, event_sock_t *, int);
 FAKE_VOID_FUNC(create_goaway_frame, frame_header_t *, goaway_payload_t *, uint8_t *, uint32_t, uint32_t,  uint8_t *, uint8_t);
 FAKE_VALUE_FUNC(int, frame_to_bytes, frame_t *, uint8_t *);
@@ -42,7 +42,7 @@ FAKE_VOID_FUNC(decrease_window_available, h2_flow_control_window_t *, uint32_t )
 #define FFF_FAKES_LIST(FAKE)                \
     FAKE(cbuf_push)                         \
     FAKE(event_write)                       \
-    FAKE(event_read_stop_and_write)         \
+    FAKE(event_read_pause_and_write)         \
     FAKE(http2_on_read_continue)            \
     FAKE(create_goaway_frame)               \
     FAKE(frame_to_bytes)                    \
