@@ -12,7 +12,7 @@
  * Input: ->window_manager: h2_window_manager_t struct where window info is stored
  * Output: The available window size
  */
-int get_window_available_size(h2_flow_control_window_t flow_control_window)
+int32_t get_window_available_size(h2_flow_control_window_t flow_control_window)
 {
     return flow_control_window.stream_window;
 }
