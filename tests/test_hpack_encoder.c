@@ -750,17 +750,17 @@ void test_encode_literal_header_field_indexed_name(void)
 void test_encode_literal_header_field_indexed_name_error(void)
 {
     /*Test border condition*/
-    char value_to_encode[2 * HTTP2_MAX_HBF_BUFFER];
+    char value_to_encode[2 * HPACK_MAXIMUM_INTEGER];
 
-    memset(value_to_encode, 'w', 2 * HTTP2_MAX_HBF_BUFFER - 1);
-    value_to_encode[HTTP2_MAX_HBF_BUFFER - 1] = 0;
-    uint8_t encoded_string[HTTP2_MAX_HBF_BUFFER + 1];
+    memset(value_to_encode, 'w', 2 * HPACK_MAXIMUM_INTEGER);
+
+    uint8_t encoded_string[HPACK_MAXIMUM_INTEGER];
     
     hpack_encoded_header_t header;
     header.preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
     header.index = 4;
 
-    memset(encoded_string, 0, HTTP2_MAX_HBF_BUFFER);
+    memset(encoded_string, 0, HPACK_MAXIMUM_INTEGER);
 
     uint32_t hpack_utils_encoded_integer_size_fake_seq[] = {1,1, 2, 2, 1, 2 };
     SET_RETURN_SEQ(hpack_utils_encoded_integer_size, hpack_utils_encoded_integer_size_fake_seq, 6);
