@@ -88,6 +88,12 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
     if ((count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) || count == 0) {
         cbuf_end(&handler->event.read.buf);
     }
+    
+    // reset timer if any
+    event_handler_t * timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
+    if (timeout_handler != NULL) {
+        gettimeofday(&timeout_handler->event.timer.start, NULL);
+    }
 #endif
     DEBUG("received %d bytes from remote endpoint", count);
     // push data into buffer
@@ -181,6 +187,33 @@ void event_sock_write(event_sock_t *sock, event_handler_t *handler)
 }
 
 #ifndef CONTIKI
+void event_loop_timers(event_loop_t *loop)
+{
+    // get current time
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    // for each socket and handler, check if elapsed time has been reached
+    for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
+        if (sock->state != EVENT_SOCK_CONNECTED) {
+            continue;
+        }
+
+        for (event_handler_t *handler = sock->handlers; handler != NULL; handler = handler->next) {
+            struct timeval diff;
+            if (handler->type == EVENT_TIMER_TYPE ||  handler->type == EVENT_TIMEOUT_TYPE) {
+                timersub(&now, &handler->event.timer.start, &diff);
+                // time has finished
+                if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= handler->event.timer.millis) {
+                    // run the callback and reset timer
+                    handler->event.timer.cb(sock);
+                    handler->event.timer.start = now;
+                }
+            }
+        }
+    }
+}
+
 void event_loop_io(event_loop_t *loop, int millis)
 {
     assert(loop->nfds >= 0);
@@ -591,13 +624,13 @@ int event_read_stop(event_sock_t *sock)
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
-    
+
     event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
     assert(handler != NULL); // event_read_start() must have been called before
 
     // remove read handler from list
     LIST_DELETE(handler, sock->handlers);
-    
+
     // reset read callback
     handler->event.read.cb = NULL;
 
@@ -651,6 +684,32 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
 #endif
 
     return to_write;
+}
+
+void event_read_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
+{
+    // check socket status
+    assert(sock != NULL);
+    assert(sock->loop != NULL);
+    assert(cb != NULL);
+
+    // write can only be performed on a connected socket
+    assert(sock->state == EVENT_SOCK_CONNECTED);
+
+    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMER_TYPE);
+    if (handler == NULL) {
+        handler = event_handler_find_free(sock->loop, sock);
+        assert(handler != NULL);
+    }
+
+    handler->type = EVENT_TIMEOUT_TYPE;
+    handler->event.timer.cb = cb;
+    handler->event.timer.millis = millis;
+
+#ifdef CONTIKI
+    // get start time
+    gettimeofday(&handler->event.timer.start, NULL);
+#endif
 }
 
 int event_read_pause_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
@@ -830,6 +889,8 @@ void event_loop(event_loop_t *loop)
         }
 #else
         // todo: perform timer events
+        event_loop_timers(loop);
+
         // perform I/O events with 0 timeout
         event_loop_io(loop, 0);
 

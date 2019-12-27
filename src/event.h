@@ -4,6 +4,7 @@
 #include <stdint.h>
 #ifndef CONTIKI
 #include <sys/select.h>
+#include <sys/time.h>
 #else
 #include "net/ipv6/tcpip.h"
 #endif
@@ -66,6 +67,9 @@ typedef void (*event_write_cb)(struct event_sock *sock, int status);
 // the socket is closed
 typedef void (*event_close_cb)(struct event_sock *sock);
 
+// Will be called after timer events are due
+typedef void (*event_timer_cb)(struct event_sock *sock);
+
 #ifdef CONTIKI
 typedef uint16_t event_descriptor_t;
 #else
@@ -75,7 +79,9 @@ typedef int event_descriptor_t;
 typedef enum {
     EVENT_CONNECTION_TYPE,
     EVENT_WRITE_TYPE,
-    EVENT_READ_TYPE
+    EVENT_READ_TYPE,
+    EVENT_TIMER_TYPE,
+    EVENT_TIMEOUT_TYPE,
 } event_type_t;
 
 typedef struct event_connection {
@@ -85,7 +91,7 @@ typedef struct event_connection {
 
 typedef struct event_read {
     // type variables
-        cbuf_t buf;
+    cbuf_t buf;
     event_read_cb cb;
 } event_read_t;
 
@@ -99,6 +105,16 @@ typedef struct event_write {
 #endif
 } event_write_t;
 
+typedef struct event_timer {
+    // type variables
+    int millis;
+#ifdef CONTIKI
+#else
+    struct timeval start;
+#endif
+    event_timer_cb cb;
+} event_timer_t;
+
 typedef struct event_handler {
     struct event_handler *next;
     event_type_t type;
@@ -106,6 +122,7 @@ typedef struct event_handler {
         event_connection_t connection;
         event_read_t read;
         event_write_t write;
+        event_timer_t timer;
     } event;
 } event_handler_t;
 
@@ -205,6 +222,10 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
 // Pause read event notifications on the socket for writing the contents of the given buffer
 // read event notifications will not restart until event_read() is called again
 int event_read_pause_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
+
+// Notify the callback on socket inactivity
+// the timer is reset on every read operation
+void event_read_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb);
 
 // Close the socket
 // will notify the callback after all write operations are finished
