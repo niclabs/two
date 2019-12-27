@@ -5,7 +5,7 @@ TWO ?= ../..
 SRC = $(TWO)/src
 CONTIKI ?= ../../../contiki-ng
 
-PORT ?= 8888
+HTTP2_PORT ?= 8888
 ADDR = fd00::302:304:506:708
 
 PROJECTDIRS += $(SRC) $(SRC)/frames $(SRC)/hpack $(SRC)/http2
@@ -44,6 +44,8 @@ DEFINES += UIP_CONF_TCP=1
 DEFINES += UIP_CONF_UDP=0
 DEFINES += PROJECT_CONF_H=\"project-conf.h\"
 
+MODULES += os/services/shell
+
 CFLAGS += -ffunction-sections -I$(SRC)
 ifeq ($(word 1, $(shell uname -m -s)),Darwin)
 LDFLAGS += -Wl,-dead_strip
@@ -56,7 +58,7 @@ ALL_SPECS = $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" $(TWO)/h2spec.conf)
 SPEC ?= $(ALL_SPECS)
 
 .PHONY: h2spec-pre
-h2spec-pre: 
+h2spec-pre:
 	@echo "------------------------------"
 	@echo "Integration tests with h2spec"
 	@echo "------------------------------"
@@ -64,9 +66,9 @@ h2spec-pre:
 .PHONY: $(ALL_SPECS)
 $(ALL_SPECS): TARGET=native
 $(ALL_SPECS): /usr/local/bin/h2spec $(CONTIKI_PROJECT)
-	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi 
+	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
 	@(sudo ./server.native 2>/dev/null > server.log & echo $$! > server.pid) && sleep 0.5 && \
-		(h2spec $@ -p $(PORT) -h [$(ADDR)] > h2spec.log && rm h2spec.log); \
+		(h2spec $@ -p $(HTTP2_PORT) -h [$(ADDR)] > h2spec.log && rm h2spec.log); \
 		PID=$$(cat server.pid); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \
