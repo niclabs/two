@@ -66,6 +66,11 @@ int echo_read(event_sock_t *client, int nread, uint8_t *buf)
     return 0;
 }
 
+void echo_timeout(event_sock_t *client) {
+    (void)client;
+    DEBUG("No read activity in 5s");
+}
+
 void on_new_connection(event_sock_t *server, int status)
 {
     if (status < 0) {
@@ -77,6 +82,7 @@ void on_new_connection(event_sock_t *server, int status)
     INFO("New client connection");
     event_sock_t *client = event_sock_create(server->loop);
     if (event_accept(server, client) == 0) {
+        event_read_timeout(client, 5000, echo_timeout);
         event_read_start(client, event_buf, 1024, echo_read);
     }
     else {
