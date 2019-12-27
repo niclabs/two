@@ -30,7 +30,7 @@
 #define DEFAULT_MAX_HEADER_LIST_SIZE 512
 
 /*Error codes*/
-typedef enum {
+typedef enum __attribute__((__packed__)){
     HTTP2_NO_ERROR              = (uint32_t) 0x0,
     HTTP2_PROTOCOL_ERROR        = (uint32_t) 0x1,
     HTTP2_INTERNAL_ERROR        = (uint32_t) 0x2,
@@ -48,7 +48,7 @@ typedef enum {
 }h2_error_code_t;
 
 /*Enumerator for stream states*/
-typedef enum {
+typedef enum __attribute__((__packed__)){
     STREAM_IDLE,
     STREAM_OPEN,
     STREAM_HALF_CLOSED_REMOTE,
@@ -57,7 +57,7 @@ typedef enum {
 } h2_stream_state_t;
 
 /*Enumerator for settings parameters*/
-typedef enum SettingsParameters {
+typedef enum __attribute__((__packed__)) SettingsParameters {
     HEADER_TABLE_SIZE       = (uint16_t) 0x1,
     ENABLE_PUSH             = (uint16_t) 0x2,
     MAX_CONCURRENT_STREAMS  = (uint16_t) 0x3,
@@ -66,7 +66,7 @@ typedef enum SettingsParameters {
     MAX_HEADER_LIST_SIZE    = (uint16_t) 0x6
 }sett_param_t;
 
-typedef enum {
+typedef enum __attribute__((__packed__)){
     HTTP2_RC_CLOSE_CONNECTION               = 2,
     HTTP2_RC_ACK_RECEIVED                   = 1,
     HTTP2_RC_NO_ERROR                       = 0,
@@ -75,6 +75,7 @@ typedef enum {
 } h2_ret_code_t;
 
 
+#pragma pack(push, 1)
 /*Struct for HTTP2 Stream*/
 typedef struct HTTP2_STREAM {
     uint32_t stream_id;
@@ -131,6 +132,6 @@ typedef struct http2_states {
     header_list_t headers;
 } h2states_t;
 
-
+#pragma pack(pop)
 
 #endif
