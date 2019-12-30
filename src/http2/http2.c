@@ -30,20 +30,25 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     if (is_server) {
         SET_FLAG(h2s->flag_bits, FLAG_IS_SERVER);
     }
-    //h2s->is_server = is_server;
     #if HPACK_INCLUDE_DYNAMIC_TABLE
-    h2s->remote_settings[0] = h2s->local_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
-    hpack_init_states(&(h2s->hpack_states), DEFAULT_HEADER_TABLE_SIZE);
+    h2s->remote_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
+    h2s->local_settings[0] = CONFIG_HEADER_TABLE_SIZE;
+    hpack_init_states(&(h2s->hpack_states), CONFIG_HEADER_TABLE_SIZE);
     #else
     h2s->remote_settings[0] = h2s->local_settings[0] = 0;
     hpack_init_states(&(h2s->hpack_states), 0);
     #endif
-    h2s->remote_settings[1] = h2s->local_settings[1] = DEFAULT_ENABLE_PUSH;
-    h2s->remote_settings[2] = h2s->local_settings[2] = DEFAULT_MAX_CONCURRENT_STREAMS;
-    h2s->remote_settings[3] = h2s->local_settings[3] = DEFAULT_INITIAL_WINDOW_SIZE;
-    h2s->remote_settings[4] = h2s->local_settings[4] = DEFAULT_MAX_FRAME_SIZE;
-    h2s->remote_settings[5] = h2s->local_settings[5] = DEFAULT_MAX_HEADER_LIST_SIZE;
-
+    h2s->remote_settings[1] =  DEFAULT_ENABLE_PUSH;
+    h2s->remote_settings[2] =  DEFAULT_MAX_CONCURRENT_STREAMS;
+    h2s->remote_settings[3] =  DEFAULT_INITIAL_WINDOW_SIZE;
+    h2s->remote_settings[4] =  DEFAULT_MAX_FRAME_SIZE;
+    h2s->remote_settings[5] =  DEFAULT_MAX_HEADER_LIST_SIZE;
+    h2s->local_settings[1] = CONFIG_ENABLE_PUSH;
+    h2s->local_settings[2] = CONFIG_MAX_CONCURRENT_STREAMS;
+    h2s->local_settings[3] = CONFIG_INITIAL_WINDOW_SIZE;
+    h2s->local_settings[4] = CONFIG_MAX_FRAME_SIZE;
+    h2s->local_settings[5] = CONFIG_MAX_HEADER_LIST_SIZE;
+    h2s->wait_setting_ack = 0;
     h2s->current_stream.stream_id = is_server ? 2 : 3;
     h2s->current_stream.state = STREAM_IDLE;
     h2s->last_open_stream_id = 0;
