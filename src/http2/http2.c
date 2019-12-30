@@ -69,6 +69,11 @@ void clean_h2s(event_sock_t *client)
     two_on_client_close(client);
 }
 
+int on_timeout(event_sock_t * sock) {
+    event_close(sock, clean_h2s);
+    return 1;
+}
+
 void http2_server_init_connection(event_sock_t *client, int status)
 {
     (void)status;
@@ -78,6 +83,7 @@ void http2_server_init_connection(event_sock_t *client, int status)
     // Initialize http2 state
     init_variables_h2s(h2s, 1, client);
 
+    event_timeout(client, 500, on_timeout);
     event_read_start(client, h2s->input_buf, HTTP2_MAX_BUFFER_SIZE, exchange_prefaces);
 }
 
