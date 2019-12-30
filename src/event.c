@@ -203,12 +203,12 @@ void event_loop_timers(event_loop_t *loop)
 
     // for each socket and handler, check if elapsed time has been reached
     for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
-        if (sock->state != EVENT_SOCK_CONNECTED) {
+        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
+        if (sock->state != EVENT_SOCK_CONNECTED || handler == NULL) {
             continue;
         }
 
         struct timeval diff;
-        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
         timersub(&now, &handler->event.timer.start, &diff);
         // time has finished
         if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= handler->event.timer.millis) {
