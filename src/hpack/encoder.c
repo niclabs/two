@@ -136,7 +136,7 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
         return -1;
     }
 
-    if (str_length + encoded_string_length_size >= HTTP2_MAX_HBF_BUFFER) {
+    if (str_length + encoded_string_length_size >= CONFIG_MAX_HBF_BUFFER) {
         DEBUG("String too big, does not fit on the encoded_string");
         return -2;
     }
@@ -202,7 +202,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
         return -1;
     }
 
-    if (encoded_word_byte_length + encoded_word_length_size >= HTTP2_MAX_HBF_BUFFER) {
+    if (encoded_word_byte_length + encoded_word_length_size >= CONFIG_MAX_HBF_BUFFER) {
         DEBUG("String too big, does not fit on the encoded_string");
         return -2;
     }
