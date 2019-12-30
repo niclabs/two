@@ -227,8 +227,8 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
 int event_read_pause_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
 
 // Notify the callback on socket inactivity
-// the timer is reset on every read operation
-void event_read_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb);
+// the timer is reset on every successful read/write operation
+void event_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb);
 
 // Close the socket
 // will notify the callback after all write operations are finished

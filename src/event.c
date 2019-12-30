@@ -15,7 +15,6 @@
 #include "config.h"
 
 #define LOG_MODULE LOG_MODULE_EVENT
-#define LOG_LEVEL_EVENT LOG_LEVEL_DEBUG
 
 #include "logging.h"
 #include "list_macros.h"
@@ -734,7 +733,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     return to_write;
 }
 
-void event_read_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
+void event_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
 {
     // check socket status
     assert(sock != NULL);
