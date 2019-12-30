@@ -110,6 +110,8 @@ typedef struct event_timer {
     // type variables
     int millis;
 #ifdef CONTIKI
+    struct ctimer ctimer;
+    struct event_sock * sock;
 #else
     struct timeval start;
 #endif

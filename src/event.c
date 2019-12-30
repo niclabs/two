@@ -15,6 +15,7 @@
 #include "config.h"
 
 #define LOG_MODULE LOG_MODULE_EVENT
+#define LOG_LEVEL_EVENT LOG_LEVEL_DEBUG
 
 #include "logging.h"
 #include "list_macros.h"
@@ -285,9 +286,31 @@ void event_poll_tcp(void *data)
     tcpip_poll_tcp(sock->uip_conn);
 
     // reset timer
-    ctimer_reset(&sock->timer);
+    ctimer_restart(&sock->timer);
 }
 #endif
+void event_handle_timeout(void *data)
+{
+    event_handler_t *handler = (event_handler_t *)data;
+    event_sock_t *sock = handler->event.timer.sock;
+
+    // run the callback
+    int remove = handler->event.timer.cb(sock);
+    if (remove > 0) {
+        // stop ctimer
+        ctimer_stop(&handler->event.timer.ctimer);
+
+        // remove handler from list
+        LIST_DELETE(handler, sock->handlers);
+
+        // move handler to loop unused list
+        LIST_PUSH(handler, sock->loop->unused_handlers);
+    }
+    else {
+        ctimer_restart(&handler->event.timer.ctimer);
+    }
+}
+
 void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
@@ -402,6 +425,8 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
         event_sock_read(sock, rh);
     }
 
+
+
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
     event_sock_read_notify(sock, rh);
@@ -409,6 +434,12 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     // find the handler again just in case
     wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
     event_sock_write(sock, wh);
+
+    // reset timer if any activity was detected from the client side
+    event_handler_t *timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
+    if (!uip_poll() && timeout_handler != NULL) {
+        ctimer_restart(&timeout_handler->event.timer.ctimer);
+    }
 
     // Close connection cleanly
     if (sock->state == EVENT_SOCK_CLOSING && wh == NULL) {
@@ -443,6 +474,12 @@ void event_loop_close(event_loop_t *loop)
             // tcp_markconn()
             if (curr->uip_conn != NULL) {
                 tcp_markconn(curr->uip_conn, NULL);
+            }
+
+            // stop timer if any
+            event_handler_t *timeout_handler = event_handler_find(curr->handlers, EVENT_TIMEOUT_TYPE);
+            if (timeout_handler != NULL) {
+                ctimer_stop(&timeout_handler->event.timer.ctimer);
             }
 
             event_handler_t *ch = event_handler_find(curr->handlers, EVENT_CONNECTION_TYPE);
@@ -720,6 +757,10 @@ void event_read_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb 
 #ifndef CONTIKI
     // get start time
     gettimeofday(&handler->event.timer.start, NULL);
+#else
+    // set socket for handler
+    handler->event.timer.sock = sock;
+    ctimer_set(&handler->event.timer.ctimer, millis * CLOCK_SECOND / 1000, event_handle_timeout, handler);
 #endif
 }
 
