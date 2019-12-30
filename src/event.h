@@ -68,7 +68,9 @@ typedef void (*event_write_cb)(struct event_sock *sock, int status);
 typedef void (*event_close_cb)(struct event_sock *sock);
 
 // Will be called after timer events are due
-typedef void (*event_timer_cb)(struct event_sock *sock);
+// it must return 1 to stop the callback, 0 to reset
+// the timer
+typedef int (*event_timer_cb)(struct event_sock *sock);
 
 #ifdef CONTIKI
 typedef uint16_t event_descriptor_t;

@@ -66,9 +66,10 @@ int echo_read(event_sock_t *client, int nread, uint8_t *buf)
     return 0;
 }
 
-void echo_timeout(event_sock_t *client) {
+int echo_timeout(event_sock_t *client) {
     (void)client;
     DEBUG("No read activity in 5s");
+    return 0;
 }
 
 void on_new_connection(event_sock_t *server, int status)

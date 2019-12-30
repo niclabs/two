@@ -206,8 +206,15 @@ void event_loop_timers(event_loop_t *loop)
         // time has finished
         if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= handler->event.timer.millis) {
             // run the callback and reset timer
-            handler->event.timer.cb(sock);
+            int remove = handler->event.timer.cb(sock);
             handler->event.timer.start = now;
+            if (remove > 0) {
+                // remove handler from list
+                LIST_DELETE(handler, sock->handlers);
+
+                // move handler to loop unused list
+                LIST_PUSH(handler, sock->loop->unused_handlers);
+            }
         }
     }
 }
