@@ -51,17 +51,17 @@ int handle_data_payload(frame_header_t *frame_header, data_payload_t *data_paylo
     memcpy(h2s->data.buf + h2s->data.size, data_payload->data, data_length);
     h2s->data.size += data_length;
     if (is_flag_set(frame_header->flags, DATA_END_STREAM_FLAG)) {
-        h2s->received_end_stream = 1;
+        SET_FLAG(h2s->flag_bits, FLAG_RECEIVED_END_STREAM);
     }
     // Stream state handling for end stream flag
-    if (h2s->received_end_stream == 1) {
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_END_STREAM)) {
         rc = change_stream_state_end_stream_flag(0, h2s); // 0 is for receiving
         if (rc == 2) {
             DEBUG("handle_data_payload: Close connection. GOAWAY previously received");
             return HTTP2_RC_CLOSE_CONNECTION;
         }
-        h2s->waiting_for_HEADERS_frame = 1;
-        h2s->received_end_stream = 0;
+        SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME);
+        CLEAR_FLAG(h2s->flag_bits, FLAG_RECEIVED_END_STREAM);
         rc = validate_pseudoheaders(&h2s->headers);
         if (rc < 0) {
             ERROR("handle_data_payload: Malformed request received");
@@ -95,7 +95,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2sta
     // we receive a headers, so it could be continuation frames
     int rc;
 
-    h2s->waiting_for_end_headers_flag = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG);
     int hbf_size = get_header_block_fragment_size(header, hpl);
     // We are reading a new header frame, so previous fragments are useless
     if (h2s->header_block_fragments_pointer != 0) {
@@ -118,7 +118,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2sta
     h2s->header_block_fragments_pointer += hbf_size;
     //If end_stream is received-> wait for an end headers (in header or continuation) to half_close the stream
     if (is_flag_set(header->flags, HEADERS_END_STREAM_FLAG)) {
-        h2s->received_end_stream = 1;
+        SET_FLAG(h2s->flag_bits, FLAG_RECEIVED_END_STREAM);
     }
     //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
     if (is_flag_set(header->flags, HEADERS_END_HEADERS_FLAG)) {
@@ -135,7 +135,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2sta
             }
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
-        else if ((uint32_t) rc != h2s->header_block_fragments_pointer) {
+        else if ((uint32_t)rc != h2s->header_block_fragments_pointer) {
             ERROR("ERROR still exists fragments to receive. Read %d bytes of %d bytes", rc, h2s->header_block_fragments_pointer);
             send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
@@ -143,15 +143,16 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2sta
         else {//all fragments already received.
             h2s->header_block_fragments_pointer = 0;
         }
-        h2s->waiting_for_end_headers_flag = 0;                          //RESET TO 0
-        if (h2s->received_end_stream == 1) {
-            rc = change_stream_state_end_stream_flag(0, h2s);  //0 is for receiving
+        CLEAR_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG);
+        DEBUG("HOLA MAMAA %d", FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG));  //RESET TO 0
+        if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_END_STREAM)) {
+            rc = change_stream_state_end_stream_flag(0, h2s);                                   //0 is for receiving
             if (rc == 2) {
                 DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
                 return HTTP2_RC_CLOSE_CONNECTION;
             }
-            h2s->waiting_for_HEADERS_frame = 1;
-            h2s->received_end_stream = 0;//RESET TO 0
+            SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME);
+            CLEAR_FLAG(h2s->flag_bits, FLAG_RECEIVED_END_STREAM);//RESET TO 0
             rc = validate_pseudoheaders(&h2s->headers);
             if (rc < 0) {
                 ERROR("handle_headers_payload: Malformed request received");
@@ -288,16 +289,16 @@ int handle_goaway_payload(goaway_payload_t *goaway_pl, h2states_t *h2s)
         }
         return HTTP2_RC_CLOSE_CONNECTION;
     }
-    if (h2s->sent_goaway == 1) { // received answer to goaway
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_SENT_GOAWAY)) { // received answer to goaway
         INFO("Connection CLOSED");
         // Return -1 to close connection
         return HTTP2_RC_CLOSE_CONNECTION;
     }
-    if (h2s->received_goaway == 1) {
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
         INFO("Another GOAWAY has been received before, just info");
     }
     else {                          // never has been seen a goaway before in this connection life
-        h2s->received_goaway = 1;   // receiver must not open additional streams
+        SET_FLAG(h2s->flag_bits, FLAG_RECEIVED_GOAWAY);   // receiver must not open additional streams
     }
     if (h2s->current_stream.stream_id > goaway_pl->last_stream_id) {
         if (h2s->current_stream.state != STREAM_IDLE) {
@@ -327,9 +328,9 @@ int handle_ping_payload(ping_payload_t *ping_payload, h2states_t *h2s)
         INFO("Received ACK to PING frame");
         return HTTP2_RC_NO_ERROR;
     }
-    else {                                                                      //Received PING frame with no ACK
-        int8_t ack_flag = 1;                                                    //TRUE
-        int rc = send_ping(ping_payload->opaque_data, ack_flag, h2s);  //Response a PING ACK frame
+    else {                                                              //Received PING frame with no ACK
+        int8_t ack_flag = 1;                                            //TRUE
+        int rc = send_ping(ping_payload->opaque_data, ack_flag, h2s);   //Response a PING ACK frame
         return (h2_ret_code_t)rc;
     }
 }
@@ -376,7 +377,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
             }
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
-        else if ((uint32_t) rc != h2s->header_block_fragments_pointer) {
+        else if ((uint32_t)rc != h2s->header_block_fragments_pointer) {
             ERROR("ERROR still exists fragments to receive.");
             send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
@@ -385,15 +386,15 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
             h2s->header_block_fragments_pointer = 0;
         }
         //st->hd_lists.header_list_count_in = rc;
-        h2s->waiting_for_end_headers_flag = 0;
-        if (h2s->received_end_stream == 1) {                            //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
-            rc = change_stream_state_end_stream_flag(0, h2s);  //0 is for receiving
+        CLEAR_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG);
+        if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_END_STREAM)) {                    //IF RECEIVED END_STREAM IN HEADER FRAME, THEN CLOSE THE STREAM
+            rc = change_stream_state_end_stream_flag(0, h2s);   //0 is for receiving
             if (rc == 2) {
                 DEBUG("handle_continuation_payload: Close connection. GOAWAY previously received");
                 return HTTP2_RC_CLOSE_CONNECTION;
             }
-            h2s->waiting_for_HEADERS_frame = 1;
-            h2s->received_end_stream = 0;       //RESET TO 0
+            SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME);
+            CLEAR_FLAG(h2s->flag_bits, FLAG_RECEIVED_END_STREAM);      //RESET TO 0
             rc = validate_pseudoheaders(&h2s->headers);
             if (rc < 0) {
                 ERROR("handle_continuation_payload: Malformed request received");

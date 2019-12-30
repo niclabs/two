@@ -15,7 +15,7 @@
 */
 void prepare_new_stream(h2states_t* st){
   uint32_t last = st->last_open_stream_id;
-  if(st->is_server == 1){
+  if(FLAG_VALUE(st->flag_bits, FLAG_IS_SERVER)){
     st->current_stream.stream_id = last % 2 == 0 ? last + 2 : last + 1;
     st->current_stream.state = STREAM_IDLE;
   }

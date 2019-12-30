@@ -27,7 +27,7 @@ int change_stream_state_end_stream_flag(uint8_t sending, h2states_t *h2s)
         }
         else if (h2s->current_stream.state == STREAM_HALF_CLOSED_REMOTE) {
             h2s->current_stream.state = STREAM_CLOSED;
-            if (h2s->received_goaway) {
+            if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
                 send_goaway(HTTP2_NO_ERROR, h2s);
                 DEBUG("change_stream_state_end_stream_flag: Close connection. GOAWAY frame was previously received");
                 return HTTP2_RC_CLOSE_CONNECTION;
@@ -43,7 +43,7 @@ int change_stream_state_end_stream_flag(uint8_t sending, h2states_t *h2s)
         }
         else if (h2s->current_stream.state == STREAM_HALF_CLOSED_LOCAL) {
             h2s->current_stream.state = STREAM_CLOSED;
-            if (h2s->received_goaway) {
+            if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
                 send_goaway(HTTP2_NO_ERROR, h2s);
                 DEBUG("change_stream_state_end_stream_flag: Close connection. GOAWAY frame was previously received");
                 return HTTP2_RC_CLOSE_CONNECTION;
@@ -77,7 +77,7 @@ int send_data_frame(uint32_t data_to_send, uint8_t end_stream, h2states_t *h2s)
     int rc;
     if (end_stream) {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-        h2s->write_callback_is_set = 1;
+        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     }
     else {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
@@ -203,7 +203,7 @@ int send_settings_ack(h2states_t *h2s)
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     // We write the ACK to NET
     rc = event_read_pause_and_write(h2s->socket, size_byte_ack, byte_ack, http2_on_read_continue);
-    h2s->write_callback_is_set = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending settings ACK");
     if (rc != size_byte_ack) {
         ERROR("Error in Settings ACK sending");
@@ -243,7 +243,7 @@ int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
     int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
     // We write the ACK to NET
     rc = event_read_pause_and_write(h2s->socket, size_byte_ack, byte_ack, http2_on_read_continue);
-    h2s->write_callback_is_set = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending PING");
     if (rc != size_byte_ack) {
         ERROR("Error in PING sending");
@@ -279,12 +279,12 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
     frame.payload = (void *)&goaway_pl;
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    if (error_code != 0 || h2s->received_goaway) {
+    if (error_code != 0 || FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
     }
     else {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-        h2s->write_callback_is_set = 1;
+        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     }
     DEBUG("Sending GOAWAY, error code: %u", error_code);
 
@@ -293,8 +293,8 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
         //TODO shutdown connection
         return HTTP2_RC_ERROR;
     }
-    h2s->sent_goaway = 1;
-    if (h2s->received_goaway) {
+    SET_FLAG(h2s->flag_bits, FLAG_SENT_GOAWAY);
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
         return HTTP2_RC_CLOSE_CONNECTION;
     }
     return HTTP2_RC_NO_ERROR;
@@ -314,7 +314,7 @@ int send_rst_stream(uint32_t error_code, h2states_t *h2s)
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-    h2s->write_callback_is_set = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending RST_STREAM, error code: %u", error_code);
 
     if (rc != bytes_size) {
@@ -352,7 +352,7 @@ int send_window_update(uint8_t window_size_increment, h2states_t *h2s)
     uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
     int bytes_size = frame_to_bytes(&frame, buff_bytes);
     rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-    h2s->write_callback_is_set = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
 
     INFO("Sending connection WINDOW UPDATE");
 
@@ -379,7 +379,7 @@ int send_window_update(uint8_t window_size_increment, h2states_t *h2s)
     frame.payload = (void *)&window_update_payload;
     bytes_size = frame_to_bytes(&frame, buff_bytes);
     rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-    h2s->write_callback_is_set = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
 
     INFO("Sending stream WINDOW UPDATE");
 
@@ -408,7 +408,7 @@ int send_headers_stream_verification(h2states_t *h2s)
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     else if (h2s->current_stream.state == STREAM_IDLE) {
-        if (h2s->is_server) { // server must use even numbers
+        if (FLAG_VALUE(h2s->flag_bits, FLAG_IS_SERVER)) { // server must use even numbers
             h2s->last_open_stream_id += (h2s->last_open_stream_id % 2) ? 1 : 2;
         }
         else { //stream is closed and id is not zero
@@ -444,7 +444,7 @@ int send_local_settings(h2states_t *h2s)
     uint8_t byte_mysettings[9 + 6 * 6]; /*header: 9 bytes + 6 * setting: 6 bytes */
     int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
     rc = event_read_pause_and_write(h2s->socket, size_byte_mysettings, byte_mysettings, http2_on_read_continue);
-    h2s->write_callback_is_set = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending settings");
     if (rc != size_byte_mysettings) {
         ERROR("Error in local settings writing");
@@ -452,7 +452,7 @@ int send_local_settings(h2states_t *h2s)
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     /*Settings were sent, so we expect an ack*/
-    h2s->wait_setting_ack = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WAIT_SETTINGS_ACK);
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -514,7 +514,7 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
 
     if (end_headers) {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
-        h2s->write_callback_is_set = 1;
+        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     }
     else {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_read, NULL);
@@ -563,7 +563,7 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
     int bytes_size = frame_to_bytes(&frame, buff_read);
     if (end_headers && end_stream) {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
-        h2s->write_callback_is_set = 1;
+        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     }
     else {
         rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_read, NULL);
@@ -587,7 +587,7 @@ int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t
  */
 int send_headers(uint8_t end_stream, h2states_t *h2s)
 {
-    if (h2s->received_goaway) {
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
         ERROR("send_headers: GOAWAY was received. Current process must not open a new stream");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;

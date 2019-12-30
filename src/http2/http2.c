@@ -26,7 +26,11 @@ int handle_payload(uint8_t *buff_read, h2states_t *h2s);
 int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
 {
     h2s->socket = socket;
-    h2s->is_server = is_server;
+    h2s->flag_bits = 0;
+    if (is_server) {
+        SET_FLAG(h2s->flag_bits, FLAG_IS_SERVER);
+    }
+    //h2s->is_server = is_server;
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     h2s->remote_settings[0] = h2s->local_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
     #else
@@ -37,21 +41,15 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     h2s->remote_settings[3] = h2s->local_settings[3] = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->remote_settings[4] = h2s->local_settings[4] = DEFAULT_MAX_FRAME_SIZE;
     h2s->remote_settings[5] = h2s->local_settings[5] = DEFAULT_MAX_HEADER_LIST_SIZE;
-    h2s->wait_setting_ack = 0;
+
     h2s->current_stream.stream_id = is_server ? 2 : 3;
     h2s->current_stream.state = STREAM_IDLE;
     h2s->last_open_stream_id = 0;
     h2s->header_block_fragments_pointer = 0;
-    h2s->waiting_for_end_headers_flag = 0;
-    h2s->waiting_for_HEADERS_frame = 0;
-    h2s->received_end_stream = 0;
-    h2s->write_callback_is_set = 0;
     h2s->remote_window.connection_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->remote_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->local_window.connection_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->local_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
-    h2s->sent_goaway = 0;
-    h2s->received_goaway = 0;
     h2s->debug_size = 0;
     //h2s->header = NULL;
     hpack_init_states(&(h2s->hpack_states), DEFAULT_HEADER_TABLE_SIZE);
@@ -132,7 +130,7 @@ int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
         return bytes_read;
     }
 
-    h2s->waiting_for_HEADERS_frame = 1;
+    SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME)
     DEBUG("Local settings sent. http2_server_init_connection returning receive_header callback");
 
     // If no errors were found, http2 is ready to receive frames
@@ -143,7 +141,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
 {
     // Cast h2states from state
     h2states_t *h2s = (h2states_t *)client->data;
-    h2s->write_callback_is_set = 0;
+    CLEAR_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     int bytes_read = 0;
 
     if (size <= 0) {
@@ -213,7 +211,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     h2s->header = header;
 
     if (rc == FRAMES_FRAME_NOT_FOUND_ERROR) {
-        if (h2s->waiting_for_end_headers_flag) {
+        if (FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG)) {
             ERROR("Unknown/extension frame type in the middle of a header block. PROTOCOL_ERROR");
             send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
             event_close(client, clean_h2s);
@@ -240,7 +238,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     }
     DEBUG("http2_receive_header returning receive_payload callback");
 
-    if (!h2s->write_callback_is_set) {
+    if (!FLAG_VALUE(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET)) {
         event_read(client, receive_payload);
     }
     return bytes_read;
@@ -277,7 +275,7 @@ int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
 
     // Wait for next header
     DEBUG("http2_receive_payload returning receive_header callback");
-    if (!h2s->write_callback_is_set) {
+    if (!FLAG_VALUE(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET)) {
         event_read(client, receive_header);
     }
     return bytes_read;

@@ -9,12 +9,12 @@
 
 int check_incoming_data_condition(h2states_t *h2s)
 {
-    if (h2s->waiting_for_HEADERS_frame == 1) {
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME)) {
         ERROR("HEADERS frame was expected. PROTOCOL ERROR");
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    if (h2s->waiting_for_end_headers_flag) {
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG)) {
         ERROR("CONTINUATION or HEADERS frame was expected. PROTOCOL ERROR");
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
@@ -55,12 +55,12 @@ int check_incoming_data_condition(h2states_t *h2s)
 
 int check_incoming_headers_condition(h2states_t *h2s)
 {
-    if (h2s->waiting_for_HEADERS_frame == 1) {
-        h2s->waiting_for_HEADERS_frame = 0;
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME)) {
+        CLEAR_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME);
     }
 
     // Check if stream is not created or previous one is closed
-    if (h2s->waiting_for_end_headers_flag) {
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG)) {
         //protocol error
         ERROR("CONTINUATION frame was expected. PROTOCOL ERROR");
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
@@ -87,7 +87,7 @@ int check_incoming_headers_condition(h2states_t *h2s)
             send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
-        if (h2s->header.stream_id % 2 != h2s->is_server) {
+        if (h2s->header.stream_id % 2 != FLAG_VALUE(h2s->flag_bits, FLAG_IS_SERVER)) {
             INFO("Incoming stream id: %u", h2s->header.stream_id);
             ERROR("Invalid stream id parity. PROTOCOL ERROR");
             send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
@@ -138,8 +138,8 @@ int check_incoming_settings_condition(h2states_t *h2s)
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         else {
-            if (h2s->wait_setting_ack) {
-                h2s->wait_setting_ack = 0;
+            if (FLAG_VALUE(h2s->flag_bits, FLAG_WAIT_SETTINGS_ACK)) {
+                CLEAR_FLAG(h2s->flag_bits, FLAG_WAIT_SETTINGS_ACK);
                 return HTTP2_RC_ACK_RECEIVED;
             }
             else {
@@ -208,12 +208,12 @@ int check_incoming_ping_condition(h2states_t *h2s)
 
 int check_incoming_continuation_condition(h2states_t *h2s)
 {
-    if (h2s->waiting_for_HEADERS_frame == 1) {
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME)) {
         ERROR("HEADERS frame was expected. PROTOCOL ERROR");
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    if (!h2s->waiting_for_end_headers_flag) {
+    if (!FLAG_VALUE(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG)) {
         ERROR("Continuation must be preceded by a HEADERS frame. PROTOCOL ERROR");
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
