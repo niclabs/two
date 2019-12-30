@@ -230,6 +230,9 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, h2states_t *h2
                     return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
                 }
                 break;
+            case HEADER_TABLE_SIZE:
+                hpack_dynamic_change_max_size(&h2s->hpack_states, value);
+                break;
             default:
                 break;
         }

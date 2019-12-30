@@ -72,3 +72,12 @@ void hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size)
     states->settings_max_table_size = settings_max_table_size;
 
 }
+
+void hpack_dynamic_change_max_size(hpack_states_t *states, uint32_t incoming_max_table_size){
+    #if HPACK_INCLUDE_DYNAMIC_TABLE
+        if(incoming_max_table_size <= HPACK_MAX_DYNAMIC_TABLE_SIZE){
+          states->settings_max_table_size = incoming_max_table_size;
+          hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, incoming_max_table_size);
+        }
+    #endif
+}

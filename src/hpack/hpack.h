@@ -20,5 +20,7 @@ int encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_
 
 void hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size);
 
+void hpack_dynamic_change_max_size(hpack_states_t *states, uint32_t incoming_max_table_size);
+
 
 #endif //TWO_HPACK_H
