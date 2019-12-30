@@ -93,6 +93,29 @@ typedef struct HTTP2_DATA {
     uint32_t processed;
 } http2_data_t;
 
+typedef enum __attribute__((__packed__)){
+    FLAG_IS_SERVER = 0,
+    FLAG_WAIT_SETTINGS_ACK = 1,
+    FLAG_WAITING_FOR_END_HEADERS_FLAG = 2,
+    FLAG_WAITING_FOR_HEADERS_FRAME = 3,
+    FLAG_RECEIVED_END_STREAM = 4,
+    FLAG_WRITE_CALLBACK_IS_SET = 5,
+    FLAG_SENT_GOAWAY = 6,
+    FLAG_RECEIVED_GOAWAY = 7,
+} h2_flags_t;
+
+// Push an element at the beginning of the list
+#define SET_FLAG(flag_bits, flag_type)   \
+    (flag_bits |= 1 << flag_type)
+
+#define CLEAR_FLAG(flag_bits, flag_type)   \
+    (flag_bits &= ~ (1 << flag_type))
+
+
+
+#define FLAG_VALUE(flag_bits, flag_type)       \
+    ((flag_bits >> flag_type) & 1)
+
 
 /*Struct for storing HTTP2 states*/
 typedef struct http2_states {
@@ -102,23 +125,18 @@ typedef struct http2_states {
     struct http2_states *next;
 
     event_sock_t *socket;
-    uint8_t is_server;
+    uint8_t flag_bits;
+
     uint32_t remote_settings[6];
     uint32_t local_settings[6];
     /*uint32_t local_cache[6]; Could be implemented*/
-    uint8_t wait_setting_ack;
+
     h2_stream_t current_stream;
     uint32_t last_open_stream_id;
     uint8_t header_block_fragments[HTTP2_MAX_HBF_BUFFER];
     uint32_t header_block_fragments_pointer;     //points to the next byte to write in
-    uint8_t waiting_for_end_headers_flag;       //bool
-    uint8_t waiting_for_HEADERS_frame;
-    uint8_t received_end_stream;
-    uint8_t write_callback_is_set;
     h2_flow_control_window_t remote_window;
     h2_flow_control_window_t local_window;
-    uint8_t sent_goaway;
-    uint8_t received_goaway;        // bool
     uint8_t debug_data_buffer[0];   // TODO not implemented yet
     uint8_t debug_size;             // TODO not implemented yet
     //Hpack dynamic table
