@@ -80,7 +80,6 @@ typedef enum {
     EVENT_CONNECTION_TYPE,
     EVENT_WRITE_TYPE,
     EVENT_READ_TYPE,
-    EVENT_TIMER_TYPE,
     EVENT_TIMEOUT_TYPE,
 } event_type_t;
 

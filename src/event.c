@@ -88,9 +88,9 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
     if ((count < 0 && errno != EAGAIN && errno != EWOULDBLOCK) || count == 0) {
         cbuf_end(&handler->event.read.buf);
     }
-    
+
     // reset timer if any
-    event_handler_t * timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
+    event_handler_t *timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
     if (timeout_handler != NULL) {
         gettimeofday(&timeout_handler->event.timer.start, NULL);
     }
@@ -191,6 +191,7 @@ void event_loop_timers(event_loop_t *loop)
 {
     // get current time
     struct timeval now;
+
     gettimeofday(&now, NULL);
 
     // for each socket and handler, check if elapsed time has been reached
@@ -199,17 +200,14 @@ void event_loop_timers(event_loop_t *loop)
             continue;
         }
 
-        for (event_handler_t *handler = sock->handlers; handler != NULL; handler = handler->next) {
-            struct timeval diff;
-            if (handler->type == EVENT_TIMER_TYPE ||  handler->type == EVENT_TIMEOUT_TYPE) {
-                timersub(&now, &handler->event.timer.start, &diff);
-                // time has finished
-                if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= handler->event.timer.millis) {
-                    // run the callback and reset timer
-                    handler->event.timer.cb(sock);
-                    handler->event.timer.start = now;
-                }
-            }
+        struct timeval diff;
+        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
+        timersub(&now, &handler->event.timer.start, &diff);
+        // time has finished
+        if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= handler->event.timer.millis) {
+            // run the callback and reset timer
+            handler->event.timer.cb(sock);
+            handler->event.timer.start = now;
         }
     }
 }
@@ -696,7 +694,7 @@ void event_read_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb 
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMER_TYPE);
+    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
     if (handler == NULL) {
         handler = event_handler_find_free(sock->loop, sock);
         assert(handler != NULL);
@@ -706,7 +704,7 @@ void event_read_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb 
     handler->event.timer.cb = cb;
     handler->event.timer.millis = millis;
 
-#ifdef CONTIKI
+#ifndef CONTIKI
     // get start time
     gettimeofday(&handler->event.timer.start, NULL);
 #endif
