@@ -137,7 +137,7 @@ int exchange_prefaces(event_sock_t * client, int size, uint8_t *bytes)
         return bytes_read;
     }
 
-    SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME)
+    SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_HEADERS_FRAME);
     DEBUG("Local settings sent. http2_server_init_connection returning receive_header callback");
 
     // If no errors were found, http2 is ready to receive frames
