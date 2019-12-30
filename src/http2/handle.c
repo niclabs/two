@@ -136,7 +136,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2sta
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }
         else if ((uint32_t)rc != h2s->header_block_fragments_pointer) {
-            ERROR("ERROR still exists fragments to receive. Read %d bytes of %d bytes", rc, h2s->header_block_fragments_pointer);
+            ERROR("ERROR still exists fragments to receive. Read %d bytes of %d bytes", rc, (int)h2s->header_block_fragments_pointer);
             send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
             return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
         }

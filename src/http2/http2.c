@@ -205,7 +205,7 @@ int receive_header(event_sock_t * client, int size, uint8_t *bytes)
     // Read max frame size from local settings
     uint32_t local_max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
     if (header.length > local_max_frame_size) {
-        ERROR("Invalid received frame size %d > %d. Sending FRAME_SIZE_ERROR", header.length, local_max_frame_size);
+        ERROR("Invalid received frame size %d > %d. Sending FRAME_SIZE_ERROR", header.length, (int)local_max_frame_size);
         send_connection_error(HTTP2_FRAME_SIZE_ERROR, h2s);
         event_close(h2s->socket, clean_h2s);
 
