@@ -5,6 +5,10 @@
 
 #define HTTP2_MAX_HBF_BUFFER 256
 
+// HPACK macros
+#define CONFIG_INCLUDE_DYNAMIC_TABLE 1
+#define CONFIG_MAX_TABLE_SIZE 256
+
 // Logging per module
 /*
 #undef LOG_LEVEL_EVENT

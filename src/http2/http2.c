@@ -33,8 +33,10 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     //h2s->is_server = is_server;
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     h2s->remote_settings[0] = h2s->local_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
+    hpack_init_states(&(h2s->hpack_states), DEFAULT_HEADER_TABLE_SIZE);
     #else
     h2s->remote_settings[0] = h2s->local_settings[0] = 0;
+    hpack_init_states(&(h2s->hpack_states), 0);
     #endif
     h2s->remote_settings[1] = h2s->local_settings[1] = DEFAULT_ENABLE_PUSH;
     h2s->remote_settings[2] = h2s->local_settings[2] = DEFAULT_MAX_CONCURRENT_STREAMS;
@@ -52,7 +54,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     h2s->local_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->debug_size = 0;
     //h2s->header = NULL;
-    hpack_init_states(&(h2s->hpack_states), DEFAULT_HEADER_TABLE_SIZE);
+
 
     headers_init(&(h2s->headers));
 
