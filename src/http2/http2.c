@@ -48,7 +48,6 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     h2s->local_settings[3] = CONFIG_INITIAL_WINDOW_SIZE;
     h2s->local_settings[4] = CONFIG_MAX_FRAME_SIZE;
     h2s->local_settings[5] = CONFIG_MAX_HEADER_LIST_SIZE;
-    h2s->wait_setting_ack = 0;
     h2s->current_stream.stream_id = is_server ? 2 : 3;
     h2s->current_stream.state = STREAM_IDLE;
     h2s->last_open_stream_id = 0;
