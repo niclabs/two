@@ -28,7 +28,7 @@
 // 1 listen handler for a server socket
 // 1 read and 1 write handler for a client socket
 #ifndef CONF_EVENT_MAX_HANDLERS
-#define EVENT_MAX_HANDLERS (EVENT_MAX_SOCKETS * 2)
+#define EVENT_MAX_HANDLERS (EVENT_MAX_SOCKETS * 3)
 #else
 #define EVENT_MAX_HANDLERS (CONF_EVENT_MAX_HANDLERS)
 #endif
