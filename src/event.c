@@ -29,12 +29,6 @@ PROCESS(event_loop_process, "Event loop process");
 /////////////////////////////////////////////////////
 
 // find socket file descriptor in socket queue
-event_sock_t *event_socket_find(event_sock_t *queue, event_descriptor_t descriptor)
-{
-    return LIST_FIND(queue, LIST_ELEM(event_sock_t)->descriptor == descriptor);
-}
-
-// find socket file descriptor in socket queue
 event_handler_t *event_handler_find(event_handler_t *queue, event_type_t type)
 {
     return LIST_FIND(queue, LIST_ELEM(event_handler_t)->type == type);
@@ -55,6 +49,12 @@ event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
     }
 
     return handler;
+}
+
+// find socket file descriptor in socket queue
+event_sock_t *event_sock_find(event_sock_t *queue, event_descriptor_t descriptor)
+{
+    return LIST_FIND(queue, LIST_ELEM(event_sock_t)->descriptor == descriptor);
 }
 
 void event_sock_connect(event_sock_t *sock, event_handler_t *handler)
@@ -100,7 +100,7 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
     cbuf_push(&handler->event.read.buf, buf, count);
 }
 
-void event_sock_read_notify(event_sock_t *sock, event_handler_t *handler)
+void event_sock_handle_read(event_sock_t *sock, event_handler_t *handler)
 {
     assert(sock != NULL);
     if (handler == NULL) {
@@ -123,7 +123,7 @@ void event_sock_read_notify(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
-void event_sock_write_notify(event_sock_t *sock, event_handler_t *handler, int status)
+void event_sock_handle_write(event_sock_t *sock, event_handler_t *handler, int status)
 {
     assert(sock != NULL);
     if (handler == NULL) {
@@ -172,7 +172,7 @@ void event_sock_write(event_sock_t *sock, event_handler_t *handler)
 #else
     int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
     if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-        event_sock_write_notify(sock, handler, -1);
+        event_sock_handle_write(sock, handler, -1);
         return;
     }
 
@@ -187,7 +187,7 @@ void event_sock_write(event_sock_t *sock, event_handler_t *handler)
 
     // notify of write when buffer is empty
     if (cbuf_len(&handler->event.write.buf) <= 0) {
-        event_sock_write_notify(sock, handler, 0);
+        event_sock_handle_write(sock, handler, 0);
     }
 #endif
 }
@@ -225,7 +225,7 @@ void event_loop_timers(event_loop_t *loop)
     }
 }
 
-void event_loop_io(event_loop_t *loop, int millis)
+void event_loop_poll(event_loop_t *loop, int millis)
 {
     assert(loop->nfds >= 0);
 
@@ -244,7 +244,7 @@ void event_loop_io(event_loop_t *loop, int millis)
     for (int i = 0; i < loop->nfds; i++) {
         event_sock_t *sock;
         if (FD_ISSET(i, &loop->active_fds)) {
-            sock = event_socket_find(loop->polling, i);
+            sock = event_sock_find(loop->polling, i);
         }
 
         // check read operations
@@ -271,13 +271,13 @@ void event_loop_pending(event_loop_t *loop)
     for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
         event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
         if (handler != NULL) {
-            event_sock_read_notify(sock, handler);
+            event_sock_handle_read(sock, handler);
         }
     }
 }
 #else
 #ifdef EVENT_SOCK_POLL_TIMER
-void event_poll_tcp(void *data)
+void event_sock_poll(void *data)
 {
     event_sock_t *sock = (event_sock_t *)data;
 
@@ -288,7 +288,7 @@ void event_poll_tcp(void *data)
     ctimer_restart(&sock->timer);
 }
 #endif
-void event_handle_timeout(void *data)
+void event_sock_handle_timeout(void *data)
 {
     event_handler_t *handler = (event_handler_t *)data;
     event_sock_t *sock = handler->event.timer.sock;
@@ -310,7 +310,7 @@ void event_handle_timeout(void *data)
     }
 }
 
-void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
+void event_sock_handle_ack(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
         return;
@@ -324,7 +324,7 @@ void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
 
     // notify of write when buffer is empty
     if (cbuf_len(&handler->event.write.buf) <= 0) {
-        event_sock_write_notify(sock, handler, 0);
+        event_sock_handle_write(sock, handler, 0);
     }
     else {
         // perform write of remaining bytes
@@ -332,7 +332,7 @@ void event_handle_ack(event_sock_t *sock, event_handler_t *handler)
     }
 }
 
-void event_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
+void event_sock_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
 {
     if (handler == NULL || handler->event.write.sending == 0) {
         return;
@@ -345,7 +345,7 @@ void event_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
     event_sock_write(sock, handler);
 }
 
-void event_handle_tcp_event(event_loop_t *loop, void *data)
+void event_sock_handle_event(event_loop_t *loop, void *data)
 {
     event_sock_t *sock = (event_sock_t *)data;
 
@@ -398,11 +398,11 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
         }
 
         // Handle pending reads one last time
-        event_sock_read_notify(sock, rh);
+        event_sock_handle_read(sock, rh);
 
         // notify all pending write handlers
         while (wh != NULL) {
-            event_sock_write_notify(sock, wh, -1);
+            event_sock_handle_write(sock, wh, -1);
             wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
         }
 
@@ -413,11 +413,11 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
     }
 
     if (uip_acked()) {
-        event_handle_ack(sock, wh);
+        event_sock_handle_ack(sock, wh);
     }
 
     if (uip_rexmit()) {
-        event_handle_rexmit(sock, wh);
+        event_sock_handle_rexmit(sock, wh);
     }
 
     if (uip_newdata()) {
@@ -428,7 +428,7 @@ void event_handle_tcp_event(event_loop_t *loop, void *data)
 
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
-    event_sock_read_notify(sock, rh);
+    event_sock_handle_read(sock, rh);
 
     // find the handler again just in case
     wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
@@ -759,7 +759,7 @@ void event_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
 #else
     // set socket for handler
     handler->event.timer.sock = sock;
-    ctimer_set(&handler->event.timer.ctimer, millis * CLOCK_SECOND / 1000, event_handle_timeout, handler);
+    ctimer_set(&handler->event.timer.ctimer, millis * CLOCK_SECOND / 1000, event_sock_handle_timeout, handler);
 #endif
 }
 
@@ -796,7 +796,7 @@ int event_accept(event_sock_t *server, event_sock_t *client)
 
 #ifdef EVENT_SOCK_POLL_TIMER
     // set tcp poll timer every 10 ms
-    ctimer_set(&client->timer, CLOCK_SECOND / EVENT_SOCK_POLL_TIMER_FREQ, event_poll_tcp, client);
+    ctimer_set(&client->timer, CLOCK_SECOND / EVENT_SOCK_POLL_TIMER_FREQ, event_sock_poll, client);
 #endif
 #else
     int clifd = accept(server->descriptor, NULL, NULL);
@@ -936,14 +936,14 @@ void event_loop(event_loop_t *loop)
 
         if (ev == tcpip_event) {
             // handle network events
-            event_handle_tcp_event(loop, data);
+            event_sock_handle_event(loop, data);
         }
 #else
         // todo: perform timer events
         event_loop_timers(loop);
 
         // perform I/O events with 0 timeout
-        event_loop_io(loop, 0);
+        event_loop_poll(loop, 0);
 
         // handle unprocessed read data
         event_loop_pending(loop);
