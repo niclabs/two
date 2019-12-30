@@ -176,6 +176,12 @@ void event_sock_write(event_sock_t *sock, event_handler_t *handler)
         return;
     }
 
+    // reset timer if any
+    event_handler_t *timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
+    if (timeout_handler != NULL) {
+        gettimeofday(&timeout_handler->event.timer.start, NULL);
+    }
+
     // remove written data from buffer
     cbuf_pop(&handler->event.write.buf, NULL, written);
 
