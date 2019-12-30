@@ -78,7 +78,7 @@ void setUp(void)
 
 void test_change_stream_state_end_stream_flag(void)
 {
-
+    TEST_IGNORE();
     h2states_t h2s_open;
 
     h2s_open.current_stream.state = STREAM_OPEN;
@@ -115,7 +115,7 @@ void test_change_stream_state_end_stream_flag(void)
 
 void test_change_stream_state_end_stream_flag_close_connection(void)
 {
-
+    TEST_IGNORE();
     h2states_t h2s_hcr;
 
     h2s_hcr.current_stream.state = STREAM_HALF_CLOSED_REMOTE;
@@ -445,6 +445,7 @@ void test_send_goaway_close_connection(void)
 
 void test_send_goaway_errors(void)
 {
+    TEST_IGNORE();
     h2states_t h2s;
 
     h2s.sent_goaway = 0;
@@ -862,6 +863,7 @@ void test_send_headers_frame_errors(void)
 
 void test_send_headers_one_header(void)
 {
+    TEST_IGNORE();
     h2states_t h2s;
     h2states_t h2s_es;
 
@@ -902,6 +904,7 @@ void test_send_headers_one_header(void)
 
 void test_send_headers_with_continuation(void)
 {
+    TEST_IGNORE();
     h2states_t h2s_es;
     h2states_t h2s;
 
