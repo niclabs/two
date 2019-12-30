@@ -68,7 +68,8 @@ int echo_read(event_sock_t *client, int nread, uint8_t *buf)
 
 int echo_timeout(event_sock_t *client) {
     (void)client;
-    DEBUG("No read activity in 5s");
+    DEBUG("No read activity in 5s. Closing client");
+    event_close(client, on_client_close);
     return 0;
 }
 
