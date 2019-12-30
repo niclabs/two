@@ -3,10 +3,6 @@
 
 #include "cbuf.h"
 
-// HPACK macros
-#define CONFIG_INCLUDE_DYNAMIC_TABLE 1
-#define CONFIG_MAX_TABLE_SIZE 256
-
 // HTTP2 macros
 #define CONFIG_MAX_HBF_BUFFER 256
 #define CONFIG_MAX_BUFFER_SIZE 256
@@ -17,6 +13,9 @@
 #define CONFIG_INITIAL_WINDOW_SIZE 4096
 #define CONFIG_MAX_FRAME_SIZE 16384
 #define CONFIG_MAX_HEADER_LIST_SIZE 512
+
+// HPACK macros
+#define CONFIG_INCLUDE_DYNAMIC_TABLE 1
 
 // Logging per module
 #define ENABLE_LOG 0
