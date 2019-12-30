@@ -9,6 +9,7 @@
 
 // HTTP2 macros
 #define CONFIG_MAX_HBF_BUFFER 256
+#define CONFIG_MAX_BUFFER_SIZE 256
 
 // Logging per module
 #define ENABLE_LOG 0

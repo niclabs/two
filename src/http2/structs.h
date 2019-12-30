@@ -8,6 +8,7 @@
 #include "event.h"
 #include "headers.h"
 #include "frames/frames.h"
+#include "config.h"
 
 /*Macros for table update*/
 // TODO: rename LOCAL,REMOTE constants to LOCAL_SETTINGS, REMOTE_SETTINGS
@@ -16,9 +17,18 @@
 
 
 /*Definition of max headers frame buffer size*/
+#ifdef CONFIG_MAX_HBF_BUFFER
+#define HTTP2_MAX_HBF_BUFFER (CONFIG_MAX_HBF_BUFFER)
+#else
 #define HTTP2_MAX_HBF_BUFFER 256
+#endif
+
 /*Definition of max buffer size*/
+#ifdef CONFIG_MAX_BUFFER_SIZE
+#define HTTP2_MAX_BUFFER_SIZE (CONFIG_MAX_BUFFER_SIZE)
+#else
 #define HTTP2_MAX_BUFFER_SIZE 256
+#endif
 
 
 /*Default settings values*/
