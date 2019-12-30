@@ -42,7 +42,7 @@ int send_text(char *method, char *uri, uint8_t *response, int maxlen)
         memcpy(response, "", 0);
         return 0;
     }
-    memcpy(response, "hello world!!!!", 16);
+    memcpy(response, "hello world!!!\n", 16);
     return 16;
 }
 
