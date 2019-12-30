@@ -105,7 +105,8 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
 
     if (name_len > MAX_HEADER_NAME_LEN || value_len > MAX_HEADER_VALUE_LEN) {
         errno = EINVAL;
-        ERROR("Invalid name/value of new header, exceeded len");
+        ERROR("Invalid name/value of new header, exceeded len\n name_len: %d\n value_len: %d", name_len, value_len);
+
         return -1;
     }
 

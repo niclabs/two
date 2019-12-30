@@ -107,7 +107,7 @@ int two_server_start(unsigned int port)
 
     int r = event_listen(server, port, two_on_new_connection);
 
-    INFO("Starting http/2 server in port 8888");
+    INFO("Starting http/2 server in port %u", port);
     if (r < 0) {
         ERROR("Could not start server");
         return 1;
