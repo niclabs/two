@@ -129,19 +129,21 @@ frames_error_code_t check_frame_errors(frame_header_t *frame_header)
 int frame_to_bytes(frame_t *frame, uint8_t *bytes)
 {
     frame_header_t *frame_header = frame->frame_header;
+    /*
     int errors = check_frame_errors(frame_header);
 
     if (errors < 0) {
         //Error in frame
         return errors;
-    }
+    }*/
 
-    uint8_t frame_header_bytes[9];
-    int frame_header_bytes_size = frame_header_to_bytes(frame_header, frame_header_bytes);
-    uint8_t bytes_array[frame_header->length];
-    int size = frame_header->callback_payload_to_bytes(frame_header, frame->payload, bytes_array);
-    int new_size = append_byte_arrays(bytes, frame_header_bytes, bytes_array, frame_header_bytes_size, size);
-    return new_size;
+    //uint8_t frame_header_bytes[9];
+    int size = 9;
+    int frame_header_bytes_size = frame_header_to_bytes(frame_header, bytes);
+    //uint8_t bytes_array[frame_header->length];
+    size += frame_header->callback_payload_to_bytes(frame_header, frame->payload, bytes+size);
+    //int new_size = append_byte_arrays(bytes, frame_header_bytes, bytes_array, frame_header_bytes_size, size);
+    return size;
 }
 
 
