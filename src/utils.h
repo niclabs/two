@@ -22,7 +22,7 @@ uint32_t bytes_to_uint32_24(uint8_t* bytes);
 uint32_t bytes_to_uint32_31(uint8_t* bytes);
 
 
-int append_byte_arrays(uint8_t* dest, uint8_t* array1, uint8_t* array2, int size1, int size2);
+//int append_byte_arrays(uint8_t* dest, uint8_t* array1, uint8_t* array2, int size1, int size2);
 
 //int buffer_copy(uint8_t* dest, uint8_t* orig, int size);
 

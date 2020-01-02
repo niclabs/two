@@ -138,8 +138,7 @@ int frame_to_bytes(frame_t *frame, uint8_t *bytes)
     }*/
 
     //uint8_t frame_header_bytes[9];
-    int size = 9;
-    int frame_header_bytes_size = frame_header_to_bytes(frame_header, bytes);
+    int size = frame_header_to_bytes(frame_header, bytes);
     //uint8_t bytes_array[frame_header->length];
     size += frame_header->callback_payload_to_bytes(frame_header, frame->payload, bytes+size);
     //int new_size = append_byte_arrays(bytes, frame_header_bytes, bytes_array, frame_header_bytes_size, size);

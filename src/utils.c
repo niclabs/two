@@ -59,7 +59,7 @@ uint32_t bytes_to_uint32_31(uint8_t *bytes){
     uint32_t number = ((first_byte << 24) +(bytes[1] << 16) + (bytes[2] << 8) + bytes[3]);
     return number;
 }
-
+/*
 int append_byte_arrays(uint8_t *dest, uint8_t *array1, uint8_t *array2, int size1, int size2){
     for(uint8_t i = 0; i < size1; i++){
         dest[i]=array1[i];
@@ -69,7 +69,7 @@ int append_byte_arrays(uint8_t *dest, uint8_t *array1, uint8_t *array2, int size
     }
     return size1 + size2;
 }
-
+*/
 /*
 int buffer_copy(uint8_t* dest, uint8_t* orig, int size){
     for(int i = 0; i < size; i++){
