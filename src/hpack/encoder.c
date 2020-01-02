@@ -63,7 +63,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
         }
     }
     if (bit_offset > 0) {
-        uint8_t padding = (uint8_t) ((1u << (8u - bit_offset)) - 1u);
+        uint8_t padding = (uint8_t)((1u << (8u - bit_offset)) - 1u);
         buffer[byte_offset] |= padding;
     }
     return 0;
@@ -89,14 +89,14 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
         return -1;
     }
     int octets_size = hpack_utils_encoded_integer_size(integer, prefix);
-    uint8_t max_first_octet = (uint8_t) ((1u << prefix) - 1u);
+    uint8_t max_first_octet = (uint8_t)((1u << prefix) - 1u);
 
     if (integer < max_first_octet) {
-        encoded_integer[0] = (uint8_t) (integer << (8u - prefix));
+        encoded_integer[0] = (uint8_t)(integer << (8u - prefix));
         encoded_integer[0] = encoded_integer[0] >> (8u - prefix);
     }
     else {
-        uint8_t b0 = (uint8_t) ((1u << prefix) - 1u);
+        uint8_t b0 = (uint8_t)((1u << prefix) - 1u);
         integer = integer - b0;
         encoded_integer[0] = b0;
         int i = 1;
@@ -110,7 +110,7 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
             integer = integer / 128;
         }
 
-        uint8_t bi = (uint8_t) (integer & 0xffu);
+        uint8_t bi = (uint8_t)(integer & 0xffu);
         encoded_integer[i] = bi;
     }
     return octets_size;
@@ -127,7 +127,7 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
  */
 int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
 {
-    uint32_t str_length = (uint32_t) strlen(str);
+    uint32_t str_length = (uint32_t)strlen(str);
     int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7,
                                                                   encoded_string); //encode integer(string size) with prefix 7. this puts the encoded string size in encoded string
 
@@ -188,13 +188,14 @@ uint32_t hpack_encoder_encode_huffman_word(char *str, uint32_t str_length, huffm
  */
 int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
 {
-    uint32_t str_length = (uint32_t) strlen(str); //TODO check if strlen is ok to use here
+    uint32_t str_length = (uint32_t)strlen(str);  //TODO check if strlen is ok to use here
     huffman_encoded_word_t encoded_words[str_length];
 
     uint32_t encoded_word_bit_length = hpack_encoder_encode_huffman_word(str, str_length, encoded_words);
 
-    uint32_t encoded_word_byte_length = (encoded_word_bit_length % 8) ? (encoded_word_bit_length / 8) + 1 : (
-        encoded_word_bit_length / 8);
+    uint32_t encoded_word_byte_length = (encoded_word_bit_length % 8) ?
+                                        (encoded_word_bit_length / 8) + 1 :
+                                        (encoded_word_bit_length / 8);
     int encoded_word_length_size = hpack_encoder_encode_integer(encoded_word_byte_length, 7, encoded_string);
 
     if (encoded_word_length_size < 0) {

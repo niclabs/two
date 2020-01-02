@@ -48,7 +48,6 @@ typedef struct {
     hpack_preamble_t preamble;
 } hpack_encoded_header_t;
 
-#pragma pack(pop)
 //typedefs for dinamic
 //size: 10 bytes in params + size of buffer
 typedef
@@ -69,8 +68,6 @@ hpack_dynamic_table_t;
 /* Hpack Struct: Hpack states
     It contains all the required structs or fields for hpack functionality
  */
-#pragma pack(push, 1)
-
 typedef struct {
     hpack_dynamic_table_t dynamic_table;
     hpack_encoded_header_t encoded_header;

@@ -39,6 +39,15 @@
 #define DEFAULT_MAX_FRAME_SIZE 16384
 #define DEFAULT_MAX_HEADER_LIST_SIZE 2147483647
 
+#define SET_FLAG(flag_bits, flag_type)   \
+    (flag_bits |= 1 << flag_type)
+
+#define CLEAR_FLAG(flag_bits, flag_type)   \
+    (flag_bits &= ~ (1 << flag_type))
+
+#define FLAG_VALUE(flag_bits, flag_type)       \
+    ((flag_bits >> flag_type) & 1)
+
 /*Error codes*/
 typedef enum __attribute__((__packed__)){
     HTTP2_NO_ERROR              = (uint32_t) 0x0,
@@ -85,6 +94,18 @@ typedef enum __attribute__((__packed__)){
 } h2_ret_code_t;
 
 
+typedef enum __attribute__((__packed__)){
+    FLAG_IS_SERVER = 0,
+    FLAG_WAIT_SETTINGS_ACK = 1,
+    FLAG_WAITING_FOR_END_HEADERS_FLAG = 2,
+    FLAG_WAITING_FOR_HEADERS_FRAME = 3,
+    FLAG_RECEIVED_END_STREAM = 4,
+    FLAG_WRITE_CALLBACK_IS_SET = 5,
+    FLAG_SENT_GOAWAY = 6,
+    FLAG_RECEIVED_GOAWAY = 7,
+} h2_flags_t;
+
+
 #pragma pack(push, 1)
 /*Struct for HTTP2 Stream*/
 typedef struct HTTP2_STREAM {
@@ -102,29 +123,6 @@ typedef struct HTTP2_DATA {
     uint8_t *buf;
     uint32_t processed;
 } http2_data_t;
-
-typedef enum __attribute__((__packed__)){
-    FLAG_IS_SERVER = 0,
-    FLAG_WAIT_SETTINGS_ACK = 1,
-    FLAG_WAITING_FOR_END_HEADERS_FLAG = 2,
-    FLAG_WAITING_FOR_HEADERS_FRAME = 3,
-    FLAG_RECEIVED_END_STREAM = 4,
-    FLAG_WRITE_CALLBACK_IS_SET = 5,
-    FLAG_SENT_GOAWAY = 6,
-    FLAG_RECEIVED_GOAWAY = 7,
-} h2_flags_t;
-
-// Push an element at the beginning of the list
-#define SET_FLAG(flag_bits, flag_type)   \
-    (flag_bits |= 1 << flag_type)
-
-#define CLEAR_FLAG(flag_bits, flag_type)   \
-    (flag_bits &= ~ (1 << flag_type))
-
-
-
-#define FLAG_VALUE(flag_bits, flag_type)       \
-    ((flag_bits >> flag_type) & 1)
 
 
 /*Struct for storing HTTP2 states*/
