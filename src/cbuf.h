@@ -16,6 +16,7 @@
  * buffer and increase the available buffer size
  **/
 
+#pragma pack(push, 1)
 
 typedef struct {
     void * ptr;
@@ -33,6 +34,7 @@ typedef struct {
     } state;
 } cbuf_t;
 
+#pragma pack(pop)
 
 /** 
  * Initialize circular buffer with the specified

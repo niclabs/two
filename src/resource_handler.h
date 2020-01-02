@@ -25,12 +25,15 @@
 
 typedef int (*http_resource_handler_t) (char *method, char *uri, uint8_t *response, int maxlen);
 
+#pragma pack(push, 1)
+
 typedef struct {
     char path[HTTP_MAX_PATH_SIZE];
     char method[8];
     http_resource_handler_t handler;
 } http_resource_t;
 
+#pragma pack(pop)
 /***********************************************
 * API methods
 ***********************************************/

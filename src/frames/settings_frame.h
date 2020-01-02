@@ -6,6 +6,7 @@
 #define TWO_SETTINGS_FRAME_H
 #include "structs.h"
 
+#pragma pack(push, 1)
 /*SETTINGS FRAME*/
 typedef struct {
     uint16_t identifier;
@@ -16,6 +17,8 @@ typedef struct {
     settings_pair_t *pairs;
     int count;
 }settings_payload_t; //32 bits -> 4 bytes
+
+#pragma pack(pop)
 
 typedef enum __attribute__((__packed__)){
     SETTINGS_ACK_FLAG = 0x1

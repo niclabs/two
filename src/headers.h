@@ -23,7 +23,7 @@
 #endif
 
 
-
+#pragma pack(push, 1)
 /**
  * Data structure to store a header list
  *
@@ -43,6 +43,8 @@ typedef struct {
     char *name;
     char *value;
 } header_t;
+
+#pragma pack(pop)
 
 /**
  * Initialize header list with specified array and set list counter to zero
