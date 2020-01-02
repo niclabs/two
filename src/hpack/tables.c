@@ -7,7 +7,7 @@
 
 #define LOG_MODULE LOG_MODULE_HPACK
 
-static const uint32_t HPACK_TABLES_FIRST_INDEX_DYNAMIC = 62;   // Changed type to remove warnings
+#define HPACK_TABLES_FIRST_INDEX_DYNAMIC 62
 
 //HeaderPairs in static table
 
