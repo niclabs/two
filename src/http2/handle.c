@@ -98,9 +98,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2sta
     SET_FLAG(h2s->flag_bits, FLAG_WAITING_FOR_END_HEADERS_FLAG);
     int hbf_size = get_header_block_fragment_size(header, hpl);
     // We are reading a new header frame, so previous fragments are useless
-    if (h2s->header_block_fragments_pointer != 0) {
-        h2s->header_block_fragments_pointer = 0;
-    }
+    h2s->header_block_fragments_pointer = 0;
     // We check if hbf fits on buffer
     if (hbf_size >= HTTP2_MAX_HBF_BUFFER) {
         ERROR("Header block fragments too big (not enough space allocated). INTERNAL_ERROR");
