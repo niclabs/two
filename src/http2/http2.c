@@ -6,7 +6,7 @@
 #include "http2/utils.h"
 #include "http2/flowcontrol.h"
 #include "http2/handle.h"
-#include "frames_v3.h"
+#include "frames.h"
 #include "http.h"
 
 // Specify to which module this file belongs
