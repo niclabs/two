@@ -333,3 +333,38 @@ int send_goaway_frame(event_sock_t *socket, event_write_cb cb, uint32_t error_co
         return HTTP2_RC_ERROR;
     }*/
 }
+
+int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint32_t settings_values[]){
+
+    uint8_t count = 6;
+    uint16_t ids[] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
+
+    frame_header_t header;
+
+    /*rc must be 0*/
+    header.length = 6 * count;
+    header.type = SETTINGS_TYPE;//settings;
+    header.flags = 0x0;
+    header.reserved = 0x0;
+    header.stream_id = 0;
+
+    /*Then we put it in a buffer*/
+    uint8_t response_bytes[9 + header.length]; /*settings  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes,0, 9 + header.length);
+
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
+
+    for (int i = 0; i < count; i++) {
+        uint16_t identifier = ids[i];
+        uint16_to_byte_array(identifier, response_bytes + size_bytes);
+        size_bytes += 2;
+
+        uint32_t value = settings_values[i];
+        uint32_to_byte_array(value, response_bytes + size_bytes);
+        size_bytes += 4;
+    }
+
+    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+
+    return HTTP2_RC_NO_ERROR;
+}

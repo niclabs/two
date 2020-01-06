@@ -389,29 +389,14 @@ int send_headers_stream_verification(h2states_t *h2s)
  */
 int send_local_settings(h2states_t *h2s)
 {
-    int rc;
-    uint16_t ids[6] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
-    frame_t mysettingframe;
-    frame_header_t mysettingframeheader;
-    settings_payload_t mysettings;
-
-    mysettingframe.frame_header = &mysettingframeheader;
-    mysettingframe.payload = (void *)&mysettings;
-
-    settings_pair_t mypairs[6];
-    /*rc must be 0*/
-    create_settings_frame(ids, h2s->local_settings, 6, &mysettingframeheader, &mysettings, mypairs);
-
-    uint8_t byte_mysettings[9 + 6 * 6]; /*header: 9 bytes + 6 * setting: 6 bytes */
-    int size_byte_mysettings = frame_to_bytes(&mysettingframe, byte_mysettings);
-    rc = event_read_pause_and_write(h2s->socket, size_byte_mysettings, byte_mysettings, http2_on_read_continue);
+    send_settings_frame(h2s->socket, http2_on_read_continue, h2s->local_settings);
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending settings");
-    if (rc != size_byte_mysettings) {
+    /*if (rc != size_byte_mysettings) {
         ERROR("Error in local settings writing");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
+    }*/
     /*Settings were sent, so we expect an ack*/
     SET_FLAG(h2s->flag_bits, FLAG_WAIT_SETTINGS_ACK);
     return HTTP2_RC_NO_ERROR;
