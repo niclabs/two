@@ -292,48 +292,39 @@ int receive_payload(event_sock_t * client, int size, uint8_t *bytes)
 
 int check_incoming_condition(h2states_t *h2s)
 {
-    int rc;
-
     switch (h2s->header.type) {
         case DATA_TYPE: {
-            rc = check_incoming_data_condition(h2s);
-            return rc;
+            return check_incoming_data_condition(h2s);
         }
         case HEADERS_TYPE: {
-            rc = check_incoming_headers_condition(h2s);
-            return rc;
+            return check_incoming_headers_condition(h2s);
         }
-        case PRIORITY_TYPE://Priority
+        case PRIORITY_TYPE: {//Priority
             WARN("TODO: Priority Frame. Not implemented yet.");
             return HTTP2_RC_ERROR;
-
-        case RST_STREAM_TYPE://RST_STREAM
+        }
+        case RST_STREAM_TYPE: {//RST_STREAM
             WARN("TODO: Reset Stream Frame. Not implemented yet.");
             return HTTP2_RC_ERROR;
-
-        case SETTINGS_TYPE: {
-            rc = check_incoming_settings_condition(h2s);
-            return rc;
         }
-        case PUSH_PROMISE_TYPE://Push promise
+        case SETTINGS_TYPE: {
+            return check_incoming_settings_condition(h2s);
+        }
+        case PUSH_PROMISE_TYPE: {//Push promise
             WARN("TODO: Push promise frame. Not implemented yet.");
             return HTTP2_RC_ERROR;
-
+        }
         case PING_TYPE: {//Ping
-            rc = check_incoming_ping_condition(h2s);
-            return rc;
+            return check_incoming_ping_condition(h2s);
         }
         case GOAWAY_TYPE: {
-            rc = check_incoming_goaway_condition(h2s);
-            return rc;
+            return check_incoming_goaway_condition(h2s);
         }
         case WINDOW_UPDATE_TYPE: {
-            rc = check_incoming_window_update_condition(h2s);
-            return rc;
+            return check_incoming_window_update_condition(h2s);
         }
         case CONTINUATION_TYPE: {
-            rc = check_incoming_continuation_condition(h2s);
-            return rc;
+            return check_incoming_continuation_condition(h2s);
         }
         default: {
             return HTTP2_RC_NO_ERROR;
