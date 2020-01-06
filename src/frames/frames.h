@@ -12,9 +12,10 @@
 #include "ping_frame.h"
 #include "rst_stream_frame.h"
 #include "hpack/hpack.h"
+#include "frames_v3.h"
 
 /*frame header methods*/
-int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
+//int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
 int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame_header);
 
 uint32_t get_header_block_fragment_size(frame_header_t *frame_header, headers_payload_t *headers_payload);

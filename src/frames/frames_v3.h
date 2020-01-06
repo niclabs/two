@@ -19,7 +19,7 @@
 
 
 /*frame header methods*/
-int frame_header_to_bytes_v3(frame_header_t *frame_header, uint8_t *byte_array);
+int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
 
 int send_ping_frame(event_sock_t *socket, event_write_cb cb, uint8_t *opaque_data, int8_t ack);
 int send_goaway_frame(event_sock_t *socket,

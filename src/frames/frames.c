@@ -8,34 +8,6 @@
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
 
-/*
- * Function: frame_header_to_bytes
- * Pass a frame header to an array of bytes
- * Input: pointer to frameheader, array of bytes
- * Output: 0 if bytes were read correctly, (-1 if any error reading)
- */
-int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
-{
-    ERROR("Estoy en normal\n");
-    uint8_t length_bytes[3];
-
-    uint32_24_to_byte_array(frame_header->length, length_bytes);
-    uint8_t stream_id_bytes[4];
-    uint32_31_to_byte_array(frame_header->stream_id, stream_id_bytes);
-    for (int i = 0; i < 3; i++) {
-        byte_array[0 + i] = length_bytes[i];                        //length 24
-    }
-    byte_array[3] = (uint8_t)frame_header->type;                    //type 8
-    byte_array[4] = (uint8_t)frame_header->flags;                   //flags 8
-    for (int i = 0; i < 4; i++) {
-        byte_array[5 + i] = stream_id_bytes[i];                     //stream_id 31
-    }
-    byte_array[5] = byte_array[5] | (frame_header->reserved << (uint8_t) 7);  // reserved 1
-    return 9;
-}
-
-
-
 
 frames_error_code_t check_frame_errors(frame_header_t *frame_header)
 {

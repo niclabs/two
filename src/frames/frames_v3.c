@@ -19,7 +19,7 @@
  * Input: pointer to frameheader, array of bytes
  * Output: 0 if bytes were read correctly, (-1 if any error reading)
  */
-int frame_header_to_bytes_v3(frame_header_t *frame_header, uint8_t *byte_array)
+int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 {
     ERROR("Estoy en v3\n");
     uint32_24_to_byte_array(frame_header->length, byte_array); //length 24 bits -> bytes [0,2]
@@ -57,7 +57,7 @@ int send_ping_frame(event_sock_t *socket, event_write_cb cb, uint8_t *opaque_dat
     uint8_t response_bytes[9 + 8]; /*ping  frame has a header and a payload of 8 bytes*/
     memset(response_bytes,0, 9 + 8);
 
-    int size_bytes = frame_header_to_bytes_v3(&header, response_bytes);
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
     /*We put the payload on the buffer*/
     memcpy(response_bytes + size_bytes, opaque_data, header.length);
@@ -80,7 +80,7 @@ int send_goaway_frame(event_sock_t *socket, event_write_cb cb, uint32_t error_co
     /*Then we put it in a buffer*/
     uint8_t response_bytes[9 + header.length]; /*ping  frame has a header and a payload of 8 bytes*/
     memset(response_bytes,0, 9 + header.length);
-    int size_bytes = frame_header_to_bytes_v3(&header, response_bytes);
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
     /*We put the payload on the buffer*/
     uint32_31_to_byte_array(last_open_stream_id, response_bytes + size_bytes);
@@ -121,7 +121,7 @@ int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint8_t ack, ui
     uint8_t response_bytes[9 + header.length]; /*settings  frame has a header and a payload of 8 bytes*/
     memset(response_bytes,0, 9 + header.length);
 
-    int size_bytes = frame_header_to_bytes_v3(&header, response_bytes);
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
     for (int i = 0; i < count && !ack; i++) {
         uint16_t identifier = ids[i];
