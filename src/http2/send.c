@@ -225,7 +225,7 @@ int send_settings_ack(h2states_t *h2s)
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
 int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s) {
-    return send_ping_frame(h2s->socket, opaque_data, ack);
+    return send_ping_frame(h2s->socket, http2_on_read_continue, opaque_data, ack);
 }
 /*
  * Function: send_goaway

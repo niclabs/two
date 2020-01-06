@@ -273,7 +273,7 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int8_t ack)
+int send_ping_frame(event_sock_t *socket, event_write_cb cb, uint8_t *opaque_data, int8_t ack)
 {
     /*First we create the header*/
     frame_header_t header;
@@ -295,7 +295,7 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int8_t ack)
     size_bytes += header.length;
 
     // We write the ping to NET
-    return event_read_pause_and_write(socket, size_bytes, response_bytes, http2_on_read_continue);
+    return event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
 }
 
 int send_goaway_frame(event_sock_t *socket, uint8_t flag_bits, uint32_t error_code, uint32_t last_open_stream_id)
