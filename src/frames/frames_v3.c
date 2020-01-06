@@ -296,7 +296,6 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int8_t ack)
 
     // We write the ping to NET
     return event_read_pause_and_write(socket, size_bytes, response_bytes, http2_on_read_continue);
-
 }
 
 int send_goaway_frame(event_sock_t *socket, uint8_t flag_bits,uint32_t error_code, uint32_t last_open_stream_id, uint8_t* debug_data_buffer,uint8_t debug_size) //, uint8_t *debug_data_buff, uint8_t debug_size){

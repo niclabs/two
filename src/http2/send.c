@@ -224,19 +224,9 @@ int send_settings_ack(h2states_t *h2s)
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
-{
-    int rc = send_ping_frame(h2s->socket, opaque_data, ack);
-    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
-    INFO("Sending PING");
-    if (rc != 9 + 8) {
-        ERROR("Error in PING sending");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    return HTTP2_RC_NO_ERROR;
+int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s) {
+    return send_ping_frame(h2s->socket, opaque_data, ack);
 }
-
 /*
  * Function: send_goaway
  * Given an h2states_t struct and a valid error code, sends a GOAWAY FRAME to endpoint.
