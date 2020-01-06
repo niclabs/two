@@ -3,15 +3,13 @@
 //
 
 #include <string.h>
-#include <stdint.h>
+#include <assert.h>
+
 #include "frames_v3.h"
 #include "utils.h"
-#include "http2/structs.h"
-#include "hpack/hpack.h"
-#include "config.h"
+
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
-
 
 /*
  * Function: frame_header_to_bytes
@@ -22,13 +20,34 @@
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 {
     ERROR("Estoy en v3\n");
-    uint32_24_to_byte_array(frame_header->length, byte_array); //length 24 bits -> bytes [0,2]
-    byte_array[3] = (uint8_t)frame_header->type;                    //type 8    -> bytes [3]
-    byte_array[4] = (uint8_t)frame_header->flags;                   //flags 8   -> bytes[4]
-    uint32_31_to_byte_array(frame_header->stream_id, byte_array + 5); //length 31 -> bytes[5,8]
-    byte_array[5] = byte_array[5] | (frame_header->reserved << (uint8_t) 7);  // reserved 1 -> bytes[5]
+
+    uint32_24_to_byte_array(frame_header->length, byte_array);                  //length 24 bits -> bytes [0,2]
+    byte_array[3] = (uint8_t)frame_header->type;                                //type 8    -> bytes [3]
+    byte_array[4] = (uint8_t)frame_header->flags;                               //flags 8   -> bytes[4]
+    uint32_31_to_byte_array(frame_header->stream_id, byte_array + 5);           //length 31 -> bytes[5,8]
+    byte_array[5] = byte_array[5] | (frame_header->reserved << (uint8_t)7);     // reserved 1 -> bytes[5]
 
     return 9;
+}
+
+void frame_parse_header(frame_header_v3_t *header, uint8_t *data, unsigned int size)
+{
+    assert(size >= 9);
+
+    // read header length
+    header->length |= (data[2]);
+    header->length |= (data[1] << 8);
+    header->length |= (data[0] << 16);
+
+    // read type and flags
+    header->type = data[3];
+    header->flags = data[4];
+
+    // unset the first bit of the id
+    header->stream_id |= (data[5] & 0x7F) << 24;
+    header->stream_id |= data[6] << 16;
+    header->stream_id |= data[7] << 8;
+    header->stream_id |= data[8] << 0;
 }
 
 
@@ -42,20 +61,21 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping_frame(event_sock_t *socket, event_write_cb cb, uint8_t *opaque_data, int8_t ack)
+int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_write_cb cb)
 {
     /*First we create the header*/
     frame_header_t header;
+
     //ping_payload_t ping_payload;
     header.length = 8;
     header.type = PING_TYPE;
-    header.flags = ack ? PING_ACK_FLAG : 0;
+    header.flags = ack ? 0x1 : 0;
     header.reserved = 0;
     header.stream_id = 0;
 
     /*Then we put it in a buffer*/
-    uint8_t response_bytes[9 + 8]; /*ping  frame has a header and a payload of 8 bytes*/
-    memset(response_bytes,0, 9 + 8);
+    uint8_t response_bytes[9 + 8];     /*ping  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes, 0, 9 + 8);
 
     int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
@@ -67,7 +87,7 @@ int send_ping_frame(event_sock_t *socket, event_write_cb cb, uint8_t *opaque_dat
     return event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
 }
 
-int send_goaway_frame(event_sock_t *socket, event_write_cb cb, uint32_t error_code, uint32_t last_open_stream_id)
+int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_open_stream_id, event_write_cb cb)
 {
     frame_header_t header;
 
@@ -78,8 +98,8 @@ int send_goaway_frame(event_sock_t *socket, event_write_cb cb, uint32_t error_co
     header.reserved = 0;
 
     /*Then we put it in a buffer*/
-    uint8_t response_bytes[9 + header.length]; /*ping  frame has a header and a payload of 8 bytes*/
-    memset(response_bytes,0, 9 + header.length);
+    uint8_t response_bytes[9 + header.length];     /*ping  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes, 0, 9 + header.length);
     int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
     /*We put the payload on the buffer*/
@@ -89,21 +109,14 @@ int send_goaway_frame(event_sock_t *socket, event_write_cb cb, uint32_t error_co
     uint32_to_byte_array(error_code, response_bytes + size_bytes);
     size_bytes += 4;
 
-    /*memcpy(response_bytes + size_bytes, debug_data_buffer, debug_size);
-    size_bytes += debug_size;*/
-
-    return event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
-
     DEBUG("Sending GOAWAY, error code: %u", error_code);
-    /*
-    if (rc != size_bytes) {
-        ERROR("Error writing goaway frame. INTERNAL ERROR");
-        //TODO shutdown connection
-        return HTTP2_RC_ERROR;
-    }*/
+    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+
+    return 0;
 }
 
-int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint8_t ack, uint32_t settings_values[]){
+int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[], event_write_cb cb)
+{
 
     uint8_t count = 6;
     uint16_t ids[] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
@@ -112,14 +125,14 @@ int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint8_t ack, ui
 
     /*rc must be 0*/
     header.length = ack ? 0 : (6 * count);
-    header.type = SETTINGS_TYPE;//settings;
-    header.flags = ack ? SETTINGS_ACK_FLAG : 0;
+    header.type = SETTINGS_TYPE;    //settings;
+    header.flags = ack ? 0x1 : 0;
     header.reserved = 0x0;
     header.stream_id = 0;
 
     /*Then we put it in a buffer*/
-    uint8_t response_bytes[9 + header.length]; /*settings  frame has a header and a payload of 8 bytes*/
-    memset(response_bytes,0, 9 + header.length);
+    uint8_t response_bytes[9 + header.length];     /*settings  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes, 0, 9 + header.length);
 
     int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
@@ -135,5 +148,5 @@ int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint8_t ack, ui
 
     event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
 
-    return HTTP2_RC_NO_ERROR;
+    return 0;
 }

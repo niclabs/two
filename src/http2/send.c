@@ -191,8 +191,7 @@ int send_try_continue_data_sending(h2states_t* h2s)
  */
 int send_local_settings(h2states_t *h2s)
 {
-    uint8_t ack = 0; //false
-    send_settings_frame(h2s->socket, http2_on_read_continue, ack, h2s->local_settings);
+    send_settings_frame(h2s->socket, 0, h2s->local_settings, http2_on_read_continue);
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending settings");
     /*if (rc != size_byte_mysettings) {
@@ -214,8 +213,7 @@ int send_local_settings(h2states_t *h2s)
  */
 int send_settings_ack(h2states_t *h2s)
 {
-    uint8_t ack = 1; //True
-    send_settings_frame(h2s->socket, http2_on_read_continue, ack, NULL);
+    send_settings_frame(h2s->socket, 1, NULL, http2_on_read_continue);
 
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending settings ACK");
@@ -239,7 +237,7 @@ int send_settings_ack(h2states_t *h2s)
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
 int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s) {
-    return send_ping_frame(h2s->socket, http2_on_read_continue, opaque_data, ack);
+    return send_ping_frame(h2s->socket, opaque_data, ack, http2_on_read_continue);
 }
 /*
  * Function: send_goaway
@@ -258,15 +256,14 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
 {
     if (error_code != 0 || FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
         send_goaway_frame(h2s->socket,
-                      NULL,
                           error_code,
-                          h2s->last_open_stream_id);
+                          h2s->last_open_stream_id, NULL);
     }
     else {
         send_goaway_frame(h2s->socket,
-                          http2_on_read_continue,
                           error_code,
-                          h2s->last_open_stream_id);
+                          h2s->last_open_stream_id, 
+                          http2_on_read_continue);
         SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     }
     SET_FLAG(h2s->flag_bits, FLAG_SENT_GOAWAY);
