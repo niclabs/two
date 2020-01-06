@@ -226,7 +226,15 @@ int send_settings_ack(h2states_t *h2s)
  */
 int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
 {
-    return send_ping_frame(opaque_data,ack, h2s);
+    int rc = send_ping_frame(h2s->socket, opaque_data, ack);
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
+    INFO("Sending PING");
+    if (rc != 9 + 8) {
+        ERROR("Error in PING sending");
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
+    return HTTP2_RC_NO_ERROR;
 }
 
 /*

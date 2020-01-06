@@ -273,7 +273,7 @@ int frame_header_from_bytes(uint8_t *byte_array, int size, frame_header_t *frame
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping_frame(uint8_t *opaque_data, int8_t ack, void *h2states)
+int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int8_t ack)
 {
     /*First we create the header*/
     frame_header_t header;
@@ -294,19 +294,9 @@ int send_ping_frame(uint8_t *opaque_data, int8_t ack, void *h2states)
     memcpy(response_bytes + size_bytes, opaque_data, header.length);
     size_bytes += header.length;
 
-    /*Cast to state*/
-    h2states_t* h2s = (h2states_t*)h2states;
-
     // We write the ping to NET
-    int rc = event_read_pause_and_write(h2s->socket, size_bytes, response_bytes, http2_on_read_continue);
-    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
-    INFO("Sending PING");
-    if (rc != size_bytes) {
-        ERROR("Error in PING sending");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    return HTTP2_RC_NO_ERROR;
+    return event_read_pause_and_write(socket, size_bytes, response_bytes, http2_on_read_continue);
+
 }
 
 int send_goaway_frame(event_sock_t *socket, uint8_t flag_bits,uint32_t error_code, uint32_t last_open_stream_id, uint8_t* debug_data_buffer,uint8_t debug_size) //, uint8_t *debug_data_buff, uint8_t debug_size){
