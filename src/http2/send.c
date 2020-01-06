@@ -244,37 +244,12 @@ int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
  */
 int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_buff, uint8_t debug_size){
 {
-    int rc;
-    frame_t frame;
-    frame_header_t header;
-    goaway_payload_t goaway_pl;
-    uint8_t additional_debug_data[h2s->debug_size];
-
-    create_goaway_frame(&header, &goaway_pl, additional_debug_data, h2s->last_open_stream_id, error_code, h2s->debug_data_buffer, h2s->debug_size);
-    frame.frame_header = &header;
-    frame.payload = (void *)&goaway_pl;
-    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
-    int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    if (error_code != 0 || FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
-        rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
-    }
-    else {
-        rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
-    }
-    DEBUG("Sending GOAWAY, error code: %u", error_code);
-
-    if (rc != bytes_size) {
-        ERROR("Error writing goaway frame. INTERNAL ERROR");
-        //TODO shutdown connection
-        return HTTP2_RC_ERROR;
-    }
-    SET_FLAG(h2s->flag_bits, FLAG_SENT_GOAWAY);
-    if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
-        return HTTP2_RC_CLOSE_CONNECTION;
-    }
-    return HTTP2_RC_NO_ERROR;
-
+    return send_goaway_frame(h2s->socket,
+                             h2s->flag_bits,
+                             error_code,
+                             h2s->last_open_stream_id,
+                             h2s->debug_data_buffer,
+                             h2s->debug_size);
 }
 
 int send_rst_stream(uint32_t error_code, h2states_t *h2s)

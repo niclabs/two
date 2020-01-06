@@ -16,6 +16,7 @@
  */
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 {
+    ERROR("Estoy en normal\n");
     uint8_t length_bytes[3];
 
     uint32_24_to_byte_array(frame_header->length, length_bytes);
@@ -204,9 +205,7 @@ int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hp
  */
 int receive_header_block(uint8_t *header_block_fragments, int header_block_fragments_pointer, header_list_t *headers, hpack_states_t *hpack_states) //return size of header_list (header_count)
 {
-    int rc = decode_header_block(hpack_states, header_block_fragments, header_block_fragments_pointer, headers);
-
-    return rc;
+    return decode_header_block(hpack_states, header_block_fragments, header_block_fragments_pointer, headers);
 }
 
 /*

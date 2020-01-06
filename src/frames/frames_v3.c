@@ -286,6 +286,8 @@ int send_ping_frame(uint8_t *opaque_data, int8_t ack, void *h2states)
 
     /*Then we put it in a buffer*/
     uint8_t response_bytes[9 + 8]; /*ping  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes,0, 9 + 8);
+
     int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
     /*We put the payload on the buffer*/
@@ -305,4 +307,52 @@ int send_ping_frame(uint8_t *opaque_data, int8_t ack, void *h2states)
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     return HTTP2_RC_NO_ERROR;
+}
+
+int send_goaway_frame(event_sock_t *socket, uint8_t flag_bits,uint32_t error_code, uint32_t last_open_stream_id, uint8_t* debug_data_buffer,uint8_t debug_size) //, uint8_t *debug_data_buff, uint8_t debug_size){
+{
+    frame_header_t header;
+
+    header.length = 8 + debug_size;
+    header.type = GOAWAY_TYPE;
+    header.flags = 0;
+    header.stream_id = 0;
+    header.reserved = 0;
+
+    /*Then we put it in a buffer*/
+    uint8_t response_bytes[9 + header.length]; /*ping  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes,0, 9 + header.length);
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
+
+    /*We put the payload on the buffer*/
+    uint32_31_to_byte_array(last_open_stream_id, response_bytes + size_bytes);
+    size_bytes += 4;
+
+    uint32_to_byte_array(error_code, response_bytes + size_bytes);
+    size_bytes += 4;
+
+    memcpy(response_bytes + size_bytes, debug_data_buffer, debug_size);
+    size_bytes += debug_size;
+
+    int rc;
+    if (error_code != 0 || FLAG_VALUE(flag_bits, FLAG_RECEIVED_GOAWAY)) {
+        rc = event_read_pause_and_write(socket, size_bytes, response_bytes, NULL);
+    }
+    else {
+        rc = event_read_pause_and_write(socket, size_bytes, response_bytes, http2_on_read_continue);
+        SET_FLAG(flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
+    }
+    DEBUG("Sending GOAWAY, error code: %u", error_code);
+
+    if (rc != size_bytes) {
+        ERROR("Error writing goaway frame. INTERNAL ERROR");
+        //TODO shutdown connection
+        return HTTP2_RC_ERROR;
+    }
+    SET_FLAG(flag_bits, FLAG_SENT_GOAWAY);
+    if (FLAG_VALUE(flag_bits, FLAG_RECEIVED_GOAWAY)) {
+        return HTTP2_RC_CLOSE_CONNECTION;
+    }
+    return HTTP2_RC_NO_ERROR;
+
 }
