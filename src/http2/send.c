@@ -242,10 +242,24 @@ int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s) {
  */
 int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_buff, uint8_t debug_size){
 {
-    return send_goaway_frame(h2s->socket,
-                             h2s->flag_bits,
-                             error_code,
-                             h2s->last_open_stream_id);
+    if (error_code != 0 || FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
+        send_goaway_frame(h2s->socket,
+                      NULL,
+                          error_code,
+                          h2s->last_open_stream_id);
+    }
+    else {
+        send_goaway_frame(h2s->socket,
+                          http2_on_read_continue,
+                          error_code,
+                          h2s->last_open_stream_id);
+        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
+    }
+    SET_FLAG(h2s->flag_bits, FLAG_SENT_GOAWAY);
+    if (FLAG_VALUE(h2s->flag_bits, FLAG_RECEIVED_GOAWAY)) {
+        return HTTP2_RC_CLOSE_CONNECTION;
+    }
+    return HTTP2_RC_NO_ERROR;
 }
 
 int send_rst_stream(uint32_t error_code, h2states_t *h2s)

@@ -39,7 +39,7 @@ int compress_headers(header_list_t *headers_out,  uint8_t *compressed_headers, h
 
 int send_ping_frame(event_sock_t *socket, event_write_cb cb, uint8_t *opaque_data, int8_t ack);
 int send_goaway_frame(event_sock_t *socket,
-                      uint8_t flag_bits,
+                      event_write_cb cb,
                       uint32_t error_code,
                       uint32_t last_open_stream_id);
 #endif //TWO_FRAMES_V3_H
