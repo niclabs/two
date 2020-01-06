@@ -16,7 +16,7 @@ PROJECT_SOURCEFILES=two.c \
 					http.c \
 				 	resource_handler.c \
 					utils.c \
-					frames.c \
+					frames_v3.c \
 					settings_frame.c \
 					headers_frame.c \
 					data_frame.c \

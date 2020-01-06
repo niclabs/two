@@ -48,7 +48,7 @@
 #endif
 
 #ifndef LOG_LEVEL_FRAME
-#define LOG_LEVEL_FRAME (LOG_LEVEL_OFF)
+#define LOG_LEVEL_FRAME (LOG_LEVEL_ERROR)
 #endif
 
 #ifndef LOG_LEVEL_HPACK

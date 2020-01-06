@@ -24,8 +24,8 @@ typedef enum __attribute__((__packed__)){
 /*FRAME HEADER*/
 typedef struct FRAME_HEADER {
     uint32_t length : 24;
-    frame_type_t type;
-    uint8_t flags;
+    frame_type_t type: 8;
+    uint8_t flags: 8;
     uint8_t reserved : 1;
     uint32_t stream_id : 31;
     int (*callback_payload_from_bytes)(struct FRAME_HEADER *frame_header, void *payload, uint8_t *bytes);

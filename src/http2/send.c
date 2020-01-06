@@ -1,5 +1,5 @@
 #include "http2/send.h"
-#include "frames.h"
+#include "frames_v3.h"
 #include "headers.h"
 #include "http2/utils.h"
 #include "http2/flowcontrol.h"
@@ -226,31 +226,7 @@ int send_settings_ack(h2states_t *h2s)
  */
 int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
 {
-    frame_t ack_frame;
-    frame_header_t ack_frame_header;
-    ping_payload_t ping_payload;
-
-    ack_frame.frame_header = &ack_frame_header;
-    ack_frame.payload = (void *)&ping_payload;
-    int rc;
-    if (ack) {
-        create_ping_ack_frame(&ack_frame_header, &ping_payload, opaque_data);
-    }
-    else {
-        create_ping_frame(&ack_frame_header, &ping_payload, opaque_data);
-    }
-    uint8_t byte_ack[9 + 8]; /*Settings ACK frame has a header and a payload of 8 bytes*/
-    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
-    // We write the ACK to NET
-    rc = event_read_pause_and_write(h2s->socket, size_byte_ack, byte_ack, http2_on_read_continue);
-    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
-    INFO("Sending PING");
-    if (rc != size_byte_ack) {
-        ERROR("Error in PING sending");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    return HTTP2_RC_NO_ERROR;
+    return send_ping_frame(opaque_data,ack, h2s);
 }
 
 /*
