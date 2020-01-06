@@ -183,6 +183,27 @@ int send_try_continue_data_sending(h2states_t* h2s)
   return rc;
 }
 
+/*
+ * Function: send_local_settings
+ * Sends local settings to endpoint.
+ * Input: -> st: pointer to hstates_t struct where local settings are stored
+ * Output: 0 if settings were sent. -1 if not.
+ */
+int send_local_settings(h2states_t *h2s)
+{
+    uint8_t ack = 0; //false
+    send_settings_frame(h2s->socket, http2_on_read_continue, ack, h2s->local_settings);
+    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
+    INFO("Sending settings");
+    /*if (rc != size_byte_mysettings) {
+        ERROR("Error in local settings writing");
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }*/
+    /*Settings were sent, so we expect an ack*/
+    SET_FLAG(h2s->flag_bits, FLAG_WAIT_SETTINGS_ACK);
+    return HTTP2_RC_NO_ERROR;
+}
 
 /*
  * Function: send_settings_ack
@@ -193,23 +214,16 @@ int send_try_continue_data_sending(h2states_t* h2s)
  */
 int send_settings_ack(h2states_t *h2s)
 {
-    frame_t ack_frame;
-    frame_header_t ack_frame_header;
-    int rc;
+    uint8_t ack = 1; //True
+    send_settings_frame(h2s->socket, http2_on_read_continue, ack, NULL);
 
-    create_settings_ack_frame(&ack_frame, &ack_frame_header);
-
-    uint8_t byte_ack[9 + 0]; /*Settings ACK frame only has a header*/
-    int size_byte_ack = frame_to_bytes(&ack_frame, byte_ack);
-    // We write the ACK to NET
-    rc = event_read_pause_and_write(h2s->socket, size_byte_ack, byte_ack, http2_on_read_continue);
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending settings ACK");
-    if (rc != size_byte_ack) {
+    /*if (rc != size_byte_ack) {
         ERROR("Error in Settings ACK sending");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
+    }*/
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -381,26 +395,6 @@ int send_headers_stream_verification(h2states_t *h2s)
     return HTTP2_RC_NO_ERROR;
 }
 
-/*
- * Function: send_local_settings
- * Sends local settings to endpoint.
- * Input: -> st: pointer to hstates_t struct where local settings are stored
- * Output: 0 if settings were sent. -1 if not.
- */
-int send_local_settings(h2states_t *h2s)
-{
-    send_settings_frame(h2s->socket, http2_on_read_continue, h2s->local_settings);
-    SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
-    INFO("Sending settings");
-    /*if (rc != size_byte_mysettings) {
-        ERROR("Error in local settings writing");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }*/
-    /*Settings were sent, so we expect an ack*/
-    SET_FLAG(h2s->flag_bits, FLAG_WAIT_SETTINGS_ACK);
-    return HTTP2_RC_NO_ERROR;
-}
 
 /*
  * Function: send_connection_error

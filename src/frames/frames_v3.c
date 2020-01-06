@@ -334,7 +334,7 @@ int send_goaway_frame(event_sock_t *socket, event_write_cb cb, uint32_t error_co
     }*/
 }
 
-int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint32_t settings_values[]){
+int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint8_t ack, uint32_t settings_values[]){
 
     uint8_t count = 6;
     uint16_t ids[] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
@@ -342,9 +342,9 @@ int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint32_t settin
     frame_header_t header;
 
     /*rc must be 0*/
-    header.length = 6 * count;
+    header.length = ack ? 0 : (6 * count);
     header.type = SETTINGS_TYPE;//settings;
-    header.flags = 0x0;
+    header.flags = ack ? SETTINGS_ACK_FLAG : 0;
     header.reserved = 0x0;
     header.stream_id = 0;
 
@@ -354,7 +354,7 @@ int send_settings_frame(event_sock_t *socket, event_write_cb cb, uint32_t settin
 
     int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count && !ack; i++) {
         uint16_t identifier = ids[i];
         uint16_to_byte_array(identifier, response_bytes + size_bytes);
         size_bytes += 2;
