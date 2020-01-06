@@ -245,9 +245,7 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
     return send_goaway_frame(h2s->socket,
                              h2s->flag_bits,
                              error_code,
-                             h2s->last_open_stream_id,
-                             h2s->debug_data_buffer,
-                             h2s->debug_size);
+                             h2s->last_open_stream_id);
 }
 
 int send_rst_stream(uint32_t error_code, h2states_t *h2s)

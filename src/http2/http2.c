@@ -56,7 +56,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     h2s->remote_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->local_window.connection_window = DEFAULT_INITIAL_WINDOW_SIZE;
     h2s->local_window.stream_window = DEFAULT_INITIAL_WINDOW_SIZE;
-    h2s->debug_size = 0;
+    //h2s->debug_size = 0;
     //h2s->header = NULL;
 
 

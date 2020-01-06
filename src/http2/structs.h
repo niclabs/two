@@ -145,8 +145,7 @@ typedef struct http2_states {
     uint32_t header_block_fragments_pointer;     //points to the next byte to write in
     h2_flow_control_window_t remote_window;
     h2_flow_control_window_t local_window;
-    uint8_t debug_data_buffer[0];   // TODO not implemented yet
-    uint8_t debug_size;             // TODO not implemented yet
+
     //Hpack dynamic table
     hpack_states_t hpack_states;
 

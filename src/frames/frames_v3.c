@@ -298,11 +298,11 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int8_t ack)
     return event_read_pause_and_write(socket, size_bytes, response_bytes, http2_on_read_continue);
 }
 
-int send_goaway_frame(event_sock_t *socket, uint8_t flag_bits,uint32_t error_code, uint32_t last_open_stream_id, uint8_t* debug_data_buffer,uint8_t debug_size) //, uint8_t *debug_data_buff, uint8_t debug_size){
+int send_goaway_frame(event_sock_t *socket, uint8_t flag_bits, uint32_t error_code, uint32_t last_open_stream_id)
 {
     frame_header_t header;
 
-    header.length = 8 + debug_size;
+    header.length = 8;
     header.type = GOAWAY_TYPE;
     header.flags = 0;
     header.stream_id = 0;
@@ -320,8 +320,8 @@ int send_goaway_frame(event_sock_t *socket, uint8_t flag_bits,uint32_t error_cod
     uint32_to_byte_array(error_code, response_bytes + size_bytes);
     size_bytes += 4;
 
-    memcpy(response_bytes + size_bytes, debug_data_buffer, debug_size);
-    size_bytes += debug_size;
+    /*memcpy(response_bytes + size_bytes, debug_data_buffer, debug_size);
+    size_bytes += debug_size;*/
 
     int rc;
     if (error_code != 0 || FLAG_VALUE(flag_bits, FLAG_RECEIVED_GOAWAY)) {
