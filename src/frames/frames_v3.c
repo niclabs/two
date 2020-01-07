@@ -20,7 +20,7 @@
  */
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 {
-    ERROR("Estoy en v3\n");
+    DEBUG("Estoy en v3");
 
     uint32_24_to_byte_array(frame_header->length, byte_array);                  //length 24 bits -> bytes [0,2]
     byte_array[3] = (uint8_t)frame_header->type;                                //type 8    -> bytes [3]
@@ -34,6 +34,9 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 void frame_parse_header(frame_header_v3_t *header, uint8_t *data, unsigned int size)
 {
     assert(size >= 9);
+
+    // cleanup memory first
+    memset(header, 0, sizeof(frame_header_v3_t));
 
     // read header length
     header->length |= (data[2]);
