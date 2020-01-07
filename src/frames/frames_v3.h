@@ -11,6 +11,7 @@
 #include "frames/structs.h"
 
 
+#define FRAME_NO_FLAG (0x0)
 #define FRAME_ACK_FLAG (0x1)
 #define FRAME_END_STREAM_FLAG (0x1)
 #define FRAME_END_HEADERS_FLAG (0x4)
