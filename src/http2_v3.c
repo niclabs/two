@@ -44,17 +44,6 @@ http2_settings_t default_settings = {
     .max_header_list_size = 0xFFFFFFFF
 };
 
-// internal definition of a settings frame
-// it is useful for easing the reading of settings
-// fields from a data array
-typedef struct {
-    uint8_t header[9];
-    struct http2_settings_field {
-        uint16_t identifier;
-        uint32_t value;
-    } __attribute__((packed)) fields[];
-} __attribute__((packed)) http2_settings_frame_t;
-
 // used as generic callback for event_write methods. It checks
 // the status of the socket and closes the connection if an
 // error ocurred
@@ -146,53 +135,53 @@ int http2_close_gracefully(http2_context_t *ctx)
 void http2_error(http2_context_t *ctx, http2_error_t error)
 {
     // log the error
-    // if logging is disabled, the switch should be 
+    // if logging is disabled, the switch should be
     // optimized away by the compiler
-    switch(error) {
+    switch (error) {
         case HTTP2_NO_ERROR:
-            ERROR("-> GOAWAY: NO_ERROR");
+            ERROR("-> GOAWAY (NO_ERROR)");
             break;
         case HTTP2_PROTOCOL_ERROR:
-            ERROR("-> GOAWAY: PROTOCOL_ERROR");
+            ERROR("-> GOAWAY (PROTOCOL_ERROR)");
             break;
         case HTTP2_INTERNAL_ERROR:
-            ERROR("-> GOAWAY: INTERNAL_ERROR");
+            ERROR("-> GOAWAY (INTERNAL_ERROR)");
             break;
         case HTTP2_FLOW_CONTROL_ERROR:
-            ERROR("-> GOAWAY: FLOW_CONTROL_ERROR");
+            ERROR("-> GOAWAY (FLOW_CONTROL_ERROR)");
             break;
         case HTTP2_SETTINGS_TIMEOUT:
-            ERROR("-> GOAWAY: SETTINGS_TIMEOUT");
+            ERROR("-> GOAWAY (SETTINGS_TIMEOUT)");
             break;
         case HTTP2_STREAM_CLOSED_ERROR:
-            ERROR("-> GOAWAY: STREAM_CLOSED");
+            ERROR("-> GOAWAY (STREAM_CLOSED)");
             break;
         case HTTP2_FRAME_SIZE_ERROR:
-            ERROR("-> GOAWAY: FRAME_SIZE_ERROR");
+            ERROR("-> GOAWAY (FRAME_SIZE_ERROR)");
             break;
         case HTTP2_REFUSED_STREAM:
-            ERROR("-> GOAWAY: REFUSED_STREAM");
+            ERROR("-> GOAWAY (REFUSED_STREAM)");
             break;
         case HTTP2_CANCEL:
-            ERROR("-> GOAWAY: CANCEL");
+            ERROR("-> GOAWAY (CANCEL)");
             break;
         case HTTP2_COMPRESSION_ERROR:
-            ERROR("-> GOAWAY: COMPRESSION_ERROR");
+            ERROR("-> GOAWAY (COMPRESSION_ERROR)");
             break;
         case HTTP2_CONNECT_ERROR:
-            ERROR("-> GOAWAY: CONNECT_ERROR");
+            ERROR("-> GOAWAY (CONNECT_ERROR)");
             break;
         case HTTP2_ENHANCE_YOUR_CALM:
-            ERROR("-> GOAWAY: ENHANCE_YOUR_CALM");
+            ERROR("-> GOAWAY (ENHANCE_YOUR_CALM)");
             break;
         case HTTP2_INADEQUATE_SECURITY:
-            ERROR("-> GOAWAY: INADEQUATE_SECURITY");
+            ERROR("-> GOAWAY (INADEQUATE_SECURITY)");
             break;
         case HTTP2_HTTP_1_1_REQUIRED:
-            ERROR("-> GOAWAY: HTTP_1_1_REQUIRED");
+            ERROR("-> GOAWAY (HTTP_1_1_REQUIRED)");
             break;
     }
-    
+
     // update state
     ctx->state = HTTP2_CLOSING;
     event_read(ctx->socket, closing);
@@ -244,33 +233,37 @@ void free_client(http2_context_t *ctx)
     }
 }
 
-// update remote settings from frame data
-void update_settings(http2_context_t *ctx, uint8_t *data, unsigned int size)
+// update remote settings from settings payload
+void update_settings(http2_context_t *ctx, uint8_t *data, int length)
 {
-    // cast the buffer as a settings frame
-    http2_settings_frame_t *frame = (http2_settings_frame_t *)data;
+    DEBUG("<- SETTINGS (%d)", length / 6);
+    for (int i = 0; i < length; i += 6) {
+        // read settings id
+        uint16_t id = 0;
+        id |= data[i + 0] << 8;
+        id |= data[i + 1];
 
-    int len = (size - 9) / sizeof(struct http2_settings_field);
-
-    DEBUG("<- SETTINGS");
-    for (int i = 0; i < len; i++) {
-        uint16_t id = frame->fields[i].identifier;
-        uint32_t value = frame->fields[i].value;
+        // read settings value
+        uint32_t value = 0;
+        value |= data[i + 2] << 24;
+        value |= data[i + 3] << 16;
+        value |= data[i + 4] << 8;
+        value |= data[i + 5];
         switch (id) {
             case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
-                DEBUG("     header_table_size: %d", value);
+                DEBUG("     header_table_size: %u", value);
                 ctx->settings.header_table_size = value;
                 // TODO: update hpack table
                 break;
             case HTTP2_SETTINGS_ENABLE_PUSH:
-                DEBUG("     enable_push: %d", value);
+                DEBUG("     enable_push: %u", value);
                 ctx->settings.enable_push = value;
                 break;
             case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
                 ctx->settings.max_concurrent_streams = value;
                 break;
             case HTTP2_SETTINGS_INITIAL_WINDOW_SIZE:
-                DEBUG("     initial_window_size: %d", value);
+                DEBUG("     initial_window_size: %u", value);
                 if (value > (1U << 31) - 1) {
                     http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
                     return;
@@ -278,7 +271,7 @@ void update_settings(http2_context_t *ctx, uint8_t *data, unsigned int size)
                 ctx->settings.initial_window_size = value;
                 break;
             case HTTP2_SETTINGS_MAX_FRAME_SIZE:
-                DEBUG("     max_frame_size: %d", value);
+                DEBUG("     max_frame_size: %u", value);
                 if (value < (1 << 14) || value > ((1 << 24) - 1)) {
                     http2_error(ctx, HTTP2_PROTOCOL_ERROR);
                     return;
@@ -286,7 +279,7 @@ void update_settings(http2_context_t *ctx, uint8_t *data, unsigned int size)
                 ctx->settings.max_frame_size = value;
                 break;
             case HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
-                DEBUG("     max_header_list_size: %d", value);
+                DEBUG("     max_header_list_size: %u", value);
                 ctx->settings.max_header_list_size = value;
                 break;
             default:
@@ -302,31 +295,30 @@ void update_settings(http2_context_t *ctx, uint8_t *data, unsigned int size)
 
 // Handle a settings frame reception, check for conformance to the
 // protocol specification and update remote endpoint settings
-// data and size must respectively contain the full frame
-// data buffer and the exact frame size (i.e. 9 + header_length)
-int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t frame_header, uint8_t *data, unsigned int size)
+int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
 {
     // check stream id
-    if (frame_header.stream_id != 0x0) {
+    if (header.stream_id != 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
     }
 
     // if not an ack
-    if (frame_header.flags == FRAME_NO_FLAG) {
+    if (header.flags == FRAME_NO_FLAG) {
         // check that frame size is divisible by 6
-        if (frame_header.length % 6 != 0) {
+        if (header.length % 6 != 0) {
             http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
             return -1;
         }
 
-        update_settings(ctx, data, size);
+        // process settings
+        update_settings(ctx, payload, header.length);
 
-        DEBUG("-> SETTINGS: ACK");
+        DEBUG("-> SETTINGS (ACK)");
         send_settings_frame(ctx->socket, 1, NULL, close_on_write_error);
     }
-    else if (frame_header.flags == FRAME_ACK_FLAG) {
-        if (frame_header.length != 0) {
+    else if (header.flags == FRAME_ACK_FLAG) {
+        if (header.length != 0) {
             http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
             return -1;
         }
@@ -338,7 +330,7 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t frame_header, 
             return -1;
         }
 
-        DEBUG("<- SETTINGS: ACK");
+        DEBUG("<- SETTINGS (ACK)");
         ctx->flags &= ~HTTP2_FLAGS_WAITING_SETTINGS_ACK;
 
         // TODO: disable settings ack timer
@@ -351,16 +343,16 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t frame_header, 
     return 0;
 }
 
-int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t frame_header, uint8_t *data, unsigned int size)
+int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
 {
     // check stream id
-    if (frame_header.stream_id != 0x0) {
+    if (header.stream_id != 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
     }
 
     // check frame size
-    if (frame_header.length < 8) {
+    if (header.length < 8) {
         http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
         return -1;
     }
@@ -407,13 +399,13 @@ int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
                              HTTP2_MAX_FRAME_SIZE, HTTP2_MAX_HEADER_LIST_SIZE };
 
     // call send_setting_frame
-    DEBUG("-> SETTINGS");
-    DEBUG("     header_table_size: %d", HTTP2_HEADER_TABLE_SIZE);
-    DEBUG("     enable_push: %d", HTTP2_ENABLE_PUSH);
-    DEBUG("     max_concurrent_streams: %d", HTTP2_MAX_CONCURRENT_STREAMS);
-    DEBUG("     initial_window_size: %d", HTTP2_INITIAL_WINDOW_SIZE);
-    DEBUG("     max_frame_size: %d", HTTP2_MAX_FRAME_SIZE);
-    DEBUG("     max_header_list_size: %d", HTTP2_MAX_HEADER_LIST_SIZE);
+    DEBUG("-> SETTINGS (6)");
+    DEBUG("     header_table_size: %u", HTTP2_HEADER_TABLE_SIZE);
+    DEBUG("     enable_push: %u", HTTP2_ENABLE_PUSH);
+    DEBUG("     max_concurrent_streams: %u", HTTP2_MAX_CONCURRENT_STREAMS);
+    DEBUG("     initial_window_size: %u", HTTP2_INITIAL_WINDOW_SIZE);
+    DEBUG("     max_frame_size: %u", HTTP2_MAX_FRAME_SIZE);
+    DEBUG("     max_header_list_size: %u", HTTP2_MAX_HEADER_LIST_SIZE);
     send_settings_frame(client, 0, settings, on_settings_sent);
 
     // go to next state
@@ -455,7 +447,7 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
         return 0;
     }
 
-    if (handle_settings_frame(ctx, frame_header, buf, frame_size) < 0) {
+    if (handle_settings_frame(ctx, frame_header, buf + 9) < 0) {
         // if an error ocurred, discard the remaining data
         return size;
     }
@@ -502,7 +494,7 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
             break;
         case FRAME_SETTINGS_TYPE:
             // check stream id
-            rc = handle_settings_frame(ctx, frame_header, buf, frame_size);
+            rc = handle_settings_frame(ctx, frame_header, buf + 9);
             break;
         default:
             http2_error(ctx, HTTP2_INTERNAL_ERROR);
