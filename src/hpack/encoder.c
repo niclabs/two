@@ -387,9 +387,7 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
 int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string, uint8_t *encoded_buffer)
 {
     //this gets the info required to encode into the encoded_header, also decides which header type to use
-    hpack_encoder_pack_header(states,
-                              name_string,
-                              value_string);
+    hpack_encoder_pack_header(states, name_string, value_string);
     //finally encode header into buffer
     return hpack_encoder_encode_header(&states->encoded_header, name_string, value_string, encoded_buffer);
 }
