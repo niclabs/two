@@ -125,7 +125,7 @@ typedef enum {
     HTTP2_INTERNAL_ERROR        = 0x2,
     HTTP2_FLOW_CONTROL_ERROR    = 0x3,
     HTTP2_SETTINGS_TIMEOUT      = 0x4,
-    HTTP2_STREAM_CLOSED         = 0x5,
+    HTTP2_STREAM_CLOSED_ERROR   = 0x5,
     HTTP2_FRAME_SIZE_ERROR      = 0x6,
     HTTP2_REFUSED_STREAM        = 0x7,
     HTTP2_CANCEL                = 0x8,
@@ -139,11 +139,11 @@ typedef enum {
 typedef struct http2_stream {
     uint32_t id;
     enum {
-        STREAM_IDLE,
-        STREAM_OPEN,
-        STREAM_HALF_CLOSED_LOCAL,
-        STREAM_HALF_CLOSED_REMOTE,
-        STREAM_CLOSED
+        HTTP2_STREAM_IDLE,
+        HTTP2_STREAM_OPEN,
+        HTTP2_STREAM_HALF_CLOSED_LOCAL,
+        HTTP2_STREAM_HALF_CLOSED_REMOTE,
+        HTTP2_STREAM_CLOSED
     } state;
 } http2_stream_t;
 
@@ -173,11 +173,14 @@ typedef struct http2_context {
         HTTP2_WAITING_PREFACE,
         HTTP2_WAITING_SETTINGS,
         HTTP2_READY,
-        HTTP2_GOAWAY
+        HTTP2_CLOSING
     } state;
 
     // current stream
     http2_stream_t stream;
+
+    // last opened stream
+    uint32_t last_opened_stream_id;
 
     // http2 state flags
     uint8_t flags;
@@ -187,8 +190,9 @@ typedef struct http2_context {
 } http2_context_t;
 
 
-void http2_init_new_client(event_sock_t *client, http2_context_t *ctx);
-void http2_close_gracefully(http2_context_t *ctx);
+http2_context_t * http2_new_client(event_sock_t *client);
+int http2_close_gracefully(http2_context_t *ctx);
 void http2_close_immediate(http2_context_t *ctx);
+void http2_error(http2_context_t *ctx, http2_error_t error);
 
 #endif
