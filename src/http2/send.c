@@ -305,61 +305,23 @@ int send_rst_stream(uint32_t error_code, h2states_t *h2s)
  *        -> window_size_increment: increment to put on window_update frame
  * Output: 0 if no errors were found, -1 if not.
  */
-int send_window_update(uint8_t window_size_increment, h2states_t *h2s)
-{
-    //TODO: Refactor this function to avoid duplicated code
-    frame_t frame;
-    frame_header_t frame_header;
-    window_update_payload_t window_update_payload;
-    int rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, 0);
-
-    if (rc < 0) {
-        ERROR("send_window_update: error creating window_update frame");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-
-    frame.frame_header = &frame_header;
-    frame.payload = (void *)&window_update_payload;
-    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
-    int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+int send_window_update(uint8_t window_size_increment, h2states_t *h2s) {
+    send_window_update_frame(h2s->socket, window_size_increment, 0, http2_on_read_continue);
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
 
     INFO("Sending connection WINDOW UPDATE");
 
-    if (rc != bytes_size) {
-        ERROR("send_window_update: Error writting window_update frame. INTERNAL ERROR");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    rc = flow_control_send_window_update(h2s, window_size_increment);
+    int rc = flow_control_send_window_update(h2s, window_size_increment);
     if (rc != HTTP2_RC_NO_ERROR) {
         ERROR("send_window_update: ERROR in flow control when sending WU - increment too big");
         send_connection_error(HTTP2_PROTOCOL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
 
-    rc = create_window_update_frame(&frame_header, &window_update_payload, window_size_increment, h2s->current_stream.stream_id);
-    if (rc < 0) {
-        ERROR("send_window_update: error creating window_update frame");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-
-    frame.frame_header = &frame_header;
-    frame.payload = (void *)&window_update_payload;
-    bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+    send_window_update_frame(h2s->socket, window_size_increment, h2s->current_stream.stream_id, http2_on_read_continue);
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
 
     INFO("Sending stream WINDOW UPDATE");
-
-    if (rc != bytes_size) {
-        ERROR("send_window_update: Error writting window_update frame. INTERNAL ERROR");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
     return HTTP2_RC_NO_ERROR;
 }
 

@@ -61,4 +61,5 @@ int send_headers_frame(event_sock_t *socket,
                        uint32_t stream_id,
                        uint8_t end_stream,
                        event_write_cb cb);
+int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment, uint32_t stream_id, event_write_cb cb);
 #endif //TWO_FRAMES_V3_H

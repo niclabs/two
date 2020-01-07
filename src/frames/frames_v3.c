@@ -227,3 +227,35 @@ int send_headers_frame(event_sock_t *socket,
     }*/
     return 0;
 }
+
+/*
+ * Function: send_window_update
+ * Sends connection window update to endpoint.
+ * Input: -> st: hstates_t struct pointer where connection variables are stored
+ *        -> window_size_increment: increment to put on window_update frame
+ * Output: 0 if no errors were found, -1 if not.
+ */
+int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment, uint32_t stream_id, event_write_cb cb)
+{
+    frame_header_t header;
+
+    header.stream_id = stream_id;
+    header.type = WINDOW_UPDATE_TYPE;
+    header.length = 4;
+    header.reserved = 0;
+    header.flags = 0;
+
+    /*Then we put it in a buffer*/
+    uint8_t response_bytes[9 + header.length];     /*settings  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes, 0, 9 + header.length);
+
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
+
+    /*Then we put the payload*/
+    uint32_31_to_byte_array(window_size_increment, response_bytes + size_bytes);
+    size_bytes += header.length;
+
+    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+
+    return 0;
+}
