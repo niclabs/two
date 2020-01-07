@@ -200,49 +200,6 @@ void free_client(http2_context_t *ctx)
     }
 }
 
-int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
-{
-    assert(client->data != NULL);
-
-    http2_context_t *ctx = (http2_context_t *)client->data;
-    if (size <= 0) {
-        http2_close_immediate(ctx);
-        return 0;
-    }
-
-    // Wait until preface is received
-    if (size < 24) {
-        return 0;
-    }
-
-    if (strncmp((char *)buf, HTTP2_PREFACE, 24) != 0) {
-        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
-        return 24;
-    }
-
-    DEBUG("Received correct client preface");
-
-    // update connection state
-    ctx->state = HTTP2_WAITING_SETTINGS;
-
-    // prepare settings
-    uint32_t settings [] = { HTTP2_HEADER_TABLE_SIZE, HTTP2_ENABLE_PUSH, \
-                             HTTP2_MAX_CONCURRENT_STREAMS, HTTP2_INITIAL_WINDOW_SIZE, \
-                             HTTP2_MAX_FRAME_SIZE, HTTP2_MAX_HEADER_LIST_SIZE };
-
-    // call send_setting_frame
-    DEBUG("Sending local SETTINGS");
-    send_settings_frame(client, 0, settings, on_settings_sent);
-
-    // go to next state
-    event_read(client, waiting_for_settings);
-    DEBUG("Waiting for client settings");
-
-    return 24;
-}
-
-
-
 // update remote settings from frame data
 void update_settings(http2_context_t *ctx, uint8_t *data, unsigned int size)
 {
@@ -289,13 +246,16 @@ void update_settings(http2_context_t *ctx, uint8_t *data, unsigned int size)
 
 }
 
-int handle_settings_frame(http2_context_t *ctx, uint8_t *buf, unsigned int size)
+////////////////////////////////////
+// begin frame specific handlers
+////////////////////////////////////
+
+// Handle a settings frame reception, check for conformance to the 
+// protocol specification and update remote endpoint settings
+// frame_data and frame size must respectively contain the full frame 
+// data buffer and the exact frame size (i.e. 9 + header_length)
+int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t frame_header, uint8_t *frame_data, unsigned int frame_size)
 {
-    // read frame
-    frame_header_v3_t frame_header;
-
-    frame_parse_header(&frame_header, buf, size);
-
     // check stream id
     if (frame_header.stream_id != 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
@@ -311,7 +271,7 @@ int handle_settings_frame(http2_context_t *ctx, uint8_t *buf, unsigned int size)
         }
 
         DEBUG("Received SETTINGS");
-        update_settings(ctx, buf, size);
+        update_settings(ctx, frame_data, frame_size);
         
         DEBUG("Sending SETTINGS ACK");
         send_settings_frame(ctx->socket, 1, NULL, close_on_write_error);
@@ -342,7 +302,58 @@ int handle_settings_frame(http2_context_t *ctx, uint8_t *buf, unsigned int size)
     return 0;
 }
 
+////////////////////////////////////
+// begin server state methods
+////////////////////////////////////
 
+
+// Handle read operations while waiting for a preface 
+// if anything else than a preface is received in this state
+// a PROTOCOL_ERROR is sent
+int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
+{
+    assert(client->data != NULL);
+
+    http2_context_t *ctx = (http2_context_t *)client->data;
+    if (size <= 0) {
+        http2_close_immediate(ctx);
+        return 0;
+    }
+
+    // Wait until preface is received
+    if (size < 24) {
+        return 0;
+    }
+
+    if (strncmp((char *)buf, HTTP2_PREFACE, 24) != 0) {
+        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return 24;
+    }
+
+    DEBUG("Received correct client preface");
+
+    // update connection state
+    ctx->state = HTTP2_WAITING_SETTINGS;
+
+    // prepare settings
+    uint32_t settings [] = { HTTP2_HEADER_TABLE_SIZE, HTTP2_ENABLE_PUSH, \
+                             HTTP2_MAX_CONCURRENT_STREAMS, HTTP2_INITIAL_WINDOW_SIZE, \
+                             HTTP2_MAX_FRAME_SIZE, HTTP2_MAX_HEADER_LIST_SIZE };
+
+    // call send_setting_frame
+    DEBUG("Sending local SETTINGS");
+    send_settings_frame(client, 0, settings, on_settings_sent);
+
+    // go to next state
+    event_read(client, waiting_for_settings);
+    DEBUG("Waiting for client settings");
+
+    return 24;
+}
+
+// Handle read operations while waiting for a settings frame
+// if anything else than a non-ACK settings frame is received
+// a protocol error is returned
 int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
 {
     http2_context_t *ctx = (http2_context_t *)sock->data;
@@ -367,13 +378,13 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
         return size; // discard all input after an error
     }
 
-    int expected_frame_size = 9 + frame_header.length;
+    int frame_size = 9 + frame_header.length;
     // do nothing if the frame has not been fully received
-    if (size < expected_frame_size) {
+    if (size < frame_size) {
         return 0;
     }
 
-    if (handle_settings_frame(ctx, buf, size) < 0) {
+    if (handle_settings_frame(ctx, frame_header, buf, frame_size) < 0) {
         // if an error ocurred, discard the remaining data
         return size;
     }
@@ -382,10 +393,12 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
     ctx->state = HTTP2_READY;
     event_read(sock, ready);
 
-    return expected_frame_size;
+    return frame_size;
 }
 
-
+// Handle read operations while the server is in a ready state
+// i.e. after settings exchange
+// most frame operations will occur while in this state
 int ready(event_sock_t *sock, int size, uint8_t *buf)
 {
     http2_context_t *ctx = (http2_context_t *)sock->data;
@@ -405,8 +418,8 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
     frame_parse_header(&frame_header, buf, size);
 
     // do nothing if the frame has not been fully received
-    int expected_frame_size = 9 + frame_header.length;
-    if (size < expected_frame_size) {
+    int frame_size = 9 + frame_header.length;
+    if (size < frame_size) {
         return 0;
     }
 
@@ -421,7 +434,7 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
         case FRAME_SETTINGS_TYPE:
             DEBUG("Received SETTINGS frame");
             // check stream id
-            rc = handle_settings_frame(ctx, buf, expected_frame_size);
+            rc = handle_settings_frame(ctx, frame_header, buf, frame_size);
             break;
         default:
             http2_error(ctx, HTTP2_INTERNAL_ERROR);
@@ -432,9 +445,12 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
         return size;
     }
 
-    return expected_frame_size;
+    return frame_size;
 }
 
+// Handle read operations after a GOAWAY frame is sent 
+// or received. No new streams are able to be created
+// at this point, but pending operations will be terminated
 int closing(event_sock_t *sock, int size, uint8_t *buf)
 {
     http2_context_t *ctx = (http2_context_t *)sock->data;
@@ -454,8 +470,8 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
     frame_parse_header(&frame_header, buf, size);
 
     // do nothing if the frame has not been fully received
-    int expected_frame_size = 9 + frame_header.length;
-    if (size < expected_frame_size) {
+    int frame_size = 9 + frame_header.length;
+    if (size < frame_size) {
         return 0;
     }
 
@@ -469,5 +485,5 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
             return size;
     }
 
-    return expected_frame_size;
+    return frame_size;
 }
