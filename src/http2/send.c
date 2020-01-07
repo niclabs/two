@@ -275,27 +275,17 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
 
 int send_rst_stream(uint32_t error_code, h2states_t *h2s)
 {
-    int rc;
-    frame_t frame;
-    frame_header_t header;
-    rst_stream_payload_t rst_stream_pl;
-
-    create_rst_stream_frame(&header, &rst_stream_pl, h2s->last_open_stream_id, error_code);
-    frame.frame_header = &header;
-    frame.payload = (void *)&rst_stream_pl;
-    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
-    int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
+    send_rst_stream_frame(h2s->socket, error_code, h2s->last_open_stream_id, http2_on_read_continue);
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     INFO("Sending RST_STREAM, error code: %u", error_code);
-
+/*
     if (rc != bytes_size) {
         ERROR("Error writting RST_STREAM frame. INTERNAL ERROR");
         return HTTP2_RC_ERROR;
     }
+    */
     //TODO Set flags and conditions for after sending a RST_STREAM frame
     return HTTP2_RC_NO_ERROR;
-
 }
 
 /*

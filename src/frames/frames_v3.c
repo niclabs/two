@@ -259,3 +259,26 @@ int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment
 
     return 0;
 }
+
+int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t stream_id, event_write_cb cb)
+{
+    frame_header_t header;
+    header.stream_id = stream_id;
+    header.type = RST_STREAM_TYPE;
+    header.length = 4;
+    header.flags = 0;
+    header.reserved = 0;
+
+    /*Then we put it in a buffer*/
+    uint8_t response_bytes[9 + header.length];     /*settings  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes, 0, 9 + header.length);
+
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
+
+    /*Then we put the payload*/
+    uint32_to_byte_array(error_code, response_bytes + size_bytes);
+    size_bytes += header.length;
+
+    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    return 0;
+}
