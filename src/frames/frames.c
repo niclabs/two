@@ -148,28 +148,6 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set)
 
 
 /*
- * Function: compress_headers
- * given a set of headers, it comprisses them and save them in a bytes array
- * Input: table of headers, size of the table, array to save the bytes and dynamic_table
- * Output: compressed headers size or -1 if error
- */
-int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hpack_states_t *hpack_states)
-{
-    //TODO implement dynamic table size update
-    int pointer = 0;
-
-    header_t headers_array[headers_count(headers_out)];
-
-    headers_get_all(headers_out, headers_array);
-
-    for (int32_t i = 0; i < headers_count(headers_out); i++) {
-        int rc = encode(hpack_states, headers_array[i].name, headers_array[i].value, compressed_headers + pointer);
-        pointer += rc;
-    }
-    return pointer;
-}
-
-/*
  * Function: receive_header_block
  * receives the header block and save the headers in the headers_data_list
  * Input: header_block, header_block_size, header_data_list

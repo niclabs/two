@@ -10,6 +10,7 @@
 
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
+#include "headers_frame.h"
 
 /*
  * Function: frame_header_to_bytes
@@ -50,6 +51,27 @@ void frame_parse_header(frame_header_v3_t *header, uint8_t *data, unsigned int s
     header->stream_id |= data[8] << 0;
 }
 
+/*
+ * Function: compress_headers
+ * given a set of headers, it comprisses them and save them in a bytes array
+ * Input: table of headers, size of the table, array to save the bytes and dynamic_table
+ * Output: compressed headers size or -1 if error
+ */
+int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hpack_states_t *hpack_states)
+{
+    //TODO implement dynamic table size update
+    int pointer = 0;
+
+    header_t headers_array[headers_count(headers_out)];
+
+    headers_get_all(headers_out, headers_array);
+
+    for (int32_t i = 0; i < headers_count(headers_out); i++) {
+        int rc = encode(hpack_states, headers_array[i].name, headers_array[i].value, compressed_headers + pointer);
+        pointer += rc;
+    }
+    return pointer;
+}
 
 /*
  * Function: send_ping
@@ -148,5 +170,60 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
 
     event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
 
+    return 0;
+}
+
+/*
+ * Function: send_headers_frame
+ * Send a single headers frame to endpoint. It read the data from the buff_read
+ * buffer given as parameter.
+ * Input: ->st: hstates_t struct where connection variables are stored
+ *        ->buff_read: buffer where headers frame payload is stored
+ *        ->size: number of bytes to read from buff_read and to store in payload
+ *        ->stream_id: stream id to write on headers frame header
+ *        ->end_headers: boolean that indicates if END_HEADERS_FLAG must be set
+ *        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
+ * Output: 0 if no errors were found during frame creation/sending, -1 if not
+ */
+
+int send_headers_frame(event_sock_t *socket,
+                       header_list_t* headers_list,
+                       hpack_states_t* hpack_states,
+                       uint32_t stream_id,
+                       uint8_t end_stream,
+                       event_write_cb cb)
+{
+    uint8_t encoded_bytes[FRAMES_MAX_BUFFER_SIZE];
+    int size = compress_headers(headers_list, encoded_bytes, hpack_states);
+    if(size < 0) { //Error
+        return size;
+    }
+    frame_header_t header;
+
+    // We create the headers frame
+    header.length = size;
+    header.type = HEADERS_TYPE;
+    header.flags = end_stream ? HEADERS_END_STREAM_FLAG : 0x0;
+    header.stream_id = stream_id;
+    header.reserved = 0;
+
+    /*Then we put it in a buffer*/
+    uint8_t response_bytes[9 + header.length];     /*settings  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes, 0, 9 + header.length);
+
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
+
+    /*Then we put the payload*/
+    memcpy(response_bytes + size_bytes, response_bytes, header.length);
+    size_bytes += header.length;
+
+    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+
+    INFO("Sending headers");
+    /*if (rc != bytes_size) {
+        ERROR("Error writing headers frame. INTERNAL ERROR");
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }*/
     return 0;
 }

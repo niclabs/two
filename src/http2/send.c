@@ -465,54 +465,6 @@ int send_continuation_frame(uint8_t *buff_read, int size, uint32_t stream_id, ui
     return HTTP2_RC_NO_ERROR;
 }
 
-/*
- * Function: send_headers_frame
- * Send a single headers frame to endpoint. It read the data from the buff_read
- * buffer given as parameter.
- * Input: ->st: hstates_t struct where connection variables are stored
- *        ->buff_read: buffer where headers frame payload is stored
- *        ->size: number of bytes to read from buff_read and to store in payload
- *        ->stream_id: stream id to write on headers frame header
- *        ->end_headers: boolean that indicates if END_HEADERS_FLAG must be set
- *        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
- * Output: 0 if no errors were found during frame creation/sending, -1 if not
- */
-
-int send_headers_frame(uint8_t *buff_read, int size, uint32_t stream_id, uint8_t end_headers, uint8_t end_stream, h2states_t *h2s)
-{
-    int rc;
-    frame_t frame;
-    frame_header_t frame_header;
-    headers_payload_t headers_payload;
-    uint8_t header_block_fragment[HTTP2_MAX_BUFFER_SIZE];
-
-    // We create the headers frame
-    create_headers_frame(buff_read, size, stream_id, &frame_header, &headers_payload, header_block_fragment);
-
-    if (end_headers) {
-        frame_header.flags = set_flag(frame_header.flags, HEADERS_END_HEADERS_FLAG);
-    }
-    if (end_stream) {
-        frame_header.flags = set_flag(frame_header.flags, HEADERS_END_STREAM_FLAG);
-    }
-    frame.frame_header = &frame_header;
-    frame.payload = (void *)&headers_payload;
-    int bytes_size = frame_to_bytes(&frame, buff_read);
-    if (end_headers && end_stream) {
-        rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_read, http2_on_read_continue);
-        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
-    }
-    else {
-        rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_read, NULL);
-    }
-    INFO("Sending headers");
-    if (rc != bytes_size) {
-        ERROR("Error writting headers frame. INTERNAL ERROR");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    return HTTP2_RC_NO_ERROR;
-}
 
 /*
  * Function: send_headers
@@ -529,6 +481,10 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
+    if (send_headers_stream_verification(h2s) < 0) {
+        ERROR("Stream error during the headers sending. INTERNAL ERROR"); // error already handled
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }
     if (headers_count(&(h2s->headers)) == 0) {
         ERROR("send_headers called when there are no headers to send");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
@@ -541,31 +497,55 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    if (send_headers_stream_verification(h2s) < 0) {
-        ERROR("Stream error during the headers sending. INTERNAL ERROR"); // error already handled
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
+
     uint32_t stream_id = h2s->current_stream.stream_id;
-    uint32_t max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
+    //int max_frame_size = read_setting_from(h2s, LOCAL, MAX_FRAME_SIZE);
     int rc;
     //not being considered dependencies nor padding.
-    if ((uint32_t)size <= max_frame_size) { //if headers can be send in only one frame
-        //only send 1 header
-        rc = send_headers_frame(encoded_bytes, size, stream_id, 1, end_stream, h2s);
-        if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
-            ERROR("Error found sending headers frame");
+    //if ((uint32_t)size <= max_frame_size) { //if headers can be send in only one frame
+    //only send 1 header
+
+    if (end_stream) {
+        rc = send_headers_frame(h2s->socket,
+                               &h2s->headers,
+                               &h2s->hpack_states,
+                               stream_id,
+                               end_stream,
+                               http2_on_read_continue);
+        if (rc < 0) {
+            ERROR("Error was found compressing headers. INTERNAL ERROR");
+            send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+        }
+        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
+    }
+    else {
+        rc = send_headers_frame(h2s->socket,
+                                &h2s->headers,
+                                &h2s->hpack_states,
+                                stream_id,
+                                end_stream,
+                                NULL);
+        if (rc < 0) {
+            ERROR("Error was found compressing headers. INTERNAL ERROR");
+            send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+            return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+        }
+    }
+    if (rc == HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT) {
+        ERROR("Error found sending headers frame");
+        return rc;
+    }
+    if (end_stream) {
+        rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
+        if (rc == HTTP2_RC_CLOSE_CONNECTION) {
+            DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
             return rc;
         }
-        if (end_stream) {
-            rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
-            if (rc == HTTP2_RC_CLOSE_CONNECTION) {
-                DEBUG("handle_headers_payload: Close connection. GOAWAY previously received");
-                return rc;
-            }
-        }
-        return rc;  // should be HTTP2_RC_NO_ERROR
     }
-    else {          //if headers must be send with one or more continuation frames
+    return rc;  // should be HTTP2_RC_NO_ERROR
+    //}
+    /*else {          //if headers must be send with one or more continuation frames
         uint32_t remaining = size;
         //send Header Frame
         rc = send_headers_frame(encoded_bytes, max_frame_size, stream_id, 0, end_stream, h2s);
@@ -597,7 +577,7 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
             }
         }
         return rc; // should be HTTP2_RC_NO_ERROR
-    }
+    }*/
 }
 
 /*
