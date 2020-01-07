@@ -10,6 +10,13 @@
 #include "event.h"
 #include "frames/structs.h"
 
+
+#define FRAME_ACK_FLAG (0x1)
+#define FRAME_END_STREAM_FLAG (0x1)
+#define FRAME_END_HEADERS_FLAG (0x4)
+#define FRAME_PADDED_FLAG (0x8)
+#define FRAME_PRIORITY_FLAG (0x20)
+
 /*FRAME HEADER*/
 typedef struct frame_header {
     uint32_t length : 24;
@@ -25,13 +32,7 @@ typedef struct frame_header {
         FRAME_WINDOW_UPDATE_TYPE    = (uint8_t) 0x8,
         FRAME_CONTINUATION_TYPE     = (uint8_t) 0x9
     } type : 8;
-    enum {
-        FRAME_END_STREAM_FLAG   = (uint8_t) 0x1,
-        FRAME_END_HEADERS_FLAG  = (uint8_t) 0x4,
-        FRAME_END_PADDED_FLAG   = (uint8_t) 0x8,
-        FRAME_END_PRIORITY_FLAG = (uint8_t) 0x20,
-    } flags : 8;
-
+    uint8_t flags : 8;
     uint8_t reserved : 1;
     uint32_t stream_id : 31;
 } frame_header_v3_t; //72 bits-> 9 bytes
