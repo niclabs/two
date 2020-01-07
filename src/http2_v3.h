@@ -119,7 +119,6 @@
 #define HTTP2_SOCK_BUF_SIZE (CONFIG_HTTP2_SOCK_BUF_SIZE)
 #endif
 
-
 typedef enum {
     HTTP2_NO_ERROR              = 0x0,
     HTTP2_PROTOCOL_ERROR        = 0x1,
@@ -179,6 +178,9 @@ typedef struct http2_context {
 
     // current stream
     http2_stream_t stream;
+
+    // http2 state flags
+    uint8_t flags;
 
     // sock read buffer
     uint8_t read_buf[HTTP2_SOCK_BUF_SIZE];
