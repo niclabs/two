@@ -9,7 +9,7 @@
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
 
-#define GOAWAY_STRERROR(error)                  \
+#define GOAWAY_ERROR(error)                     \
     ({                                          \
         char *errstr;                           \
         switch (error) {                        \
@@ -54,6 +54,9 @@
                 break;                          \
             case HTTP2_HTTP_1_1_REQUIRED:       \
                 errstr = "HTTP_1_1_REQUIRED";   \
+                break;                          \
+            default:                            \
+                errstr = "UNKNOWN";             \
                 break;                          \
         }                                       \
         errstr;                                 \
@@ -181,7 +184,7 @@ int http2_close_gracefully(http2_context_t *ctx)
     event_read(ctx->socket, closing);
 
     // send go away with HTTP2_NO_ERROR
-    DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_STRERROR(HTTP2_NO_ERROR));
+    DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_ERROR(HTTP2_NO_ERROR));
     send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_write_error);
 
     return 0;
@@ -195,7 +198,7 @@ void http2_error(http2_context_t *ctx, http2_error_t error)
     event_read(ctx->socket, closing);
 
     // send goaway with error
-    DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_STRERROR(error));
+    DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_ERROR(error));
     send_goaway_frame(ctx->socket, error, ctx->last_opened_stream_id, close_on_write_error);
 }
 
@@ -388,7 +391,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
     uint32_t error = bytes_to_uint32(payload + 4);
 
     // log goaway frame
-    DEBUG("<- GOAWAY (last_stream_id=%d, error=%s)", last_stream_id, GOAWAY_STRERROR(error));
+    DEBUG("<- GOAWAY (last_stream_id=%d, error=%s)", last_stream_id, GOAWAY_ERROR(error));
     // if sent goaway, close connection immediately
     if (ctx->flags & HTTP2_FLAGS_GOAWAY_SENT) {
         http2_close_immediate(ctx);
@@ -411,7 +414,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
         event_read(ctx->socket, closing);
 
         // send goaway and and close connection
-        DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_STRERROR(HTTP2_NO_ERROR));
+        DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_ERROR(HTTP2_NO_ERROR));
         send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_goaway_reply_sent);
     }
 
