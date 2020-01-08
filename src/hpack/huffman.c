@@ -109,7 +109,6 @@ int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
     uint32_t pos = huffman_tree.F[length] + code - huffman_tree.C[length];
     if (pos < HUFFMAN_TABLE_SIZE) {
         *sym = huffman_tree.L[pos];
-        //TODO: Change this to return length
         encoded->length = length;
         return 0;
     }
