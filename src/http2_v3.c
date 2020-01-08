@@ -64,7 +64,7 @@
 
 
 #define HTTP2_PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
-#define HTTP2_HEADER_SIZE
+#define HTTP2_FRAME_HEADER_SIZE (9)
 
 // http2 context state flags
 #define HTTP2_FLAGS_NONE                 (0x0)
@@ -187,6 +187,8 @@ int http2_close_gracefully(http2_context_t *ctx)
     DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_ERROR(HTTP2_NO_ERROR));
     send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_write_error);
 
+    // TODO: set a timer for goaway
+
     return 0;
 }
 
@@ -200,6 +202,8 @@ void http2_error(http2_context_t *ctx, http2_error_t error)
     // send goaway with error
     DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_ERROR(error));
     send_goaway_frame(ctx->socket, error, ctx->last_opened_stream_id, close_on_write_error);
+    
+    // TODO: set a timer for goaway
 }
 
 void close_on_write_error(event_sock_t *sock, int status)
@@ -421,6 +425,29 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
     return 0;
 }
 
+int handle_ping_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+{
+    // check stream id
+    if (header.stream_id != 0x0) {
+        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return -1;
+    }
+
+    // check frame size
+    if (header.length != 8) {
+        http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
+        return -1;
+    }
+
+    DEBUG("<- PING");
+
+    // send ack with same payload
+    DEBUG("-> PING (ACK)");
+    send_ping_frame(ctx->socket, payload, 1, close_on_write_error);
+
+    return 0;
+}
+
 ////////////////////////////////////
 // begin server state methods
 ////////////////////////////////////
@@ -445,12 +472,12 @@ int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
     }
 
     if (strncmp((char *)buf, HTTP2_PREFACE, 24) != 0) {
-        DEBUG("<- INVALID HTTP/2 PREFACE");
-        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        DEBUG("<- INVALID HTTP2_PREFACE");
+        http2_close_immediate(ctx);
         return 24;
     }
 
-    DEBUG("<- HTTP/2 PREFACE");
+    DEBUG("<- HTTP2_PREFACE");
 
     // update connection state
     ctx->state = HTTP2_WAITING_SETTINGS;
@@ -489,7 +516,7 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
     }
 
     // Wait until settings header is received
-    if (size < 9) {
+    if (size < HTTP2_FRAME_HEADER_SIZE) {
         return 0;
     }
 
@@ -498,18 +525,18 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
     frame_parse_header(&frame_header, buf, size);
 
     // check the type
+    int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
     if (frame_header.type != FRAME_SETTINGS_TYPE || frame_header.flags != FRAME_NO_FLAG) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
-        return size; // discard all input after an error
+        return frame_size; // discard all input after an error
     }
 
-    int frame_size = 9 + frame_header.length;
     // do nothing if the frame has not been fully received
     if (size < frame_size) {
         return 0;
     }
 
-    if (handle_settings_frame(ctx, frame_header, buf + 9) < 0) {
+    if (handle_settings_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE) < 0) {
         // if an error ocurred, discard the remaining data
         return size;
     }
@@ -534,7 +561,7 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
     }
 
     // Wait until frame header is received
-    if (size < 9) {
+    if (size < HTTP2_FRAME_HEADER_SIZE) {
         return 0;
     }
 
@@ -543,30 +570,25 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
     frame_parse_header(&frame_header, buf, size);
 
     // do nothing if the frame has not been fully received
-    int frame_size = 9 + frame_header.length;
+    int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
     if (size < frame_size) {
         return 0;
     }
 
-
-    int rc = 0;
     switch (frame_header.type) {
         case FRAME_GOAWAY_TYPE:
-            rc = handle_goaway_frame(ctx, frame_header, buf + 9);
+            handle_goaway_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
             break;
         case FRAME_SETTINGS_TYPE:
-            // check stream id
-            rc = handle_settings_frame(ctx, frame_header, buf + 9);
+            handle_settings_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_PING_TYPE:
+            handle_ping_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
             break;
         default:
             DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
             http2_error(ctx, HTTP2_INTERNAL_ERROR);
-            return size;
-    }
-
-    if (rc < 0) {
-        // TODO: verify that we should clean read buffer
-        return size;
+            break;
     }
 
     return frame_size;
@@ -585,7 +607,7 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
     }
 
     // Wait until frame header is received
-    if (size < 9) {
+    if (size < HTTP2_FRAME_HEADER_SIZE) {
         return 0;
     }
 
@@ -594,15 +616,20 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
     frame_parse_header(&frame_header, buf, size);
 
     // do nothing if the frame has not been fully received
-    int frame_size = 9 + frame_header.length;
+    int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
     if (size < frame_size) {
         return 0;
     }
 
-
     switch (frame_header.type) {
         case FRAME_GOAWAY_TYPE:
-            handle_goaway_frame(ctx, frame_header, buf + 9);
+            handle_goaway_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_SETTINGS_TYPE:
+            handle_settings_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_PING_TYPE:
+            handle_ping_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
             break;
         default:
             DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
