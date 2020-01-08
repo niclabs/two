@@ -586,7 +586,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
                 if (rc > 0) { //match name
                     rc = hpack_tables_dynamic_compare_string(dynamic_table, i - rc, value);
                     if (rc > 0) {
-                        return (int)((strings_counter / 2) + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1);
+                        return (strings_counter / 2) + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
                     }
                 }
             }
@@ -639,7 +639,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
             if (strings_counter % 2 == 0 && strings_counter > 0) {
                 int16_t rc = hpack_tables_dynamic_compare_string(dynamic_table, i, name);
                 if (rc > 0) { //match name
-                    return (int)((strings_counter / 2) + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1);
+                    return (strings_counter / 2) + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
                 }
             }
         }
