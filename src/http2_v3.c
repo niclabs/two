@@ -4,9 +4,60 @@
 #include "frames_v3.h"
 #include "http2_v3.h"
 #include "list_macros.h"
+#include "utils.h"
 
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
+
+#define GOAWAY_STRERROR(error)                  \
+    ({                                          \
+        char *errstr;                           \
+        switch (error) {                        \
+            case HTTP2_NO_ERROR:                \
+                errstr = "NO_ERROR";            \
+                break;                          \
+            case HTTP2_PROTOCOL_ERROR:          \
+                errstr = "PROTOCOL_ERROR";      \
+                break;                          \
+            case HTTP2_INTERNAL_ERROR:          \
+                errstr = "INTERNAL_ERROR";      \
+                break;                          \
+            case HTTP2_FLOW_CONTROL_ERROR:      \
+                errstr = "FLOW_CONTROL_ERROR";  \
+                break;                          \
+            case HTTP2_SETTINGS_TIMEOUT:        \
+                errstr = "SETTINGS_TIMEOUT";    \
+                break;                          \
+            case HTTP2_STREAM_CLOSED_ERROR:     \
+                errstr = "STREAM_CLOSED_ERROR"; \
+                break;                          \
+            case HTTP2_FRAME_SIZE_ERROR:        \
+                errstr = "FRAME_SIZE_ERROR";    \
+                break;                          \
+            case HTTP2_REFUSED_STREAM:          \
+                errstr = "REFUSED_STREAM";      \
+                break;                          \
+            case HTTP2_CANCEL:                  \
+                errstr = "CANCEL";              \
+                break;                          \
+            case HTTP2_COMPRESSION_ERROR:       \
+                errstr = "COMPRESSION_ERROR";   \
+                break;                          \
+            case HTTP2_CONNECT_ERROR:           \
+                errstr = "CONNECT_ERROR";       \
+                break;                          \
+            case HTTP2_ENHANCE_YOUR_CALM:       \
+                errstr = "ENHANCE_YOUR_CALM";   \
+                break;                          \
+            case HTTP2_INADEQUATE_SECURITY:     \
+                errstr = "INADEQUATE_SECURITY"; \
+                break;                          \
+            case HTTP2_HTTP_1_1_REQUIRED:       \
+                errstr = "HTTP_1_1_REQUIRED";   \
+                break;                          \
+        }                                       \
+        errstr;                                 \
+    })
 
 
 #define HTTP2_PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
@@ -17,14 +68,16 @@
 #define HTTP2_FLAGS_WAITING_SETTINGS_ACK (0x1)
 #define HTTP2_FLAGS_WAITING_END_HEADERS  (0x2)
 #define HTTP2_FLAGS_WAITING_END_STREAM   (0x4)
+#define HTTP2_FLAGS_GOAWAY_RECV          (0x8)
+#define HTTP2_FLAGS_GOAWAY_SENT          (0x10)
 
 // settings
-#define HTTP2_SETTINGS_HEADER_TABLE_SIZE (0x1)
-#define HTTP2_SETTINGS_ENABLE_PUSH (0x2)
-#define HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS (0x3)
-#define HTTP2_SETTINGS_INITIAL_WINDOW_SIZE (0x4)
-#define HTTP2_SETTINGS_MAX_FRAME_SIZE (0x5)
-#define HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE (0x6)
+#define HTTP2_SETTINGS_HEADER_TABLE_SIZE        (0x1)
+#define HTTP2_SETTINGS_ENABLE_PUSH              (0x2)
+#define HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS   (0x3)
+#define HTTP2_SETTINGS_INITIAL_WINDOW_SIZE      (0x4)
+#define HTTP2_SETTINGS_MAX_FRAME_SIZE           (0x5)
+#define HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE     (0x6)
 
 #define HTTP2_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
 
@@ -110,6 +163,8 @@ void http2_close_immediate(http2_context_t *ctx)
     assert(ctx->socket != NULL);
 
     // stop receiving data and close connection
+    ctx->state = HTTP2_CLOSED;
+    ctx->stream.state = HTTP2_STREAM_CLOSED;
     event_read_stop(ctx->socket);
     event_close(ctx->socket, http2_on_client_close);
 }
@@ -120,13 +175,13 @@ int http2_close_gracefully(http2_context_t *ctx)
         return -1;
     }
 
-    // TODO: we should probably do something we already received a goaway frame
-
     // update state
     ctx->state = HTTP2_CLOSING;
+    ctx->flags &= HTTP2_FLAGS_GOAWAY_SENT;
     event_read(ctx->socket, closing);
 
     // send go away with HTTP2_NO_ERROR
+    DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_STRERROR(HTTP2_NO_ERROR));
     send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_write_error);
 
     return 0;
@@ -134,59 +189,13 @@ int http2_close_gracefully(http2_context_t *ctx)
 
 void http2_error(http2_context_t *ctx, http2_error_t error)
 {
-    // log the error
-    // if logging is disabled, the switch should be
-    // optimized away by the compiler
-    switch (error) {
-        case HTTP2_NO_ERROR:
-            ERROR("-> GOAWAY (NO_ERROR)");
-            break;
-        case HTTP2_PROTOCOL_ERROR:
-            ERROR("-> GOAWAY (PROTOCOL_ERROR)");
-            break;
-        case HTTP2_INTERNAL_ERROR:
-            ERROR("-> GOAWAY (INTERNAL_ERROR)");
-            break;
-        case HTTP2_FLOW_CONTROL_ERROR:
-            ERROR("-> GOAWAY (FLOW_CONTROL_ERROR)");
-            break;
-        case HTTP2_SETTINGS_TIMEOUT:
-            ERROR("-> GOAWAY (SETTINGS_TIMEOUT)");
-            break;
-        case HTTP2_STREAM_CLOSED_ERROR:
-            ERROR("-> GOAWAY (STREAM_CLOSED)");
-            break;
-        case HTTP2_FRAME_SIZE_ERROR:
-            ERROR("-> GOAWAY (FRAME_SIZE_ERROR)");
-            break;
-        case HTTP2_REFUSED_STREAM:
-            ERROR("-> GOAWAY (REFUSED_STREAM)");
-            break;
-        case HTTP2_CANCEL:
-            ERROR("-> GOAWAY (CANCEL)");
-            break;
-        case HTTP2_COMPRESSION_ERROR:
-            ERROR("-> GOAWAY (COMPRESSION_ERROR)");
-            break;
-        case HTTP2_CONNECT_ERROR:
-            ERROR("-> GOAWAY (CONNECT_ERROR)");
-            break;
-        case HTTP2_ENHANCE_YOUR_CALM:
-            ERROR("-> GOAWAY (ENHANCE_YOUR_CALM)");
-            break;
-        case HTTP2_INADEQUATE_SECURITY:
-            ERROR("-> GOAWAY (INADEQUATE_SECURITY)");
-            break;
-        case HTTP2_HTTP_1_1_REQUIRED:
-            ERROR("-> GOAWAY (HTTP_1_1_REQUIRED)");
-            break;
-    }
-
     // update state
     ctx->state = HTTP2_CLOSING;
+    ctx->flags &= HTTP2_FLAGS_GOAWAY_SENT;
     event_read(ctx->socket, closing);
 
     // send goaway with error
+    DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_STRERROR(error));
     send_goaway_frame(ctx->socket, error, ctx->last_opened_stream_id, close_on_write_error);
 }
 
@@ -234,9 +243,10 @@ void free_client(http2_context_t *ctx)
 }
 
 // update remote settings from settings payload
-void update_settings(http2_context_t *ctx, uint8_t *data, int length)
+int update_settings(http2_context_t *ctx, uint8_t *data, int length)
 {
     DEBUG("<- SETTINGS (%d)", length / 6);
+    int total = 0;
     for (int i = 0; i < length; i += 6) {
         // read settings id
         uint16_t id = 0;
@@ -249,15 +259,23 @@ void update_settings(http2_context_t *ctx, uint8_t *data, int length)
         value |= data[i + 3] << 16;
         value |= data[i + 4] << 8;
         value |= data[i + 5];
+
+        // update total
+        total += 1;
         switch (id) {
             case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
                 DEBUG("     header_table_size: %u", value);
                 ctx->settings.header_table_size = value;
                 // TODO: update hpack table
+                //
                 break;
             case HTTP2_SETTINGS_ENABLE_PUSH:
                 DEBUG("     enable_push: %u", value);
                 ctx->settings.enable_push = value;
+                if (value != 0 && value != 1) {
+                    http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+                    return 0;
+                }
                 break;
             case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
                 ctx->settings.max_concurrent_streams = value;
@@ -266,7 +284,7 @@ void update_settings(http2_context_t *ctx, uint8_t *data, int length)
                 DEBUG("     initial_window_size: %u", value);
                 if (value > (1U << 31) - 1) {
                     http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
-                    return;
+                    return 0;
                 }
                 ctx->settings.initial_window_size = value;
                 break;
@@ -274,7 +292,7 @@ void update_settings(http2_context_t *ctx, uint8_t *data, int length)
                 DEBUG("     max_frame_size: %u", value);
                 if (value < (1 << 14) || value > ((1 << 24) - 1)) {
                     http2_error(ctx, HTTP2_PROTOCOL_ERROR);
-                    return;
+                    return 0;
                 }
                 ctx->settings.max_frame_size = value;
                 break;
@@ -283,10 +301,12 @@ void update_settings(http2_context_t *ctx, uint8_t *data, int length)
                 ctx->settings.max_header_list_size = value;
                 break;
             default:
+                // ignore unknown identifiers
+                total -= 1;
                 break;
         }
     }
-
+    return total;
 }
 
 ////////////////////////////////////
@@ -312,10 +332,11 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_
         }
 
         // process settings
-        update_settings(ctx, payload, header.length);
+        if (update_settings(ctx, payload, header.length) > 0) {
+            DEBUG("-> SETTINGS (ACK)");
+            send_settings_frame(ctx->socket, 1, NULL, close_on_write_error);
+        }
 
-        DEBUG("-> SETTINGS (ACK)");
-        send_settings_frame(ctx->socket, 1, NULL, close_on_write_error);
     }
     else if (header.flags == FRAME_ACK_FLAG) {
         if (header.length != 0) {
@@ -343,6 +364,13 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_
     return 0;
 }
 
+void close_on_goaway_reply_sent(event_sock_t *sock, int status)
+{
+    (void)status;
+    http2_context_t *ctx = (http2_context_t *)sock->data;
+    http2_close_immediate(ctx);
+}
+
 int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
 {
     // check stream id
@@ -355,6 +383,36 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
     if (header.length < 8) {
         http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
         return -1;
+    }
+    uint32_t last_stream_id = bytes_to_uint32_31(payload);
+    uint32_t error = bytes_to_uint32(payload + 4);
+
+    // log goaway frame
+    DEBUG("<- GOAWAY (last_stream_id=%d, error=%s)", last_stream_id, GOAWAY_STRERROR(error));
+    // if sent goaway, close connection immediately
+    if (ctx->flags & HTTP2_FLAGS_GOAWAY_SENT) {
+        http2_close_immediate(ctx);
+        return 0;
+    }
+
+    // TODO: if receive goaway, move state to closing and queue goaway
+    if (ctx->flags & HTTP2_FLAGS_GOAWAY_RECV) {
+        // do nothing here
+        return 0;
+    }
+    else {
+        ctx->flags |= HTTP2_FLAGS_GOAWAY_RECV;
+        if (ctx->stream.id > last_stream_id) {
+            // close current stream
+            ctx->stream.state = HTTP2_STREAM_CLOSED;
+        }
+        // update connection state
+        ctx->state = HTTP2_CLOSING;
+        event_read(ctx->socket, closing);
+
+        // send goaway and and close connection
+        DEBUG("-> GOAWAY (last_stream_id=%d, error=%s)", ctx->last_opened_stream_id, GOAWAY_STRERROR(HTTP2_NO_ERROR));
+        send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_goaway_reply_sent);
     }
 
     return 0;
@@ -384,6 +442,7 @@ int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
     }
 
     if (strncmp((char *)buf, HTTP2_PREFACE, 24) != 0) {
+        DEBUG("<- INVALID HTTP/2 PREFACE");
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return 24;
     }
@@ -490,18 +549,20 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
     int rc = 0;
     switch (frame_header.type) {
         case FRAME_GOAWAY_TYPE:
-            // TODO: handle goaway
+            rc = handle_goaway_frame(ctx, frame_header, buf + 9);
             break;
         case FRAME_SETTINGS_TYPE:
             // check stream id
             rc = handle_settings_frame(ctx, frame_header, buf + 9);
             break;
         default:
+            DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
             http2_error(ctx, HTTP2_INTERNAL_ERROR);
             return size;
     }
 
     if (rc < 0) {
+        // TODO: verify that we should clean read buffer
         return size;
     }
 
@@ -538,11 +599,12 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
 
     switch (frame_header.type) {
         case FRAME_GOAWAY_TYPE:
-            // TODO: handle goaway
+            handle_goaway_frame(ctx, frame_header, buf + 9);
             break;
         default:
+            DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
             http2_error(ctx, HTTP2_INTERNAL_ERROR);
-            return size;
+            break;
     }
 
     return frame_size;
