@@ -140,8 +140,7 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
         DEBUG("String too big, does not fit on the encoded_string");
         return -2;
     }
-    for (uint32_t i = 0;
-         i < str_length; i++) {                                          //TODO check if strlen is ok to use here
+    for (uint32_t i = 0; i < str_length; i++) {                                 //TODO check if strlen is ok to use here
         encoded_string[i + encoded_string_length_size] = (uint8_t)str[i];
     }
     return (int)str_length + encoded_string_length_size;
@@ -175,7 +174,6 @@ uint32_t hpack_encoder_encode_huffman_word(char *str, uint32_t str_length, huffm
 #endif
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
-
 /*
  * Function: hpack_encoder_encode_huffman_string
  * Encodes an Array of char using huffman tree compression
@@ -240,10 +238,7 @@ int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
 #if (INCLUDE_HUFFMAN_COMPRESSION)
     int rc = hpack_encoder_encode_huffman_string(str, encoded_string);
 
-    if (rc < 0) {
-        return hpack_encoder_encode_non_huffman_string(str, encoded_string);
-    }
-    if ((uint16_t)rc > strlen(str)) {
+    if (rc < 0 || (uint32_t)rc > strlen(str)) {
         return hpack_encoder_encode_non_huffman_string(str, encoded_string);
     }
     return rc;

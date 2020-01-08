@@ -155,7 +155,7 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set)
  */
 int receive_header_block(uint8_t *header_block_fragments, int header_block_fragments_pointer, header_list_t *headers, hpack_dynamic_table_t *dynamic_table) //return size of header_list (header_count)
 {
-    return decode_header_block(dynamic_table, header_block_fragments, header_block_fragments_pointer, headers);
+    return decode(dynamic_table, header_block_fragments, header_block_fragments_pointer, headers);
 }
 
 /*

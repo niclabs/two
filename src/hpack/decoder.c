@@ -132,7 +132,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
  *      str_length: Length of the buffer
  *      str_length_size: Size in bytes of the length of the string
  * Output:
- *      returns the number of bytes read from encoded_buffer is succesful, if it fails throws an error.
+ *      returns the number of bytes read from encoded_buffer is successful, if it fails throws an error.
  */
 
 int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, const uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size)
@@ -200,7 +200,7 @@ int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, 
  *      -> *encoded_string: Buffer containing encoded bytes
  *      -> str_length: length of the string to decode
  * Output:
- *      return the number of bytes written in str if succesful or -1 otherwise
+ *      return the number of bytes written in str if successful or -1 otherwise
  */
 int32_t hpack_decoder_decode_non_huffman_string(char *str, const uint8_t *encoded_string, uint32_t str_length)
 {
@@ -220,7 +220,7 @@ int32_t hpack_decoder_decode_non_huffman_string(char *str, const uint8_t *encode
  *      -> *str: Buffer to store the result of the decoding process
  *      -> *encoded_buffer: Buffer containing the string to decode
  * Output:
- *      Returns the number of bytes read from encoded_buffer in the decoding process if succesful,
+ *      Returns the number of bytes read from encoded_buffer in the decoding process if successful,
  *      if the process fails the function returns -1
  */
 int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit)
@@ -280,11 +280,10 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
     if (encoded_header->index == 0) {
         pointer += 1;
         DEBUG("Decoding a new name compressed header");
-        int32_t rc =
-            hpack_decoder_decode_string(tmp_name,
-                                        encoded_header->name_string,
-                                        encoded_header->name_length,
-                                        encoded_header->huffman_bit_of_name);
+        int32_t rc = hpack_decoder_decode_string(tmp_name,
+                                                 encoded_header->name_string,
+                                                 encoded_header->name_length,
+                                                 encoded_header->huffman_bit_of_name);
         if (rc < 0) {
             DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
             return rc;
@@ -353,7 +352,7 @@ int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynami
  * Function: get_huffman_bit
  * Gets the flag to check if word is huffman encoded or not
  * Input:
- *      -> num: Octet which represent the begginning of the number
+ *      -> num: Octet which represent the beginning of the number
  * Output:
  *      -> returns 0 in case of no huffman encoded, grower than 0 in case of huffman encoded
  */
@@ -363,7 +362,7 @@ uint8_t get_huffman_bit(uint8_t num)
 }
 
 /*
- * Funcion: hpack_decoder_parse_encoded_header
+ * Function: hpack_decoder_parse_encoded_header
  * Parses the header info from the header block to the encoded header struct
  * Input:
  *      -> *encoded_header: struct in which will be stored the header info
@@ -397,9 +396,9 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
         return pointer;
     }
 
-    /*Bytes read exceeded the header block size specified  at the beggining*/
+    /*Bytes read exceeded the header block size specified  at the beginning*/
     if (pointer > header_size) {
-        ERROR("Bytes read exceeded the header block size specified  at the beggining");
+        ERROR("Bytes read exceeded the header block size specified  at the beginning");
         return PROTOCOL_ERROR;
     }
 
@@ -414,17 +413,17 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
         }
         encoded_header->name_length = (uint32_t)name_length;
         pointer += hpack_utils_encoded_integer_size(encoded_header->name_length, 7);
-        /*Bytes read exceeded the header block size specified  at the beggining*/
+        /*Bytes read exceeded the header block size specified  at the beginning*/
         if (pointer > header_size) {
-            ERROR("Bytes read exceeded the header block size specified  at the beggining");
+            ERROR("Bytes read exceeded the header block size specified  at the beginning");
             return PROTOCOL_ERROR;
         }
 
         encoded_header->name_string = &header_block[pointer];
         pointer += encoded_header->name_length;
-        /*Bytes read exceeded the header block size specified  at the beggining*/
+        /*Bytes read exceeded the header block size specified  at the beginning*/
         if (pointer > header_size) {
-            ERROR("Bytes read exceeded the header block size specified  at the beggining");
+            ERROR("Bytes read exceeded the header block size specified  at the beginning");
             return PROTOCOL_ERROR;
         }
     }
@@ -439,14 +438,14 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
 
     encoded_header->value_length = (uint32_t)value_length;
     pointer += hpack_utils_encoded_integer_size(encoded_header->value_length, 7);
-    /*Bytes read exceeded the header block size specified  at the beggining*/
+    /*Bytes read exceeded the header block size specified  at the beginning*/
     if (pointer > header_size) {
-        ERROR("Bytes read exceeded the header block size specified  at the beggining");
+        ERROR("Bytes read exceeded the header block size specified  at the beginning");
         return PROTOCOL_ERROR;
     }
     encoded_header->value_string = &header_block[pointer];
     pointer += encoded_header->value_length;
-    /*Bytes read exceeded the header block size specified  at the beggining*/
+    /*Bytes read exceeded the header block size specified  at the beginning*/
     if (pointer > header_size) {
         ERROR("Bytes read exceeded the header block size specified  at the beginning");
         return PROTOCOL_ERROR;
@@ -494,7 +493,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, hpack_enco
  *      -> *encoded_buffer: Buffer to check
  *      -> buffer_length: The size of the buffer
  * Output:
- *      returns 0 in successfull case, -1 in case of protocol error
+ *      returns 0 in successful case, -1 in case of protocol error
  */
 int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
 {
@@ -519,7 +518,7 @@ int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
  * Input:
  *      -> *encoded_header: Pointer to encoded_header to check
  * Output:
- *      returns 0 in successfull case, -1 in case of protocol error
+ *      returns 0 in successful case, -1 in case of protocol error
  */
 int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
 {
@@ -571,7 +570,7 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int hpack_decoder_decode_header_block(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, int32_t header_block_size, header_list_t *headers)
+int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, int32_t header_block_size, header_list_t *headers)
 {
     char tmp_name[MAX_HEADER_NAME_LEN];
     char tmp_value[MAX_HEADER_VALUE_LEN];

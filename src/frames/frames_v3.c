@@ -82,7 +82,7 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_w
     //ping_payload_t ping_payload;
     header.length = 8;
     header.type = PING_TYPE;
-    header.flags = ack ? FRAME_ACK_FLAG : 0;
+    header.flags = (uint8_t) (ack ? FRAME_ACK_FLAG : 0);
     header.reserved = 0;
     header.stream_id = 0;
 
@@ -139,7 +139,7 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
     /*rc must be 0*/
     header.length = ack ? 0 : (6 * count);
     header.type = SETTINGS_TYPE;    //settings;
-    header.flags = ack ? FRAME_ACK_FLAG : 0;
+    header.flags = (uint8_t) (ack ? FRAME_ACK_FLAG : 0);
     header.reserved = 0x0;
     header.stream_id = 0;
 
@@ -196,7 +196,7 @@ int send_headers_frame(event_sock_t *socket,
     header.length = size;
     header.type = HEADERS_TYPE;
     header.flags = FRAME_END_HEADERS_FLAG; // we never send continuation
-    header.flags |= end_stream ? FRAME_END_STREAM_FLAG: 0;
+    header.flags |= (uint8_t) (end_stream ? FRAME_END_STREAM_FLAG : 0x0);
     header.stream_id = stream_id;
     header.reserved = 0;
 
@@ -285,7 +285,7 @@ int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t
 
     header.length = size;
     header.type = DATA_TYPE;
-    header.flags = end_stream ? FRAME_END_STREAM_FLAG : 0x0;
+    header.flags = (uint8_t) (end_stream ? FRAME_END_STREAM_FLAG : 0x0);
     header.stream_id = stream_id;
     header.reserved = 0;
 
