@@ -56,40 +56,6 @@ int change_stream_state_end_stream_flag(uint8_t sending, h2states_t *h2s)
     return HTTP2_RC_NO_ERROR;
 }
 
-int send_data_frame(uint32_t data_to_send, uint8_t end_stream, h2states_t *h2s)
-{
-    uint32_t stream_id = h2s->current_stream.stream_id;
-    frame_t frame;
-    frame_header_t frame_header;
-    data_payload_t data_payload;
-    uint8_t data[data_to_send];
-
-    create_data_frame(&frame_header, &data_payload, data, h2s->data.buf + h2s->data.processed, data_to_send, stream_id);
-
-    if (end_stream) {
-        frame_header.flags = set_flag(frame_header.flags, DATA_END_STREAM_FLAG);
-    }
-    frame.frame_header = &frame_header;
-    frame.payload = (void *)&data_payload;
-    uint8_t buff_bytes[HTTP2_MAX_BUFFER_SIZE];
-    int bytes_size = frame_to_bytes(&frame, buff_bytes);
-    INFO("Sending DATA");
-    int rc;
-    if (end_stream) {
-        rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, http2_on_read_continue);
-        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
-    }
-    else {
-        rc = event_read_pause_and_write(h2s->socket, bytes_size, buff_bytes, NULL);
-    }
-    if (rc != bytes_size) {
-        ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }
-    return HTTP2_RC_NO_ERROR;
-}
-
 /*
  * Function: send_data
  * Sends a data frame with the current data written in the given hstates_t struct.
@@ -103,7 +69,7 @@ int send_data_frame(uint32_t data_to_send, uint8_t end_stream, h2states_t *h2s)
  */
 int send_data(uint8_t end_stream, h2states_t *h2s)
 {
-    (void) end_stream;
+    (void)end_stream;
     if (h2s->data.size <= 0) {
         ERROR("No data to be sent. INTERNAL_ERROR");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
@@ -115,7 +81,6 @@ int send_data(uint8_t end_stream, h2states_t *h2s)
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
-    int rc;
     // Check available window
     uint32_t available_data_to_send = get_sending_available_window(h2s);
     uint32_t data_to_send = h2s->data.size - h2s->data.processed;
@@ -125,62 +90,71 @@ int send_data(uint8_t end_stream, h2states_t *h2s)
         available_data_to_send = data_to_send;
         if (data_to_send > max_frame_size) {
             while (data_to_send > max_frame_size) {
-                rc = send_data_frame(max_frame_size, 0, h2s);
-                if (rc != HTTP2_RC_NO_ERROR) {
-                    return rc;
-                }
+                send_data_frame(h2s->socket,
+                                h2s->data.buf + h2s->data.processed,
+                                max_frame_size,
+                                h2s->current_stream.stream_id,
+                                0,
+                                NULL);
                 data_to_send -= max_frame_size;
             }
         }
-        rc = send_data_frame(data_to_send, 1, h2s);
-        if (rc != HTTP2_RC_NO_ERROR) {
-            return rc;
-        }
+        send_data_frame(h2s->socket,
+                        h2s->data.buf + h2s->data.processed,
+                        data_to_send,
+                        h2s->current_stream.stream_id,
+                        1,
+                        http2_on_read_continue);
+        SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     }
     // There is not enough window to send it all
-    else{
-        if(available_data_to_send == 0){
-          return HTTP2_RC_NO_ERROR;
+    else {
+        if (available_data_to_send == 0) {
+            return HTTP2_RC_NO_ERROR;
         }
         data_to_send = available_data_to_send;
         if (data_to_send > max_frame_size) {
             while (data_to_send > max_frame_size) {
-                rc = send_data_frame(max_frame_size, 0, h2s);
-                if (rc != HTTP2_RC_NO_ERROR) {
-                    return rc;
-                }
+                send_data_frame(h2s->socket,
+                                h2s->data.buf + h2s->data.processed,
+                                max_frame_size,
+                                h2s->current_stream.stream_id,
+                                0,
+                                NULL);
                 data_to_send -= max_frame_size;
             }
         }
-        rc = send_data_frame(data_to_send, 0, h2s);
-        if (rc != HTTP2_RC_NO_ERROR) {
-            return rc;
-        }
-
+        send_data_frame(h2s->socket,
+                        h2s->data.buf + h2s->data.processed,
+                        data_to_send,
+                        h2s->current_stream.stream_id,
+                        0,
+                        NULL);
     }
+
     decrease_window_available(&h2s->remote_window, available_data_to_send);
     h2s->data.processed += available_data_to_send;
     // All data was processed, data buffer is reset
     if (h2s->data.size == h2s->data.processed) {
         h2s->data.size = 0;
         h2s->data.processed = 0;
-        rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
+        int rc = change_stream_state_end_stream_flag(1, h2s); // 1 is for sending
         if (rc == HTTP2_RC_CLOSE_CONNECTION) {
-          DEBUG("send_data: Close connection. GOAWAY previously received");
-          return rc;
+            DEBUG("send_data: Close connection. GOAWAY previously received");
+            return rc;
         }
     }
     return HTTP2_RC_NO_ERROR;
 }
 
-int send_try_continue_data_sending(h2states_t* h2s)
+int send_try_continue_data_sending(h2states_t *h2s)
 {
-  if(h2s->data.size == 0){
-    INFO("try_continue_data_sending: No data left to send.");
-    return HTTP2_RC_NO_ERROR;
-  }
-  int rc = send_data(1, h2s);
-  return rc;
+    if (h2s->data.size == 0) {
+        INFO("try_continue_data_sending: No data left to send.");
+        return HTTP2_RC_NO_ERROR;
+    }
+    int rc = send_data(1, h2s);
+    return rc;
 }
 
 /*
@@ -198,7 +172,7 @@ int send_local_settings(h2states_t *h2s)
         ERROR("Error in local settings writing");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }*/
+       }*/
     /*Settings were sent, so we expect an ack*/
     SET_FLAG(h2s->flag_bits, FLAG_WAIT_SETTINGS_ACK);
     return HTTP2_RC_NO_ERROR;
@@ -221,7 +195,7 @@ int send_settings_ack(h2states_t *h2s)
         ERROR("Error in Settings ACK sending");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }*/
+       }*/
     return HTTP2_RC_NO_ERROR;
 }
 
@@ -236,7 +210,8 @@ int send_settings_ack(h2states_t *h2s)
  * stored
  * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
  */
-int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s) {
+int send_ping(uint8_t *opaque_data, int8_t ack, h2states_t *h2s)
+{
     return send_ping_frame(h2s->socket, opaque_data, ack, http2_on_read_continue);
 }
 /*
@@ -262,7 +237,7 @@ int send_goaway(uint32_t error_code, h2states_t *h2s) //, uint8_t *debug_data_bu
     else {
         send_goaway_frame(h2s->socket,
                           error_code,
-                          h2s->last_open_stream_id, 
+                          h2s->last_open_stream_id,
                           http2_on_read_continue);
         SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
     }
@@ -283,7 +258,7 @@ int send_rst_stream(uint32_t error_code, h2states_t *h2s)
         ERROR("Error writting RST_STREAM frame. INTERNAL ERROR");
         return HTTP2_RC_ERROR;
     }
-    */
+ */
     //TODO Set flags and conditions for after sending a RST_STREAM frame
     return HTTP2_RC_NO_ERROR;
 }
@@ -295,7 +270,8 @@ int send_rst_stream(uint32_t error_code, h2states_t *h2s)
  *        -> window_size_increment: increment to put on window_update frame
  * Output: 0 if no errors were found, -1 if not.
  */
-int send_window_update(uint8_t window_size_increment, h2states_t *h2s) {
+int send_window_update(uint8_t window_size_increment, h2states_t *h2s)
+{
     send_window_update_frame(h2s->socket, window_size_increment, 0, http2_on_read_continue);
     SET_FLAG(h2s->flag_bits, FLAG_WRITE_CALLBACK_IS_SET);
 
@@ -459,11 +435,11 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
 
     if (end_stream) {
         rc = send_headers_frame(h2s->socket,
-                               &h2s->headers,
-                               &h2s->hpack_states,
-                               stream_id,
-                               end_stream,
-                               http2_on_read_continue);
+                                &h2s->headers,
+                                &h2s->hpack_states,
+                                stream_id,
+                                end_stream,
+                                http2_on_read_continue);
         if (rc < 0) {
             ERROR("Error was found compressing headers. INTERNAL ERROR");
             send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
@@ -529,7 +505,7 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
             }
         }
         return rc; // should be HTTP2_RC_NO_ERROR
-    }*/
+       }*/
 }
 
 /*

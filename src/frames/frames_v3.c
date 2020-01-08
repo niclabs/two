@@ -285,3 +285,43 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t st
     event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
     return 0;
 }
+
+int send_data_frame(event_sock_t *socket, uint8_t* data, uint32_t size, uint32_t stream_id, uint8_t end_stream, event_write_cb cb)
+{
+    frame_header_t header;
+
+    //uint32_t length = length; //no padding, no dependency. fix if this is implemented
+
+    header.length = size;
+    header.type = DATA_TYPE;
+    header.flags = end_stream ? FRAME_END_STREAM_FLAG : 0x0;
+    header.stream_id = stream_id;
+    header.reserved = 0;
+
+    /*Then we put it in a buffer*/
+    uint8_t response_bytes[9 + header.length];     /*settings  frame has a header and a payload of 8 bytes*/
+    memset(response_bytes, 0, 9 + header.length);
+
+    int size_bytes = frame_header_to_bytes(&header, response_bytes);
+
+    /*Then we put the payload*/
+/*    uint8_t flags = frame_header->flags;
+
+    if (is_flag_set(flags, DATA_PADDED_FLAG)) {
+        //TODO handle padding
+        ERROR("Padding not implemented yet");
+        return -1;
+    }
+    */
+    memcpy(response_bytes + size_bytes, data, header.length);
+    size_bytes += header.length;
+
+    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    /*
+    if (rc != bytes_size) {
+        ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
+        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
+        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
+    }*/
+    return 0;
+}
