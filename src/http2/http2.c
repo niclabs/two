@@ -33,7 +33,7 @@ int init_variables_h2s(h2states_t *h2s, uint8_t is_server, event_sock_t *socket)
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     h2s->remote_settings[0] = DEFAULT_HEADER_TABLE_SIZE;
     h2s->local_settings[0] = CONFIG_HEADER_TABLE_SIZE;
-    hpack_init_states(&(h2s->hpack_dynamic_table), CONFIG_HEADER_TABLE_SIZE);
+    hpack_init(&(h2s->hpack_dynamic_table), CONFIG_HEADER_TABLE_SIZE);
     #else
     h2s->remote_settings[0] = h2s->local_settings[0] = 0;
     hpack_init_states(&(h2s->hpack_states), 0);

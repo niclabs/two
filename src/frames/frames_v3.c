@@ -61,7 +61,7 @@ void frame_parse_header(frame_header_v3_t *header, uint8_t *data, unsigned int s
  */
 int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hpack_dynamic_table_t *dynamic_table)
 {
-    return encode(dynamic_table, headers_out, compressed_headers);
+    return hpack_encode(dynamic_table, headers_out, compressed_headers);
 }
 
 /*

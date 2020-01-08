@@ -159,7 +159,7 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
         str[0] = (char)decoded_sym;
         return encoded_word.length;
     }
-    ERROR("Couldn't read bits in hpack_decoder_decode_huffman_word");
+    INFO("Couldn't read bits in hpack_decoder_decode_huffman_word");
     return INTERNAL_ERROR;
 }
 #endif
