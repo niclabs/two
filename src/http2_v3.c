@@ -332,7 +332,7 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_
     }
 
     // if not an ack
-    if (header.flags == FRAME_NO_FLAG) {
+    if (!(header.flags & FRAME_ACK_FLAG)) {
         // check that frame size is divisible by 6
         if (header.length % 6 != 0) {
             http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
@@ -346,7 +346,7 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_
         }
 
     }
-    else if (header.flags == FRAME_ACK_FLAG) {
+    else {
         if (header.length != 0) {
             http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
             return -1;
@@ -362,10 +362,6 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_
 
         // TODO: disable settings ack timer
     }
-    else {
-        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
-        return -1;
-    }
 
     return 0;
 }
@@ -377,6 +373,8 @@ void close_on_goaway_reply_sent(event_sock_t *sock, int status)
     http2_close_immediate(ctx);
 }
 
+// Handle a goaway frame reception, check for conformance to the specificataion
+// and go to closing state
 int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
 {
     // check stream id
@@ -426,6 +424,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
     return 0;
 }
 
+// Handle a ping frame reception. Reply with same payload and an ack if the frame is well formed
 int handle_ping_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
 {
     DEBUG("<- PING (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
@@ -580,6 +579,11 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
         return 0;
     }
 
+    if (frame_header.type > 0x9) {
+        // ignore invalid frames
+        return frame_size;
+    }
+
     switch (frame_header.type) {
         case FRAME_GOAWAY_TYPE:
             handle_goaway_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
@@ -624,6 +628,11 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
     int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
     if (size < frame_size) {
         return 0;
+    }
+
+    if (frame_header.type > 0x9) {
+        // ignore invalid frames
+        return frame_size;
     }
 
     switch (frame_header.type) {
