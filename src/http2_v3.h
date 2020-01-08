@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "event.h"
+#include "hpack/hpack.h"
 
 /**
  * SETTINGS_HEADER_TABLE_SIZE
@@ -187,6 +188,12 @@ typedef struct http2_context {
 
     // sock read buffer
     uint8_t read_buf[HTTP2_SOCK_BUF_SIZE];
+    
+    // hpack dynamic table
+    hpack_dynamic_table_t hpack_dynamic_table;
+
+    // header list
+    header_list_t header_list;
 } http2_context_t;
 
 

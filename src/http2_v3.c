@@ -84,6 +84,8 @@
 
 #define HTTP2_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
 
+#define MIN(x, y) (x) < (y) ? (x) : (y)
+
 // static variables for reserved http2 client memory
 // and free and connected clients lists
 static http2_context_t http2_clients[HTTP2_MAX_CLIENTS];
@@ -147,6 +149,9 @@ http2_context_t *http2_new_client(event_sock_t *client)
     ctx->state = HTTP2_WAITING_PREFACE;
     ctx->flags = HTTP2_FLAGS_NONE;
     ctx->last_opened_stream_id = 0;
+
+    // initialize hpack
+    hpack_init(&ctx->hpack_dynamic_table, HTTP2_SETTINGS_HEADER_TABLE_SIZE);
 
     // TODO: set connection timeout (?)
     event_read_start(client, ctx->read_buf, HTTP2_SOCK_BUF_SIZE, waiting_for_preface);
@@ -273,8 +278,10 @@ int update_settings(http2_context_t *ctx, uint8_t *data, int length)
             case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
                 DEBUG("     - header_table_size: %u", value);
                 ctx->settings.header_table_size = value;
-                // TODO: update hpack table
-                //
+
+                // TODO: confirm what happens if my header table size is lower than
+                // the remote endpoint header table size
+                hpack_dynamic_change_max_size(&ctx->hpack_dynamic_table, MIN(HTTP2_HEADER_TABLE_SIZE, value));
                 break;
             case HTTP2_SETTINGS_ENABLE_PUSH:
                 DEBUG("     - enable_push: %u", value);
@@ -452,6 +459,103 @@ int handle_ping_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *p
     return 0;
 }
 
+int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t *data, int size)
+{
+    // decode header block
+    int count = headers_count(&ctx->header_list);
+
+    if (hpack_decode(&ctx->hpack_dynamic_table, data, size, &ctx->header_list) < 0) {
+        http2_error(ctx, HTTP2_COMPRESSION_ERROR);
+        return -1;
+    }
+    DEBUG("     received %d new headers", count);
+
+
+    if (!(header.flags & FRAME_END_STREAM_FLAG)) {
+        ctx->flags |= HTTP2_FLAGS_WAITING_END_STREAM;
+    }
+    else {
+        // update stream state
+        ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
+    }
+
+    if (!(header.flags & FRAME_END_HEADERS_FLAG)) {
+        ctx->flags |= HTTP2_FLAGS_WAITING_END_HEADERS;
+    }
+    else {
+        // TODO: handle request at end headers
+        // data frames are ignored
+    }
+    return 0;
+}
+
+
+int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+{
+    DEBUG("<- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    // check stream id and stream state
+    if (header.stream_id == 0x0 || ctx->stream.state != HTTP2_STREAM_IDLE) {
+        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return -1;
+    }
+
+    if (header.stream_id == ctx->last_opened_stream_id) {
+        http2_error(ctx, HTTP2_STREAM_CLOSED_ERROR);
+        return -1;
+    }
+
+    // stream id must be bigger than previous
+    // odd numbers must be used for client initiated streams
+    if (header.stream_id < ctx->last_opened_stream_id || header.stream_id % 2 == 0) {
+        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return -1;
+    }
+
+    // open a new stream
+    ctx->stream.id = header.stream_id;
+    ctx->stream.state = HTTP2_STREAM_OPEN;
+    ctx->last_opened_stream_id = header.stream_id;
+
+    // reset stream flags
+    ctx->flags &= ~HTTP2_FLAGS_WAITING_END_HEADERS;
+    ctx->flags &= ~HTTP2_FLAGS_WAITING_END_STREAM;
+
+    // initialize headers
+    headers_init(&ctx->header_list);
+
+    // calculate header payload size
+    int size = header.length;
+    if (header.flags & FRAME_PADDED_FLAG) {
+        size -= *payload; // remove the payload size from the total size
+        payload++;
+    }
+
+    // ignore all priority data
+    if (header.flags & FRAME_PRIORITY_FLAG) {
+        size -= 5; // remove the priority size from total size
+        payload += 5;
+    }
+
+    // update headers from the block size
+    return handle_header_block(ctx, header, payload, size);
+}
+
+int handle_continuation_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+{
+    DEBUG("<- CONTINUATION (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+
+    // check stream id and stream state
+    if (header.stream_id == 0x0 ||
+        ctx->stream.state != HTTP2_STREAM_OPEN ||
+        !(ctx->flags & HTTP2_FLAGS_WAITING_END_HEADERS)) {
+        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return -1;
+    }
+
+    // update headers from the block size
+    return handle_header_block(ctx, header, payload, header.length);
+}
+
 ////////////////////////////////////
 // begin server state methods
 ////////////////////////////////////
@@ -573,6 +677,12 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
     frame_header_v3_t frame_header;
     frame_parse_header(&frame_header, buf, size);
 
+    // check frame size against local settings
+    if (frame_header.length > HTTP2_MAX_FRAME_SIZE) {
+        http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
+        return size;
+    }
+
     // do nothing if the frame has not been fully received
     int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
     if (size < frame_size) {
@@ -593,6 +703,15 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
             break;
         case FRAME_PING_TYPE:
             handle_ping_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_HEADERS_TYPE:
+            handle_headers_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_CONTINUATION_TYPE:
+            handle_continuation_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_DATA_TYPE:
+            // ignore data frames
             break;
         default:
             DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
@@ -624,6 +743,12 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
     frame_header_v3_t frame_header;
     frame_parse_header(&frame_header, buf, size);
 
+    // check frame size against local settings
+    if (frame_header.length > HTTP2_MAX_FRAME_SIZE) {
+        http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
+        return size;
+    }
+
     // do nothing if the frame has not been fully received
     int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
     if (size < frame_size) {
@@ -644,6 +769,13 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
             break;
         case FRAME_PING_TYPE:
             handle_ping_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_CONTINUATION_TYPE:
+            handle_continuation_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
+            break;
+        case FRAME_HEADERS_TYPE: // ignore new headers
+        case FRAME_DATA_TYPE:
+            // ignore data frames
             break;
         default:
             DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
