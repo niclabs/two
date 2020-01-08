@@ -26,7 +26,7 @@
 int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint32_t encoded_words_size,
                                                  uint8_t *buffer, uint32_t buffer_size)
 {
-    int32_t sum = 0;
+    uint32_t sum = 0;
 
     for (uint32_t i = 0; i < encoded_words_size; i++) {
         sum += encoded_words[i].length;
