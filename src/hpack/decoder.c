@@ -23,7 +23,7 @@ int32_t hpack_decoder_decode_integer(const uint8_t *bytes, uint8_t prefix)
     b0 = b0 << (8u - prefix);
     b0 = b0 >> (8u - prefix);
     uint8_t p = 255u;
-    p = p << (8u - prefix);
+    //p = p << (8u - prefix);
     p = p >> (8u - prefix);
     if (b0 != p) {
         /*Special case, when HPACK_MAXIMUM_INTEGER is less than 256
@@ -64,7 +64,49 @@ int32_t hpack_decoder_decode_integer(const uint8_t *bytes, uint8_t prefix)
     }
 }
 
+/*
+ * Function: hpack_decoder_read_bits_from_bytes
+ * Reads bits from a buffer of bytes (max number of bits it can read is 32).
+ * Before calling this function, the caller has to check if the number of bits to read from the buffer
+ * don't exceed the size of the buffer, use hpack_utils_can_read_buffer to check this condition
+ * Input:
+ *      -> current_bit_pointer: The bit from where to start reading (inclusive)
+ *      -> number_of_bits_to_read: The number of bits to read from the buffer
+ *      -> *buffer: The buffer containing the bits to read
+ *      -> buffer_size: Size of the buffer
+ * output: returns the bits read from the buffer
+ */
+uint32_t hpack_decoder_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, const uint8_t *buffer)
+{
+    uint16_t byte_offset = (uint16_t)(current_bit_pointer / 8u);
+    uint16_t bit_offset = (uint16_t)(current_bit_pointer - 8u * byte_offset);
+    uint16_t num_bytes = (uint16_t)(((number_of_bits_to_read + current_bit_pointer - 1u) / 8) - (current_bit_pointer / 8u) + 1u);
 
+    uint8_t first_byte_mask = 255u;
+    first_byte_mask >>= bit_offset;
+
+    uint32_t code = (uint8_t)(first_byte_mask & buffer[byte_offset]);
+    uint8_t last_bit_offset = (uint8_t)((8u * (num_bytes + byte_offset)) -
+                                       (current_bit_pointer + number_of_bits_to_read));
+
+    if (num_bytes == 1) {
+        code >>= last_bit_offset;
+        return code;
+    }
+    else {
+        for (int i = 1; i < num_bytes - 1; i++) {
+            code <<= 8u;
+            code |= buffer[i + byte_offset];
+        }
+
+        uint8_t last_byte_mask = (uint8_t)(255u << last_bit_offset);
+        uint8_t last_byte = last_byte_mask & buffer[byte_offset + num_bytes - 1];
+        last_byte >>= last_bit_offset;
+        code <<= (8u - last_bit_offset);
+        code |= last_byte;
+    }
+    return code;
+}
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
@@ -97,14 +139,14 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
         else {
             uint8_t number_of_padding_bits = (uint8_t)(length - bits_left);
             uint32_t padding = (1u << (number_of_padding_bits)) - 1u;
-            result = hpack_utils_read_bits_from_bytes(bit_position, bits_left, encoded_string);
+            result = hpack_decoder_read_bits_from_bytes(bit_position, bits_left, encoded_string);
             result <<= number_of_padding_bits;
             result |= padding;
 
         }
     }
     else {
-        result = hpack_utils_read_bits_from_bytes(bit_position, 30, encoded_string);
+        result = hpack_decoder_read_bits_from_bytes(bit_position, 30, encoded_string);
     }
 
     encoded_word.code = result;
@@ -481,7 +523,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, hpack_enco
     }
 
     else {
-        ERROR("Error unknown preamble value: %d", states->encoded_header.preamble);
+        ERROR("Error unknown preamble value: %d", encoded_header->preamble);
         return INTERNAL_ERROR;
     }
 }
@@ -502,7 +544,7 @@ int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
 
     for (uint16_t bit_position = 0; (bit_position + eos_bit_length) / 8 < buffer_length; bit_position++) {     //search through all lengths possible
 
-        uint32_t result = hpack_utils_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
+        uint32_t result = hpack_decoder_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
         if ((result & eos) == eos) {
             ERROR("Decoding Error: The compressed header contains the EOS Symbol");
             return PROTOCOL_ERROR;

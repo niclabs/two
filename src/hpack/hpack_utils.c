@@ -5,54 +5,6 @@
 #include "logging.h"
 
 /*
- * Function: hpack_utils_read_bits_from_bytes
- * Reads bits from a buffer of bytes (max number of bits it can read is 32).
- * Before calling this function, the caller has to check if the number of bits to read from the buffer
- * don't exceed the size of the buffer, use hpack_utils_can_read_buffer to check this condition
- * Input:
- *      -> current_bit_pointer: The bit from where to start reading (inclusive)
- *      -> number_of_bits_to_read: The number of bits to read from the buffer
- *      -> *buffer: The buffer containing the bits to read
- *      -> buffer_size: Size of the buffer
- * output: returns the bits read from the buffer
- */
-uint32_t hpack_utils_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_t number_of_bits_to_read, const uint8_t *buffer)
-{
-    uint16_t byte_offset = (uint16_t)(current_bit_pointer / 8u);
-    uint16_t bit_offset = (uint16_t)(current_bit_pointer - 8u * byte_offset);
-    uint16_t num_bytes = (uint16_t)(((number_of_bits_to_read + current_bit_pointer - 1u) / 8) - (current_bit_pointer / 8u) + 1u);
-    uint32_t code = 0u;
-    uint8_t first_byte_mask = 255u;
-
-    if (num_bytes == 1) {
-        first_byte_mask <<= bit_offset;
-        first_byte_mask >>= bit_offset;
-        first_byte_mask >>= (8u - bit_offset - number_of_bits_to_read);
-        first_byte_mask <<= (8u - bit_offset - number_of_bits_to_read);
-        code |= (uint8_t)(first_byte_mask & buffer[byte_offset]);
-        code >>= (8u - bit_offset - number_of_bits_to_read);
-    }
-    else {
-        first_byte_mask >>= bit_offset;
-        code |= (uint8_t)(first_byte_mask & buffer[byte_offset]);
-
-        for (int i = 1; i < num_bytes - 1; i++) {
-            code <<= 8u;
-            code |= buffer[i + byte_offset];
-        }
-
-        uint8_t last_bit_offset = (uint8_t)((current_bit_pointer + number_of_bits_to_read) % 8u);
-        last_bit_offset = (uint8_t)(last_bit_offset == 0u ? 8u : last_bit_offset);
-        uint8_t last_byte_mask = (uint8_t)(255u << (8u - last_bit_offset));
-        uint8_t last_byte = last_byte_mask & buffer[byte_offset + num_bytes - 1];
-        last_byte >>= (8u - last_bit_offset);
-        code <<= last_bit_offset;
-        code |= last_byte;
-    }
-    return code;
-}
-
-/*
  * Function: hpack_utils_log128
  * Compute the log128 of the input
  * Input:
