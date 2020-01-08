@@ -351,11 +351,10 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
  *      return 0 if the update is succesful, or -1 otherwise
  */
 
-int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t settings_max_size,
-                                         uint32_t new_max_size)
+int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size)
 {
     assert(dynamic_table != NULL);
-    if (new_max_size > settings_max_size) {
+    if (new_max_size > dynamic_table->settings_max_table_size) {
         ERROR("Decoding Error: Resize operation exceeds the maximum size set by the protocol ");
         return PROTOCOL_ERROR;
     }

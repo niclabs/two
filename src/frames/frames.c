@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "frames.h"
 #include "utils.h"
-#include "hpack/hpack.h"
+
 #include "config.h"
 
 #define LOG_MODULE LOG_MODULE_FRAME
@@ -153,9 +153,9 @@ uint8_t set_flag(uint8_t flags, uint8_t flag_to_set)
  * Input: header_block, header_block_size, header_data_list
  * Output: block_size or -1 if error
  */
-int receive_header_block(uint8_t *header_block_fragments, int header_block_fragments_pointer, header_list_t *headers, hpack_states_t *hpack_states) //return size of header_list (header_count)
+int receive_header_block(uint8_t *header_block_fragments, int header_block_fragments_pointer, header_list_t *headers, hpack_dynamic_table_t *dynamic_table) //return size of header_list (header_count)
 {
-    return decode_header_block(hpack_states, header_block_fragments, header_block_fragments_pointer, headers);
+    return decode_header_block(dynamic_table, header_block_fragments, header_block_fragments_pointer, headers);
 }
 
 /*

@@ -58,23 +58,13 @@ typedef
     uint16_t next;
     uint16_t actual_size;
     uint16_t n_entries;
+    uint32_t settings_max_table_size;
     char buffer[HPACK_MAX_DYNAMIC_TABLE_SIZE];
 }
     #else
     char //case No dynamic table mode, this conversion to char makes the code cleaner
     #endif
 hpack_dynamic_table_t;
-
-/* Hpack Struct: Hpack states
-    It contains all the required structs or fields for hpack functionality
- */
-typedef struct {
-    hpack_dynamic_table_t dynamic_table;
-    hpack_encoded_header_t encoded_header;
-    char tmp_name[MAX_HEADER_NAME_LEN];
-    char tmp_value[MAX_HEADER_VALUE_LEN];
-    uint32_t settings_max_table_size;
-} hpack_states_t;
 
 #pragma pack(pop)
 

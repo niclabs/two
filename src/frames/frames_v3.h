@@ -57,11 +57,14 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_o
 int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[], event_write_cb cb);
 int send_headers_frame(event_sock_t *socket,
                        header_list_t* headers_list,
-                       hpack_states_t* hpack_states,
+                       hpack_dynamic_table_t * dynamic_table,
                        uint32_t stream_id,
                        uint8_t end_stream,
                        event_write_cb cb);
 int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment, uint32_t stream_id, event_write_cb cb);
 int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t stream_id, event_write_cb cb);
 int send_data_frame(event_sock_t *socket, uint8_t* data, uint32_t size, uint32_t stream_id, uint8_t end_stream, event_write_cb cb);
+
+/*Header compression*/
+int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hpack_dynamic_table_t *dynamic_table);
 #endif //TWO_FRAMES_V3_H

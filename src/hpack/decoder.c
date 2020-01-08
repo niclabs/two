@@ -246,19 +246,20 @@ int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int hpack_decoder_decode_indexed_header_field(hpack_states_t *states)
+int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char* tmp_name, char* tmp_value)
 {
     int pointer = 0;
-    int8_t rc = hpack_tables_find_entry_name_and_value(&states->dynamic_table,
-                                                       states->encoded_header.index,
-                                                       states->tmp_name, states->tmp_value);
+    int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table,
+                                                       encoded_header->index,
+                                                       tmp_name,
+                                                       tmp_value);
 
     if (rc < 0) {
         DEBUG("Error en find_entry %d", rc);
         return rc;
     }
 
-    pointer += hpack_utils_encoded_integer_size(states->encoded_header.index, hpack_utils_find_prefix_size(states->encoded_header.preamble));
+    pointer += hpack_utils_encoded_integer_size(encoded_header->index, hpack_utils_find_prefix_size(encoded_header->preamble));
     return pointer;
 }
 
@@ -271,19 +272,19 @@ int hpack_decoder_decode_indexed_header_field(hpack_states_t *states)
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int hpack_decoder_decode_literal_header_field(hpack_states_t *states)
+int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header,char *  tmp_name, char* tmp_value)
 {
     int pointer = 0;
 
     //New name
-    if (states->encoded_header.index == 0) {
+    if (encoded_header->index == 0) {
         pointer += 1;
         DEBUG("Decoding a new name compressed header");
         int32_t rc =
-            hpack_decoder_decode_string(states->tmp_name,
-                                        states->encoded_header.name_string,
-                                        states->encoded_header.name_length,
-                                        states->encoded_header.huffman_bit_of_name);
+            hpack_decoder_decode_string(tmp_name,
+                                        encoded_header->name_string,
+                                        encoded_header->name_length,
+                                        encoded_header->huffman_bit_of_name);
         if (rc < 0) {
             DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
             return rc;
@@ -293,26 +294,26 @@ int hpack_decoder_decode_literal_header_field(hpack_states_t *states)
     else {
         //find entry in either static or dynamic table_length
         DEBUG("Decoding an indexed name compressed header");
-        int8_t rc = hpack_tables_find_entry_name(&states->dynamic_table,
-                                                 states->encoded_header.index,
-                                                 states->tmp_name);
+        int8_t rc = hpack_tables_find_entry_name(dynamic_table,
+                                                 encoded_header->index,
+                                                 tmp_name);
         if (rc < 0) {
             DEBUG("Error en find_entry ");
             return rc;
         }
-        pointer += hpack_utils_encoded_integer_size(states->encoded_header.index, hpack_utils_find_prefix_size(states->encoded_header.preamble));
+        pointer += hpack_utils_encoded_integer_size(encoded_header->index, hpack_utils_find_prefix_size(encoded_header->preamble));
     }
 
-    int32_t rc = hpack_decoder_decode_string(states->tmp_value, states->encoded_header.value_string, states->encoded_header.value_length, states->encoded_header.huffman_bit_of_value);
+    int32_t rc = hpack_decoder_decode_string(tmp_value, encoded_header->value_string, encoded_header->value_length, encoded_header->huffman_bit_of_value);
     if (rc < 0) {
         DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
         return rc;
     }
     pointer += rc;
-    if (states->encoded_header.preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+    if (encoded_header->preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
 #if HPACK_INCLUDE_DYNAMIC_TABLE
         //Here we add it to the dynamic table
-        rc = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, states->tmp_name, states->tmp_value);
+        rc = hpack_tables_dynamic_table_add_entry(dynamic_table, tmp_name, tmp_value);
         if (rc < 0) {
             DEBUG("Couldn't add to dynamic table");
             return rc;
@@ -333,16 +334,16 @@ int hpack_decoder_decode_literal_header_field(hpack_states_t *states)
  * Output:
  *      Returns the number of bytes decoded if successful or a value < 0 if an error occurs.
  */
-int hpack_decoder_decode_dynamic_table_size_update(hpack_states_t *states)
+int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header)
 {
     DEBUG("New table size is %d", states->encoded_header.dynamic_table_size);
     #if HPACK_INCLUDE_DYNAMIC_TABLE
-    int8_t rc = hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, states->encoded_header.dynamic_table_size);
+    int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, encoded_header->dynamic_table_size);
     if (rc < 0) {
         DEBUG("Dynamic table failed to resize");
         return rc;
     }
-    return hpack_utils_encoded_integer_size(states->encoded_header.dynamic_table_size, hpack_utils_find_prefix_size(states->encoded_header.preamble));
+    return hpack_utils_encoded_integer_size(encoded_header->dynamic_table_size, hpack_utils_find_prefix_size(encoded_header->preamble));
     #else
     return INTERNAL_ERROR;
     #endif
@@ -464,20 +465,20 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
  *      returns the amount of octets in which the pointer has moved to read all the headers
  *
  */
-int hpack_decoder_decode_header(hpack_states_t *states)
+int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char* tmp_name, char* tmp_value)
 {
-    if (states->encoded_header.preamble == INDEXED_HEADER_FIELD) {
+    if (encoded_header->preamble == INDEXED_HEADER_FIELD) {
         DEBUG("Decoding an indexed header field");
-        return hpack_decoder_decode_indexed_header_field(states);
+        return hpack_decoder_decode_indexed_header_field(dynamic_table, encoded_header,  tmp_name, tmp_value);
     }
-    else if (states->encoded_header.preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
+    else if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE) {
         DEBUG("Decoding a dynamic table size update");
-        return hpack_decoder_decode_dynamic_table_size_update(states);
+        return hpack_decoder_decode_dynamic_table_size_update(dynamic_table, encoded_header);
     }
-    else if (states->encoded_header.preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING
-             || states->encoded_header.preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED
-             || states->encoded_header.preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
-        return hpack_decoder_decode_literal_header_field(states);
+    else if (encoded_header->preamble == LITERAL_HEADER_FIELD_WITHOUT_INDEXING
+             || encoded_header->preamble == LITERAL_HEADER_FIELD_NEVER_INDEXED
+             || encoded_header->preamble == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+        return hpack_decoder_decode_literal_header_field(dynamic_table, encoded_header,  tmp_name, tmp_value);
     }
 
     else {
@@ -558,27 +559,6 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
 }
 
 /*
- * Function: init_hpack_encoded_header_t
- * initializes an hpack_encoded_header before using it
- * Input:
- *      -> *encoded_header: Pointer to encoded header which has to be initialized
- * Output:
- *      (void)
- */
-void init_hpack_encoded_header_t(hpack_encoded_header_t *encoded_header)
-{
-    encoded_header->index = 0;
-    encoded_header->name_length = 0;
-    encoded_header->value_length = 0;
-    encoded_header->name_string = 0;
-    encoded_header->value_string = 0;
-    encoded_header->huffman_bit_of_name = 0;
-    encoded_header->huffman_bit_of_value = 0;
-    encoded_header->dynamic_table_size = 0;
-    encoded_header->preamble = 0;
-}
-
-/*
  * Function: hpack_decoder_decode_header_block
  * decodes an array of headers,
  * as it decodes one, the pointer of the headers moves forward
@@ -591,21 +571,24 @@ void init_hpack_encoded_header_t(hpack_encoded_header_t *encoded_header)
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_block, int32_t header_block_size, header_list_t *headers)
+int hpack_decoder_decode_header_block(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, int32_t header_block_size, header_list_t *headers)
 {
+    char tmp_name[MAX_HEADER_NAME_LEN];
+    char tmp_value[MAX_HEADER_VALUE_LEN];
+
     int pointer = 0;
 
     uint8_t can_receive_dynamic_table_size_update = 1;    //TRUE
-    
-    while (pointer < header_block_size) {
-        init_hpack_encoded_header_t(&states->encoded_header);
-        memset(states->tmp_name, 0, MAX_HEADER_NAME_LEN);
-        memset(states->tmp_value, 0, MAX_HEADER_VALUE_LEN);
 
-        int bytes_read = hpack_decoder_parse_encoded_header(&states->encoded_header,
+    while (pointer < header_block_size) {
+        hpack_encoded_header_t encoded_header = { 0 };
+        memset(tmp_name, 0, MAX_HEADER_NAME_LEN);
+        memset(tmp_value, 0, MAX_HEADER_VALUE_LEN);
+
+        int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header,
                                                             header_block + pointer,
                                                             (int32_t)(header_block_size - pointer));
-        DEBUG("Decoding a %d", states->encoded_header.preamble);
+        DEBUG("Decoding a %d", encoded_header->preamble);
 
         if (bytes_read < 0) {
             /*Error*/
@@ -613,7 +596,7 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
             return bytes_read;
         }
 
-        if (states->encoded_header.preamble != DYNAMIC_TABLE_SIZE_UPDATE) {
+        if (encoded_header.preamble != DYNAMIC_TABLE_SIZE_UPDATE) {
             can_receive_dynamic_table_size_update = 0;      /*False*/
         }
         else {                                              /*it's a dynamic table size update*/
@@ -625,16 +608,16 @@ int hpack_decoder_decode_header_block(hpack_states_t *states, uint8_t *header_bl
         }
         pointer += bytes_read;
 
-        int err = hpack_decoder_check_errors(&states->encoded_header);
+        int err = hpack_decoder_check_errors(&encoded_header);
         if (err < 0) {
             return err;
         }
-        int rc = hpack_decoder_decode_header(states);
+        int rc = hpack_decoder_decode_header(dynamic_table, &encoded_header, tmp_name, tmp_value);
         if (rc < 0) {
             return rc;
         }
-        if (states->tmp_name[0] != 0 && states->tmp_value[0] != 0) {
-            rc = headers_add(headers, states->tmp_name, states->tmp_value);
+        if (tmp_name[0] != 0 && tmp_value[0] != 0) {
+            rc = headers_add(headers, tmp_name, tmp_value);
             if (rc < 0) {
                 return rc;
             }

@@ -11,8 +11,8 @@
 #include "config.h"
 
 
-int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer);
-int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer);
+int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, header_list_t *headers_out, uint8_t *encoded_buffer);
+int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t *encoded_buffer);
 
 
 #endif //TWO_HPACK_ENCODER_H

@@ -419,7 +419,7 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
     }
     uint8_t encoded_bytes[HTTP2_MAX_BUFFER_SIZE];
-    int size = compress_headers(&h2s->headers, encoded_bytes, &h2s->hpack_states);
+    int size = compress_headers(&h2s->headers, encoded_bytes, &h2s->hpack_dynamic_table);
     if (size < 0) {
         ERROR("Error was found compressing headers. INTERNAL ERROR");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
@@ -436,7 +436,7 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
     if (end_stream) {
         rc = send_headers_frame(h2s->socket,
                                 &h2s->headers,
-                                &h2s->hpack_states,
+                                &h2s->hpack_dynamic_table,
                                 stream_id,
                                 end_stream,
                                 http2_on_read_continue);
@@ -450,7 +450,7 @@ int send_headers(uint8_t end_stream, h2states_t *h2s)
     else {
         rc = send_headers_frame(h2s->socket,
                                 &h2s->headers,
-                                &h2s->hpack_states,
+                                &h2s->hpack_dynamic_table,
                                 stream_id,
                                 end_stream,
                                 NULL);

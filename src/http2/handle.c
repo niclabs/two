@@ -121,7 +121,7 @@ int handle_headers_payload(frame_header_t *header, headers_payload_t *hpl, h2sta
     //when receive (continuation or header) frame with flag end_header then the fragments can be decoded, and the headers can be obtained.
     if (is_flag_set(header->flags, HEADERS_END_HEADERS_FLAG)) {
         //return bytes read.
-        rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer, &h2s->headers, &h2s->hpack_states);
+        rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer, &h2s->headers, &h2s->hpack_dynamic_table);
         if (rc < 0) {
             if (rc == -1) {
                 ERROR("Error was found receiving header_block. COMPRESSION ERROR");
@@ -229,7 +229,7 @@ int update_settings_table(settings_payload_t *spl, uint8_t place, h2states_t *h2
                 }
                 break;
             case HEADER_TABLE_SIZE:
-                hpack_dynamic_change_max_size(&h2s->hpack_states, value);
+                hpack_dynamic_change_max_size(&h2s->hpack_dynamic_table, value);
                 break;
             default:
                 break;
@@ -365,7 +365,7 @@ int handle_continuation_payload(frame_header_t *header, continuation_payload_t *
     h2s->header_block_fragments_pointer += header->length;
     if (is_flag_set(header->flags, CONTINUATION_END_HEADERS_FLAG)) {
         //return number of headers written on header_list, so http2 can update header_list_count
-        rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer, &h2s->headers, &h2s->hpack_states); //TODO check this: rc is the byte read from the header
+        rc = receive_header_block(h2s->header_block_fragments, h2s->header_block_fragments_pointer, &h2s->headers, &h2s->hpack_dynamic_table); //TODO check this: rc is the byte read from the header
 
         if (rc < 0) {
             if (rc == -1) {

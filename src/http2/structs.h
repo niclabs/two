@@ -147,7 +147,7 @@ typedef struct http2_states {
     h2_flow_control_window_t local_window;
 
     //Hpack dynamic table
-    hpack_states_t hpack_states;
+    hpack_dynamic_table_t hpack_dynamic_table;
 
     // input buffer for event_read
     uint8_t input_buf[HTTP2_MAX_BUFFER_SIZE];

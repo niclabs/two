@@ -20,9 +20,9 @@
  * Output:
  *      returns the amount of octets in which the pointer has move to read all the headers
  */
-int decode_header_block(hpack_states_t *states, uint8_t *header_block, int header_block_size, header_list_t *headers)//header_t* h_list, uint8_t * header_counter)
+int decode_header_block(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, int header_block_size, header_list_t *headers)//header_t* h_list, uint8_t * header_counter)
 {
-    return hpack_decoder_decode_header_block(states, header_block, header_block_size, headers);
+    return hpack_decoder_decode_header_block(dynamic_table, header_block, header_block_size, headers);
 }
 
 /*
@@ -36,9 +36,9 @@ int decode_header_block(hpack_states_t *states, uint8_t *header_block, int heade
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int encode(hpack_states_t *states, char *name_string, char *value_string,  uint8_t *encoded_buffer)
+int encode(hpack_dynamic_table_t *dynamic_table, header_list_t *headers_out,  uint8_t *encoded_buffer)
 {
-    return hpack_encoder_encode(states, name_string, value_string, encoded_buffer);
+    return hpack_encoder_encode(dynamic_table,  headers_out, encoded_buffer);
 }
 
 /*
@@ -50,9 +50,9 @@ int encode(hpack_states_t *states, char *name_string, char *value_string,  uint8
  * Output:
  *      Return the number of bytes written in encoded_buffer
  */
-int encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer)
+int encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t *encoded_buffer)
 {
-    return hpack_encoder_encode_dynamic_size_update(states, max_size, encoded_buffer);
+    return hpack_encoder_encode_dynamic_size_update(dynamic_table, max_size, encoded_buffer);
 }
 
 /*
@@ -64,20 +64,18 @@ int encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_
  * Output:
  *      (void)
  */
-void hpack_init_states(hpack_states_t *states, uint32_t settings_max_table_size)
+void hpack_init_states(hpack_dynamic_table_t *dynamic_table, uint32_t settings_max_table_size)
 {
     #if HPACK_INCLUDE_DYNAMIC_TABLE
-    hpack_tables_init_dynamic_table(&states->dynamic_table, settings_max_table_size);
+    hpack_tables_init_dynamic_table(dynamic_table, settings_max_table_size);
     #endif
-    states->settings_max_table_size = settings_max_table_size;
-
 }
 
-void hpack_dynamic_change_max_size(hpack_states_t *states, uint32_t incoming_max_table_size){
+void hpack_dynamic_change_max_size(hpack_dynamic_table_t *dynamic_table, uint32_t incoming_max_table_size){
     #if HPACK_INCLUDE_DYNAMIC_TABLE
         if(incoming_max_table_size <= HPACK_MAX_DYNAMIC_TABLE_SIZE){
-          states->settings_max_table_size = incoming_max_table_size;
-          hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, incoming_max_table_size);
+          dynamic_table->settings_max_table_size = incoming_max_table_size;
+          hpack_tables_dynamic_table_resize(dynamic_table, incoming_max_table_size);
         }
     #endif
 }

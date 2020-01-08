@@ -56,24 +56,13 @@ void frame_parse_header(frame_header_v3_t *header, uint8_t *data, unsigned int s
 
 /*
  * Function: compress_headers
- * given a set of headers, it comprisses them and save them in a bytes array
+ * given a set of headers, it compresses them and save them in a bytes array
  * Input: table of headers, size of the table, array to save the bytes and dynamic_table
  * Output: compressed headers size or -1 if error
  */
-int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hpack_states_t *hpack_states)
+int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hpack_dynamic_table_t *dynamic_table)
 {
-    //TODO implement dynamic table size update
-    int pointer = 0;
-
-    header_t headers_array[headers_count(headers_out)];
-
-    headers_get_all(headers_out, headers_array);
-
-    for (int32_t i = 0; i < headers_count(headers_out); i++) {
-        int rc = encode(hpack_states, headers_array[i].name, headers_array[i].value, compressed_headers + pointer);
-        pointer += rc;
-    }
-    return pointer;
+    return encode(dynamic_table, headers_out, compressed_headers);
 }
 
 /*
@@ -191,13 +180,13 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
 
 int send_headers_frame(event_sock_t *socket,
                        header_list_t *headers_list,
-                       hpack_states_t *hpack_states,
+                       hpack_dynamic_table_t *dynamic_table,
                        uint32_t stream_id,
                        uint8_t end_stream,
                        event_write_cb cb)
 {
     uint8_t encoded_bytes[FRAMES_MAX_BUFFER_SIZE];
-    int size = compress_headers(headers_list, encoded_bytes, hpack_states);
+    int size = compress_headers(headers_list, encoded_bytes, dynamic_table);
 
     if (size < 0) { //Error
         return size;

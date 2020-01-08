@@ -255,7 +255,7 @@ int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
 
 /*
  * Function: hpack_encoder_pack_header
- * Prepares an hpack_encoded_header to send it, it maintains all the logic of chosing which header to use
+ * Prepares an hpack_encoded_header to send it, it maintains all the logic of chosing which type of compression to use
  * Input:
  *      -> *states: Pointer to hpack_states struct
  *      -> *name_string: string of the name of the entry to pack
@@ -263,46 +263,47 @@ int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
  * Output:
  *
  */
-void hpack_encoder_pack_header(hpack_states_t *states, char *name_string, char *value_string)
+void hpack_encoder_pack_header(hpack_encoded_header_t *encoded_header, hpack_dynamic_table_t *dynamic_table,
+                               char *name_string, char *value_string)
 {
 
     //first search if the name-value entry is already in the dynamic table
-    int index = hpack_tables_find_index(&states->dynamic_table, name_string, value_string);
+    int index = hpack_tables_find_index(dynamic_table, name_string, value_string);
 
     //if index exists
     if (index > 0) {
         //make indexed header field
         DEBUG("Encoding an indexed header field");
-        states->encoded_header.preamble = INDEXED_HEADER_FIELD;
-        states->encoded_header.index = (uint32_t)index;
+        encoded_header->preamble = INDEXED_HEADER_FIELD;
+        encoded_header->index = (uint32_t)index;
     }
     else {
         //check if the name of entry is already in the dynamic table
-        index = hpack_tables_find_index_name(&states->dynamic_table, name_string);
+        index = hpack_tables_find_index_name(dynamic_table, name_string);
 
         if (index < 0) {
             //entry doesn't exist in the dynamic table
-            states->encoded_header.index = 0;
+            encoded_header->index = 0;
         }
         else {
-            states->encoded_header.index = (uint32_t)index;
+            encoded_header->index = (uint32_t)index;
         }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
-        int8_t added = hpack_tables_dynamic_table_add_entry(&states->dynamic_table, name_string, value_string);
+        int8_t added = hpack_tables_dynamic_table_add_entry(dynamic_table, name_string, value_string);
         if (added < 0) {
             DEBUG("Couldn't add to dynamic table");
-            states->encoded_header.preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+            encoded_header->preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
             DEBUG("Encoding a literal header field never indexed");
         }
         else {
             //Successfully added to the dynamic table
             DEBUG("Encoding a literal header field with incremental indexing");
-            states->encoded_header.preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
+            encoded_header->preamble = LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING;
         }
 #else
         //No dynamic table, encode the string withouth index
-        states->encoded_header.preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
+        encoded_header->preamble = LITERAL_HEADER_FIELD_NEVER_INDEXED;
         DEBUG("Encoding a literal header field never indexed");
 #endif
     }
@@ -384,12 +385,26 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_string, uint8_t *encoded_buffer)
+int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, header_list_t *headers_out, uint8_t *encoded_buffer)
 {
-    //this gets the info required to encode into the encoded_header, also decides which header type to use
-    hpack_encoder_pack_header(states, name_string, value_string);
-    //finally encode header into buffer
-    return hpack_encoder_encode_header(&states->encoded_header, name_string, value_string, encoded_buffer);
+    int pointer = 0;
+
+    header_t headers_array[headers_count(headers_out)];
+
+    headers_get_all(headers_out, headers_array);
+
+    for (int32_t i = 0; i < headers_count(headers_out); i++) {
+//
+        //this gets the info required to encode into the encoded_header, also decides which header type to use
+        hpack_encoded_header_t encoded_header = { 0 };
+
+        hpack_encoder_pack_header(&encoded_header, dynamic_table, headers_array[i].name, headers_array[i].value);
+        //finally encode header into buffer
+        int rc = hpack_encoder_encode_header(&encoded_header, headers_array[i].name, headers_array[i].value, encoded_buffer + pointer);
+
+        pointer += rc;
+    }
+    return pointer;
 }
 
 
@@ -403,12 +418,12 @@ int hpack_encoder_encode(hpack_states_t *states, char *name_string, char *value_
  * Output:
  *      Returns the size in bytes of the update, or an int < 0 if an error occurs.
  */
-int hpack_encoder_encode_dynamic_size_update(hpack_states_t *states, uint32_t max_size, uint8_t *encoded_buffer)
+int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_table, uint32_t max_size, uint8_t *encoded_buffer)
 {
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     DEBUG("Encoding a dynamic table size update");
     hpack_preamble_t preamble = DYNAMIC_TABLE_SIZE_UPDATE;
-    int8_t rc = hpack_tables_dynamic_table_resize(&states->dynamic_table, states->settings_max_table_size, max_size);
+    int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, max_size);
     if (rc < 0) {
         return rc;
     }
