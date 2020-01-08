@@ -190,15 +190,16 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
  */
 
 int send_headers_frame(event_sock_t *socket,
-                       header_list_t* headers_list,
-                       hpack_states_t* hpack_states,
+                       header_list_t *headers_list,
+                       hpack_states_t *hpack_states,
                        uint32_t stream_id,
                        uint8_t end_stream,
                        event_write_cb cb)
 {
     uint8_t encoded_bytes[FRAMES_MAX_BUFFER_SIZE];
     int size = compress_headers(headers_list, encoded_bytes, hpack_states);
-    if(size < 0) { //Error
+
+    if (size < 0) { //Error
         return size;
     }
     frame_header_t header;
@@ -227,7 +228,7 @@ int send_headers_frame(event_sock_t *socket,
         ERROR("Error writing headers frame. INTERNAL ERROR");
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }*/
+       }*/
     return 0;
 }
 
@@ -266,6 +267,7 @@ int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment
 int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t stream_id, event_write_cb cb)
 {
     frame_header_t header;
+
     header.stream_id = stream_id;
     header.type = RST_STREAM_TYPE;
     header.length = 4;
@@ -286,7 +288,7 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t st
     return 0;
 }
 
-int send_data_frame(event_sock_t *socket, uint8_t* data, uint32_t size, uint32_t stream_id, uint8_t end_stream, event_write_cb cb)
+int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t stream_id, uint8_t end_stream, event_write_cb cb)
 {
     frame_header_t header;
 
@@ -312,16 +314,16 @@ int send_data_frame(event_sock_t *socket, uint8_t* data, uint32_t size, uint32_t
         ERROR("Padding not implemented yet");
         return -1;
     }
-    */
+ */
     memcpy(response_bytes + size_bytes, data, header.length);
     size_bytes += header.length;
 
     event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
     /*
-    if (rc != bytes_size) {
+       if (rc != bytes_size) {
         ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
         send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
         return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-    }*/
+       }*/
     return 0;
 }
