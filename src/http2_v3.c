@@ -531,8 +531,8 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
         ctx->stream.bufsize = bufsize;
 
         // send headers
-        send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table, 
-                ctx->stream.id, bufsize > 0 ? 0 : 1, close_on_write_error);
+        send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table,
+                           ctx->stream.id, bufsize > 0 ? 0 : 1, close_on_write_error);
         // TODO: send data
     }
     return 0;
