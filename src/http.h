@@ -12,6 +12,7 @@
 ***********************************************/
 
 //Revisar
+// TODO: make HTTP_MAX_RESPONSE_SIZE equal to HTTP2_STREAM_BUF_SIZE
  #ifdef HTTP_CONF_MAX_RESPONSE_SIZE
  #define HTTP_MAX_RESPONSE_SIZE (HTTP_CONF_MAX_RESPONSE_SIZE)
  #else
@@ -30,6 +31,7 @@
  * @param data_size data buffer size
  * @param headers_buff headers data structure
  * @return 0 if ok -1 if an error ocurred
+ * TODO: reduce buffer data size to uint16_t
  */
 int http_server_response(uint8_t *data_buff, uint32_t *data_size, header_list_t *headers_buff);
 
