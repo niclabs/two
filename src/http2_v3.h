@@ -18,7 +18,7 @@
  * HEADER_TABLE_SIZE.
  */
 #ifndef CONFIG_HTTP2_HEADER_TABLE_SIZE
-#define HTTP2_HEADER_TABLE_SIZE (4096)
+#define HTTP2_HEADER_TABLE_SIZE (HPACK_MAX_DYNAMIC_TABLE_SIZE)
 #else
 #define HTTP2_HEADER_TABLE_SIZE (CONFIG_HTTP2_HEADER_TABLE_SIZE)
 #endif
@@ -120,6 +120,26 @@
 #define HTTP2_SOCK_BUF_SIZE (CONFIG_HTTP2_SOCK_BUF_SIZE)
 #endif
 
+/**
+ * The stream buffer size serves as an accumulation buffer
+ * for data that must be distributed between multiple frames,
+ * for instance header block data and response data.
+ *
+ * Its ideal size is difficult to calculate, but it is expected that
+ * sum(header_block_size) < max_header_list_size 
+ * (TODO: study compression rates).
+ *
+ * In  the case of output data, it provides a limitation for
+ * maximum response
+ */
+#ifndef CONTIG_HTTP2_STREAM_BUF_SIZE
+#define HTTP2_STREAM_BUF_SIZE (1024)
+#elif CONFIG_HTTP2_STREAM_BUF_SIZE > ((1 << 16) - 1)
+#error "Stream buffer size can be at most a 16-bit unsigned integer by implementation."
+#else
+#define HTTP2_STREAM_BUF_SIZE (CONFIG_HTTP2_STREAM_BUF_SIZE)
+#endif
+
 typedef enum {
     HTTP2_NO_ERROR              = 0x0,
     HTTP2_PROTOCOL_ERROR        = 0x1,
@@ -146,6 +166,8 @@ typedef struct http2_stream {
         HTTP2_STREAM_HALF_CLOSED_REMOTE,
         HTTP2_STREAM_CLOSED
     } state;
+    uint8_t buf[HTTP2_STREAM_BUF_SIZE];
+    uint16_t bufsize;
 } http2_stream_t;
 
 typedef struct http2_settings {
@@ -191,9 +213,6 @@ typedef struct http2_context {
     
     // hpack dynamic table
     hpack_dynamic_table_t hpack_dynamic_table;
-
-    // header list
-    header_list_t header_list;
 } http2_context_t;
 
 

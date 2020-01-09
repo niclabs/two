@@ -69,8 +69,8 @@
 // http2 context state flags
 #define HTTP2_FLAGS_NONE                 (0x0)
 #define HTTP2_FLAGS_WAITING_SETTINGS_ACK (0x1)
-#define HTTP2_FLAGS_WAITING_END_HEADERS  (0x2)
-#define HTTP2_FLAGS_WAITING_END_STREAM   (0x4)
+#define HTTP2_FLAGS_END_HEADERS          (0x2)
+#define HTTP2_FLAGS_END_STREAM           (0x4)
 #define HTTP2_FLAGS_GOAWAY_RECV          (0x8)
 #define HTTP2_FLAGS_GOAWAY_SENT          (0x10)
 
@@ -151,7 +151,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
     ctx->last_opened_stream_id = 0;
 
     // initialize hpack
-    hpack_init(&ctx->hpack_dynamic_table, HTTP2_SETTINGS_HEADER_TABLE_SIZE);
+    hpack_init(&ctx->hpack_dynamic_table, HTTP2_HEADER_TABLE_SIZE);
 
     // TODO: set connection timeout (?)
     event_read_start(client, ctx->read_buf, HTTP2_SOCK_BUF_SIZE, waiting_for_preface);
@@ -461,28 +461,40 @@ int handle_ping_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *p
 
 int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t *data, int size)
 {
-    // decode header block
-    int count = headers_count(&ctx->header_list);
+    // copy header data to stream buffer
+    int copylen = MIN(size, HTTP2_STREAM_BUF_SIZE - ctx->stream.bufsize);
 
-    if (hpack_decode(&ctx->hpack_dynamic_table, data, size, &ctx->header_list) < 0) {
-        http2_error(ctx, HTTP2_COMPRESSION_ERROR);
+    // handle buffer full
+    if (copylen <= 0) {
+        // TODO: verify error code here
+        http2_error(ctx, HTTP2_INTERNAL_ERROR);
         return -1;
     }
-    DEBUG("     received %d new headers", count);
 
+    // copy memory to the stream buffer
+    memcpy(ctx->stream.buf + ctx->stream.bufsize, data, copylen);
+    ctx->stream.bufsize += copylen;
 
-    if (!(header.flags & FRAME_END_STREAM_FLAG)) {
-        ctx->flags |= HTTP2_FLAGS_WAITING_END_STREAM;
-    }
-    else {
+    // TODO: handle END_STREAM without end headers
+    if (header.flags & FRAME_END_STREAM_FLAG) {
         // update stream state
+        ctx->flags |= HTTP2_FLAGS_END_STREAM;
         ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
     }
 
-    if (!(header.flags & FRAME_END_HEADERS_FLAG)) {
-        ctx->flags |= HTTP2_FLAGS_WAITING_END_HEADERS;
-    }
-    else {
+    if (header.flags & FRAME_END_HEADERS_FLAG) {
+        // no longer waiting for headers, we need to process request
+        ctx->flags |= HTTP2_FLAGS_END_HEADERS;
+
+        // decode header block
+        header_list_t header_list;
+        headers_init(&header_list);
+        if (hpack_decode(&ctx->hpack_dynamic_table, ctx->stream.buf, ctx->stream.bufsize, &header_list) < 0) {
+            http2_error(ctx, HTTP2_COMPRESSION_ERROR);
+            return -1;
+        }
+        DEBUG("     received %d new headers", headers_count(&header_list));
+
         // TODO: handle request at end headers
         // data frames are ignored
     }
@@ -517,15 +529,16 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t
     ctx->last_opened_stream_id = header.stream_id;
 
     // reset stream flags
-    ctx->flags &= ~HTTP2_FLAGS_WAITING_END_HEADERS;
-    ctx->flags &= ~HTTP2_FLAGS_WAITING_END_STREAM;
+    ctx->flags &= HTTP2_FLAGS_END_HEADERS;
+    ctx->flags &= HTTP2_FLAGS_END_STREAM;
 
-    // initialize headers
-    headers_init(&ctx->header_list);
+    // initialize stream buffer
+    ctx->stream.bufsize = 0;
 
     // calculate header payload size
     int size = header.length;
     if (header.flags & FRAME_PADDED_FLAG) {
+        DEBUG("HERE");
         size -= *payload; // remove the payload size from the total size
         payload++;
     }
@@ -546,8 +559,9 @@ int handle_continuation_frame(http2_context_t *ctx, frame_header_v3_t header, ui
 
     // check stream id and stream state
     if (header.stream_id == 0x0 ||
-        ctx->stream.state != HTTP2_STREAM_OPEN ||
-        !(ctx->flags & HTTP2_FLAGS_WAITING_END_HEADERS)) {
+        (ctx->stream.state != HTTP2_STREAM_OPEN &&
+         ctx->stream.state != HTTP2_STREAM_HALF_CLOSED_REMOTE) ||
+        ctx->flags & HTTP2_FLAGS_END_HEADERS) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
     }
