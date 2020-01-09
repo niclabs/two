@@ -513,15 +513,13 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
     memcpy(ctx->stream.buf + ctx->stream.bufsize, data, copylen);
     ctx->stream.bufsize += copylen;
 
-    if (header.flags & FRAME_END_STREAM_FLAG) {
-        // update stream state
-        ctx->flags |= HTTP2_FLAGS_END_STREAM;
-        ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
-    }
-
     if (header.flags & FRAME_END_HEADERS_FLAG) {
         // no longer waiting for headers, we need to process request
         ctx->flags |= HTTP2_FLAGS_END_HEADERS;
+
+        // we ignore DATA frames so treat END_HEADERS as END_STREAM
+        ctx->flags |= HTTP2_FLAGS_END_STREAM;
+        ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
 
         // decode header block
         header_list_t header_list;
