@@ -575,8 +575,18 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t
     // calculate header payload size
     int size = header.length;
     if (header.flags & FRAME_PADDED_FLAG) {
-        DEBUG("HERE");
-        size -= *payload; // remove the payload size from the total size
+        // Padding that exceeds remaining size for header block
+        // must be treated as PROTOCOL_ERROR
+        if (*payload >= header.length) {
+            http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+            return -1;
+        }
+
+        // 1 byte (padding from the total size)
+        size -= 1;
+
+        // remove the payload size from the total size
+        size -= *payload;
         payload++;
     }
 
