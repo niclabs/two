@@ -3,9 +3,9 @@
 #include <string.h>                                     /* for strlen, strncmp, memset*/
 #include <assert.h>
 #include "config.h"
-#include "logging.h"
 
 #define LOG_MODULE LOG_MODULE_HPACK
+#include "logging.h"
 
 #define HPACK_TABLES_FIRST_INDEX_DYNAMIC 62
 

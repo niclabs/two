@@ -377,7 +377,7 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
  */
 int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header)
 {
-    DEBUG("New table size is %d", states->encoded_header.dynamic_table_size);
+    DEBUG("New table size is %d", encoded_header->dynamic_table_size);
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, encoded_header->dynamic_table_size);
     if (rc < 0) {
@@ -629,7 +629,7 @@ int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_b
         int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header,
                                                             header_block + pointer,
                                                             (int32_t)(header_block_size - pointer));
-        DEBUG("Decoding a %d", encoded_header->preamble);
+        DEBUG("Decoding a %d", encoded_header.preamble);
 
         if (bytes_read < 0) {
             /*Error*/
