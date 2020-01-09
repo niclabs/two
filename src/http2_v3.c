@@ -771,8 +771,13 @@ int ready(event_sock_t *sock, int size, uint8_t *buf)
         case FRAME_CONTINUATION_TYPE:
             handle_continuation_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
             break;
+        case FRAME_PRIORITY_TYPE: // ignore priority frames
+            DEBUG("X- PRIORITY (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                  frame_header.flags, frame_header.stream_id);
+            break;
         case FRAME_DATA_TYPE:
-            // ignore data frames
+            DEBUG("X- DATA (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                  frame_header.flags, frame_header.stream_id);
             break;
         default:
             DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
@@ -834,9 +839,18 @@ int closing(event_sock_t *sock, int size, uint8_t *buf)
         case FRAME_CONTINUATION_TYPE:
             handle_continuation_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
             break;
-        case FRAME_HEADERS_TYPE: // ignore new headers
-        case FRAME_DATA_TYPE:
-            // ignore data frames
+        case FRAME_PRIORITY_TYPE: // ignore priority frames
+            DEBUG("X- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                  frame_header.flags, frame_header.stream_id);
+            break;
+        case FRAME_HEADERS_TYPE: // ignore new streams
+            DEBUG("X- DATA (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                  frame_header.flags, frame_header.stream_id);
+            break;
+        case FRAME_DATA_TYPE: // ignore data frames
+            DEBUG("<- DATA (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                  frame_header.flags, frame_header.stream_id);
+            DEBUG("     - (ignored)");
             break;
         default:
             DEBUG("-> UNSUPPORTED FRAME TYPE: %d", frame_header.type);
