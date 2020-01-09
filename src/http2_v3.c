@@ -3,6 +3,7 @@
 
 #include "frames_v3.h"
 #include "http2_v3.h"
+#include "http.h"
 #include "list_macros.h"
 #include "utils.h"
 
@@ -459,6 +460,29 @@ int handle_ping_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *p
     return 0;
 }
 
+////////////////////////////////////////////////////////////////
+// Headers and continuation functions
+////////////////////////////////////////////////////////////////
+
+int validate_pseudoheaders(header_list_t *headers)
+{
+
+    if (headers_get(headers, ":method") == NULL) {
+        return -1;
+    }
+    // TODO: check for duplicate :method
+
+    if (headers_get(headers, ":scheme") == NULL) {
+        return -1;
+    }
+
+    if (headers_get(headers, ":path") == NULL) {
+        return -1;
+    }
+
+    return headers_validate(headers);
+}
+
 int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t *data, int size)
 {
     // copy header data to stream buffer
@@ -475,7 +499,6 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
     memcpy(ctx->stream.buf + ctx->stream.bufsize, data, copylen);
     ctx->stream.bufsize += copylen;
 
-    // TODO: handle END_STREAM without end headers
     if (header.flags & FRAME_END_STREAM_FLAG) {
         // update stream state
         ctx->flags |= HTTP2_FLAGS_END_STREAM;
@@ -493,10 +516,24 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
             http2_error(ctx, HTTP2_COMPRESSION_ERROR);
             return -1;
         }
-        DEBUG("     received %d new headers", headers_count(&header_list));
 
-        // TODO: handle request at end headers
+        if (validate_pseudoheaders(&header_list) < 0) {
+            http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+            return -1;
+        }
+
+        // reuse the stream buffer
+        uint32_t bufsize = ctx->stream.bufsize;
+
+        // handle request at end headers
         // data frames are ignored
+        http_server_response(ctx->stream.buf, &bufsize, &header_list);
+        ctx->stream.bufsize = bufsize;
+
+        // send headers
+        send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table, 
+                ctx->stream.id, bufsize > 0 ? 0 : 1, close_on_write_error);
+        // TODO: send data
     }
     return 0;
 }
