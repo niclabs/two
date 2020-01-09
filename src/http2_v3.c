@@ -151,6 +151,9 @@ http2_context_t *http2_new_client(event_sock_t *client)
     ctx->flags = HTTP2_FLAGS_NONE;
     ctx->last_opened_stream_id = 0;
 
+    // this value can only be updated by a WINDOW_UPDATE frame
+    ctx->window_size = default_settings.initial_window_size;
+
     // initialize hpack
     hpack_init(&ctx->hpack_dynamic_table, HTTP2_HEADER_TABLE_SIZE);
 
@@ -300,6 +303,17 @@ int update_settings(http2_context_t *ctx, uint8_t *data, int length)
                 if (value > (1U << 31) - 1) {
                     http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
                     return 0;
+                }
+
+                // A SETTINGS frame can alter the initial flow-control window size
+                // for streams with active flow-control windows.
+                // When the value of SETTINGS_INITIAL_WINDOW_SIZE changes, a receiver MUST
+                // adjust the size of all stream flow-control windows that 
+                // it maintains by the difference between the new value and the old value.
+                if (ctx->stream.state == HTTP2_STREAM_OPEN || 
+                        ctx->stream.state == HTTP2_STREAM_HALF_CLOSED_REMOTE) {
+                    int32_t diff = value - ctx->settings.initial_window_size;
+                    ctx->stream.window_size += diff;
                 }
                 ctx->settings.initial_window_size = value;
                 break;

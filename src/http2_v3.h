@@ -166,6 +166,14 @@ typedef struct http2_stream {
         HTTP2_STREAM_HALF_CLOSED_REMOTE,
         HTTP2_STREAM_CLOSED
     } state;
+
+    // stream window size has by default
+    // the same value as the connection
+    // window size
+    int32_t window_size;
+
+    // header block receiving buffer
+    // and data output buffer
     uint8_t buf[HTTP2_STREAM_BUF_SIZE];
     uint16_t bufsize;
 } http2_stream_t;
@@ -198,6 +206,13 @@ typedef struct http2_context {
         HTTP2_READY,
         HTTP2_CLOSING
     } state;
+
+    // connection window size
+    // for the remote endpoint
+    // since we will ignore DATA frames
+    // we don not require to maintain
+    // a local window size
+    int32_t window_size;
 
     // current stream
     http2_stream_t stream;
