@@ -577,6 +577,7 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t
     // open a new stream
     ctx->stream.id = header.stream_id;
     ctx->stream.state = HTTP2_STREAM_OPEN;
+    ctx->stream.window_size = ctx->window_size;
     ctx->last_opened_stream_id = header.stream_id;
 
     // reset stream flags
