@@ -503,7 +503,9 @@ int handle_window_update_frame(http2_context_t *ctx, frame_header_v3_t header, u
         return -1;
     }
 
-    if (header.stream_id == ctx->stream.id && ctx->stream.state == HTTP2_STREAM_CLOSED) {
+    if (header.stream_id != 0 && 
+            header.stream_id == ctx->stream.id && 
+            ctx->stream.state == HTTP2_STREAM_CLOSED) {
         http2_error(ctx, HTTP2_STREAM_CLOSED_ERROR);
         return -1;
     }
