@@ -519,6 +519,7 @@ int handle_window_update_frame(http2_context_t *ctx, frame_header_v3_t header, u
     }
 
     uint32_t window_size_increment = bytes_to_uint32_31(payload);
+    DEBUG("     - window_size_increment: %u", window_size_increment);
     if (window_size_increment == 0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
