@@ -6,6 +6,7 @@
 #else
 #include <assert.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -925,6 +926,10 @@ void event_loop(event_loop_t *loop)
 {
 #ifdef CONTIKI
     PROCESS_BEGIN();
+#else
+    // prevent send() raising a SIGPIPE when 
+    // remote connection has closed
+    signal(SIGPIPE, SIG_IGN);
 #endif
     assert(loop != NULL);
     assert(loop->running == 0);
