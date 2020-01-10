@@ -673,7 +673,9 @@ int event_read_stop(event_sock_t *sock)
     assert(sock->loop != NULL);
 
     event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-    assert(handler != NULL); // event_read_start() must have been called before
+    if (handler == NULL) {
+        return 0;
+    }
 
     // remove read handler from list
     LIST_DELETE(handler, sock->handlers);
