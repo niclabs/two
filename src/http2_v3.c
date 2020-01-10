@@ -901,8 +901,9 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
             DEBUG("X- DATA (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
                   frame_header.flags, frame_header.stream_id);
             break;
-        default:
-            DEBUG("<- UNSUPPORTED FRAME TYPE (0x%x)", frame_header.type);
+        case FRAME_PUSH_PROMISE_TYPE:
+            DEBUG("X- PUSH_PROMISE (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                  frame_header.flags, frame_header.stream_id);
             http2_error(ctx, HTTP2_PROTOCOL_ERROR);
             break;
     }
