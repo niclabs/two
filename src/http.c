@@ -145,7 +145,7 @@ int error(uint8_t *data_buff, uint32_t *data_size, header_list_t *headers_buff, 
     headers_clean(headers_buff);
     headers_set(headers_buff, ":status", strCode);
 
-    DEBUG("Error with status code %d", code);
+    DEBUG("-> %d", code);
 
     // Set error message
     if (msg != NULL) {
@@ -206,7 +206,7 @@ int http_server_response(uint8_t *data_buff, uint32_t *data_size, header_list_t 
     char *method = headers_get(headers_buff, ":method");
     char *path = headers_get(headers_buff, ":path");
 
-    DEBUG("Received %s request", method);
+    DEBUG("<- HTTP %s %s", method, path);
     if (!http_has_method_support(method)) {
         error(data_buff, data_size, headers_buff, 501, "Not Implemented");
         return 0;
