@@ -268,6 +268,13 @@ int update_settings(http2_context_t *ctx, uint8_t *data, int length)
                 if (ctx->stream.state == HTTP2_STREAM_OPEN ||
                     ctx->stream.state == HTTP2_STREAM_HALF_CLOSED_REMOTE) {
                     int32_t diff = value - ctx->settings.initial_window_size;
+
+                    // check max window size
+                    if (ctx->stream.window_size + diff > 0 && 
+                            (unsigned)(ctx->stream.window_size + diff) > ((uint32_t)(1 << 31) - 1)) {
+                        http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
+                        return 0;
+                    }
                     ctx->stream.window_size += diff;
                 }
                 ctx->settings.initial_window_size = value;
@@ -461,7 +468,8 @@ void on_stream_data_sent(event_sock_t *sock, int status)
 void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream)
 {
     // send at most window_size
-    int len = MIN(stream->buflen, stream->window_size);
+    int window_size = MIN(ctx->window_size, stream->window_size);
+    int len = MIN(stream->buflen, window_size);
 
     // do nothing if window size is lower than 0
     if (len <= 0) {
@@ -628,7 +636,7 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t
     // open a new stream
     ctx->stream.id = header.stream_id;
     ctx->stream.state = HTTP2_STREAM_OPEN;
-    ctx->stream.window_size = ctx->window_size;
+    ctx->stream.window_size = ctx->settings.initial_window_size;
     ctx->last_opened_stream_id = header.stream_id;
 
     // reset stream flags
@@ -699,11 +707,10 @@ int handle_rst_stream_frame(http2_context_t *ctx, frame_header_v3_t header, uint
         return -1;
     }
 
-    // there is no mention for reset stream on already closed
-    // streams in the literature
     if (ctx->stream.id < ctx->last_opened_stream_id || 
             ctx->stream.state == HTTP2_STREAM_CLOSED) {
-        return 0;
+        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return -1;
     }
 
     uint32_t error_code = bytes_to_uint32(payload);
