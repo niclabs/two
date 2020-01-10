@@ -65,7 +65,7 @@
  * INITIAL_WINDOW_SIZE.
  */
 #ifndef CONFIG_HTTP2_INITIAL_WINDOW_SIZE
-#define HTTP2_INITIAL_WINDOW_SIZE (65535)
+#define HTTP2_INITIAL_WINDOW_SIZE (1024)
 #elif CONFIG_HTTP2_INITIAL_WINDOW_SIZE > ((1 << 31) - 1)
 #error "Settings initial window size cannot be larger than 2^31 - 1."
 #else
@@ -107,37 +107,38 @@
 #endif
 
 /**
- * The macro CONFIG_HTTP2_SOCK_BUF_SIZE sets the maximum size of the
+ * The macro CONFIG_HTTP2_SOCK_READ_SIZE sets the maximum size of the
  * read buffer for incoming connections. This means that at most
- * CONFIG_HTTP2_SOCK_BUF_SIZE bytes can be pending on a given connection
+ * CONFIG_HTTP2_SOCK_READ_SIZE bytes can be pending on a given connection
  * while a frame is being procesed by the library.
  */
-#if !defined(CONFIG_HTTP2_SOCK_BUF_SIZE) && defined(CONTIKI)
-#define HTTP2_SOCK_BUF_SIZE (UIP_TCP_MSS) // maximum segment size is 1280 by default in contiki
-#elif !defined(CONFIG_HTTP2_SOCK_BUF_SIZE)
-#define HTTP2_SOCK_BUF_SIZE (4096)
+#if !defined(CONFIG_HTTP2_SOCK_READ_SIZE) && defined(CONTIKI)
+#define HTTP2_SOCK_READ_SIZE (UIP_TCP_MSS) // maximum segment size is 1280 by default in contiki
+#elif !defined(CONFIG_HTTP2_SOCK_READ_SIZE)
+#define HTTP2_SOCK_READ_SIZE (4096)
 #else
-#define HTTP2_SOCK_BUF_SIZE (CONFIG_HTTP2_SOCK_BUF_SIZE)
+#define HTTP2_SOCK_READ_SIZE (CONFIG_HTTP2_SOCK_READ_SIZE)
 #endif
 
 /**
- * The stream buffer size serves as an accumulation buffer
- * for data that must be distributed between multiple frames,
- * for instance header block data and response data.
+ * The stream buffer size is the maximum header block size that can be received
+ * or the maximum total data length that can be sent.
  *
  * Its ideal size is difficult to calculate, but it is expected that
  * sum(header_block_size) < max_header_list_size 
  * (TODO: study compression rates).
- *
- * In  the case of output data, it provides a limitation for
- * maximum response
  */
 #ifndef CONTIG_HTTP2_STREAM_BUF_SIZE
-#define HTTP2_STREAM_BUF_SIZE (1024)
+#define HTTP2_STREAM_BUF_SIZE (512)
 #elif CONFIG_HTTP2_STREAM_BUF_SIZE > ((1 << 16) - 1)
 #error "Stream buffer size can be at most a 16-bit unsigned integer by implementation."
 #else
 #define HTTP2_STREAM_BUF_SIZE (CONFIG_HTTP2_STREAM_BUF_SIZE)
+#endif
+
+// Verify correct buffer sizes
+#if HTTP2_SOCK_READ_SIZE < HTTP2_INITIAL_WINDOW_SIZE
+#error "The implementation does not allow to receive more bytes than the allocated read buffer. Either increase the value of HTTP2_SOCK_READ_SIZE or reduce the value of HTTP2_INITIAL_WINDOW_SIZE"
 #endif
 
 typedef enum {
@@ -225,7 +226,7 @@ typedef struct http2_context {
     uint8_t flags;
 
     // sock read buffer
-    uint8_t read_buf[HTTP2_SOCK_BUF_SIZE];
+    uint8_t read_buf[HTTP2_SOCK_READ_SIZE];
     
     // hpack dynamic table
     hpack_dynamic_table_t hpack_dynamic_table;

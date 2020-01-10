@@ -106,7 +106,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
     hpack_init(&ctx->hpack_dynamic_table, HTTP2_HEADER_TABLE_SIZE);
 
     // TODO: set connection timeout (?)
-    event_read_start(client, ctx->read_buf, HTTP2_SOCK_BUF_SIZE, waiting_for_preface);
+    event_read_start(client, ctx->read_buf, HTTP2_SOCK_READ_SIZE, waiting_for_preface);
 
     return ctx;
 }
@@ -547,8 +547,7 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
 
     // handle buffer full
     if (copylen <= 0) {
-        // TODO: verify error code here
-        http2_error(ctx, HTTP2_INTERNAL_ERROR);
+        http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
         return -1;
     }
 
@@ -843,7 +842,7 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
 
     // we cannot allocate frames larger than the buffer
     // send a FLOW_CONTROL_ERROR
-    if (frame_header.length > HTTP2_SOCK_BUF_SIZE) {
+    if (frame_header.length > HTTP2_SOCK_READ_SIZE) {
         http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
         return size;
     }
