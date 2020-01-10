@@ -459,7 +459,7 @@ void event_loop_close(event_loop_t *loop)
     while (curr != NULL) {
         // if the event is closing and we are not waiting to write
         event_handler_t *wh = event_handler_find(curr->handlers, EVENT_WRITE_TYPE);
-        if (curr->state == EVENT_SOCK_CLOSING && (wh == NULL || cbuf_len(&wh->event.write.buf) <= 0)) {
+        if (curr->state == EVENT_SOCK_CLOSING && wh == NULL) {
 #ifndef CONTIKI
             // prevent sock to be used in polling
             FD_CLR(curr->descriptor, &loop->active_fds);
