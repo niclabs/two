@@ -175,7 +175,8 @@ typedef struct http2_stream {
     // header block receiving buffer
     // and data output buffer
     uint8_t buf[HTTP2_STREAM_BUF_SIZE];
-    uint16_t bufsize;
+    uint16_t buflen;
+    uint8_t * bufptr;
 } http2_stream_t;
 
 typedef struct http2_settings {
