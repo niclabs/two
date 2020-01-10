@@ -53,6 +53,7 @@ http2_settings_t default_settings = {
 // the status of the socket and closes the connection if an
 // error ocurred
 void close_on_write_error(event_sock_t *sock, int status);
+void close_on_goaway_sent(event_sock_t *sock, int status);
 
 // get the first client in the unused_clients list
 http2_context_t *find_unused_client();
@@ -144,7 +145,7 @@ int http2_close_gracefully(http2_context_t *ctx)
     DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", ctx->last_opened_stream_id, HTTP2_NO_ERROR);
     send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_write_error);
 
-    // TODO: set a timer for goaway
+    // TODO: set a timer for goaway (?)
 
     return 0;
 }
@@ -154,13 +155,13 @@ void http2_error(http2_context_t *ctx, http2_error_t error)
     // update state
     ctx->state = HTTP2_CLOSING;
     ctx->flags &= HTTP2_FLAGS_GOAWAY_SENT;
-    event_read(ctx->socket, closing);
 
-    // send goaway with error
+    // stop accepting data
+    event_read_stop(ctx->socket);
+
+    // send goaway and close the connection
     DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", ctx->last_opened_stream_id, error);
-    send_goaway_frame(ctx->socket, error, ctx->last_opened_stream_id, close_on_write_error);
-
-    // TODO: set a timer for goaway
+    send_goaway_frame(ctx->socket, error, ctx->last_opened_stream_id, close_on_goaway_sent);
 }
 
 void close_on_write_error(event_sock_t *sock, int status)
@@ -170,6 +171,13 @@ void close_on_write_error(event_sock_t *sock, int status)
     if (status < 0) {
         http2_close_immediate(ctx);
     }
+}
+
+void close_on_goaway_sent(event_sock_t *sock, int status)
+{
+    (void)status;
+    http2_context_t *ctx = (http2_context_t *)sock->data;
+    http2_close_immediate(ctx);
 }
 
 void on_settings_sent(event_sock_t *sock, int status)
@@ -336,13 +344,6 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_
     return 0;
 }
 
-void close_on_goaway_reply_sent(event_sock_t *sock, int status)
-{
-    (void)status;
-    http2_context_t *ctx = (http2_context_t *)sock->data;
-    http2_close_immediate(ctx);
-}
-
 // Handle a goaway frame reception, check for conformance to the specificataion
 // and go to closing state
 int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
@@ -388,7 +389,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
 
         // send goaway and and close connection
         DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", ctx->last_opened_stream_id, HTTP2_NO_ERROR);
-        send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_goaway_reply_sent);
+        send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_goaway_sent);
     }
 
     return 0;
