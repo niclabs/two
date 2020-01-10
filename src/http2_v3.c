@@ -10,60 +10,6 @@
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
 
-#define GOAWAY_ERROR(error)                     \
-    ({                                          \
-        char *errstr;                           \
-        switch (error) {                        \
-            case HTTP2_NO_ERROR:                \
-                errstr = "NO_ERROR";            \
-                break;                          \
-            case HTTP2_PROTOCOL_ERROR:          \
-                errstr = "PROTOCOL_ERROR";      \
-                break;                          \
-            case HTTP2_INTERNAL_ERROR:          \
-                errstr = "INTERNAL_ERROR";      \
-                break;                          \
-            case HTTP2_FLOW_CONTROL_ERROR:      \
-                errstr = "FLOW_CONTROL_ERROR";  \
-                break;                          \
-            case HTTP2_SETTINGS_TIMEOUT:        \
-                errstr = "SETTINGS_TIMEOUT";    \
-                break;                          \
-            case HTTP2_STREAM_CLOSED_ERROR:     \
-                errstr = "STREAM_CLOSED_ERROR"; \
-                break;                          \
-            case HTTP2_FRAME_SIZE_ERROR:        \
-                errstr = "FRAME_SIZE_ERROR";    \
-                break;                          \
-            case HTTP2_REFUSED_STREAM:          \
-                errstr = "REFUSED_STREAM";      \
-                break;                          \
-            case HTTP2_CANCEL:                  \
-                errstr = "CANCEL";              \
-                break;                          \
-            case HTTP2_COMPRESSION_ERROR:       \
-                errstr = "COMPRESSION_ERROR";   \
-                break;                          \
-            case HTTP2_CONNECT_ERROR:           \
-                errstr = "CONNECT_ERROR";       \
-                break;                          \
-            case HTTP2_ENHANCE_YOUR_CALM:       \
-                errstr = "ENHANCE_YOUR_CALM";   \
-                break;                          \
-            case HTTP2_INADEQUATE_SECURITY:     \
-                errstr = "INADEQUATE_SECURITY"; \
-                break;                          \
-            case HTTP2_HTTP_1_1_REQUIRED:       \
-                errstr = "HTTP_1_1_REQUIRED";   \
-                break;                          \
-            default:                            \
-                errstr = "UNKNOWN";             \
-                break;                          \
-        }                                       \
-        errstr;                                 \
-    })
-
-
 #define HTTP2_PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 #define HTTP2_FRAME_HEADER_SIZE (9)
 
@@ -193,7 +139,7 @@ int http2_close_gracefully(http2_context_t *ctx)
     event_read(ctx->socket, closing);
 
     // send go away with HTTP2_NO_ERROR
-    DEBUG("-> GOAWAY (last_stream_id: %u, error_code: %s)", ctx->last_opened_stream_id, GOAWAY_ERROR(HTTP2_NO_ERROR));
+    DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", ctx->last_opened_stream_id, HTTP2_NO_ERROR);
     send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_write_error);
 
     // TODO: set a timer for goaway
@@ -209,7 +155,7 @@ void http2_error(http2_context_t *ctx, http2_error_t error)
     event_read(ctx->socket, closing);
 
     // send goaway with error
-    DEBUG("-> GOAWAY (last_stream_id: %u, error_code: %s)", ctx->last_opened_stream_id, GOAWAY_ERROR(error));
+    DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", ctx->last_opened_stream_id, error);
     send_goaway_frame(ctx->socket, error, ctx->last_opened_stream_id, close_on_write_error);
 
     // TODO: set a timer for goaway
@@ -416,7 +362,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
 
     // log goaway frame
     DEBUG("     - last_stream_id: %u", last_stream_id);
-    DEBUG("     - error_code: %s", GOAWAY_ERROR(error));
+    DEBUG("     - error_code: 0x%x", error);
     // if sent goaway, close connection immediately
     if (ctx->flags & HTTP2_FLAGS_GOAWAY_SENT) {
         http2_close_immediate(ctx);
@@ -439,7 +385,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
         event_read(ctx->socket, closing);
 
         // send goaway and and close connection
-        DEBUG("-> GOAWAY (last_stream_id: %u, error_code: %s)", ctx->last_opened_stream_id, GOAWAY_ERROR(HTTP2_NO_ERROR));
+        DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", ctx->last_opened_stream_id, HTTP2_NO_ERROR);
         send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_goaway_reply_sent);
     }
 
@@ -516,8 +462,9 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
     if (header.flags & FRAME_END_HEADERS_FLAG) {
         // no longer waiting for headers, we need to process request
         ctx->flags |= HTTP2_FLAGS_END_HEADERS;
-
-        // we ignore DATA frames so treat END_HEADERS as END_STREAM
+        
+        // since we ignore DATA frames, treat END_HEADERS
+        // as END_STREAM
         ctx->flags |= HTTP2_FLAGS_END_STREAM;
         ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
 
