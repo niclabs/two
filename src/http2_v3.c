@@ -16,8 +16,8 @@
 // http2 context state flags
 #define HTTP2_FLAGS_NONE                 (0x0)
 #define HTTP2_FLAGS_WAITING_SETTINGS_ACK (0x1)
-#define HTTP2_FLAGS_END_HEADERS          (0x2)
-#define HTTP2_FLAGS_END_STREAM           (0x4)
+#define HTTP2_FLAGS_WAITING_END_HEADERS  (0x2)
+#define HTTP2_FLAGS_WAITING_END_STREAM   (0x4)
 #define HTTP2_FLAGS_GOAWAY_RECV          (0x8)
 #define HTTP2_FLAGS_GOAWAY_SENT          (0x10)
 
@@ -557,11 +557,11 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
 
     if (header.flags & FRAME_END_HEADERS_FLAG) {
         // no longer waiting for headers, we need to process request
-        ctx->flags |= HTTP2_FLAGS_END_HEADERS;
+        ctx->flags &= ~HTTP2_FLAGS_WAITING_END_HEADERS;
 
         // since we ignore DATA frames, treat END_HEADERS
         // as END_STREAM
-        ctx->flags |= HTTP2_FLAGS_END_STREAM;
+        ctx->flags &= ~HTTP2_FLAGS_WAITING_END_STREAM;
         ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
 
         // decode header block
@@ -630,8 +630,8 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t
     ctx->last_opened_stream_id = header.stream_id;
 
     // reset stream flags
-    ctx->flags &= HTTP2_FLAGS_END_HEADERS;
-    ctx->flags &= HTTP2_FLAGS_END_STREAM;
+    ctx->flags |= HTTP2_FLAGS_WAITING_END_HEADERS;
+    ctx->flags |= HTTP2_FLAGS_WAITING_END_STREAM;
 
     // initialize stream buffer
     ctx->stream.buflen = 0;
@@ -673,7 +673,7 @@ int handle_continuation_frame(http2_context_t *ctx, frame_header_v3_t header, ui
     if (header.stream_id == 0x0 ||
         (ctx->stream.state != HTTP2_STREAM_OPEN &&
          ctx->stream.state != HTTP2_STREAM_HALF_CLOSED_REMOTE) ||
-        ctx->flags & HTTP2_FLAGS_END_HEADERS) {
+        !(ctx->flags & HTTP2_FLAGS_WAITING_END_HEADERS)) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
     }
@@ -853,6 +853,14 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
         return 0;
     }
 
+    // if we have started receiving headers
+    // we can only allow CONTINUATION frames for 
+    // the same stream
+    if (ctx->flags & HTTP2_FLAGS_WAITING_END_HEADERS && 
+            frame_header.type != FRAME_CONTINUATION_TYPE) {
+        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return frame_size;
+    }
 
     switch (frame_header.type) {
         case FRAME_GOAWAY_TYPE:
