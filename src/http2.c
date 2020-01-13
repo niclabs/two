@@ -115,7 +115,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
 
 void http2_on_client_close(event_sock_t *sock)
 {
-    DEBUG("http/2 client closed");
+    INFO("http/2 client closed");
     http2_context_t *ctx = (http2_context_t *)sock->data;
     free_client(ctx);
 }
@@ -142,7 +142,7 @@ int http2_close_gracefully(http2_context_t *ctx)
     ctx->flags &= HTTP2_FLAGS_GOAWAY_SENT;
 
     // send go away with HTTP2_NO_ERROR
-    DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", (unsigned int)ctx->last_opened_stream_id, HTTP2_NO_ERROR);
+    INFO("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", (unsigned int)ctx->last_opened_stream_id, HTTP2_NO_ERROR);
     send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_write_error);
 
     // TODO: set a timer for goaway (?)
@@ -160,14 +160,14 @@ void http2_error(http2_context_t *ctx, http2_error_t error)
     event_read_stop(ctx->socket);
 
     // send goaway and close the connection
-    DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", (unsigned int)ctx->last_opened_stream_id, error);
+    INFO("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", (unsigned int)ctx->last_opened_stream_id, error);
     send_goaway_frame(ctx->socket, error, ctx->last_opened_stream_id, close_on_goaway_sent);
 }
 
 void http2_stream_error(http2_context_t *ctx, uint32_t stream_id, http2_error_t error)
 {
     // Send reset stream and close frame
-    DEBUG("-> RST_STREAM (stream_id: %u, error_code: 0x%x)", (unsigned int)stream_id, error);
+    INFO("-> RST_STREAM (stream_id: %u, error_code: 0x%x)", (unsigned int)stream_id, error);
     send_rst_stream_frame(ctx->socket, error, stream_id, close_on_write_error);
     if (stream_id == ctx->stream.id) {
         ctx->stream.state = HTTP2_STREAM_CLOSED;
@@ -327,7 +327,7 @@ int update_settings(http2_context_t *ctx, uint8_t *data, int length)
 int handle_settings_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     // check stream id
-    DEBUG("<- SETTINGS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    INFO("<- SETTINGS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     if (header.stream_id != 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
@@ -343,7 +343,7 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_t header, uint8_t *
 
         // process settings
         if (update_settings(ctx, payload, header.length) > 0) {
-            DEBUG("-> SETTINGS (ack)" );
+            INFO("-> SETTINGS (ack)" );
             send_settings_frame(ctx->socket, 1, NULL, close_on_write_error);
         }
 
@@ -373,7 +373,7 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_t header, uint8_t *
 int handle_goaway_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     // check stream id
-    DEBUG("<- GOAWAY (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    INFO("<- GOAWAY (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     if (header.stream_id != 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
@@ -411,7 +411,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_t header, uint8_t *pa
         event_read(ctx->socket, receiving);
 
         // send goaway and and close connection
-        DEBUG("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", (unsigned int)ctx->last_opened_stream_id, HTTP2_NO_ERROR);
+        INFO("-> GOAWAY (last_stream_id: %u, error_code: 0x%x)", (unsigned int)ctx->last_opened_stream_id, HTTP2_NO_ERROR);
         send_goaway_frame(ctx->socket, HTTP2_NO_ERROR, ctx->last_opened_stream_id, close_on_goaway_sent);
     }
 
@@ -421,7 +421,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_t header, uint8_t *pa
 // Handle a ping frame reception. Reply with same payload and an ack if the frame is well formed
 int handle_ping_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
-    DEBUG("<- PING (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    INFO("<- PING (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id
     if (header.stream_id != 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
@@ -440,7 +440,7 @@ int handle_ping_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
     }
 
     // send ack with same payload
-    DEBUG("-> PING (ack)");
+    INFO("-> PING (ack)");
     send_ping_frame(ctx->socket, payload, 1, close_on_write_error);
 
     return 0;
@@ -503,7 +503,7 @@ void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream)
     len = MIN(len, EVENT_MAX_BUF_WRITE_SIZE);
 
     // send data frame
-    DEBUG("-> DATA (stream: %u, flags: 0x%x, length: %u)", (unsigned int)stream->id, (stream->buflen - len <= 0), len);
+    INFO("-> DATA (stream: %u, flags: 0x%x, length: %u)", (unsigned int)stream->id, (stream->buflen - len <= 0), len);
     send_data_frame(ctx->socket, stream->bufptr, len, stream->id, (stream->buflen - len <= 0), on_stream_data_sent);
 
     // use actual size sent here
@@ -516,7 +516,7 @@ void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream)
 
 int handle_window_update_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
-    DEBUG("<- WINDOW_UPDATE (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    INFO("<- WINDOW_UPDATE (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
 
     // check header length
     if (header.length != 4) {
@@ -669,11 +669,11 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *p
 {
     // ignore new streams after starting close
     if (ctx->state == HTTP2_CLOSING) {
-        DEBUG("X- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+        INFO("X- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
         return 0;
     }
 
-    DEBUG("<- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    INFO("<- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id and stream state
     if (header.stream_id == 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
@@ -744,8 +744,8 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *p
 // it will ignore all the data
 int handle_data_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
-    DEBUG("X- DATA (length: %u, flags: 0x%x, stream_id: %u)", header.length,
-          header.flags, header.stream_id);
+    INFO("X- DATA (length: %u, flags: 0x%x, stream_id: %u)", header.length,
+         header.flags, header.stream_id);
 
     // check stream id
     if (header.stream_id == 0x0 || header.stream_id > ctx->last_opened_stream_id) {
@@ -790,7 +790,7 @@ int handle_data_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
 }
 int handle_continuation_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
-    DEBUG("<- CONTINUATION (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    INFO("<- CONTINUATION (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
 
     // check stream id and stream state
     if (header.stream_id == 0x0 ||
@@ -807,7 +807,7 @@ int handle_continuation_frame(http2_context_t *ctx, frame_header_t header, uint8
 
 int handle_rst_stream_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
-    DEBUG("<- RST_STREAM (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+    INFO("<- RST_STREAM (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id and stream state
     if (header.stream_id == 0x0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
@@ -859,12 +859,12 @@ int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
     }
 
     if (strncmp((char *)buf, HTTP2_PREFACE, 24) != 0) {
-        DEBUG("<- INVALID HTTP2_PREFACE");
+        INFO("<- INVALID HTTP2_PREFACE");
         http2_close_immediate(ctx);
         return 24;
     }
 
-    DEBUG("<- HTTP2_PREFACE");
+    INFO("<- HTTP2_PREFACE");
 
     // update connection state
     ctx->state = HTTP2_WAITING_SETTINGS;
@@ -875,7 +875,7 @@ int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
                              HTTP2_MAX_FRAME_SIZE, HTTP2_MAX_HEADER_LIST_SIZE };
 
     // call send_setting_frame
-    DEBUG("-> SETTINGS (length: 36)");
+    INFO("-> SETTINGS (length: 36)");
     DEBUG("     - header_table_size: %u", HTTP2_HEADER_TABLE_SIZE);
     DEBUG("     - enable_push: %u", HTTP2_ENABLE_PUSH);
     DEBUG("     - max_concurrent_streams: %u", HTTP2_MAX_CONCURRENT_STREAMS);
@@ -949,6 +949,7 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
 
     int bytes_read = 0;
     int bytes_remaining = size;
+    frame_header_t frame_header;
 
     // process as much data as possible
     while (bytes_remaining > 0) {
@@ -958,7 +959,6 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
         }
 
         // read frame
-        frame_header_t frame_header;
         frame_parse_header(&frame_header, buf + bytes_read, HTTP2_FRAME_HEADER_SIZE);
 
         // check frame size against local settings
@@ -1016,15 +1016,15 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
                 rc = handle_rst_stream_frame(ctx, frame_header, buf + bytes_read);
                 break;
             case FRAME_PRIORITY_TYPE: // ignore priority frames
-                DEBUG("X- PRIORITY (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
-                      frame_header.flags, frame_header.stream_id);
+                INFO("X- PRIORITY (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                     frame_header.flags, frame_header.stream_id);
                 break;
             case FRAME_DATA_TYPE:
                 rc = handle_data_frame(ctx, frame_header, buf + bytes_read);
                 break;
             case FRAME_PUSH_PROMISE_TYPE:
-                DEBUG("X- PUSH_PROMISE (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
-                      frame_header.flags, frame_header.stream_id);
+                INFO("X- PUSH_PROMISE (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                     frame_header.flags, frame_header.stream_id);
                 http2_error(ctx, HTTP2_PROTOCOL_ERROR);
                 break;
         }
