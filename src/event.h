@@ -78,23 +78,26 @@ typedef uint16_t event_descriptor_t;
 typedef int event_descriptor_t;
 #endif
 
+// 1-byte alignment
+#pragma pack(push, 1)
+
 typedef enum {
     EVENT_CONNECTION_TYPE   = (uint8_t)0x0,
     EVENT_WRITE_TYPE        = (uint8_t)0x1,
     EVENT_READ_TYPE         = (uint8_t)0x2,
     EVENT_TIMEOUT_TYPE      = (uint8_t)0x3,
-} __attribute__((__packed__)) event_type_t;
+} event_type_t;
 
 typedef struct event_connection {
     // type variables
     event_connection_cb cb;
-} __attribute__((packed)) event_connection_t;
+} event_connection_t;
 
 typedef struct event_read {
     // type variables
     cbuf_t buf;
     event_read_cb cb;
-} __attribute__((packed)) event_read_t;
+} event_read_t;
 
 typedef struct event_write {
     // type variables
@@ -104,7 +107,7 @@ typedef struct event_write {
 #ifdef CONTIKI
     int sending;
 #endif
-} __attribute__((packed)) event_write_t;
+} event_write_t;
 
 typedef struct event_timer {
     // type variables
@@ -116,7 +119,7 @@ typedef struct event_timer {
     struct timeval start;
 #endif
     event_timer_cb cb;
-} __attribute__((packed)) event_timer_t;
+} event_timer_t;
 
 typedef struct event_handler {
     struct event_handler *next;
@@ -127,7 +130,7 @@ typedef struct event_handler {
         event_write_t write;
         event_timer_t timer;
     } event;
-} __attribute__((packed)) event_handler_t;
+} event_handler_t;
 
 typedef struct event_sock {
     /* "inherited fields" */
@@ -161,7 +164,7 @@ typedef struct event_sock {
     struct ctimer timer;
 #endif
 #endif
-} __attribute__((packed)) event_sock_t;
+} event_sock_t;
 
 typedef struct event_loop {
     // list of active sockets
@@ -182,7 +185,10 @@ typedef struct event_loop {
     fd_set active_fds;
     int nfds;
 #endif
-} __attribute__((packed)) event_loop_t;
+} event_loop_t;
+
+// end byte alignment
+#pragma pack(pop)
 
 // Sock operations
 
