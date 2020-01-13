@@ -31,6 +31,7 @@
 
 #define HTTP2_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
 
+#undef MIN
 #define MIN(x, y) (x) < (y) ? (x) : (y)
 
 // static variables for reserved http2 client memory
