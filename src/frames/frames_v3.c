@@ -97,7 +97,7 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_w
     size_bytes += header.length;
 
     // We write the ping to NET
-    return event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    return event_write(socket, size_bytes, response_bytes, cb);
 }
 
 int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_open_stream_id, event_write_cb cb)
@@ -123,7 +123,7 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_o
     size_bytes += 4;
 
     DEBUG("Sending GOAWAY, error code: %u", error_code);
-    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    event_write(socket, size_bytes, response_bytes, cb);
 
     return 0;
 }
@@ -159,7 +159,7 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
         size_bytes += 4;
     }
 
-    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    event_write(socket, size_bytes, response_bytes, cb);
 
     return 0;
 }
@@ -210,7 +210,7 @@ int send_headers_frame(event_sock_t *socket,
     memcpy(response_bytes + size_bytes, response_bytes, header.length);
     size_bytes += header.length;
 
-    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    event_write(socket, size_bytes, response_bytes, cb);
 
     INFO("Sending headers");
     /*if (rc != bytes_size) {
@@ -248,7 +248,7 @@ int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment
     uint32_31_to_byte_array(window_size_increment, response_bytes + size_bytes);
     size_bytes += header.length;
 
-    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    event_write(socket, size_bytes, response_bytes, cb);
 
     return 0;
 }
@@ -273,7 +273,7 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t st
     uint32_to_byte_array(error_code, response_bytes + size_bytes);
     size_bytes += header.length;
 
-    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    event_write(socket, size_bytes, response_bytes, cb);
     return 0;
 }
 
@@ -307,7 +307,7 @@ int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t
     memcpy(response_bytes + size_bytes, data, header.length);
     size_bytes += header.length;
 
-    event_read_pause_and_write(socket, size_bytes, response_bytes, cb);
+    event_write(socket, size_bytes, response_bytes, cb);
     /*
        if (rc != bytes_size) {
         ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
