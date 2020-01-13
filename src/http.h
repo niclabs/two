@@ -4,36 +4,54 @@
 #ifndef HTTP_H
 #define HTTP_H
 
-#include "headers.h"
-
-
 /***********************************************
 * Data buffer struct
 ***********************************************/
+#define HTTP_MAX_VALUE_SIZE (32)
 
-//Revisar
-// TODO: make HTTP_MAX_RESPONSE_SIZE equal to HTTP2_STREAM_BUF_SIZE
- #ifdef HTTP_CONF_MAX_RESPONSE_SIZE
- #define HTTP_MAX_RESPONSE_SIZE (HTTP_CONF_MAX_RESPONSE_SIZE)
- #else
- #define HTTP_MAX_RESPONSE_SIZE (128)
- #endif
-//
+typedef struct http_header {
+    char *name;
+    char *value;
+} http_header_t;
+
+typedef struct http_request {
+    char * method;
+    char * path;
+
+    // headers
+    struct {
+        unsigned int len;
+        http_header_t * list;
+    } headers;
+} http_request_t;
+
+typedef struct http_response {
+    // HTTP status code
+    int status;
+
+    // value of the Content-Type header
+    char content_type[HTTP_MAX_VALUE_SIZE];
+
+    // Length of HTTP response in bytes
+    int content_length;
+
+    // response body
+    char * body;
+} http_response_t;
 
 /***********************************************
 * Server API methods
 ***********************************************/
 
 /**
- * Generate a response from server to each client request
+ * Generate a response from server to the given request
  *
- * @param data_buff data buffer
- * @param data_size data buffer size
- * @param headers_buff headers data structure
+ * @param req http request data
+ * @param res already allocated http response. The response body will be a buffer with maxlen size
+ * @param maxlen maximum size of the http payload
  * @return 0 if ok -1 if an error ocurred
- * TODO: reduce buffer data size to uint16_t
  */
-int http_server_response(uint8_t *data_buff, uint32_t *data_size, header_list_t *headers_buff);
+void http_handle_request(http_request_t * req, http_response_t *res, unsigned int maxlen);
 
 /**
  * Utility function to check for method support
