@@ -13,14 +13,12 @@
 
 /*
  * Function: frame_header_to_bytes
- * Pass a frame header to an array of bytes
+ * Convert a frame header into an array of bytes
  * Input: pointer to frameheader, array of bytes
  * Output: 0 if bytes were read correctly, (-1 if any error reading)
  */
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 {
-    DEBUG("Estoy en v3");
-
     uint32_24_to_byte_array(frame_header->length, byte_array);                  //length 24 bits -> bytes [0,2]
     byte_array[3] = (uint8_t)frame_header->type;                                //type 8    -> bytes [3]
     byte_array[4] = (uint8_t)frame_header->flags;                               //flags 8   -> bytes[4]
@@ -53,27 +51,6 @@ void frame_parse_header(frame_header_t *header, uint8_t *data, unsigned int size
     header->stream_id |= data[8] << 0;
 }
 
-/*
- * Function: compress_headers
- * given a set of headers, it compresses them and save them in a bytes array
- * Input: table of headers, size of the table, array to save the bytes and dynamic_table
- * Output: compressed headers size or -1 if error
- */
-int compress_headers(header_list_t *headers_out, uint8_t *compressed_headers, hpack_dynamic_table_t *dynamic_table)
-{
-    return hpack_encode(dynamic_table, headers_out, compressed_headers);
-}
-
-/*
- * Function: send_ping
- * Sends a ping frame to endpoint
- * Input:
- *      -> opaque_data: opaque data of ping payload
- *      -> ack: boolean if ack != 0 sends an ACK ping, else sends a ping with the ACK flag not set.
- *      -> h2s: pointer to hstates struct where http and http2 connection info is
- * stored
- * Output: HTTP2_RC_NO_ERROR if sent was successfully made, -1 if not.
- */
 int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_write_cb cb)
 {
     /*First we create the header*/
@@ -82,7 +59,7 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_w
     //ping_payload_t ping_payload;
     header.length = 8;
     header.type = FRAME_PING_TYPE;
-    header.flags = (uint8_t) (ack ? FRAME_ACK_FLAG : 0);
+    header.flags = (uint8_t) (ack ? FRAME_FLAGS_ACK : 0);
     header.reserved = 0;
     header.stream_id = 0;
 
@@ -122,10 +99,7 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_o
     uint32_to_byte_array(error_code, response_bytes + size_bytes);
     size_bytes += 4;
 
-    DEBUG("Sending GOAWAY, error code: %u", error_code);
-    event_write(socket, size_bytes, response_bytes, cb);
-
-    return 0;
+    return event_write(socket, size_bytes, response_bytes, cb);
 }
 
 int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[], event_write_cb cb)
@@ -139,7 +113,7 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
     /*rc must be 0*/
     header.length = ack ? 0 : (6 * count);
     header.type = FRAME_SETTINGS_TYPE;    //settings;
-    header.flags = (uint8_t) (ack ? FRAME_ACK_FLAG : 0);
+    header.flags = (uint8_t) (ack ? FRAME_FLAGS_ACK : 0);
     header.reserved = 0x0;
     header.stream_id = 0;
 
@@ -159,23 +133,9 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
         size_bytes += 4;
     }
 
-    event_write(socket, size_bytes, response_bytes, cb);
-
-    return 0;
+    return event_write(socket, size_bytes, response_bytes, cb);
 }
 
-/*
- * Function: send_headers_frame
- * Send a single headers frame to endpoint. It read the data from the buff_read
- * buffer given as parameter.
- * Input: ->st: hstates_t struct where connection variables are stored
- *        ->buff_read: buffer where headers frame payload is stored
- *        ->size: number of bytes to read from buff_read and to store in payload
- *        ->stream_id: stream id to write on headers frame header
- *        ->end_headers: boolean that indicates if END_HEADERS_FLAG must be set
- *        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
- * Output: 0 if no errors were found during frame creation/sending, -1 if not
- */
 
 int send_headers_frame(event_sock_t *socket,
                        header_list_t *headers_list,
@@ -185,7 +145,7 @@ int send_headers_frame(event_sock_t *socket,
                        event_write_cb cb)
 {
     uint8_t encoded_bytes[FRAMES_MAX_BUFFER_SIZE];
-    int size = compress_headers(headers_list, encoded_bytes, dynamic_table);
+    int size = hpack_encode(dynamic_table, headers_list, encoded_bytes);
 
     if (size < 0) { //Error
         return size;
@@ -195,8 +155,8 @@ int send_headers_frame(event_sock_t *socket,
     // We create the headers frame
     header.length = size;
     header.type = FRAME_HEADERS_TYPE;
-    header.flags = FRAME_END_HEADERS_FLAG; // we never send continuation
-    header.flags |= (uint8_t) (end_stream ? FRAME_END_STREAM_FLAG : 0x0);
+    header.flags = FRAME_FLAGS_END_HEADERS; // we never send continuation
+    header.flags |= (uint8_t) (end_stream ? FRAME_FLAGS_END_STREAM : 0x0);
     header.stream_id = stream_id;
     header.reserved = 0;
 
@@ -210,24 +170,9 @@ int send_headers_frame(event_sock_t *socket,
     memcpy(response_bytes + size_bytes, response_bytes, header.length);
     size_bytes += header.length;
 
-    event_write(socket, size_bytes, response_bytes, cb);
-
-    INFO("Sending headers");
-    /*if (rc != bytes_size) {
-        ERROR("Error writing headers frame. INTERNAL ERROR");
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-       }*/
-    return 0;
+    return event_write(socket, size_bytes, response_bytes, cb);
 }
 
-/*
- * Function: send_window_update
- * Sends connection window update to endpoint.
- * Input: -> st: hstates_t struct pointer where connection variables are stored
- *        -> window_size_increment: increment to put on window_update frame
- * Output: 0 if no errors were found, -1 if not.
- */
 int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment, uint32_t stream_id, event_write_cb cb)
 {
     frame_header_t header;
@@ -248,9 +193,7 @@ int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment
     uint32_31_to_byte_array(window_size_increment, response_bytes + size_bytes);
     size_bytes += header.length;
 
-    event_write(socket, size_bytes, response_bytes, cb);
-
-    return 0;
+    return event_write(socket, size_bytes, response_bytes, cb);
 }
 
 int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t stream_id, event_write_cb cb)
@@ -273,19 +216,16 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t st
     uint32_to_byte_array(error_code, response_bytes + size_bytes);
     size_bytes += header.length;
 
-    event_write(socket, size_bytes, response_bytes, cb);
-    return 0;
+    return event_write(socket, size_bytes, response_bytes, cb);
 }
 
 int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t stream_id, uint8_t end_stream, event_write_cb cb)
 {
     frame_header_t header;
 
-    //uint32_t length = length; //no padding, no dependency. fix if this is implemented
-
     header.length = size;
     header.type = FRAME_DATA_TYPE;
-    header.flags = (uint8_t) (end_stream ? FRAME_END_STREAM_FLAG : 0x0);
+    header.flags = (uint8_t) (end_stream ? FRAME_FLAGS_END_STREAM : 0x0);
     header.stream_id = stream_id;
     header.reserved = 0;
 
@@ -294,25 +234,8 @@ int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t
     memset(response_bytes, 0, 9 + header.length);
 
     int size_bytes = frame_header_to_bytes(&header, response_bytes);
-
-    /*Then we put the payload*/
-/*    uint8_t flags = frame_header->flags;
-
-    if (is_flag_set(flags, DATA_PADDED_FLAG)) {
-        //TODO handle padding
-        ERROR("Padding not implemented yet");
-        return -1;
-    }
- */
     memcpy(response_bytes + size_bytes, data, header.length);
     size_bytes += header.length;
 
-    event_write(socket, size_bytes, response_bytes, cb);
-    /*
-       if (rc != bytes_size) {
-        ERROR("send_data: Error writing data frame. Couldn't push %d bytes to buffer. INTERNAL ERROR", rc);
-        send_connection_error(HTTP2_INTERNAL_ERROR, h2s);
-        return HTTP2_RC_CLOSE_CONNECTION_ERROR_SENT;
-       }*/
-    return 0;
+    return event_write(socket, size_bytes, response_bytes, cb);
 }

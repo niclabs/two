@@ -7,7 +7,7 @@
 #include "list_macros.h"
 #include "utils.h"
 
-#define LOG_LEVEL LOG_LEVEL_DEBUG
+#define LOG_MODULE LOG_MODULE_HTTP2
 #include "logging.h"
 
 #define HTTP2_PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
@@ -333,7 +333,7 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_t header, uint8_t *
     }
 
     // if not an ack
-    if (!(header.flags & FRAME_ACK_FLAG)) {
+    if (!(header.flags & FRAME_FLAGS_ACK)) {
         // check that frame size is divisible by 6
         if (header.length % 6 != 0) {
             http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
@@ -384,11 +384,10 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_t header, uint8_t *pa
         return -1;
     }
     uint32_t last_stream_id = bytes_to_uint32_31(payload);
-    uint32_t error = bytes_to_uint32(payload + 4);
 
     // log goaway frame
     DEBUG("     - last_stream_id: %u", last_stream_id);
-    DEBUG("     - error_code: 0x%x", error);
+    DEBUG("     - error_code: 0x%x", bytes_to_uint32(payload + 4));
     // if sent goaway, close connection immediately
     if (ctx->flags & HTTP2_FLAGS_GOAWAY_SENT) {
         http2_close_immediate(ctx);
@@ -434,7 +433,7 @@ int handle_ping_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
         return -1;
     }
 
-    if (header.flags & FRAME_ACK_FLAG) {
+    if (header.flags & FRAME_FLAGS_ACK) {
         // ignore ping with ack (we never send pings)
         return 0;
     }
@@ -615,13 +614,13 @@ int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *da
     memcpy(ctx->stream.buf + ctx->stream.buflen, data, copylen);
     ctx->stream.buflen += copylen;
 
-    if (header.flags & FRAME_END_STREAM_FLAG) {
+    if (header.flags & FRAME_FLAGS_END_STREAM) {
         // set the stream to the correct state
         ctx->flags &= ~HTTP2_FLAGS_WAITING_END_STREAM;
         ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
     }
 
-    if (header.flags & FRAME_END_HEADERS_FLAG) {
+    if (header.flags & FRAME_FLAGS_END_HEADERS) {
         // no longer waiting for headers, we need to process request
         ctx->flags &= ~HTTP2_FLAGS_WAITING_END_HEADERS;
     }
@@ -679,7 +678,7 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *p
 
     // calculate header payload size
     int size = header.length;
-    if (header.flags & FRAME_PADDED_FLAG) {
+    if (header.flags & FRAME_FLAGS_PADDED) {
         // Padding that exceeds remaining size for header block
         // must be treated as PROTOCOL_ERROR
         if (*payload >= header.length) {
@@ -696,7 +695,7 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *p
     }
 
     // ignore all priority data
-    if (header.flags & FRAME_PRIORITY_FLAG) {
+    if (header.flags & FRAME_FLAGS_PRIORITY) {
         size -= 5; // remove the priority size from total size
         payload += 5;
     }
@@ -729,7 +728,7 @@ int handle_data_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
         return -1;
     }
 
-    if (header.flags & FRAME_PADDED_FLAG) {
+    if (header.flags & FRAME_FLAGS_PADDED) {
         // Padding that exceeds remaining size for header block
         // must be treated as PROTOCOL_ERROR
         if (*payload >= header.length) {
@@ -738,7 +737,7 @@ int handle_data_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
         }
     }
 
-    if (header.flags & FRAME_END_STREAM_FLAG) {
+    if (header.flags & FRAME_FLAGS_END_STREAM) {
         // set the stream to the correct state
         ctx->flags &= ~HTTP2_FLAGS_WAITING_END_STREAM;
         ctx->stream.state = HTTP2_STREAM_HALF_CLOSED_REMOTE;
@@ -791,8 +790,7 @@ int handle_rst_stream_frame(http2_context_t *ctx, frame_header_t header, uint8_t
         return -1;
     }
 
-    uint32_t error_code = bytes_to_uint32(payload);
-    DEBUG("     - error_code: 0x%x", error_code);
+    DEBUG("     - error_code: 0x%x", bytes_to_uint32(payload));
 
     // close the stream
     ctx->stream.state = HTTP2_STREAM_CLOSED;
@@ -879,7 +877,7 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
 
     // check the type
     int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
-    if (frame_header.type != FRAME_SETTINGS_TYPE || frame_header.flags != FRAME_NO_FLAG) {
+    if (frame_header.type != FRAME_SETTINGS_TYPE || frame_header.flags != FRAME_FLAGS_NONE) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return frame_size; // discard all input after an error
     }
