@@ -191,7 +191,8 @@ void close_on_goaway_sent(event_sock_t *sock, int status)
     http2_close_immediate(ctx);
 }
 
-int close_on_timeout(event_sock_t * sock) {
+int close_on_timeout(event_sock_t *sock)
+{
     event_close(sock, http2_on_client_close);
     return 1;
 }
@@ -638,6 +639,12 @@ int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *da
 
 int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
+    // ignore new streams after starting close
+    if (ctx->state == HTTP2_CLOSING) {
+        DEBUG("X- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
+        return 0;
+    }
+
     DEBUG("<- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id and stream state
     if (header.stream_id == 0x0) {
@@ -900,7 +907,7 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
     return frame_size;
 }
 
-// Handle read operations while the server is in a ready state
+// Handle read operations while the server is in a ready or closing state
 // i.e. after settings exchange
 // most frame operations will occur while in this state
 int receiving(event_sock_t *sock, int size, uint8_t *buf)
@@ -912,85 +919,97 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
         return 0;
     }
 
-    // Wait until frame header is received
-    if (size < HTTP2_FRAME_HEADER_SIZE) {
-        return 0;
-    }
+    int bytes_read = 0;
+    int bytes_remaining = size;
 
-    // read frame
-    frame_header_t frame_header;
-    frame_parse_header(&frame_header, buf, size);
+    // process as much data as possible
+    while (bytes_remaining > 0) {
+        // Wait until frame header is received
+        if (bytes_remaining < HTTP2_FRAME_HEADER_SIZE) {
+            return bytes_read;
+        }
 
-    // check frame size against local settings
-    if (frame_header.length > HTTP2_MAX_FRAME_SIZE) {
-        http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
-        return size;
-    }
+        // read frame
+        frame_header_t frame_header;
+        frame_parse_header(&frame_header, buf + bytes_read, HTTP2_FRAME_HEADER_SIZE);
 
-    // we cannot allocate frames larger than the buffer
-    // send a FLOW_CONTROL_ERROR
-    if (frame_header.length > HTTP2_SOCK_READ_SIZE) {
-        http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
-        return size;
-    }
+        // check frame size against local settings
+        if (frame_header.length > HTTP2_MAX_FRAME_SIZE) {
+            http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
+            return bytes_read;
+        }
 
-    // do nothing if the frame has not been fully received
-    int frame_size = HTTP2_FRAME_HEADER_SIZE + frame_header.length;
-    if (size < frame_size) {
-        return 0;
-    }
+        // we cannot allocate frames larger than the buffer
+        // send a FLOW_CONTROL_ERROR
+        if (frame_header.length > HTTP2_SOCK_READ_SIZE) {
+            http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
+            return bytes_read;
+        }
 
-    // if we have started receiving headers
-    // we can only allow CONTINUATION frames for
-    // the same stream
-    if (ctx->flags & HTTP2_FLAGS_WAITING_END_HEADERS &&
-        frame_header.type != FRAME_CONTINUATION_TYPE) {
-        http2_error(ctx, HTTP2_PROTOCOL_ERROR);
-        return frame_size;
-    }
+        // do nothing if the frame has not been fully received
+        if (bytes_remaining < HTTP2_FRAME_HEADER_SIZE + frame_header.length) {
+            return bytes_read;
+        }
 
-    switch (frame_header.type) {
-        case FRAME_GOAWAY_TYPE:
-            handle_goaway_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            break;
-        case FRAME_SETTINGS_TYPE:
-            handle_settings_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            break;
-        case FRAME_PING_TYPE:
-            handle_ping_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            break;
-        case FRAME_HEADERS_TYPE:
-            if (ctx->state != HTTP2_CLOSING) {
-                handle_headers_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            }
-            else {
-                // ignore header if in closing state
-                DEBUG("X- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
-                      frame_header.flags, frame_header.stream_id);
-            }
-            break;
-        case FRAME_CONTINUATION_TYPE:
-            handle_continuation_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            break;
-        case FRAME_WINDOW_UPDATE_TYPE:
-            handle_window_update_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            break;
-        case FRAME_RST_STREAM_TYPE:
-            handle_rst_stream_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            break;
-        case FRAME_PRIORITY_TYPE: // ignore priority frames
-            DEBUG("X- PRIORITY (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
-                  frame_header.flags, frame_header.stream_id);
-            break;
-        case FRAME_DATA_TYPE:
-            handle_data_frame(ctx, frame_header, buf + HTTP2_FRAME_HEADER_SIZE);
-            break;
-        case FRAME_PUSH_PROMISE_TYPE:
-            DEBUG("X- PUSH_PROMISE (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
-                  frame_header.flags, frame_header.stream_id);
+        // update totals
+        bytes_read += HTTP2_FRAME_HEADER_SIZE;
+        bytes_remaining -= HTTP2_FRAME_HEADER_SIZE;
+
+        // if we have started receiving headers
+        // we can only allow CONTINUATION frames for
+        // the same stream
+        if (ctx->flags & HTTP2_FLAGS_WAITING_END_HEADERS &&
+            frame_header.type != FRAME_CONTINUATION_TYPE) {
             http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+            return bytes_read;
+        }
+
+        int rc = 0;
+        switch (frame_header.type) {
+            case FRAME_GOAWAY_TYPE:
+                rc = handle_goaway_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_SETTINGS_TYPE:
+                rc = handle_settings_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_PING_TYPE:
+                rc = handle_ping_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_HEADERS_TYPE:
+                rc = handle_headers_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_CONTINUATION_TYPE:
+                rc = handle_continuation_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_WINDOW_UPDATE_TYPE:
+                rc = handle_window_update_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_RST_STREAM_TYPE:
+                rc = handle_rst_stream_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_PRIORITY_TYPE: // ignore priority frames
+                DEBUG("X- PRIORITY (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                      frame_header.flags, frame_header.stream_id);
+                break;
+            case FRAME_DATA_TYPE:
+                rc = handle_data_frame(ctx, frame_header, buf + bytes_read);
+                break;
+            case FRAME_PUSH_PROMISE_TYPE:
+                DEBUG("X- PUSH_PROMISE (length: %u, flags: 0x%x, stream_id: %u)", frame_header.length,
+                      frame_header.flags, frame_header.stream_id);
+                http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+                break;
+        }
+
+        // update totals
+        bytes_read += frame_header.length;
+        bytes_remaining -= frame_header.length;
+
+        // if an error ocurred in handling, break and return
+        if (rc < 0) {
             break;
+        }
     }
 
-    return frame_size;
+    return bytes_read;
 }
