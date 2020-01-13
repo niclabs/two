@@ -210,11 +210,6 @@ int event_read_start(event_sock_t *sock, uint8_t * buf, unsigned int bufsize, ev
 // event_read_start MUST be called first
 int event_read(event_sock_t *sock, event_read_cb cb);
 
-// Pause read notifications on the given socket. This effectively
-// removes the callback from the read handler. Read restart must
-// be performed with a call to event_read()
-void event_read_pause(event_sock_t *sock);
-
 // Stop receiving read notifications
 // this releases the read handler and stops writing
 // in the buffer given at event_read_start.
@@ -226,10 +221,6 @@ int event_read_stop(event_sock_t *sock);
 // Write to the output buffer, will notify the callback when all bytes are
 // written
 int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
-
-// Pause read event notifications on the socket for writing the contents of the given buffer
-// read event notifications will not restart until event_read() is called again
-int event_read_pause_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
 
 // Notify the callback on socket inactivity
 // the timer is reset on every successful read/write operation

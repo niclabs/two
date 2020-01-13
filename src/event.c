@@ -662,11 +662,6 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     return 0;
 }
 
-void event_read_pause(event_sock_t *sock)
-{
-    event_read(sock, NULL);
-}
-
 int event_read_stop(event_sock_t *sock)
 {
     // check socket status
@@ -764,12 +759,6 @@ void event_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
     handler->event.timer.sock = sock;
     ctimer_set(&handler->event.timer.ctimer, millis * CLOCK_SECOND / 1000, event_sock_handle_timeout, handler);
 #endif
-}
-
-int event_read_pause_and_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
-{
-    event_read_pause(sock);
-    return event_write(sock, size, bytes, cb);
 }
 
 int event_accept(event_sock_t *server, event_sock_t *client)

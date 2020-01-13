@@ -369,7 +369,6 @@ int read_header(event_sock_t *client, int size, uint8_t *buf)
           header->length, header->type, header->flags, header->stream_id);
 #endif
         
-        event_read_pause(client);
         if (process_header(client, ctx, header) < 0) {
             event_close(client, on_client_close);
         }
