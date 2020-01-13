@@ -113,7 +113,7 @@
  * while a frame is being procesed by the library.
  */
 #if !defined(CONFIG_HTTP2_SOCK_READ_SIZE) && defined(CONTIKI)
-#define HTTP2_SOCK_READ_SIZE (UIP_TCP_MSS) // maximum segment size is 1280 by default in contiki
+#define HTTP2_SOCK_READ_SIZE (1024) // maximum segment size is 1280 by default in contiki
 #elif !defined(CONFIG_HTTP2_SOCK_READ_SIZE)
 #define HTTP2_SOCK_READ_SIZE (4096)
 #else
@@ -139,6 +139,10 @@
 // Verify correct buffer sizes
 #if HTTP2_SOCK_READ_SIZE < HTTP2_INITIAL_WINDOW_SIZE
 #error "The implementation does not allow to receive more bytes than the allocated read buffer. Either increase the value of HTTP2_SOCK_READ_SIZE or reduce the value of HTTP2_INITIAL_WINDOW_SIZE"
+#endif
+
+#if defined(CONTIKI) && HTTP2_SOCK_READ_SIZE > UIP_TCP_MSS
+#error "The socket read size cannot be larger than the maximum TCP segment size"
 #endif
 
 typedef enum {
@@ -178,7 +182,7 @@ typedef struct http2_stream {
     uint8_t buf[HTTP2_STREAM_BUF_SIZE];
     uint16_t buflen;
     uint8_t * bufptr;
-} http2_stream_t;
+} __attribute__((packed)) http2_stream_t;
 
 typedef struct http2_settings {
     uint32_t header_table_size;
@@ -230,7 +234,7 @@ typedef struct http2_context {
     
     // hpack dynamic table
     hpack_dynamic_table_t hpack_dynamic_table;
-} http2_context_t;
+} __attribute__((packed)) http2_context_t ;
 
 
 http2_context_t * http2_new_client(event_sock_t *client);
