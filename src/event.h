@@ -88,18 +88,16 @@ typedef enum __attribute__((__packed__)){
     EVENT_TIMEOUT_TYPE,
 } event_type_t;
 
-#pragma pack(push, 1)
-
 typedef struct event_connection {
     // type variables
     event_connection_cb cb;
-} event_connection_t;
+} __attribute__((packed)) event_connection_t;
 
 typedef struct event_read {
     // type variables
     cbuf_t buf;
     event_read_cb cb;
-} event_read_t;
+} __attribute__((packed)) event_read_t;
 
 typedef struct event_write {
     // type variables
@@ -109,19 +107,19 @@ typedef struct event_write {
 #ifdef CONTIKI
     int sending;
 #endif
-} event_write_t;
+} __attribute__((packed)) event_write_t;
 
 typedef struct event_timer {
     // type variables
     int millis;
 #ifdef CONTIKI
     struct ctimer ctimer;
-    struct event_sock * sock;
+    struct event_sock *sock;
 #else
     struct timeval start;
 #endif
     event_timer_cb cb;
-} event_timer_t;
+} __attribute__((packed)) event_timer_t;
 
 typedef struct event_handler {
     struct event_handler *next;
@@ -132,7 +130,7 @@ typedef struct event_handler {
         event_write_t write;
         event_timer_t timer;
     } event;
-} event_handler_t;
+} __attribute__((packed)) event_handler_t;
 
 typedef struct event_sock {
     /* "inherited fields" */
@@ -166,7 +164,7 @@ typedef struct event_sock {
     struct ctimer timer;
 #endif
 #endif
-} event_sock_t;
+} __attribute__((packed)) event_sock_t;
 
 typedef struct event_loop {
     // list of active sockets
@@ -187,9 +185,8 @@ typedef struct event_loop {
     fd_set active_fds;
     int nfds;
 #endif
-} event_loop_t;
+} __attribute__((packed)) event_loop_t;
 
-#pragma pack(pop)
 // Sock operations
 
 // Open the socket for listening on the specified port
@@ -198,13 +195,13 @@ typedef struct event_loop {
 // client slots are available
 int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb);
 
-// Start reading events in the socket. This configures the given buffer for reading, 
-// this will configure the buffer as a circular buffer until event_read_stop is called, 
-// where the handler will be released and writing on the buffer will stop. Memory 
+// Start reading events in the socket. This configures the given buffer for reading,
+// this will configure the buffer as a circular buffer until event_read_stop is called,
+// where the handler will be released and writing on the buffer will stop. Memory
 // allocation/freeing is responsibility of the user of the library
 //
-// event_read_cb will be called on new data 
-int event_read_start(event_sock_t *sock, uint8_t * buf, unsigned int bufsize, event_read_cb cb);
+// event_read_cb will be called on new data
+int event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, event_read_cb cb);
 
 // Update the notification callback for read operations in the given socket
 // event_read_start MUST be called first
@@ -213,7 +210,7 @@ int event_read(event_sock_t *sock, event_read_cb cb);
 // Stop receiving read notifications
 // this releases the read handler and stops writing
 // in the buffer given at event_read_start.
-// If any data are left in the buffer, this will 
+// If any data are left in the buffer, this will
 // leave them untouched at the beginning of the memory pointed
 // by the buffer and return the number of bytes available
 int event_read_stop(event_sock_t *sock);
