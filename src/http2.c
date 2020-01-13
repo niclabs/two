@@ -101,14 +101,13 @@ http2_context_t *http2_new_client(event_sock_t *client)
     ctx->flags = HTTP2_FLAGS_NONE;
     ctx->last_opened_stream_id = 0;
 
+
     // this value can only be updated by a WINDOW_UPDATE frame
     ctx->window_size = default_settings.initial_window_size;
 
     // initialize hpack
     hpack_init(&ctx->hpack_dynamic_table, HTTP2_HEADER_TABLE_SIZE);
 
-    // TODO: add macro for connection timeout
-    event_timeout(client, 500, close_on_timeout);
     event_read_start(client, ctx->read_buf, HTTP2_SOCK_READ_SIZE, waiting_for_preface);
 
     return ctx;

@@ -1,6 +1,8 @@
 #ifndef CBUF_H
 #define CBUF_H
 
+#include <stdint.h>
+
 /**
  * Circular buffer definition functions
  *
@@ -16,8 +18,6 @@
  * buffer and increase the available buffer size
  **/
 
-#pragma pack(push, 1)
-
 typedef struct {
     void * ptr;
     int maxlen;
@@ -29,12 +29,10 @@ typedef struct {
 
     // end of buffer
     enum {
-        CBUF_OPEN,
-        CBUF_ENDED
+        CBUF_OPEN   = (uint8_t)0x1,
+        CBUF_ENDED  = (uint8_t)0x2
     } state;
-} cbuf_t;
-
-#pragma pack(pop)
+} __attribute__((__packed__)) cbuf_t;
 
 /** 
  * Initialize circular buffer with the specified

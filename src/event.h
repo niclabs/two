@@ -47,13 +47,10 @@
 #endif
 #endif
 
-#pragma pack(push, 1)
-
 struct event;
 struct event_sock;
 struct event_loop;
 
-#pragma pack(pop)
 // Callbacks
 
 // Called on a new client connection
@@ -81,12 +78,12 @@ typedef uint16_t event_descriptor_t;
 typedef int event_descriptor_t;
 #endif
 
-typedef enum __attribute__((__packed__)){
-    EVENT_CONNECTION_TYPE,
-    EVENT_WRITE_TYPE,
-    EVENT_READ_TYPE,
-    EVENT_TIMEOUT_TYPE,
-} event_type_t;
+typedef enum {
+    EVENT_CONNECTION_TYPE   = (uint8_t)0x0,
+    EVENT_WRITE_TYPE        = (uint8_t)0x1,
+    EVENT_READ_TYPE         = (uint8_t)0x2,
+    EVENT_TIMEOUT_TYPE      = (uint8_t)0x3,
+} __attribute__((__packed__)) event_type_t;
 
 typedef struct event_connection {
     // type variables

@@ -125,7 +125,7 @@
  * or the maximum total data length that can be sent.
  *
  * Its ideal size is difficult to calculate, but it is expected that
- * sum(header_block_size) < max_header_list_size 
+ * sum(header_block_size) < max_header_list_size
  * (TODO: study compression rates).
  */
 #ifndef CONTIG_HTTP2_STREAM_BUF_SIZE
@@ -146,30 +146,32 @@
 #endif
 
 typedef enum {
-    HTTP2_NO_ERROR              = 0x0,
-    HTTP2_PROTOCOL_ERROR        = 0x1,
-    HTTP2_INTERNAL_ERROR        = 0x2,
-    HTTP2_FLOW_CONTROL_ERROR    = 0x3,
-    HTTP2_SETTINGS_TIMEOUT      = 0x4,
-    HTTP2_STREAM_CLOSED_ERROR   = 0x5,
-    HTTP2_FRAME_SIZE_ERROR      = 0x6,
-    HTTP2_REFUSED_STREAM        = 0x7,
-    HTTP2_CANCEL                = 0x8,
-    HTTP2_COMPRESSION_ERROR     = 0x9,
-    HTTP2_CONNECT_ERROR         = 0xa,
-    HTTP2_ENHANCE_YOUR_CALM     = 0xb,
-    HTTP2_INADEQUATE_SECURITY   = 0xc,
-    HTTP2_HTTP_1_1_REQUIRED     = 0xd
+    HTTP2_NO_ERROR              = (uint8_t) 0x0,
+    HTTP2_PROTOCOL_ERROR        = (uint8_t) 0x1,
+    HTTP2_INTERNAL_ERROR        = (uint8_t) 0x2,
+    HTTP2_FLOW_CONTROL_ERROR    = (uint8_t) 0x3,
+    HTTP2_SETTINGS_TIMEOUT      = (uint8_t) 0x4,
+    HTTP2_STREAM_CLOSED_ERROR   = (uint8_t) 0x5,
+    HTTP2_FRAME_SIZE_ERROR      = (uint8_t) 0x6,
+    HTTP2_REFUSED_STREAM        = (uint8_t) 0x7,
+    HTTP2_CANCEL                = (uint8_t) 0x8,
+    HTTP2_COMPRESSION_ERROR     = (uint8_t) 0x9,
+    HTTP2_CONNECT_ERROR         = (uint8_t) 0xa,
+    HTTP2_ENHANCE_YOUR_CALM     = (uint8_t) 0xb,
+    HTTP2_INADEQUATE_SECURITY   = (uint8_t) 0xc,
+    HTTP2_HTTP_1_1_REQUIRED     = (uint8_t) 0xd
 } http2_error_t;
 
 typedef struct http2_stream {
     uint32_t id;
     enum {
-        HTTP2_STREAM_IDLE,
-        HTTP2_STREAM_OPEN,
-        HTTP2_STREAM_HALF_CLOSED_LOCAL,
-        HTTP2_STREAM_HALF_CLOSED_REMOTE,
-        HTTP2_STREAM_CLOSED
+        HTTP2_STREAM_IDLE               = (uint8_t) 0x0,
+        HTTP2_STREAM_OPEN               = (uint8_t) 0x1,
+        HTTP2_STREAM_HALF_CLOSED_LOCAL  = (uint8_t) 0x2,
+        HTTP2_STREAM_HALF_CLOSED_REMOTE = (uint8_t) 0x3,
+
+        // states idle and closed are equal in our implementation
+        HTTP2_STREAM_CLOSED             = (uint8_t) 0x0
     } state;
 
     // stream window size has by default
@@ -181,7 +183,7 @@ typedef struct http2_stream {
     // and data output buffer
     uint8_t buf[HTTP2_STREAM_BUF_SIZE];
     uint16_t buflen;
-    uint8_t * bufptr;
+    uint8_t *bufptr;
 } __attribute__((packed)) http2_stream_t;
 
 typedef struct http2_settings {
@@ -206,11 +208,11 @@ typedef struct http2_context {
 
     // local state
     enum {
-        HTTP2_CLOSED,
-        HTTP2_WAITING_PREFACE,
-        HTTP2_WAITING_SETTINGS,
-        HTTP2_READY,
-        HTTP2_CLOSING
+        HTTP2_CLOSED            = (uint8_t) 0x0,
+        HTTP2_WAITING_PREFACE   = (uint8_t) 0x1,
+        HTTP2_WAITING_SETTINGS  = (uint8_t) 0x2,
+        HTTP2_READY             = (uint8_t) 0x3,
+        HTTP2_CLOSING           = (uint8_t) 0x4
     } state;
 
     // connection window size
@@ -231,13 +233,13 @@ typedef struct http2_context {
 
     // sock read buffer
     uint8_t read_buf[HTTP2_SOCK_READ_SIZE];
-    
+
     // hpack dynamic table
     hpack_dynamic_table_t hpack_dynamic_table;
-} __attribute__((packed)) http2_context_t ;
+} __attribute__((packed)) http2_context_t;
 
 
-http2_context_t * http2_new_client(event_sock_t *client);
+http2_context_t *http2_new_client(event_sock_t *client);
 int http2_close_gracefully(http2_context_t *ctx);
 void http2_close_immediate(http2_context_t *ctx);
 void http2_error(http2_context_t *ctx, http2_error_t error);
