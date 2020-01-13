@@ -17,27 +17,13 @@ PROJECT_SOURCEFILES=two.c \
 				 	resource_handler.c \
 					utils.c \
 					frames.c \
-					frames_v3.c \
-					settings_frame.c \
-					headers_frame.c \
-					data_frame.c \
-					continuation_frame.c \
-					window_update_frame.c \
-					ping_frame.c \
-					rst_stream_frame.c \
-					goaway_frame.c \
 					hpack.c \
 					decoder.c \
 					encoder.c \
 					huffman.c \
 					tables.c \
 					hpack_utils.c \
-					http2.c \
-					check.c \
-					handle.c \
-					send.c \
-					flowcontrol.c \
-					http2_utils.c
+					http2.c
 
 
 # Disable UDP
