@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include "event.h"
-#include "frames/structs.h"
 #include "hpack/hpack.h"
 
 /*Definition of max buffer size*/
@@ -43,13 +42,13 @@ typedef struct frame_header {
     uint8_t flags : 8;
     uint8_t reserved : 1;
     uint32_t stream_id : 31;
-} frame_header_v3_t; //72 bits-> 9 bytes
+} frame_header_t; //72 bits-> 9 bytes
 
 
 /*frame header methods*/
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array);
 
-void frame_parse_header(frame_header_v3_t *header, uint8_t *data, unsigned int size);
+void frame_parse_header(frame_header_t *header, uint8_t *data, unsigned int size);
 
 // send frame methods
 int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_write_cb cb);

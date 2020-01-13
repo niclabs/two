@@ -5,7 +5,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "frames_v3.h"
+#include "frames.h"
 #include "utils.h"
 
 #define LOG_MODULE LOG_MODULE_FRAME
@@ -30,12 +30,12 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
     return 9;
 }
 
-void frame_parse_header(frame_header_v3_t *header, uint8_t *data, unsigned int size)
+void frame_parse_header(frame_header_t *header, uint8_t *data, unsigned int size)
 {
     assert(size >= 9);
 
     // cleanup memory first
-    memset(header, 0, sizeof(frame_header_v3_t));
+    memset(header, 0, sizeof(frame_header_t));
 
     // read header length
     header->length |= (data[2]);
@@ -81,7 +81,7 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_w
 
     //ping_payload_t ping_payload;
     header.length = 8;
-    header.type = PING_TYPE;
+    header.type = FRAME_PING_TYPE;
     header.flags = (uint8_t) (ack ? FRAME_ACK_FLAG : 0);
     header.reserved = 0;
     header.stream_id = 0;
@@ -105,7 +105,7 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_o
     frame_header_t header;
 
     header.length = 8;
-    header.type = GOAWAY_TYPE;
+    header.type = FRAME_GOAWAY_TYPE;
     header.flags = 0;
     header.stream_id = 0;
     header.reserved = 0;
@@ -138,7 +138,7 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
 
     /*rc must be 0*/
     header.length = ack ? 0 : (6 * count);
-    header.type = SETTINGS_TYPE;    //settings;
+    header.type = FRAME_SETTINGS_TYPE;    //settings;
     header.flags = (uint8_t) (ack ? FRAME_ACK_FLAG : 0);
     header.reserved = 0x0;
     header.stream_id = 0;
@@ -194,7 +194,7 @@ int send_headers_frame(event_sock_t *socket,
 
     // We create the headers frame
     header.length = size;
-    header.type = HEADERS_TYPE;
+    header.type = FRAME_HEADERS_TYPE;
     header.flags = FRAME_END_HEADERS_FLAG; // we never send continuation
     header.flags |= (uint8_t) (end_stream ? FRAME_END_STREAM_FLAG : 0x0);
     header.stream_id = stream_id;
@@ -233,7 +233,7 @@ int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment
     frame_header_t header;
 
     header.stream_id = stream_id;
-    header.type = WINDOW_UPDATE_TYPE;
+    header.type = FRAME_WINDOW_UPDATE_TYPE;
     header.length = 4;
     header.reserved = 0;
     header.flags = 0;
@@ -258,7 +258,7 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t st
     frame_header_t header;
 
     header.stream_id = stream_id;
-    header.type = RST_STREAM_TYPE;
+    header.type = FRAME_RST_STREAM_TYPE;
     header.length = 4;
     header.flags = 0;
     header.reserved = 0;
@@ -284,7 +284,7 @@ int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t
     //uint32_t length = length; //no padding, no dependency. fix if this is implemented
 
     header.length = size;
-    header.type = DATA_TYPE;
+    header.type = FRAME_DATA_TYPE;
     header.flags = (uint8_t) (end_stream ? FRAME_END_STREAM_FLAG : 0x0);
     header.stream_id = stream_id;
     header.reserved = 0;

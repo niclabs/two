@@ -1,7 +1,7 @@
 TWO = .
 CFLAGS = -std=c99 -Wall -Wextra -D_DEFAULT_SOURCE
 
-TARGETDIRS = examples/server/ examples/echo/ examples/tiny/ examples/http2v3/
+TARGETDIRS = examples/server/ examples/echo/ examples/tiny/
 TESTDIRS = tests/
 
 MODULES	+= hpack http2 frames

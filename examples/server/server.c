@@ -30,7 +30,7 @@ void on_server_close()
 void cleanup(int sig)
 {
     (void)sig;
-    DEBUG("Ctrl-C received, closing server");
+    INFO("Ctrl-C received, closing server");
     two_server_stop(on_server_close);
 }
 

@@ -7,7 +7,7 @@
 
 #include "two.h"
 #include "event.h"
-#include "http2_v3.h"
+#include "http2.h"
 
 #define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"

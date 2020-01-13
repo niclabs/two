@@ -1,8 +1,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "frames_v3.h"
-#include "http2_v3.h"
+#include "frames.h"
+#include "http2.h"
 #include "http.h"
 #include "list_macros.h"
 #include "utils.h"
@@ -323,7 +323,7 @@ int update_settings(http2_context_t *ctx, uint8_t *data, int length)
 
 // Handle a settings frame reception, check for conformance to the
 // protocol specification and update remote endpoint settings
-int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_settings_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     // check stream id
     DEBUG("<- SETTINGS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
@@ -369,7 +369,7 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_
 
 // Handle a goaway frame reception, check for conformance to the specificataion
 // and go to closing state
-int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_goaway_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     // check stream id
     DEBUG("<- GOAWAY (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
@@ -419,7 +419,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
 }
 
 // Handle a ping frame reception. Reply with same payload and an ack if the frame is well formed
-int handle_ping_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_ping_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     DEBUG("<- PING (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id
@@ -514,7 +514,7 @@ void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream)
 
 }
 
-int handle_window_update_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_window_update_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     DEBUG("<- WINDOW_UPDATE (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
 
@@ -600,7 +600,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     return 0;
 }
 
-int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t *data, int size)
+int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *data, int size)
 {
     // copy header data to stream buffer
     int copylen = MIN(size, HTTP2_STREAM_BUF_SIZE - ctx->stream.buflen);
@@ -636,7 +636,7 @@ int handle_header_block(http2_context_t *ctx, frame_header_v3_t header, uint8_t 
 }
 
 
-int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     DEBUG("<- HEADERS (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id and stream state
@@ -707,7 +707,7 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t
 
 // this checks DATA frames for end_stream flag
 // it will ignore all the data
-int handle_data_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_data_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     DEBUG("X- DATA (length: %u, flags: 0x%x, stream_id: %u)", header.length,
           header.flags, header.stream_id);
@@ -753,7 +753,7 @@ int handle_data_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *p
 
     return 0;
 }
-int handle_continuation_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_continuation_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     DEBUG("<- CONTINUATION (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
 
@@ -770,7 +770,7 @@ int handle_continuation_frame(http2_context_t *ctx, frame_header_v3_t header, ui
     return handle_header_block(ctx, header, payload, header.length);
 }
 
-int handle_rst_stream_frame(http2_context_t *ctx, frame_header_v3_t header, uint8_t *payload)
+int handle_rst_stream_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
     DEBUG("<- RST_STREAM (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id and stream state
@@ -874,7 +874,7 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
     }
 
     // read frame
-    frame_header_v3_t frame_header;
+    frame_header_t frame_header;
     frame_parse_header(&frame_header, buf, size);
 
     // check the type
@@ -919,7 +919,7 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
     }
 
     // read frame
-    frame_header_v3_t frame_header;
+    frame_header_t frame_header;
     frame_parse_header(&frame_header, buf, size);
 
     // check frame size against local settings
