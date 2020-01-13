@@ -7,8 +7,7 @@
 
 #include "two.h"
 #include "event.h"
-#include "http2/http2.h"
-#include "http2/structs.h"
+#include "http2_v3.h"
 
 #define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"
@@ -22,102 +21,52 @@
 // static variables
 static event_loop_t loop;
 static event_sock_t *server;
-static two_close_cb global_close_cb;
-
-// HTTP/2 client memory
-static h2states_t http2_state_list[TWO_MAX_CLIENTS];
-static h2states_t *connected;
-static h2states_t *unused;
-
-// methods
-h2states_t *get_unused_state()
-{
-    h2states_t *ctx = LIST_POP(unused);
-    if (ctx != NULL) {
-        memset(ctx, 0, sizeof(h2states_t));
-        LIST_PUSH(ctx, connected);
-    }
-
-    return ctx;
-}
-
-void two_free_client(h2states_t *ctx)
-{
-    if (LIST_DELETE(ctx, connected) != NULL) {
-        LIST_PUSH(ctx, unused);
-    }
-}
+static void (*global_close_cb)();
 
 void two_on_server_close(event_sock_t *server)
 {
     (void)server;
-    INFO("Server closed");
+    INFO("HTTP/2 server closed");
     if (global_close_cb != NULL) {
         global_close_cb();
     }
 }
 
-void two_on_client_close(event_sock_t *client)
-{
-    INFO("Client connection closed on descriptor %d", client->descriptor);
-    two_free_client(client->data);
+void two_on_client_close(event_sock_t *client) {
+    INFO("HTTP/2 client (%d) closed.", client->descriptor);
 }
 
 void two_on_new_connection(event_sock_t *server, int status)
 {
-    if (status < 0) {
-        ERROR("Cannot receive more clients");
-        return;
-    }
-
+    (void)status;
     event_sock_t *client = event_sock_create(server->loop);
     if (event_accept(server, client) == 0) {
-        h2states_t *data = get_unused_state();
-
-        // the number of h2state should be equal to the number of clients
-        // if this happens there is an implementation error
-        assert(data != NULL);
-
-        INFO("New client connection on descriptor %d", client->descriptor);
-
-        // Configure data
-        client->data = data;
-
-        // Initialize http2 client
-        http2_server_init_connection(client, status);
+        INFO("New HTTP/2 client (%d) connected", client->descriptor);
+        http2_new_client(client);
     }
     else {
-        ERROR("No more clients available");
+        ERROR("The server cannot receive more clients (current maximum is %d). Increase CONFIG_EVENT_MAX_SOCKETS", EVENT_MAX_SOCKETS);
         event_close(client, two_on_client_close);
     }
 }
 
 int two_server_start(unsigned int port)
 {
-    // Initialize client memory
-    memset(http2_state_list, 0, TWO_MAX_CLIENTS * sizeof(h2states_t));
-    for (int i = 0; i < TWO_MAX_CLIENTS - 1; i++) {
-        http2_state_list[i].next = &http2_state_list[i + 1];
-    }
-    connected = NULL;
-    unused = &http2_state_list[0];
-
     event_loop_init(&loop);
     server = event_sock_create(&loop);
 
     int r = event_listen(server, port, two_on_new_connection);
-
-    INFO("Starting http/2 server in port %u", port);
     if (r < 0) {
-        ERROR("Could not start server");
+        ERROR("Failed to open socket for listening");
         return 1;
     }
+    INFO("Starting HTTP/2 server in port %u", port);
     event_loop(&loop);
 
     return 0;
 }
 
-void two_server_stop(two_close_cb close_cb)
+void two_server_stop(void (*close_cb)())
 {
     global_close_cb = close_cb;
     event_close(server, two_on_server_close);

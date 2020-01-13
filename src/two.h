@@ -39,17 +39,12 @@ int two_register_resource(char *method, char *path, http_resource_handler_t hand
 
 
 /**
- * Callback to be called on  server close
- */
-typedef void (*two_close_cb)();
-
-/**
  * Stop the server as soon as possible
  *
  * This only stops the server from receiving more clients, it does not disconnect
  * already connected clients
  */
-void two_server_stop(two_close_cb close_cb);
+void two_server_stop(void (*close_cb)());
 
 
 #endif /* TWO_H */

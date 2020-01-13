@@ -34,15 +34,11 @@ void cleanup(int sig)
     two_server_stop(on_server_close);
 }
 
-int send_text(char *method, char *uri, uint8_t *response, int maxlen)
+int hello_world(char *method, char *uri, uint8_t *response, int maxlen)
 {
     (void)method;
     (void)uri;
-    if (maxlen < 16) {
-        memcpy(response, "", 0);
-        return 0;
-    }
-    memcpy(response, "hello world!!!\n", 16);
+    memcpy(response, "hello world!!!\n", maxlen);
     return 16;
 }
 
@@ -75,12 +71,9 @@ int main(int argc, char **argv)
 #endif
 
     // Register resource
-    if (two_register_resource("GET", "/index", &send_text) < 0) {
-        FATAL("Failed to register resource /index");
-    }
-
+    two_register_resource("GET", "/", &hello_world);
     if (two_server_start(port) < 0) {
-        FATAL("Failed to start server");
+        ERROR("Failed to start server");
     }
 
 #ifdef CONTIKI
