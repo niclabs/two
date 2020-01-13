@@ -253,23 +253,6 @@ void test_bytes_to_uint16_65535(void){
     uint32_t result = bytes_to_uint16(bytes);
     TEST_ASSERT_EQUAL(expected,result);
 }
-void test_append_byte_arrays(void){
-    uint8_t bytes_1[2] = {255, 255};
-    uint8_t bytes_2[3] = {128, 0, 1};
-    uint8_t result[5];
-    int total_length = append_byte_arrays(result, bytes_1, bytes_2, 2, 3);
-
-
-    TEST_ASSERT_EQUAL(5,total_length);
-
-    TEST_ASSERT_EQUAL(bytes_1[0],result[0]);
-    TEST_ASSERT_EQUAL(bytes_1[1],result[1]);
-    TEST_ASSERT_EQUAL(bytes_2[0],result[2]);
-    TEST_ASSERT_EQUAL(bytes_2[1],result[3]);
-    TEST_ASSERT_EQUAL(bytes_2[2],result[4]);
-
-
-}
 
 int main(void)
 {
@@ -308,8 +291,6 @@ int main(void)
 
     UNIT_TEST(test_bytes_to_uint16_0);
     UNIT_TEST(test_bytes_to_uint16_65535);
-
-    UNIT_TEST(test_append_byte_arrays);
 
     return UNIT_TESTS_END();
 }
