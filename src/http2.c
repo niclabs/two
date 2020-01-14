@@ -582,9 +582,6 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
         return -1;
     }
 
-    // reuse the stream buffer
-    uint32_t len = stream->buflen;
-
     // handle request at end headers
     // data frames are ignored
     // prepare http request
@@ -597,8 +594,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
                            .path = headers_get(&header_list, ":path"),
                            .headers = { .len = headers_size, .list = headers } };
 
-    char response[HTTP2_STREAM_BUF_SIZE];
-    http_response_t res = { .body = response };
+    http_response_t res = { .body = (char *)stream->buf };
     http_handle_request(&req, &res, HTTP2_STREAM_BUF_SIZE);
 
     // prepare HTTP2 headers
@@ -616,13 +612,15 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     snprintf(strLen, 10, "%d", res.content_length);
     headers_set(&header_list, "content-length", strLen);
 
-    // Copy response data to stream buffer
-    memcpy(stream->buf, response, res.content_length);
-    ctx->stream.buflen = res.content_length;
+    // Response data goes to the stream buffer
+    stream->buflen = res.content_length;
 
     // send headers
-    send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table,
-                       stream->id, len > 0, close_on_write_error);
+    if (send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table,
+                       stream->id, stream->buflen > 0, close_on_write_error) < 0) {
+        http2_error(ctx, HTTP2_INTERNAL_ERROR);
+        return -1;
+    }
 
     // send data
     http2_continue_send(ctx, stream);
@@ -660,7 +658,7 @@ int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *da
     // start sending data
     if (!(ctx->flags & HTTP2_FLAGS_WAITING_END_HEADERS) &&
         !(ctx->flags & HTTP2_FLAGS_WAITING_END_STREAM)) {
-        handle_end_stream(ctx, &ctx->stream);
+        return handle_end_stream(ctx, &ctx->stream);
     }
     return 0;
 }
