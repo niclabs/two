@@ -71,6 +71,9 @@ void hpack_init(hpack_dynamic_table_t *dynamic_table, uint32_t settings_max_tabl
 {
     #if HPACK_INCLUDE_DYNAMIC_TABLE
     hpack_tables_init_dynamic_table(dynamic_table, settings_max_table_size);
+    #else
+    (void)settings_max_table_size;
+    (void)dynamic_table;
     #endif
 }
 
@@ -80,5 +83,8 @@ void hpack_dynamic_change_max_size(hpack_dynamic_table_t *dynamic_table, uint32_
           dynamic_table->settings_max_table_size = incoming_max_table_size;
           hpack_tables_dynamic_table_resize(dynamic_table, incoming_max_table_size);
         }
+    #else
+    (void)incoming_max_table_size;
+    (void)dynamic_table;
     #endif
 }

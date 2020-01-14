@@ -386,6 +386,8 @@ int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynami
     }
     return hpack_utils_encoded_integer_size(encoded_header->dynamic_table_size, hpack_utils_find_prefix_size(encoded_header->preamble));
     #else
+    (void)dynamic_table;
+    (void)encoded_header;
     return INTERNAL_ERROR;
     #endif
 }

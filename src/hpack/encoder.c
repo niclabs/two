@@ -440,7 +440,10 @@ int hpack_encoder_encode_dynamic_size_update(hpack_dynamic_table_t *dynamic_tabl
     encoded_buffer[0] |= preamble;
 
     return encoded_max_size_length;
-#else
+    #else
+    (void)dynamic_table;
+    (void)max_size;
+    (void)encoded_buffer;
     DEBUG("Trying to resize dynamic table while in No dynamic table mode");
     return -2;
 #endif
