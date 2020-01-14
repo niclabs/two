@@ -13,8 +13,6 @@ PROJECT_SOURCEFILES=two.c \
 					cbuf.c \
 					event.c \
 					headers.c \
-					http.c \
-				 	resource_handler.c \
 					utils.c \
 					frames.c \
 					hpack.c \

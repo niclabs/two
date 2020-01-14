@@ -1,6 +1,3 @@
-#include <string.h>
-#include <stdio.h>
-
 #if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
 #include <stdlib.h>
 #include <signal.h>
@@ -11,8 +8,6 @@
 #endif
 
 #include "two.h"
-
-#define LOG_LEVEL LOG_LEVEL_INFO
 #include "logging.h"
 
 #ifdef CONTIKI
@@ -30,17 +25,20 @@ void on_server_close()
 void cleanup(int sig)
 {
     (void)sig;
-    INFO("Ctrl-C received, closing server");
+    PRINTF("Ctrl-C received, closing server\n");
     two_server_stop(on_server_close);
 }
 
-int hello_world(char *method, char *uri, uint8_t *response, int maxlen)
+int hello_world(char *method, char *uri, char *response, unsigned int maxlen)
 {
     (void)method;
     (void)uri;
 
-    int len = maxlen < 16 ? maxlen: 16;
-    memcpy(response, "hello world!!!\n", len);
+    char *msg = "Hello, World!!!";
+    int len = MIN(strlen(msg), maxlen);
+
+    // Copy the response
+    memcpy(response, msg, len);
     return len;
 }
 
@@ -73,7 +71,7 @@ int main(int argc, char **argv)
 #endif
 
     // Register resource
-    two_register_resource("GET", "/", &hello_world);
+    two_register_resource("GET", "/", "text/plain", hello_world);
     if (two_server_start(port) < 0) {
         ERROR("Failed to start server");
     }

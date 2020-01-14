@@ -1,7 +1,38 @@
 #ifndef TWO_H
 #define TWO_H
 
-#include "resource_handler.h"
+
+#undef MIN
+#define MIN(a,b) ((a) < (b)) ? (a) : (b)
+
+#ifdef CONFIG_TWO_MAX_RESOURCES
+#define TWO_MAX_RESOURCES (CONFIG_TWO_MAX_RESOURCES)
+#else
+#define TWO_MAX_RESOURCES (8)
+#endif
+
+#ifdef CONFIG_TWO_MAX_PATH_SIZE
+#define TWO_MAX_PATH_SIZE (CONFIG_TWO_MAX_PATH_SIZE)
+#else
+#define TWO_MAX_PATH_SIZE (32)
+#endif
+
+// 1-byte aligned data
+#pragma pack(push, 1)
+
+
+// Defines a resource handler method
+// 
+typedef int (*two_resource_handler_t) (char *method, char *uri, char *response, unsigned int maxlen);
+
+typedef struct {
+    char path[TWO_MAX_PATH_SIZE];
+    char method[8];
+    char content_type[32];
+    two_resource_handler_t handler;
+} two_resource_t;
+
+#pragma pack(pop)
 
 /*
  * Given a port number, this function start a server
@@ -28,14 +59,15 @@ int two_server_start(unsigned int port);
  * Attempting to define a malformed path, or a path for an unsupported method
  * will result in an error return
  * 
- * @param   method      HTTP method for the resource
- * @param   path        Path string, as described above
- * @param   handler     Callback handler
+ * @param   method          HTTP method for the resource
+ * @param   path            Path string, as described above
+ * @param   content_type    A IANA valid content type string in the form <type>/<subtype>
+ * @param   handler         Callback handler
  *
  * @return  0           if ok 
  * @return  -1          if error
  */
-int two_register_resource(char *method, char *path, http_resource_handler_t handler);
+int two_register_resource(char *method, char *path, char *content_type, two_resource_handler_t handler);
 
 
 /**

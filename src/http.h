@@ -7,7 +7,7 @@
 /***********************************************
 * Data buffer struct
 ***********************************************/
-#define HTTP_MAX_VALUE_SIZE (32)
+#define HTTP_MAX_CONTENT_TYPE_SIZE (32)
 
 typedef struct http_header {
     char *name;
@@ -30,7 +30,7 @@ typedef struct http_response {
     int status;
 
     // value of the Content-Type header
-    char content_type[HTTP_MAX_VALUE_SIZE];
+    char content_type[HTTP_MAX_CONTENT_TYPE_SIZE];
 
     // Length of HTTP response in bytes
     int content_length;
@@ -59,6 +59,16 @@ void http_handle_request(http_request_t * req, http_response_t *res, unsigned in
  * @returns 1 if the method is supported by the implementation, 0 if not
  */
 int http_has_method_support(char *method);
+
+/**
+ * Generate an HTTP error response from the server
+ *
+ * @param res already allocated http response. The response body must be a buffer with maxlen size
+ * @param code HTTP error code for the response
+ * @param msg error message for the response. It can be NULL
+ * @param maxlen, maximum size of the http body
+ * */
+void http_error(http_response_t *res, int code, char *msg, unsigned int maxlen);
 
 
 #endif /* HTTP_H */
