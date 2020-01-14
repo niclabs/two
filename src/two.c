@@ -114,9 +114,9 @@ static void on_new_connection(event_sock_t *server, int status)
 /*
  * Get a resource handler for the given path
  */
-two_resource_t * find_resource(char *method, char *path)
+two_resource_t *find_resource(char *method, char *path)
 {
-    two_resource_t * res;
+    two_resource_t *res;
 
     for (int i = 0; i < server_resources_size; i++) {
         res = &server_resources[i];
@@ -180,7 +180,7 @@ void http_handle_request(http_request_t *req, http_response_t *res, unsigned int
     parse_uri(req->path, path, NULL);
 
     // find callback for resource
-    two_resource_t * uri_resource;
+    two_resource_t *uri_resource;
     if ((uri_resource = find_resource(req->method, path)) == NULL) {
         http_error(res, 404, "Not Found", maxlen);
         goto end;
@@ -206,9 +206,7 @@ end:
     DEBUG("%s %s HTTP/2.0", req->method, req->path);
     for (int i = 0; i < (signed)req->headers.len; i++) {
         http_header_t *header = &req->headers.list[i];
-        if (header->name[0] != ':') {
-            DEBUG("%s: %s", header->name, header->value);
-        }
+        DEBUG("%s: %s", header->name, header->value);
     }
     DEBUG("HTTP/2.0 %d", res->status);
     DEBUG("Content-Type: %s", res->content_type);
