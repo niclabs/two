@@ -145,7 +145,7 @@ int send_headers_frame(event_sock_t *socket,
                        event_write_cb cb)
 {
     uint8_t encoded_bytes[FRAMES_MAX_BUFFER_SIZE];
-    int size = hpack_encode(dynamic_table, headers_list, encoded_bytes);
+    int size = hpack_encode(dynamic_table, headers_list, encoded_bytes, FRAMES_MAX_BUFFER_SIZE);
 
     if (size < 0) { //Error
         return size;

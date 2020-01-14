@@ -36,9 +36,12 @@ int hpack_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, in
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int hpack_encode(hpack_dynamic_table_t *dynamic_table, header_list_t *headers_out,  uint8_t *encoded_buffer)
+int hpack_encode(hpack_dynamic_table_t *dynamic_table,
+                 header_list_t *headers_out,
+                 uint8_t *encoded_buffer,
+                 uint32_t buffer_size)
 {
-    return hpack_encoder_encode(dynamic_table,  headers_out, encoded_buffer);
+    return hpack_encoder_encode(dynamic_table,  headers_out, encoded_buffer, buffer_size);
 }
 
 /*

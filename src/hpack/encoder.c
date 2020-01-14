@@ -125,7 +125,7 @@ int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *enco
  * Output:
  *      returns the size in octets(bytes) of the encoded string
  */
-int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
+int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string, uint32_t buffer_size)
 {
     uint32_t str_length = (uint32_t)strlen(str);
     int encoded_string_length_size = hpack_encoder_encode_integer(str_length, 7,
@@ -136,7 +136,7 @@ int hpack_encoder_encode_non_huffman_string(char *str, uint8_t *encoded_string)
         return -1;
     }
 
-    if (str_length + encoded_string_length_size >= CONFIG_MAX_HBF_BUFFER) {
+    if (str_length + encoded_string_length_size >= buffer_size) {
         DEBUG("String too big, does not fit on the encoded_string");
         return -2;
     }
@@ -184,7 +184,7 @@ uint32_t hpack_encoder_encode_huffman_word(char *str, uint32_t str_length, huffm
  * Output:
  *      returns the size (in bytes) of the compressed array.
  */
-int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
+int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string, uint32_t buffer_size)
 {
     uint32_t str_length = (uint32_t)strlen(str);  //TODO check if strlen is ok to use here
     huffman_encoded_word_t encoded_words[str_length];
@@ -201,7 +201,7 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
         return -1;
     }
 
-    if (encoded_word_byte_length + encoded_word_length_size >= CONFIG_MAX_HBF_BUFFER) {
+    if (encoded_word_byte_length + encoded_word_length_size >= buffer_size) {
         DEBUG("String too big, does not fit on the encoded_string");
         return -2;
     }
@@ -233,17 +233,17 @@ int hpack_encoder_encode_huffman_string(char *str, uint8_t *encoded_string)
  * Output:
  *      Return the number of bytes used to store the encoded string, or if the encoding fails it returns -1
  */
-int hpack_encoder_encode_string(char *str, uint8_t *encoded_string)
+int hpack_encoder_encode_string(char *str, uint8_t *encoded_string, uint32_t buffer_size)
 {
 #if (INCLUDE_HUFFMAN_COMPRESSION)
-    int rc = hpack_encoder_encode_huffman_string(str, encoded_string);
+    int rc = hpack_encoder_encode_huffman_string(str, encoded_string, buffer_size);
 
     if (rc < 0 || (uint32_t)rc > strlen(str)) {
-        return hpack_encoder_encode_non_huffman_string(str, encoded_string);
+        return hpack_encoder_encode_non_huffman_string(str, encoded_string, buffer_size);
     }
     return rc;
 #else
-    return hpack_encoder_encode_non_huffman_string(str, encoded_string);
+    return hpack_encoder_encode_non_huffman_string(str, encoded_string, buffer_size);
 #endif
 }
 
@@ -315,8 +315,11 @@ void hpack_encoder_pack_header(hpack_encoded_header_t *encoded_header, hpack_dyn
  * Output:
  *      Returns the number of bytes written in encoded_buffer
  */
-int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *name_string, char *value_string,
-                                uint8_t *encoded_buffer)
+int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header,
+                                char *name_string,
+                                char *value_string,
+                                uint8_t *encoded_buffer,
+                                uint32_t buffer_size)
 {
 
     int pointer = 0;
@@ -329,14 +332,14 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
     if (encoded_header->index == 0) {
         pointer += 1;
         //try to encode name
-        rc = hpack_encoder_encode_string(name_string, encoded_buffer + pointer);
+        rc = hpack_encoder_encode_string(name_string, encoded_buffer + pointer, buffer_size);
         if (rc < 0) {
             ERROR("Error while trying to encode name string");
             return rc;
         }
         pointer += rc;
         //try to encode value
-        rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer);
+        rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer, buffer_size);
         if (rc < 0) {
             ERROR("Error while trying to encode value string");
             return rc;
@@ -355,7 +358,7 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
         //If header is indexed_header field, nothing else is left to be done
         if (encoded_header->preamble != INDEXED_HEADER_FIELD) {
             //the value has to be written
-            rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer);
+            rc = hpack_encoder_encode_string(value_string, encoded_buffer + pointer, buffer_size);
             if (rc < 0) {
                 ERROR("Error while trying to encode value string");
                 return rc;
@@ -380,7 +383,10 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header, char *na
  * Output:
  *  Return the number of bytes written in encoded_buffer (the size of the encoded string) or -1 if it fails to encode
  */
-int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, header_list_t *headers_out, uint8_t *encoded_buffer)
+int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table,
+                         header_list_t *headers_out,
+                         uint8_t *encoded_buffer,
+                         uint32_t buffer_size)
 {
     int pointer = 0;
 
@@ -395,7 +401,11 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table, header_list_t *he
 
         hpack_encoder_pack_header(&encoded_header, dynamic_table, headers_array[i].name, headers_array[i].value);
         //finally encode header into buffer
-        int rc = hpack_encoder_encode_header(&encoded_header, headers_array[i].name, headers_array[i].value, encoded_buffer + pointer);
+        int rc = hpack_encoder_encode_header(&encoded_header,
+                                             headers_array[i].name,
+                                             headers_array[i].value,
+                                             encoded_buffer + pointer,
+                                             buffer_size);
 
         pointer += rc;
     }
