@@ -15,7 +15,7 @@
 #define CONFIG_MAX_HEADER_LIST_SIZE 512
 
 // HPACK macros
-#define CONFIG_INCLUDE_DYNAMIC_TABLE 0
+#define CONFIG_INCLUDE_DYNAMIC_TABLE 1
 
 // Logging per module
 #define ENABLE_LOG 0
