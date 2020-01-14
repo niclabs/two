@@ -205,8 +205,7 @@ void http_handle_request(http_request_t *req, http_response_t *res, unsigned int
 end:
     DEBUG("%s %s HTTP/2.0", req->method, req->path);
     for (int i = 0; i < (signed)req->headers.len; i++) {
-        http_header_t *header = &req->headers.list[i];
-        DEBUG("%s: %s", header->name, header->value);
+        DEBUG("%s: %s", req->headers.list[i].name, req->headers.list[i].value);
     }
     DEBUG("HTTP/2.0 %d", res->status);
     DEBUG("Content-Type: %s", res->content_type);
