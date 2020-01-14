@@ -137,8 +137,10 @@
 #endif
 
 // User messages
-#ifndef DISABLE_PRINTF
+#if !defined(DISABLE_PRINTF) && defined(CONTIKI)
 #define PRINTF(...) printf(__VA_ARGS__)
+#elif !defined(DISABLE_PRINTF)
+#define PRINTF(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define PRINTF(...)
 #endif
