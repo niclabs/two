@@ -589,6 +589,8 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     // data frames are ignored
     // prepare http request
     int headers_size = headers_count(&header_list);
+
+    // TODO: improve headers API
     http_header_t headers[headers_count(&header_list)];
     headers_get_all(&header_list, (header_t *)headers);
     http_request_t req = { .method = headers_get(&header_list, ":method"),
@@ -610,14 +612,13 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     // content type and length
     headers_set(&header_list, "content-type", res.content_type);
     
-    char strLen[6]; // TODO: verify number of digits from size
-    snprintf(strCode, 6, "%d", res.content_length);
+    char strLen[10]; // 10 digits to be safe
+    snprintf(strLen, 10, "%d", res.content_length);
     headers_set(&header_list, "content-length", strLen);
 
     // Copy response data to stream buffer
     memcpy(stream->buf, response, res.content_length);
     ctx->stream.buflen = res.content_length;
-
 
     // send headers
     send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table,
