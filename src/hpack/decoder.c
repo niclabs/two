@@ -47,7 +47,7 @@ int32_t hpack_decoder_decode_integer(const uint8_t *bytes, uint8_t prefix)
             if (!(bi & (uint8_t)128)) {
                 integer += (uint32_t)bi * ((uint32_t)1 << depth);
                 if (integer > HPACK_MAXIMUM_INTEGER) {
-                    DEBUG("Integer is %d:", integer);
+                    DEBUG("Integer is %u:", (unsigned int)integer);
                     return -1;
                 }
                 else {
@@ -668,7 +668,7 @@ int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_b
         }
     }
     if (pointer > header_block_size) {
-        DEBUG("Error decoding header block, read %d bytes and header_block_size is %d", pointer, header_block_size);
+        DEBUG("Error decoding header block, read %d bytes and header_block_size is %d", pointer, (int)header_block_size);
         return INTERNAL_ERROR;
     }
     return pointer;

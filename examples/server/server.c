@@ -38,8 +38,10 @@ int hello_world(char *method, char *uri, uint8_t *response, int maxlen)
 {
     (void)method;
     (void)uri;
-    memcpy(response, "hello world!!!\n", maxlen);
-    return 16;
+
+    int len = maxlen < 16 ? maxlen: 16;
+    memcpy(response, "hello world!!!\n", len);
+    return len;
 }
 
 

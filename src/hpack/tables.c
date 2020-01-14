@@ -355,7 +355,7 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
 {
     assert(dynamic_table != NULL);
     if (new_max_size > dynamic_table->settings_max_table_size) {
-        ERROR("Decoding Error: Resize operation exceeds the maximum size set by the protocol %d", dynamic_table->settings_max_table_size);
+        ERROR("Decoding Error: Resize operation exceeds the maximum size set by the protocol %u", (unsigned int)dynamic_table->settings_max_table_size);
         return PROTOCOL_ERROR;
     }
     //delete old entries to fit in new size
