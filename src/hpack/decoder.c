@@ -388,6 +388,7 @@ int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynami
     #else
     (void)dynamic_table;
     (void)encoded_header;
+    ERROR("Couldn't resize non-existent dynamic table, returning an INTERNAL_ERROR");
     return INTERNAL_ERROR;
     #endif
 }

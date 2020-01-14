@@ -16,7 +16,10 @@
 
 // HPACK macros
 #define CONFIG_INCLUDE_DYNAMIC_TABLE 1
-
+#if CONFIG_INCLUDE_DYNAMIC_TABLE == 0
+#undef CONFIG_HEADER_TABLE_SIZE
+#define CONFIG_HEADER_TABLE_SIZE 0
+#endif
 // Logging per module
 #define ENABLE_LOG 0
 #if ENABLE_LOG
