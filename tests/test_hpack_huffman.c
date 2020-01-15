@@ -161,7 +161,7 @@ void test_hpack_huffman_decode_random(void)
         encoded_word.length = lengths[i];
         uint8_t sym = 0;
         rs = hpack_huffman_decode(&encoded_word, &sym);
-        TEST_ASSERT_EQUAL(0, rs);
+        TEST_ASSERT_EQUAL(lengths[i], rs);
         TEST_ASSERT_EQUAL(expected_result[i], sym);
     }
 }
@@ -169,17 +169,16 @@ void test_hpack_huffman_decode_random(void)
 /*Test to check if decode return the same value twice*/
 void test_hpack_huffman_decode_twice(void)
 {
-    int8_t rs = -1;
 
-    (void)rs;
     huffman_encoded_word_t encoded_word = { .code = 0x66, .length = 7 };
+    pad_code(&encoded_word.code, encoded_word.length);
     uint8_t sym1 = 0;
     uint8_t sym2 = 0;
 
-    rs = hpack_huffman_decode(&encoded_word, &sym1);
-    TEST_ASSERT_EQUAL(0, rs);
+    int8_t rs = hpack_huffman_decode(&encoded_word, &sym1);
+    TEST_ASSERT_EQUAL(encoded_word.length, rs);
     rs = hpack_huffman_decode(&encoded_word, &sym2);
-    TEST_ASSERT_EQUAL(0, rs);
+    TEST_ASSERT_EQUAL(encoded_word.length, rs);
     TEST_ASSERT_EQUAL(sym1, sym2);
 
 }
@@ -187,32 +186,25 @@ void test_hpack_huffman_decode_twice(void)
 /*Test if symbol is not found by the decoder*/
 void test_hpack_huffman_decode_not_found(void)
 {
-    //TODO Fix test_hpack_huffman_decode_not_found
-    TEST_IGNORE();
-    int8_t rs = -1;
-
-    (void)rs;
     huffman_encoded_word_t encoded_word = { .code = 0xf0, .length = 8 };
+    pad_code(&encoded_word.code, encoded_word.length);
     uint8_t sym = 0;
     pad_code(&encoded_word.code, encoded_word.length);
-    rs = hpack_huffman_decode(&encoded_word, &sym);
-    TEST_ASSERT_EQUAL(-1, rs);
+    int8_t rc = hpack_huffman_decode(&encoded_word, &sym);
+    TEST_ASSERT_EQUAL(-1, rc);
 }
 
 /*Test to check if encoding and decoding can get the original symbol*/
 void test_hpack_huffman_encode_then_decode(void)
 {
-    int8_t rs = -1;
-
-    (void)rs;
     huffman_encoded_word_t result;
     uint8_t sym = -1;
     for (int i = 0; i < HUFFMAN_TABLE_SIZE; i++) {
-        rs = hpack_huffman_encode(&result, i);
-        TEST_ASSERT_EQUAL(0, rs);
+        int8_t rc = hpack_huffman_encode(&result, i);
+        TEST_ASSERT_EQUAL(0, rc);
         pad_code(&result.code, result.length);
-        rs = hpack_huffman_decode(&result, &sym);
-        TEST_ASSERT_EQUAL(0, rs);
+        rc = hpack_huffman_decode(&result, &sym);
+        TEST_ASSERT_EQUAL(result.length, rc);
         TEST_ASSERT_EQUAL(i, sym);
     }
 }
