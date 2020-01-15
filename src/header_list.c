@@ -1,14 +1,9 @@
 #include <strings.h>
 #include <string.h>
-#include <errno.h>
 #include <assert.h>
 
 #include "header_list.h"
-
 #include "config.h"
-
-#undef LOG_LEVEL
-#define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
 
 #undef MIN

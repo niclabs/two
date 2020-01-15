@@ -1,6 +1,3 @@
-/*
-   This API contains the methods in Resource Manager layer
- */
 #ifndef HTTP_H
 #define HTTP_H
 
