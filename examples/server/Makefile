@@ -12,7 +12,7 @@ PROJECTDIRS += $(SRC) $(SRC)/frames $(SRC)/hpack $(SRC)/http2
 PROJECT_SOURCEFILES=two.c \
 					cbuf.c \
 					event.c \
-					headers.c \
+					header_list.c \
 					utils.c \
 					frames.c \
 					hpack.c \
