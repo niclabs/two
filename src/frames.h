@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "event.h"
+#include "header_list.h"
 #include "hpack/hpack.h"
 
 /*Definition of max buffer size*/

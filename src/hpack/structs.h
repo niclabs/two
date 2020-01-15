@@ -4,7 +4,6 @@
 
 
 #include <stdint.h>             /* for int8_t, uint8_t, uint32_t, uint16_t*/
-#include "headers.h"            /* for MAX_HEADER_SETTINGS */
 #include "config.h"
 
 

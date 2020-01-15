@@ -7,7 +7,8 @@
 
 
 #include <stdint.h>             /* for uint8_t, uint32_t    */
-#include "headers.h"            /* for header_list_t    */
+
+#include "header_list.h"            /* for header_list_t    */
 #include "hpack/structs.h"      /* for hpack_states */
 
 
