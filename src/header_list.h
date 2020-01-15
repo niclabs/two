@@ -4,20 +4,33 @@
 #include "http.h"
 
 /**
- * Maximum header list size in bytes
- * This value must be taken into account by
- * http2 settings HEADER_LIST_MAX_SIZE
+ * Here a header list is defined as a structure that tries
+ * to maximize available memory when storing headers.
+ *
+ * It is implemented as an array where name-value pairs
+ * are separated by zeroes.
+ *
+ * When an add or set operation is performed on an existing
+ * header, the method removes the old name-value pair, splicing
+ * the memory, and appends the updated name-value pair at the 
+ * end of the array.
+ *
+ * Although moving memory may be expensive, it is expected
+ * to happen infrequently, so is a tradeoff taken for implementation
+ * simplicity.
+ *
+ * For the same reason, the header list cannot guarantee that the ordering 
+ * of insertion will be preserved
+ * */
+
+/**
+ * Maximum header list size in bytes. It is the value
+ * used by http2 MAX_HEADER_LIST_SIZE setting
  */
 #ifdef CONFIG_HTTP2_MAX_HEADER_LIST_SIZE
 #define HEADER_LIST_MAX_SIZE (CONFIG_HTTP2_MAX_HEADER_LIST_SIZE)
 #else
 #define HEADER_LIST_MAX_SIZE (512)
-#endif
-
-#ifdef CONFIG_HEADER_LIST_PADDING
-#define HEADER_LIST_PADDING (CONFIG_HEADER_LIST_PADDING)
-#else
-#define HEADER_LIST_PADDING (16)
 #endif
 
 /**

@@ -107,7 +107,7 @@ int header_list_append(header_list_t *headers, const char *name, const char *val
     unsigned int vlen = strlen(value);
 
     // not enough space left in the header list to append the new value
-    if (nlen + 1 + vlen + 1 >= (unsigned)(HEADER_LIST_MAX_SIZE - headers->size)) {
+    if (nlen + 1 + vlen + 1 > (unsigned)(HEADER_LIST_MAX_SIZE - headers->size)) {
         return -1;
     }
 
@@ -123,11 +123,7 @@ int header_list_append(header_list_t *headers, const char *name, const char *val
 
     // update size
     headers->size += nlen + 1 + vlen + 1;
-
-    // append padding bytes if possible
-    unsigned int padding = MIN(HEADER_LIST_PADDING, HEADER_LIST_MAX_SIZE - headers->size);
-    memset(ptr, 0, padding);
-    headers->size += padding;
+    DEBUG("newsize: %d", headers->size);
 
     // add a new entry
     headers->count += 1;
@@ -156,61 +152,45 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
 
     int end = start;
     char *ptr = headers->buffer + start;
-    int len = strnlen(ptr, headers->size - end);
+    
+    int nlen = strnlen(ptr, headers->size - end);
 
     // skip the name
-    end += len + 1;
-    ptr += len + 1;
+    end += nlen + 1;
+    ptr += nlen + 1;
 
     // get value and its length
     char *v = ptr;
-    len = strnlen(ptr, headers->size - end);
+    int vlen = strnlen(ptr, headers->size - end);
 
     // update the pointer
-    ptr += len;
-    end += len;
+    ptr += vlen + 1;
+    end += vlen + 1;
 
-    // get padding zeroes
-    unsigned int padding = 0;
-    while (*ptr == 0 && end < headers->size) {
-        end++;
-        ptr++;
-        padding++;
-    }
-
-    // if enough empty bytes to append value (+separating comma + ending zero)
-    // append immediately
-    if (strlen(value) + 1 + 1 < padding) {
-        v[len] = ',';
-
-        // append the value at the end
-        strncpy(v + len + 1, value, padding - 1);
-
-        return 0;
-    }
-    // else if there are enough bytes left in the array for the new value
-    // name + '\0' + existing_value + ',' + value + '\0' has to fit in the remainging array
-    else if (strlen(value) + 1 + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + padding)) {
-        // Create a new value
-        int newlen = len + 1 + strlen(value);
-        char newvalue[newlen + 1];
-        memcpy(newvalue, v, len);
-        newvalue[len] = ',';
-        memcpy(newvalue + len + 1, value, strlen(value));
-        newvalue[newlen] = 0;
-
-        // splice the memory from the array
-        header_list_splice(headers, start, end - start);
-
-        // update the number of entries
-        headers->count -= 1;
-
-        // append name and value at the end
-        return header_list_append(headers, name, newvalue);
-    }
-    else {
+    // if ',' + value + '\0' does not fit in the memory, return -1
+    if (1 + strlen(value) > (unsigned)(HEADER_LIST_MAX_SIZE - headers->size)) {
         return -1;
     }
+
+    // otherwise splice the existing name:value and reinsert 
+    int newlen = vlen + 1 + strlen(value);
+    char newvalue[newlen + 1];
+
+    // copy the old value
+    memcpy(newvalue, v, vlen);
+    
+    // add a separating ','
+    newvalue[vlen] = ',';
+
+    // copy the new value
+    memcpy(newvalue + vlen + 1, value, strlen(value));
+    newvalue[newlen] = 0;
+
+    // splice the memory from the array
+    header_list_splice(headers, start, end - start);
+    headers->count -= 1;
+
+    return header_list_append(headers, name, newvalue);
 }
 
 
@@ -234,66 +214,31 @@ int header_list_set(header_list_t *headers, const char *name, const char *value)
     }
 
     int end = start;
-
     char *ptr = headers->buffer + start;
-    int len = strnlen(ptr, headers->size - end);
+    
+    int nlen = strnlen(ptr, headers->size - end);
 
     // skip the name
-    end += len + 1;
-    ptr += len + 1;
+    end += nlen + 1;
+    ptr += nlen + 1;
 
-    // get value and its length
-    char *v = ptr;
-    len = strnlen(ptr, headers->size - end);
+    // get value length
+    int vlen = strnlen(ptr, headers->size - end);
 
     // update the pointer
-    ptr += len;
-    end += len;
+    ptr += vlen + 1;
+    end += vlen + 1;
 
-    // get padding zeroes
-    unsigned int padding = 0;
-    while (*ptr == 0 && end < headers->size) {
-        end++;
-        ptr++;
-        padding++;
-    }
-
-    // if enough empty bytes to fit the new value
-    // replace
-    unsigned int newlen = strlen(value);
-    unsigned int available = len + padding;
-    if (newlen + 1 < available) {
-        // replace the value
-        memcpy(v, value, available - 1);
-
-        // set the remaining memory to zero
-        memset(v + newlen, 0, available - newlen);
-
-        // compress padding if larger than the one defined
-        // by the constant
-        if (available - newlen > HEADER_LIST_PADDING + 1) {
-            unsigned int newend = newlen + 1 + HEADER_LIST_PADDING;
-            memmove(v + newend, v + newlen + padding, headers->size - end);
-            headers->size -= (available - newlen) - (HEADER_LIST_PADDING + 1);
-        }
-
-        return 0;
-    }
-    // else if there are enough bytes left in the array for the new value
-    // splice the array and append at the end
-    else if (strlen(value) + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + len + padding)) {
-        // splice the memory from the array
-        header_list_splice(headers, start, end - start);
-
-        // update the number of entries
-        headers->count -= 1;
-
-        // append name and value at the end
-        return header_list_append(headers, name, value);
-    }
-    else {
+    // if ',' + value + '\0' does not fit in the memory, return -1
+    if (1 + strlen(value) + 1 > (unsigned)(HEADER_LIST_MAX_SIZE - headers->size - vlen)) {
         return -1;
     }
+    
+    // splice the memory from the array
+    header_list_splice(headers, start, end - start);
+    headers->count -= 1;
+
+    return header_list_append(headers, name, value);
 }
 
 /*
