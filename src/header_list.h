@@ -20,19 +20,6 @@
 #define HEADER_LIST_PADDING (16)
 #endif
 
-#ifndef CONF_MAX_HEADER_NAME_LEN
-#define MAX_HEADER_NAME_LEN (16)
-#else
-#define MAX_HEADER_NAME_LEN (CONF_MAX_HEADER_NAME_LEN)
-#endif
-
-#ifndef CONF_MAX_HEADER_VALUE_LEN
-#define MAX_HEADER_VALUE_LEN (32)
-#else
-#define MAX_HEADER_VALUE_LEN (CONF_MAX_HEADER_VALUE_LEN)
-#endif
-
-
 /**
  * Data structure to store a header list
  *
