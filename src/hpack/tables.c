@@ -102,7 +102,7 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
         }
     }
     //ERROR("Dynamic table is not initialized right, don't have 0's between words");
-    return INTERNAL_ERROR;
+    return HPACK_INTERNAL_ERROR;
 }
 
 #endif
@@ -136,7 +136,7 @@ hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t i
     }
     //if copy failed
     //ERROR("Dynamic table is not used right, can't find ENDSTR in buffer");
-    return INTERNAL_ERROR;
+    return HPACK_INTERNAL_ERROR;
 
 }
 
@@ -205,7 +205,7 @@ int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table,
     }
     //if copy failed
     //ERROR("String given don't have ENDSTR");
-    return INTERNAL_ERROR;
+    return HPACK_INTERNAL_ERROR;
 
 }
 
@@ -229,7 +229,7 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
 
     if (dynamic_table->n_entries == 0) {
         ERROR("Trying to delete entry in dynamic table when it's empty");
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
 
     for (uint16_t i = 1; i < dynamic_table->max_size; i++) {
@@ -250,7 +250,7 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
         }
     }
     //ERROR("Dynamic table is not initialized right, don't have 0's between words");
-    return INTERNAL_ERROR;
+    return HPACK_INTERNAL_ERROR;
 }
 
 #endif
@@ -274,26 +274,26 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
     assert(dynamic_table != NULL);
     if (dynamic_table->n_entries < index - 61) { //CASE entry doesnt exist
         //ERROR("Decoding error: %d index is greater than the number of entries", index);
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
 
     int16_t initial_position = hpack_tables_dynamic_pos_of_index(dynamic_table, index);
     if (initial_position < 0) {
         DEBUG("Error at finding position in buffer");
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
 
     //first copy name
     initial_position = hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name);
     if (initial_position < 0) {
         DEBUG("Error while copying name into external buffer");
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
 
     //then copy value
     if (hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, value) < 0) {
         DEBUG("Error while copying value into external buffer");
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
 
     return 0;
@@ -319,19 +319,19 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
     assert(dynamic_table != NULL);
     if (dynamic_table->n_entries < index - 61) { //CASE entry doesnt exist
         //ERROR("Decoding error: %d index is greater than the number of entries", index);
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
 
     int16_t initial_position = hpack_tables_dynamic_pos_of_index(dynamic_table, index);
     if (initial_position < 0) {
         DEBUG("Error at finding position in buffer");
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
 
     //only copy name
     if (hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name) < 0) {
         DEBUG("Error while copying name into external buffer");
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
 
     return 0;
@@ -356,7 +356,7 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
     assert(dynamic_table != NULL);
     if (new_max_size > dynamic_table->settings_max_table_size) {
         ERROR("Decoding Error: Resize operation exceeds the maximum size set by the protocol %u", (unsigned int)dynamic_table->settings_max_table_size);
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
     //delete old entries to fit in new size
     while (dynamic_table->actual_size > new_max_size) {
@@ -454,7 +454,7 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
 
     if (entry_size > dynamic_table->max_size) {
         DEBUG("New entry size exceeds the size of table ");
-        return INTERNAL_ERROR; //entry's size exceeds the size of table
+        return HPACK_INTERNAL_ERROR; //entry's size exceeds the size of table
     }
 
     while (entry_size + dynamic_table->actual_size > dynamic_table->max_size) {
@@ -530,7 +530,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
         if (dynamic_table == NULL) {
             DEBUG("Dynamic table not initialized ");
-            return INTERNAL_ERROR;
+            return HPACK_INTERNAL_ERROR;
         }
         return hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
     }
@@ -600,7 +600,7 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     (void)dynamic_table;
 #endif
     DEBUG("Header with name '%s', and value '%s' not found", name, value);
-    return INTERNAL_ERROR;
+    return HPACK_INTERNAL_ERROR;
 }
 
 /*
@@ -652,7 +652,7 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
     (void)dynamic_table;
 #endif
     DEBUG("Header with name '%s'not found", name);
-    return INTERNAL_ERROR;
+    return HPACK_INTERNAL_ERROR;
 }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE

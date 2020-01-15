@@ -83,11 +83,12 @@ uint32_t hpack_decoder_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_
     uint16_t num_bytes = (uint16_t)(((number_of_bits_to_read + current_bit_pointer - 1u) / 8) - (current_bit_pointer / 8u) + 1u);
 
     uint8_t first_byte_mask = 255u;
+
     first_byte_mask >>= bit_offset;
 
     uint32_t code = (uint8_t)(first_byte_mask & buffer[byte_offset]);
     uint8_t last_bit_offset = (uint8_t)((8u * (num_bytes + byte_offset)) -
-                                       (current_bit_pointer + number_of_bits_to_read));
+                                        (current_bit_pointer + number_of_bits_to_read));
 
     if (num_bytes == 1) {
         code >>= last_bit_offset;
@@ -121,7 +122,7 @@ uint32_t hpack_decoder_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_
  *      returns 0 if padding of last byte is correct, if it fails throws an error.
  */
 
-int32_t hpack_decoder_check_huffman_padding(uint8_t bits_left, const uint8_t *encoded_buffer, uint32_t str_length)
+hpack_error_t hpack_decoder_check_huffman_padding(uint8_t bits_left, const uint8_t *encoded_buffer, uint32_t str_length)
 {
     //uint8_t bits_left = (uint8_t)(8 * str_length - bit_position);
     uint8_t last_byte = encoded_buffer[str_length - 1];
@@ -129,12 +130,12 @@ int32_t hpack_decoder_check_huffman_padding(uint8_t bits_left, const uint8_t *en
     if (bits_left < 8) {
         uint8_t mask = (uint8_t)((1u << bits_left) - 1u); /*padding of encoding*/
         if ((last_byte & mask) == mask) {
-            return 0;
+            return HPACK_NO_ERROR;
         }
         else {
             DEBUG("Last byte is %d", last_byte);
             ERROR("Decoding error: The compressed header padding contains a value different from the EOS symbol");
-            return PROTOCOL_ERROR;
+            return HPACK_COMPRESSION_ERROR;
         }
     }
     else {
@@ -142,10 +143,10 @@ int32_t hpack_decoder_check_huffman_padding(uint8_t bits_left, const uint8_t *en
         uint8_t mask = 255u;
         if (last_byte == mask) {
             ERROR("Decoding error: The compressed header has a padding greater than 7 bits");
-            return PROTOCOL_ERROR;
+            return HPACK_COMPRESSION_ERROR;
         }
         DEBUG("Couldn't decode string in hpack_decoder_decode_huffman_string");
-        return INTERNAL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
 }
 
@@ -216,13 +217,19 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, ui
  *      Stores the decompressed version of encoded_string in str if successful and returns the number of bytes read
  *      of encoded_string, if it fails to decode the string the return value is -1
  */
-int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, uint32_t str_length)
+int32_t hpack_decoder_decode_huffman_string(char *str,
+                                            uint32_t str_length,
+                                            uint8_t *encoded_string,
+                                            uint32_t encoded_str_length)
 {
-    uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
+    uint32_t str_length_size = hpack_utils_encoded_integer_size(encoded_str_length, 7);
     uint16_t bit_position = 0;
 
-    for (uint16_t i = 0; ((bit_position - 1) / 8) < (int32_t)str_length; i++) {
-        int32_t word_length = hpack_decoder_decode_huffman_word(str + i, encoded_string, str_length, bit_position);
+    for (uint16_t i = 0; ((bit_position - 1) / 8) < (int32_t)encoded_str_length; i++) {
+        if (str_length < i) {
+            return HPACK_MEMORY_ERROR;
+        }
+        int32_t word_length = hpack_decoder_decode_huffman_word(str + i, encoded_string, encoded_str_length, bit_position);
         if (word_length == 0) {
             break;
         }
@@ -231,7 +238,7 @@ int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, 
         }
         bit_position += word_length;
     }
-    return str_length + str_length_size;
+    return encoded_str_length + str_length_size;
 }
 #endif
 
@@ -245,14 +252,20 @@ int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, 
  * Output:
  *      return the number of bytes written in str if successful or -1 otherwise
  */
-int32_t hpack_decoder_decode_non_huffman_string(char *str, const uint8_t *encoded_string, uint32_t str_length)
+int32_t hpack_decoder_decode_non_huffman_string(char *str,
+                                                uint32_t str_length,
+                                                uint8_t *encoded_string,
+                                                uint32_t encoded_str_length)
 {
-    uint32_t str_length_size = hpack_utils_encoded_integer_size(str_length, 7);
+    uint32_t str_length_size = hpack_utils_encoded_integer_size(encoded_str_length, 7);
 
-    for (uint32_t i = 0; i < str_length; i++) {
+    if (encoded_str_length > str_length) {
+        return HPACK_MEMORY_ERROR;
+    }
+    for (uint32_t i = 0; i < encoded_str_length; i++) {
         str[i] = (char)encoded_string[i];
     }
-    return str_length + str_length_size;
+    return encoded_str_length + str_length_size;
 }
 
 /*
@@ -266,18 +279,22 @@ int32_t hpack_decoder_decode_non_huffman_string(char *str, const uint8_t *encode
  *      Returns the number of bytes read from encoded_buffer in the decoding process if successful,
  *      if the process fails the function returns -1
  */
-int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t length, uint8_t huffman_bit)
+int32_t hpack_decoder_decode_string(char *str,
+                                    uint32_t str_length,
+                                    uint8_t *encoded_buffer,
+                                    uint32_t encoded_buffer_length,
+                                    uint8_t huffman_bit)
 {
     if (huffman_bit) {
 #if (INCLUDE_HUFFMAN_COMPRESSION)
-        return hpack_decoder_decode_huffman_string(str, encoded_buffer, length);
+        return hpack_decoder_decode_huffman_string(str, str_length, encoded_buffer, encoded_buffer_length);
 #else
         ERROR("Not implemented: Cannot decode a huffman compressed header");
         return INTERNAL_ERROR;
 #endif
     }
     else {
-        return hpack_decoder_decode_non_huffman_string(str, encoded_buffer, length);
+        return hpack_decoder_decode_non_huffman_string(str, str_length, encoded_buffer, encoded_buffer_length);
     }
 }
 
@@ -289,7 +306,7 @@ int32_t hpack_decoder_decode_string(char *str, uint8_t *encoded_buffer, uint32_t
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char* tmp_name, char* tmp_value)
+int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char *tmp_name, char *tmp_value)
 {
     int pointer = 0;
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table,
@@ -315,7 +332,10 @@ int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_tab
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header,char *  tmp_name, char* tmp_value)
+int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_table,
+                                              hpack_encoded_header_t *encoded_header,
+                                              char *tmp_name,
+                                              char *tmp_value)
 {
     int pointer = 0;
 
@@ -324,6 +344,7 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
         pointer += 1;
         DEBUG("Decoding a new name compressed header");
         int32_t rc = hpack_decoder_decode_string(tmp_name,
+                                                 HPACK_HEADER_NAME_LEN,
                                                  encoded_header->name_string,
                                                  encoded_header->name_length,
                                                  encoded_header->huffman_bit_of_name);
@@ -339,15 +360,20 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
         int8_t rc = hpack_tables_find_entry_name(dynamic_table,
                                                  encoded_header->index,
                                                  tmp_name);
-        DEBUG("RC IS %d",rc);
+        DEBUG("RC IS %d", rc);
         if (rc < 0) {
             DEBUG("Error en find_entry ");
             return rc;
         }
-        pointer += hpack_utils_encoded_integer_size(encoded_header->index, hpack_utils_find_prefix_size(encoded_header->preamble));
+        pointer += hpack_utils_encoded_integer_size(encoded_header->index,
+                                                    hpack_utils_find_prefix_size(encoded_header->preamble));
     }
 
-    int32_t rc = hpack_decoder_decode_string(tmp_value, encoded_header->value_string, encoded_header->value_length, encoded_header->huffman_bit_of_value);
+    int32_t rc = hpack_decoder_decode_string(tmp_value,
+                                             HPACK_HEADER_VALUE_LEN,
+                                             encoded_header->value_string,
+                                             encoded_header->value_length,
+                                             encoded_header->huffman_bit_of_value);
     if (rc < 0) {
         DEBUG("Error while trying to decode string in hpack_decoder_decode_literal_header_field_never_indexed");
         return rc;
@@ -427,7 +453,7 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
     /*Integer exceed implementations limits*/
     if (index < 0) {
         ERROR("Integer exceeds implementations limits");
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
     encoded_header->index = (uint32_t)index;
     int32_t index_size = hpack_utils_encoded_integer_size(encoded_header->index,  hpack_utils_find_prefix_size(encoded_header->preamble));
@@ -446,7 +472,7 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
     /*Bytes read exceeded the header block size specified  at the beginning*/
     if (pointer > header_size) {
         ERROR("Bytes read exceeded the header block size specified  at the beginning");
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
 
     if (encoded_header->index == 0) {
@@ -456,14 +482,14 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
         /*Integer exceed implementations limits*/
         if (name_length < 0) {
             ERROR("Integer exceeds implementations limits");
-            return PROTOCOL_ERROR;
+            return HPACK_COMPRESSION_ERROR;
         }
         encoded_header->name_length = (uint32_t)name_length;
         pointer += hpack_utils_encoded_integer_size(encoded_header->name_length, 7);
         /*Bytes read exceeded the header block size specified  at the beginning*/
         if (pointer > header_size) {
             ERROR("Bytes read exceeded the header block size specified  at the beginning");
-            return PROTOCOL_ERROR;
+            return HPACK_COMPRESSION_ERROR;
         }
 
         encoded_header->name_string = &header_block[pointer];
@@ -471,7 +497,7 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
         /*Bytes read exceeded the header block size specified  at the beginning*/
         if (pointer > header_size) {
             ERROR("Bytes read exceeded the header block size specified  at the beginning");
-            return PROTOCOL_ERROR;
+            return HPACK_COMPRESSION_ERROR;
         }
     }
 
@@ -480,7 +506,7 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
     /*Integer exceed implementations limits*/
     if (value_length < 0) {
         ERROR("Integer exceeds implementations limits");
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
 
     encoded_header->value_length = (uint32_t)value_length;
@@ -488,14 +514,14 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
     /*Bytes read exceeded the header block size specified  at the beginning*/
     if (pointer > header_size) {
         ERROR("Bytes read exceeded the header block size specified  at the beginning");
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
     encoded_header->value_string = &header_block[pointer];
     pointer += encoded_header->value_length;
     /*Bytes read exceeded the header block size specified  at the beginning*/
     if (pointer > header_size) {
         ERROR("Bytes read exceeded the header block size specified  at the beginning");
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
     return pointer;
 }
@@ -511,7 +537,7 @@ int32_t hpack_decoder_parse_encoded_header(hpack_encoded_header_t *encoded_heade
  *      returns the amount of octets in which the pointer has moved to read all the headers
  *
  */
-int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char* tmp_name, char* tmp_value)
+int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char *tmp_name, char *tmp_value)
 {
     if (encoded_header->preamble == INDEXED_HEADER_FIELD) {
         DEBUG("Decoding an indexed header field");
@@ -529,7 +555,7 @@ int hpack_decoder_decode_header(hpack_dynamic_table_t *dynamic_table, hpack_enco
 
     else {
         ERROR("Error unknown preamble value: %d", encoded_header->preamble);
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
 }
 
@@ -552,7 +578,7 @@ int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
         uint32_t result = hpack_decoder_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
         if ((result & eos) == eos) {
             ERROR("Decoding Error: The compressed header contains the EOS Symbol");
-            return PROTOCOL_ERROR;
+            return HPACK_COMPRESSION_ERROR;
         }
     }
 
@@ -572,13 +598,13 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
     /*Row doesn't exist*/
     if (encoded_header->preamble == INDEXED_HEADER_FIELD && encoded_header->index == 0) {
         ERROR("Decoding Error: Cannot retrieve a 0 index from hpack tables");
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
 
     /*Integer exceed implementations limits*/
     if (encoded_header->preamble == DYNAMIC_TABLE_SIZE_UPDATE && encoded_header->dynamic_table_size > HPACK_MAXIMUM_INTEGER) {
         ERROR("Integer exceeds implementations limits");
-        return PROTOCOL_ERROR;
+        return HPACK_COMPRESSION_ERROR;
     }
 
     /*It's ok*/
@@ -649,7 +675,7 @@ int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_b
             if (!can_receive_dynamic_table_size_update) {
                 /*Error*/
                 ERROR("Received a dynamic table size update after receiving 1 or more headers");
-                return PROTOCOL_ERROR;
+                return HPACK_COMPRESSION_ERROR;
             }
         }
         pointer += bytes_read;
@@ -671,7 +697,7 @@ int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_b
     }
     if (pointer > header_block_size) {
         DEBUG("Error decoding header block, read %d bytes and header_block_size is %d", pointer, (int)header_block_size);
-        return INTERNAL_ERROR;
+        return HPACK_INTERNAL_ERROR;
     }
     return pointer;
 }

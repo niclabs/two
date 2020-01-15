@@ -72,8 +72,10 @@ hpack_dynamic_table_t;
 #pragma pack(pop)
 
 typedef enum __attribute__((__packed__)){
-    PROTOCOL_ERROR  = (int8_t) - 1,
-    INTERNAL_ERROR  = (int8_t) - 2
+    HPACK_NO_ERROR          = (int8_t)  0,
+    HPACK_COMPRESSION_ERROR = (int8_t) -1,
+    HPACK_INTERNAL_ERROR    = (int8_t) -2,
+    HPACK_MEMORY_ERROR      = (int8_t) -3
 } hpack_error_t;
 
 #endif

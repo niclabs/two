@@ -23,8 +23,10 @@
  * - buffer_size: Size of the buffer
  * output: 0 if the bits are stored correctly ; -1 if it fails because the size of the buffer is less than the required to store the result
  */
-int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words, uint32_t encoded_words_size,
-                                                 uint8_t *buffer, uint32_t buffer_size)
+int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded_words,
+                                                 uint32_t encoded_words_size,
+                                                 uint8_t *buffer,
+                                                 uint32_t buffer_size)
 {
     uint32_t sum = 0;
 
@@ -36,7 +38,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
 
     if (required_bytes > buffer_size) {
         ERROR("Buffer size is less than the required amount in hpack_encoder_pack_encoded_words_to_bytes");
-        return INTERNAL_ERROR;
+        return HPACK_MEMORY_ERROR;
     }
 
     uint32_t cur = 0;
@@ -351,7 +353,7 @@ int hpack_encoder_encode_header(hpack_encoded_header_t *encoded_header,
         rc = hpack_encoder_encode_integer(encoded_header->index, prefix, encoded_buffer + pointer);
         if (rc < 0) {
             ERROR("Integer exceeds implementation limits");
-            return PROTOCOL_ERROR; //TODO: Check this return of function hpack_pack_header
+            return HPACK_COMPRESSION_ERROR; //TODO: Check this return of function hpack_pack_header
         }
         pointer += rc;
 
