@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "event.h"
+#include "header_list.h"
 #include "hpack/hpack.h"
 
 /**
@@ -100,11 +101,7 @@
  * The macro CONFIG_HTTP2_MAX_HEADER_LIST_SIZE sets the local default for
  * MAX_HEADER_LIST_SIZE.
  */
-#ifndef CONFIG_HTTP2_MAX_HEADER_LIST_SIZE
-#define HTTP2_MAX_HEADER_LIST_SIZE (0xFFFFFFFF)
-#else
-#define HTTP2_MAX_HEADER_LIST_SIZE (CONFIG_MAX_HEADER_LIST_SIZE)
-#endif
+#define HTTP2_MAX_HEADER_LIST_SIZE (HEADER_LIST_MAX_SIZE)
 
 /**
  * The macro CONFIG_HTTP2_SOCK_READ_SIZE sets the maximum size of the
