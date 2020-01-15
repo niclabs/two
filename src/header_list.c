@@ -33,8 +33,9 @@ void header_list_reset(header_list_t *headers)
     headers->size = 0;
 }
 
+
 // return the position in the buffer of the given name
-int header_list_find(header_list_t *headers, const char *name)
+int header_list_index(header_list_t *headers, const char *name)
 {
     assert(headers != NULL);
     assert(name != NULL);
@@ -43,8 +44,7 @@ int header_list_find(header_list_t *headers, const char *name)
     char *ptr = headers->buffer;
     while (pos < headers->size) {
         int len = strnlen(ptr, headers->size - pos);
-
-        if (len == 0 || strncasecmp(name, ptr, len) == 0) {
+        if (strncasecmp(name, ptr, len) == 0) {
             return pos;
         }
 
@@ -64,7 +64,7 @@ int header_list_find(header_list_t *headers, const char *name)
             ++ptr;
         }
     }
-    return pos;
+    return -1;
 }
 
 // remove a portion of the array memory
@@ -91,14 +91,14 @@ void header_list_splice(header_list_t *headers, unsigned int start, unsigned int
  */
 char *header_list_get(header_list_t *headers, const char *name)
 {
-    int pos = header_list_find(headers, name);
+    int pos = header_list_index(headers, name);
+    if (pos < 0) {
+        return NULL;
+    }
+
     char *ptr = headers->buffer + pos;
     int len = strnlen(ptr, headers->size - pos);
-
-    if (len > 0 && strncasecmp(name, ptr, len) == 0) {
-        return ptr + len + 1;
-    }
-    return NULL;
+    return ptr + len + 1;
 }
 
 int header_list_append(header_list_t *headers, const char *name, const char *value)
@@ -149,71 +149,68 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
     assert(value != NULL);
 
     // go to the position for the name
-    int start = header_list_find(headers, name);
+    int start = header_list_index(headers, name);
+    if (start < 0) {
+        return header_list_append(headers, name, value);
+    }
+
     int end = start;
-
-
     char *ptr = headers->buffer + start;
     int len = strnlen(ptr, headers->size - end);
 
-    if (len > 0 && strncasecmp(name, ptr, len) == 0) {
-        // skip the name
-        end += len + 1;
-        ptr += len + 1;
+    // skip the name
+    end += len + 1;
+    ptr += len + 1;
 
-        // get value and its length
-        char *v = ptr;
-        len = strnlen(ptr, headers->size - end);
+    // get value and its length
+    char *v = ptr;
+    len = strnlen(ptr, headers->size - end);
 
-        // update the pointer
-        ptr += len;
-        end += len;
+    // update the pointer
+    ptr += len;
+    end += len;
 
-        // get padding zeroes
-        unsigned int padding = 0;
-        while (*ptr == 0 && end < headers->size) {
-            end++;
-            ptr++;
-            padding++;
-        }
-
-        // if enough empty bytes to append value (+separating comma + ending zero)
-        // append immediately
-        if (strlen(value) + 1 + 1 < padding) {
-            v[len] = ',';
-
-            // append the value at the end
-            strncpy(v + len + 1, value, padding - 1);
-
-            return 0;
-        }
-        // else if there are enough bytes left in the array for the new value
-        // name + '\0' + existing_value + ',' + value + '\0' has to fit in the remainging array
-        else if (strlen(value) + 1 + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + padding)) {
-            // Create a new value
-            int newlen = len + 1 + strlen(value);
-            char newvalue[newlen + 1];
-            memcpy(newvalue, v, len);
-            newvalue[len] = ',';
-            memcpy(newvalue + len + 1, value, strlen(value));
-            newvalue[newlen] = 0;
-
-            // splice the memory from the array
-            header_list_splice(headers, start, end - start);
-
-            // update the number of entries
-            headers->count -= 1;
-
-            // append name and value at the end
-            return header_list_append(headers, name, newvalue);
-        }
-        else {
-            return -1;
-        }
+    // get padding zeroes
+    unsigned int padding = 0;
+    while (*ptr == 0 && end < headers->size) {
+        end++;
+        ptr++;
+        padding++;
     }
 
-    // if we are here append at the end of the array
-    return header_list_append(headers, name, value);
+    // if enough empty bytes to append value (+separating comma + ending zero)
+    // append immediately
+    if (strlen(value) + 1 + 1 < padding) {
+        v[len] = ',';
+
+        // append the value at the end
+        strncpy(v + len + 1, value, padding - 1);
+
+        return 0;
+    }
+    // else if there are enough bytes left in the array for the new value
+    // name + '\0' + existing_value + ',' + value + '\0' has to fit in the remainging array
+    else if (strlen(value) + 1 + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + padding)) {
+        // Create a new value
+        int newlen = len + 1 + strlen(value);
+        char newvalue[newlen + 1];
+        memcpy(newvalue, v, len);
+        newvalue[len] = ',';
+        memcpy(newvalue + len + 1, value, strlen(value));
+        newvalue[newlen] = 0;
+
+        // splice the memory from the array
+        header_list_splice(headers, start, end - start);
+
+        // update the number of entries
+        headers->count -= 1;
+
+        // append name and value at the end
+        return header_list_append(headers, name, newvalue);
+    }
+    else {
+        return -1;
+    }
 }
 
 
@@ -231,73 +228,72 @@ int header_list_set(header_list_t *headers, const char *name, const char *value)
     assert(value != NULL);
 
     // go to the position for the name
-    int start = header_list_find(headers, name);
+    int start = header_list_index(headers, name);
+    if (start < 0) {
+        return header_list_append(headers, name, value);
+    }
+
     int end = start;
 
     char *ptr = headers->buffer + start;
     int len = strnlen(ptr, headers->size - end);
 
-    if (len > 0 && strncasecmp(name, ptr, len) == 0) {
-        // skip the name
-        end += len + 1;
-        ptr += len + 1;
+    // skip the name
+    end += len + 1;
+    ptr += len + 1;
 
-        // get value and its length
-        char *v = ptr;
-        len = strnlen(ptr, headers->size - end);
+    // get value and its length
+    char *v = ptr;
+    len = strnlen(ptr, headers->size - end);
 
-        // update the pointer
-        ptr += len;
-        end += len;
+    // update the pointer
+    ptr += len;
+    end += len;
 
-        // get padding zeroes
-        unsigned int padding = 0;
-        while (*ptr == 0 && end < headers->size) {
-            end++;
-            ptr++;
-            padding++;
-        }
-
-        // if enough empty bytes to fit the new value
-        // replace
-        unsigned int newlen = strlen(value);
-        unsigned int available = len + padding;
-        if (newlen + 1 < available) {
-            // replace the value
-            memcpy(v, value, available - 1);
-            
-            // set the remaining memory to zero
-            memset(v + newlen, 0, available - newlen);
-
-            // compress padding if larger than the one defined
-            // by the constant
-            if (available - newlen > HEADER_LIST_PADDING + 1) {
-                unsigned int newend = newlen + 1 + HEADER_LIST_PADDING;
-                memmove(v + newend, v + newlen + padding, headers->size - end);
-                headers->size -= (available - newlen) - (HEADER_LIST_PADDING + 1);
-            }
-
-            return 0;
-        }
-        // else if there are enough bytes left in the array for the new value
-        // splice the array and append at the end
-        else if (strlen(value) + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + len + padding)) {
-            // splice the memory from the array
-            header_list_splice(headers, start, end - start);
-            
-            // update the number of entries
-            headers->count -= 1;
-
-            // append name and value at the end
-            return header_list_append(headers, name, value);
-        }
-        else {
-            return -1;
-        }
+    // get padding zeroes
+    unsigned int padding = 0;
+    while (*ptr == 0 && end < headers->size) {
+        end++;
+        ptr++;
+        padding++;
     }
 
-    // if we are here append at the end of the array
-    return header_list_append(headers, name, value);
+    // if enough empty bytes to fit the new value
+    // replace
+    unsigned int newlen = strlen(value);
+    unsigned int available = len + padding;
+    if (newlen + 1 < available) {
+        // replace the value
+        memcpy(v, value, available - 1);
+
+        // set the remaining memory to zero
+        memset(v + newlen, 0, available - newlen);
+
+        // compress padding if larger than the one defined
+        // by the constant
+        if (available - newlen > HEADER_LIST_PADDING + 1) {
+            unsigned int newend = newlen + 1 + HEADER_LIST_PADDING;
+            memmove(v + newend, v + newlen + padding, headers->size - end);
+            headers->size -= (available - newlen) - (HEADER_LIST_PADDING + 1);
+        }
+
+        return 0;
+    }
+    // else if there are enough bytes left in the array for the new value
+    // splice the array and append at the end
+    else if (strlen(value) + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + len + padding)) {
+        // splice the memory from the array
+        header_list_splice(headers, start, end - start);
+
+        // update the number of entries
+        headers->count -= 1;
+
+        // append name and value at the end
+        return header_list_append(headers, name, value);
+    }
+    else {
+        return -1;
+    }
 }
 
 /*
@@ -325,7 +321,8 @@ unsigned int header_list_size(header_list_t *headers)
     return headers->size;
 }
 
-http_header_t * header_list_all(header_list_t *headers, http_header_t * hlist) {
+http_header_t *header_list_all(header_list_t *headers, http_header_t *hlist)
+{
     assert(headers != NULL);
 
     int pos = 0;
@@ -337,7 +334,7 @@ http_header_t * header_list_all(header_list_t *headers, http_header_t * hlist) {
         if (len == 0) {
             return hlist;
         }
-        
+
         // set the name pointer
         hlist[index].name = ptr;
 
