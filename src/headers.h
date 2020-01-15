@@ -1,13 +1,23 @@
 #ifndef HEADERS_H
 #define HEADERS_H
 
-#include <stdio.h>
-#include <stdint.h>
+#include "http.h"
 
-#ifdef CONF_MAX_HEADER_BUFFER_SIZE
-#define MAX_HEADER_BUFFER_SIZE (CONF_MAX_HEADER_BUFFER_SIZE)
+/**
+ * Maximum header list size in bytes
+ * This value must be taken into account by
+ * http2 settings MAX_HEADER_LIST_SIZE
+ */
+#ifdef CONFIG_MAX_HEADER_LIST_SIZE
+#define MAX_HEADER_LIST_SIZE (CONFIG_MAX_HEADER_LIST_SIZE)
 #else
-#define MAX_HEADER_BUFFER_SIZE (256)
+#define MAX_HEADER_LIST_SIZE (512)
+#endif
+
+#ifdef CONFIG_HEADER_LIST_PADDING
+#define HEADER_LIST_PADDING (CONFIG_HEADER_LIST_PADDING)
+#else
+#define HEADER_LIST_PADDING (16)
 #endif
 
 #ifndef CONF_MAX_HEADER_NAME_LEN
@@ -23,16 +33,15 @@
 #endif
 
 
-#pragma pack(push, 1)
 /**
  * Data structure to store a header list
  *
  * Should not be used directly, use provided API methods
  */
 typedef struct {
-    char buffer[MAX_HEADER_BUFFER_SIZE];
-    uint16_t n_entries;
-    uint16_t size;
+    char buffer[MAX_HEADER_LIST_SIZE];
+    int count;
+    int size;
 } header_list_t;
 
 /**
@@ -44,8 +53,6 @@ typedef struct {
     char *value;
 } header_t;
 
-#pragma pack(pop)
-
 /**
  * Initialize header list with specified array and set list counter to zero
  * This function will reset provided memory
@@ -54,15 +61,7 @@ typedef struct {
  * @param hlist h pointer to header_t list
  * @return (void)
  */
-void headers_init(header_list_t *headers);
-
-/**
- * This function will reset header list
- *
- * @param headers headers data structure
- * @return (void)
- */
-void headers_clean(header_list_t *headers);
+void header_list_reset(header_list_t *headers);
 
 /**
  * Add a header to the list, if header already exists, concatenate value
@@ -74,7 +73,7 @@ void headers_clean(header_list_t *headers);
  * @param value header value
  * @return 0 if ok -1 if an error ocurred
  */
-int headers_add(header_list_t *headers, const char *name, const char *value);
+int header_list_add(header_list_t *headers, const char *name, const char *value);
 
 /**
  * Set the header for a given name, if the header is already set
@@ -85,7 +84,7 @@ int headers_add(header_list_t *headers, const char *name, const char *value);
  * @param value header value
  * @return 0 if ok -1 if an error ocurred
  */
-int headers_set(header_list_t *headers, const char *name, const char *value);
+int header_list_set(header_list_t *headers, const char *name, const char *value);
 
 /**
  * Get a pointere to the value of the header with name 'name'
@@ -94,48 +93,27 @@ int headers_set(header_list_t *headers, const char *name, const char *value);
  * @param name name of the header to search
  * @return value header value of the header with name 'name' or NULL if error
  * */
-char *headers_get(header_list_t *headers, const char *name);
+char *header_list_get(header_list_t *headers, const char *name);
+
 
 /**
- * Checks all headers for validity.
+ * Return size of the header list for http/2
+ */
+unsigned int header_list_size(header_list_t *headers);
+
+/**
+ * Return the number of header,value pairs in the list
+ */
+unsigned int header_list_count(header_list_t *headers);
+
+/**
+ * Convert the header list to a an array of http_header_t structs
  *
- * There shouldn't be any ommited values, nor any duplicated ones.
- *
- * @param headers headers list data structure
- * @return 0 if ok -1 if validation failed
- * */
-int headers_validate(header_list_t *headers);
-
-/**
- * Return total number of headers in the header list
+ * This function simply sets the values for (name, value) pointers inside
+ * the to the respective memory location inside the header list. If the header
+ * list is modified after this call, the value pointed by the elements in the array 
+ * WILL change
  */
-int headers_count(header_list_t *headers);
-
-/**
- * Return header name from header in the position given by index
- */
-char *headers_get_name_from_index(header_list_t *headers, int index);
-
-/**
- * Return header value from header in the position given by index
- */
-char *headers_get_value_from_index(header_list_t *headers, int index);
-
-/**
- * Calculate size of header list for http/2
- */
-uint32_t headers_get_header_list_size(header_list_t *headers);
-
-/**
- * Copy pointers to headers into a array of header_t
- * This makes iterating through headers easier
- *
- * @param headers headers list data structure
- * @param headers_array header array that stores name and value of each ones as pointers to the buffer
- *
- * @return (void)
- */
-void headers_get_all(header_list_t *headers, header_t *headers_array);
-
+http_header_t * header_list_all(header_list_t *headers, http_header_t * hlist);
 
 #endif

@@ -392,11 +392,12 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table,
 {
     int pointer = 0;
 
-    header_t headers_array[headers_count(headers_out)];
+    int count = header_list_count(headers_out);
+    http_header_t headers_array[count];
 
-    headers_get_all(headers_out, headers_array);
+    header_list_all(headers_out, headers_array);
 
-    for (int32_t i = 0; i < headers_count(headers_out); i++) {
+    for (int32_t i = 0; i < count ; i++) {
 //
         //this gets the info required to encode into the encoded_header, also decides which header type to use
         hpack_encoded_header_t encoded_header = { 0 };

@@ -10,248 +10,115 @@ void setUp(void)
 void tearDown(void)
 {}
 
-void test_headers_set(void)
-{
-	int res;
-	char * value;
-
+void test_header_list(void){
 	// initialize headers
 	header_list_t headers;
+	header_list_reset(&headers);
 
-	headers_init(&headers);
+    int res = header_list_add(&headers, "hello", "goodbye");
 
-	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
-
-	// test header name too large
-	res = headers_set(&headers, "hello world", "goodbye");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 if header name is too large");
-	TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "errno should be set to EINVAL if header name is too large");
-	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
-
-	// test header value too large
-	res = headers_set(&headers, "hello", "goodbye my sweet prince");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 if header value is too large");
-	TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "errno should be set to EINVAL if header value is too large");
-
-	// test succesful write
-	res = headers_set(&headers, "hello", "goodbye");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should equal to 1 after first write");
-
-	// Check read
-	value = headers_get(&headers, "hello");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye", value, "read of existing header should set correct value");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after a read");
-
-	// test write an already existing key
-	res = headers_set(&headers, "hello", "it's me");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after writing an existing key");
-
-	// Check read with different case
-	value = headers_get(&headers, "HeLlo");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("it's me", value, "read of header should be case insensitive");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after a read");
-
-	// test succesful write
-	res = headers_set(&headers, "Hey jude", "remember");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should equal to 2 after second write");
-
-	// Check read into larger array
-	value = headers_get(&headers, "Hey jude");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("remember", value, "read of existing header should write to buf with correct strlen");
-	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should remain constant after a read");
-
-	// test succesful write
-	res = headers_set(&headers, "sad song", "make it better");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should equal to 3 after third write");
-
-	// Check read from a full list
-	value = headers_get(&headers, "sad song");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("make it better", value, "read of existing header should write to buf with correct strlen");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read");
-
-	// test write after header size
-	res = headers_set(&headers, "better", "Na na na narana");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
-	TEST_ASSERT_EQUAL_MESSAGE(ENOMEM, errno, "errno should be set to ENOMEM when trying to write after list is full");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after an error write");
-
-	// test write an already existing key after header list is full
-	res = headers_set(&headers, "hey jude", "don't be afraid");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after writing an existing key");
-
-	// Check read into already written array
-	value = headers_get(&headers, "hey jude");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("don't be afraid", value, "read of existing header should with correct strlen");
-	TEST_ASSERT_EQUAL_MESSAGE(3, headers_count(&headers), "header size should remain constant after a read");
-
-	// Check read of a non existing key
-	value = headers_get(&headers, "yesterday");
-	TEST_ASSERT_EQUAL_MESSAGE(NULL, value, "read of non existing header should return NULL");
-
-	// Check function get_name_from_index and get_value_from_index
-    TEST_ASSERT_EQUAL_STRING("hello", headers_get_name_from_index(&headers, 0));
-    TEST_ASSERT_EQUAL_STRING("it's me", headers_get_value_from_index(&headers, 0));
-    TEST_ASSERT_EQUAL_STRING("Hey jude", headers_get_name_from_index(&headers, 1));
-    TEST_ASSERT_EQUAL_STRING("don't be afraid", headers_get_value_from_index(&headers, 1));
-
-}
-
-void test_headers_add(void)
-{
-	int res;
-	char * value;
-
-	// initialize headers
-	header_list_t headers;
-	headers_init(&headers);
-
-	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
-	
-	// test header name too large
-	res = headers_add(&headers, "hello world", "goodbye");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 if header name is too large");
-	TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "errno should be set to EINVAL if header name is too large");
-	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
-
-	// test header value too large
-	res = headers_add(&headers, "hello", "goodbye my sweet prince");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 if header value is too large");
-	TEST_ASSERT_EQUAL_MESSAGE(EINVAL, errno, "errno should be set to EINVAL if header value is too large");
-	TEST_ASSERT_EQUAL_MESSAGE(0, headers_count(&headers), "header size should equal to 0 before first succesful write");
-
-	// test succesful write
-	res = headers_add(&headers, "hello", "goodbye");
+    // test adding a new header when empty
 	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should equal to 1 after first write");
+	TEST_ASSERT_EQUAL(18, header_list_size(&headers)); // hello + 1 + goodbye + 1 + padding (4)
+	TEST_ASSERT_EQUAL(1, header_list_count(&headers));
+    TEST_ASSERT_EQUAL_STRING("goodbye", header_list_get(&headers, "hello"));
 
-	// Check read
-	value = headers_get(&headers, "hello");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye", value, "read of existing header should set correct value");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should remain constant after a read");
-
-	// test succesful write
-	res = headers_add(&headers, "hello", "it's me");
+    // add the new header at the end
+    res = header_list_add(&headers, "hi", "bye");
 	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "add header should not increase size if header has same name");
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+	TEST_ASSERT_EQUAL(29, header_list_size(&headers));
 
-	// Check read
-	value = headers_get(&headers, "hello");
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("goodbye,it's me", value, "read of existing header should return concatenation of values");
+    // add the new header, when padding is not enough
+    // will shift the memory if there is enough available
+    res = header_list_add(&headers, "hello", "world");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(32, header_list_size(&headers));
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+    TEST_ASSERT_EQUAL_STRING("goodbye,world", header_list_get(&headers, "hello"));
 
-    // test succesful write
-	res = headers_add(&headers, "goodbye", "my baby");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
-	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "add header should increase size when writing a new header");
+    // add the new header, when padding is not enough and
+    // there is not enough memory will return -1
+    res = header_list_add(&headers, "hi", "joe");
+	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 when no more space is available");
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+	TEST_ASSERT_EQUAL(32, header_list_size(&headers));
 
+    // add the new header when the padding is enough
+    // will add it using the padding
+    res = header_list_add(&headers, "hi", "jo");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(32, header_list_size(&headers));
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+    TEST_ASSERT_EQUAL_STRING("bye,jo", header_list_get(&headers, "hi"));
+
+    // set a header when there is enough space to fit the new value
+    res = header_list_set(&headers, "hi", "johnny");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(32, header_list_size(&headers));
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+    TEST_ASSERT_EQUAL_STRING("johnny", header_list_get(&headers, "hi"));
+
+    // set a header when there is not enough space
+    res = header_list_set(&headers, "hello", "goodbye my sweet prince");
+	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "add header should return -1 when no more space is available");
+	TEST_ASSERT_EQUAL(32, header_list_size(&headers));
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+    TEST_ASSERT_EQUAL_STRING("goodbye,world", header_list_get(&headers, "hello"));
+
+    // set a header when there is enough space should free space
+    res = header_list_set(&headers, "hello", "baby");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+	TEST_ASSERT_EQUAL(26, header_list_size(&headers));
+
+    // set a header when there is enough space at the end should
+    // shift the memory
+    res = header_list_set(&headers, "hi", "my friend");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(32, header_list_size(&headers));
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+    TEST_ASSERT_EQUAL_STRING("my friend", header_list_get(&headers, "hi"));
+
+    // setting a smaller header should free size
+    res = header_list_set(&headers, "hello", "be");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+	TEST_ASSERT_EQUAL(30, header_list_size(&headers));
+
+    // setting a smaller header should free size
+    res = header_list_set(&headers, "hi", "jo");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(2, header_list_count(&headers));
+	TEST_ASSERT_EQUAL(25, header_list_size(&headers));
+
+    // set a non existing header
+    res = header_list_set(&headers, "sup", "x");
+	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 on succesful write");
+	TEST_ASSERT_EQUAL(3, header_list_count(&headers));
+	TEST_ASSERT_EQUAL(32, header_list_size(&headers));
+
+    int count = header_list_count(&headers);
+    http_header_t hlist[count];
+    header_list_all(&headers, hlist);
+
+    TEST_ASSERT_EQUAL_STRING("hello", hlist[0].name);
+    TEST_ASSERT_EQUAL_STRING("be", hlist[0].value);
+    TEST_ASSERT_EQUAL_STRING("hi", hlist[1].name);
+    TEST_ASSERT_EQUAL_STRING("jo", hlist[1].value);
+    TEST_ASSERT_EQUAL_STRING("sup", hlist[2].name);
+    TEST_ASSERT_EQUAL_STRING("x", hlist[2].value);
+
+    // test that the header list values are reset to zero
+    header_list_reset(&headers);
+	TEST_ASSERT_EQUAL(0, header_list_count(&headers));
+	TEST_ASSERT_EQUAL(0, header_list_size(&headers));
 }
 
-void test_limits_add_set (void){
-	
-	// Now robustness test, testing limits
-	header_list_t headers;
-	int res;
-
-	headers_init(&headers);
-	char *test_name = "x-test"; 
-	char *test_value = "x";
-	for(int i=0; i<31; i++){
-		res = headers_add(&headers, test_name, test_value);
-		TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header"); 
-}
-	// Fail write with add into buffer, it was full
-	res = headers_add(&headers, test_name, test_value);
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
-
-	// Fail write with set into buffer, it was full
-	char *test_value2 = "y";
-	res = headers_set(&headers, test_name, test_value2);
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
-
-	for(int i=0; i<14; i++){
-		char test_name2[3];
-		sprintf(test_name2, "%d", i);
-		res = headers_set(&headers, test_name2, test_value);
-		TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
-	}
-	// Fail write with add into buffer, it was full
-	res = headers_add(&headers, test_name, test_value);
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
-
-	// Modify previous x-test val to add 1 to size -> actual size = 70
-	res = headers_set(&headers, test_name, "xx");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "add header should return 0 when writing a new header");
-
-	// Try to add 1 to the size to overpass 70
-	res = headers_set(&headers, test_name, "xxx");
-	TEST_ASSERT_EQUAL_MESSAGE(-1, res, "set header should return -1 when headers list is full");
-
-	//OK
-
-}
-
-void test_get_header_list_size(void){
-	int res;
-
-	// initialize headers
-	header_list_t headers;
-	headers_init(&headers);
-
-	// test succesful write
-	res = headers_set(&headers, "name1", "value1");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should update after succesful write");
-
-	// test succesful write
-	res = headers_set(&headers, "another", "anothervalue");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should update after succesful write");
-
-    int result = headers_get_header_list_size(&headers);
-    TEST_ASSERT_EQUAL(5 + 7 + 64 + 6 + 12 + 64, result);
-}
-
-void test_headers_get_all(void){
-	int res;
-
-	// initialize headers
-	header_list_t headers;
-	headers_init(&headers);
-
-	// test succesful write
-	res = headers_set(&headers, "name1", "value1");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(1, headers_count(&headers), "header size should update after succesful write");
-
-	// test succesful write
-	res = headers_set(&headers, "another", "anothervalue");
-	TEST_ASSERT_EQUAL_MESSAGE(0, res, "set header should return 0 on succesful write");
-	TEST_ASSERT_EQUAL_MESSAGE(2, headers_count(&headers), "header size should update after succesful write");
-
-	header_t headers_array[2];
-	headers_get_all(&headers, headers_array);
-	
-	//now test correct strings
-	TEST_ASSERT_EQUAL_STRING(headers_array[0].name, "name1");
-	TEST_ASSERT_EQUAL_STRING(headers_array[0].value, "value1");
-	TEST_ASSERT_EQUAL_STRING(headers_array[1].name, "another");
-	TEST_ASSERT_EQUAL_STRING(headers_array[1].value, "anothervalue");
-
-}
 
 int main(void)
 {
     UNIT_TESTS_BEGIN();
-    //todo: fix test_headers_set
-    UNIT_TEST(test_headers_set);
-    //todo: fix test_headers_add
-    UNIT_TEST(test_headers_add);
-	UNIT_TEST(test_limits_add_set);
-    UNIT_TEST(test_get_header_list_size);
-	UNIT_TEST(test_headers_get_all);
+	UNIT_TEST(test_header_list);
     UNIT_TESTS_END();
 }

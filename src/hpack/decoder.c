@@ -689,7 +689,7 @@ int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_b
             return rc;
         }
         if (tmp_name[0] != 0 && tmp_value[0] != 0) {
-            rc = headers_add(headers, tmp_name, tmp_value);
+            rc = header_list_add(headers, tmp_name, tmp_value);
             if (rc < 0) {
                 return rc;
             }

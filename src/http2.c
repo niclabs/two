@@ -453,20 +453,20 @@ int handle_ping_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
 int validate_pseudoheaders(header_list_t *headers)
 {
 
-    if (headers_get(headers, ":method") == NULL) {
+    if (header_list_get(headers, ":method") == NULL) {
         return -1;
     }
     // TODO: check for duplicate :method
 
-    if (headers_get(headers, ":scheme") == NULL) {
+    if (header_list_get(headers, ":scheme") == NULL) {
         return -1;
     }
 
-    if (headers_get(headers, ":path") == NULL) {
+    if (header_list_get(headers, ":path") == NULL) {
         return -1;
     }
 
-    return headers_validate(headers);
+    return 0;
 }
 
 void on_stream_data_sent(event_sock_t *sock, int status)
@@ -571,7 +571,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     // decode header block
     header_list_t header_list;
 
-    headers_init(&header_list);
+    header_list_reset(&header_list);
     if (hpack_decode(&ctx->hpack_dynamic_table, stream->buf, stream->buflen, &header_list) < 0) {
         http2_error(ctx, HTTP2_COMPRESSION_ERROR);
         return -1;
@@ -585,32 +585,30 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     // handle request at end headers
     // data frames are ignored
     // prepare http request
-    int headers_size = headers_count(&header_list);
+    int count = header_list_count(&header_list);
+    http_header_t hlist[count];
 
-    // TODO: improve headers API
-    http_header_t headers[headers_count(&header_list)];
-    headers_get_all(&header_list, (header_t *)headers);
-    http_request_t req = { .method = headers_get(&header_list, ":method"),
-                           .path = headers_get(&header_list, ":path"),
-                           .headers = { .len = headers_size, .list = headers } };
+    http_request_t req = { .method = header_list_get(&header_list, ":method"),
+                           .path = header_list_get(&header_list, ":path"),
+                           .headers = { .len = count, .list = header_list_all(&header_list, hlist) } };
 
     http_response_t res = { .body = (char *)stream->buf };
     http_handle_request(&req, &res, HTTP2_STREAM_BUF_SIZE);
 
     // prepare HTTP2 headers
-    headers_clean(&header_list);
+    header_list_reset(&header_list);
 
     // status code
     char strCode[4];
     snprintf(strCode, 4, "%d", res.status);
-    headers_set(&header_list, ":status", strCode);
+    header_list_set(&header_list, ":status", strCode);
 
     // content type and length
-    headers_set(&header_list, "content-type", res.content_type);
+    header_list_set(&header_list, "content-type", res.content_type);
     
     char strLen[10]; // 10 digits to be safe
     snprintf(strLen, 10, "%d", res.content_length);
-    headers_set(&header_list, "content-length", strLen);
+    header_list_set(&header_list, "content-length", strLen);
 
     // Response data goes to the stream buffer
     stream->buflen = res.content_length;

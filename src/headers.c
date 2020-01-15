@@ -6,7 +6,13 @@
 #include "headers.h"
 
 #include "config.h"
+
+#undef LOG_LEVEL
+#define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
+
+#undef MIN
+#define MIN(a, b) ((a) < (b)) ? (a) : (b)
 
 
 /*
@@ -17,29 +23,65 @@
  * Output:
  *      (void)
  */
-void headers_init(header_list_t *headers)
+void header_list_reset(header_list_t *headers)
 {
-    memset(headers->buffer, 0, sizeof(headers->buffer));
+    assert(headers != NULL);
 
-    headers->n_entries = 0;
+    memset(headers->buffer, 0, MAX_HEADER_LIST_SIZE);
+
+    headers->count = 0;
     headers->size = 0;
 }
 
-/*
- * Function: headers_clean
- * Cleans headers list struct
- * Input:
- *      -> *headers: header list
- * Output:
- *      (void)
- */
-void headers_clean(header_list_t *headers)
+// return the position in the buffer of the given name
+int header_list_find(header_list_t *headers, const char *name)
 {
-    headers_init(headers);
+    assert(headers != NULL);
+    assert(name != NULL);
+
+    int pos = 0;
+    char *ptr = headers->buffer;
+    while (pos < headers->size) {
+        int len = strnlen(ptr, headers->size - pos);
+
+        if (len == 0 || strncasecmp(name, ptr, len) == 0) {
+            return pos;
+        }
+
+        // increase the counter
+        pos += len + 1;
+        ptr += len + 1;
+
+        // skip the value
+        while (*ptr != 0 && pos < headers->size) {
+            ++pos;
+            ++ptr;
+        }
+
+        // skip padding
+        while (*ptr == 0 && pos < headers->size) {
+            ++pos;
+            ++ptr;
+        }
+    }
+    return pos;
+}
+
+// remove a portion of the array memory
+void header_list_splice(header_list_t *headers, unsigned int start, unsigned int count)
+{
+    char *dst = headers->buffer + start;
+    char *src = headers->buffer + start + count;
+
+    // shift the buffer to the left
+    memmove(dst, src, headers->size - start - count);
+
+    // update size
+    headers->size -= count;
 }
 
 /*
- * Function: headers_get
+ * Function: header_list_get
  * Get header value of the header list
  * Input:
  *      -> *headers: header list
@@ -47,179 +89,54 @@ void headers_clean(header_list_t *headers)
  * Output:
  *      String with the value of the header, NULL if it doesn't exist
  */
-char *headers_get(header_list_t *headers, const char *name)
+char *header_list_get(header_list_t *headers, const char *name)
 {
-    // Assertions for debugging
-    assert(headers != NULL);
-    assert(name != NULL);
+    int pos = header_list_find(headers, name);
+    char *ptr = headers->buffer + pos;
+    int len = strnlen(ptr, headers->size - pos);
 
-    if (strlen(name) + 1 > MAX_HEADER_BUFFER_SIZE) {
-        errno = EINVAL;
-        return NULL;
-    }
-    uint16_t words_count = 0;
-    for (int i = 0; i < headers->size; i++) {
-        // case insensitive name comparison of headers
-        if (words_count % 2 == 0 && (strcasecmp(name, headers->buffer + i) == 0)) {
-            // found a header with the same name
-            DEBUG("Found header with name '%s'", name);
-            return (headers->buffer + i + 1 + strlen(name));
-        }
-        //now move forward the length of the string
-        i += strlen(headers->buffer + i);
-        words_count++;
+    if (strncasecmp(name, ptr, len) == 0) {
+        return ptr + len + 1;
     }
     return NULL;
 }
 
-/*
- * Function: headers_new
- * Main function to add new header into the header list
- * To add with replacement is overwrite the value of the header if it exist
- * To add without replacement is to concatenate previous value
- * Input:
- *      -> *headers: header list
- *      -> *name: name of the header to search
- *      -> with_replacement: boolean value to indicate if it is added with replacement or not
- * Output:
- *      0 if success, -1 if error
- */
-int headers_new(header_list_t *headers, const char *name, const char *value, uint8_t with_replacement)
+int header_list_append(header_list_t *headers, const char *name, const char *value)
 {
+    unsigned int nlen = strlen(name);
+    unsigned int vlen = strlen(value);
 
-    assert(headers != NULL);
-    assert(name != NULL);
-    assert(value != NULL);
-
-    uint16_t name_len = strlen(name);
-    uint16_t value_len = strlen(value);
-/*
- * Function: headers_add
- * Add new header using headers_new function without replacement
- * Input:
- *      -> *headers: header list
- *      -> *name: name of the header to search
- * Output:
- *      0 if success, -1 if error
- */
-
-    if (name_len + 1 > MAX_HEADER_BUFFER_SIZE || value_len + 1 > MAX_HEADER_BUFFER_SIZE) {
-        errno = EINVAL;
-        ERROR("Invalid name/value of new header, exceeded buffer size");
+    // not enough space left in the header list to append the new value
+    if (nlen + 1 + vlen + 1 >= (unsigned)(MAX_HEADER_LIST_SIZE - headers->size)) {
         return -1;
     }
 
+    char *ptr = headers->buffer + headers->size;
 
-    char *prev_value = headers_get(headers, name);
+    memcpy(ptr, name, nlen);
+    ptr[nlen] = 0;
+    ptr += nlen + 1;
 
-    if (prev_value != NULL) {
-        //case in which already exist entry with same name
-        //plus 1 in case without replacement is for separation mark ','
-        if ((!with_replacement && (value_len + 1 + headers->size > MAX_HEADER_BUFFER_SIZE))
-            || (with_replacement && (headers->size - strlen(prev_value) + value_len > MAX_HEADER_BUFFER_SIZE))) {
-            errno = ENOMEM;
-            ERROR("Header list full, not enough memory");
-            return -1;
-        }
+    memcpy(ptr, value, vlen);
+    ptr[vlen] = 0;
+    ptr += vlen + 1;
 
-        char buffer_aux[MAX_HEADER_BUFFER_SIZE];
-        memset(buffer_aux, 0, sizeof(buffer_aux));
+    // update size
+    headers->size += nlen + 1 + vlen + 1;
 
-        uint16_t i_aux = 0;
-        uint16_t entries_counter = 0;
+    // append padding bytes if possible
+    unsigned int padding = MIN(HEADER_LIST_PADDING, MAX_HEADER_LIST_SIZE - headers->size);
+    memset(ptr, 0, padding);
+    headers->size += padding;
 
-        for (uint16_t i = 0; i < MAX_HEADER_BUFFER_SIZE; i++) {
-
-            entries_counter++;
-
-            // case insensitive name comparison of headers
-            if (strncasecmp(headers->buffer + i, name, name_len) == 0) {
-
-                DEBUG("Found header with name: '%s'", name);
-
-                //First cpy name into aux
-                strncpy(buffer_aux + i_aux, headers->buffer + i, name_len + 1);
-                i_aux += name_len + 1;
-                i += name_len + 1;
-                //Then previous value
-                uint16_t previous_value_len = strlen(headers->buffer + i);
-
-                if (!with_replacement) {
-                    //case headers_add
-                    strncpy(buffer_aux + i_aux, headers->buffer + i, previous_value_len);
-                    i_aux += previous_value_len;
-                    i += previous_value_len;
-                    //Add separation mark
-                    buffer_aux[i_aux] = ',';
-                    i_aux++;
-                    //Finally copy new value
-                    strncpy(buffer_aux + i_aux, value, value_len + 1);
-                    i_aux += value_len + 1;
-                    //+1 is for the comma
-                    headers->size += (value_len + 1);
-
-                }
-                else {
-                    //case headers_set, forget previous value
-                    strncpy(buffer_aux + i_aux, value, value_len + 1);
-                    i += previous_value_len;
-                    i_aux += value_len + 1;
-                    headers->size -= previous_value_len;
-                    headers->size += value_len;
-                }
-
-            }
-            else {
-
-                //Cpy name
-                uint16_t previous_name_len = strlen(headers->buffer + i);
-                strncpy(buffer_aux + i_aux, headers->buffer + i, previous_name_len + 1);
-                i_aux += (previous_name_len + 1);
-                i += (previous_name_len + 1);
-                //Then cpy value
-                uint16_t previous_value_len = strlen(headers->buffer + i);
-                strncpy(buffer_aux + i_aux, headers->buffer + i, previous_value_len + 1);
-                i_aux += (previous_value_len + 1);
-                i += previous_value_len;
-            }
-
-            if (entries_counter >= headers->n_entries) {
-                break;
-            }
-
-        }
-
-        //Finally copy all from aux buffer to original one
-        memcpy(headers->buffer, buffer_aux, MAX_HEADER_BUFFER_SIZE);
-
-    }
-    else {
-        //case no dupĺicate
-
-        // + 2 is for the two 0's of EOS
-        if (headers->size + name_len + value_len + 2 > MAX_HEADER_BUFFER_SIZE) {
-            errno = ENOMEM;
-            return -1;
-        }
-
-        // Set header name
-        strncpy(headers->buffer + headers->size, name, name_len + 1);
-
-        // Set header value
-        strncpy(headers->buffer + headers->size + name_len + 1, value, value_len + 1);
-
-        DEBUG("Wrote header: '%s':'%s'", headers->buffer + headers->size, headers->buffer + headers->size + name_len + 1);
-
-        // Update header count
-        headers->size += (name_len + value_len + 2);
-        headers->n_entries++;
-    }
+    // add a new entry
+    headers->count += 1;
 
     return 0;
 }
 
 /*
- * Function: headers_add
+ * Function: header_list_add
  * Add new header using headers_new function without replacement
  * Input:
  *      -> *headers: header list
@@ -227,13 +144,81 @@ int headers_new(header_list_t *headers, const char *name, const char *value, uin
  * Output:
  *      0 if success, -1 if error
  */
-int headers_add(header_list_t *headers, const char *name, const char *value)
+int header_list_add(header_list_t *headers, const char *name, const char *value)
 {
-    return headers_new(headers, name, value, 0);
+    assert(value != NULL);
+
+    // go to the position for the name
+    int start = header_list_find(headers, name);
+    int end = start;
+
+
+    char *ptr = headers->buffer + start;
+    int len = strnlen(ptr, headers->size - end);
+
+    if (len > 0 && strncasecmp(name, ptr, len) == 0) {
+        // skip the name
+        end += len + 1;
+        ptr += len + 1;
+
+        // get value and its length
+        char *v = ptr;
+        len = strnlen(ptr, headers->size - end);
+
+        // update the pointer
+        ptr += len;
+        end += len;
+
+        // get padding zeroes
+        unsigned int padding = 0;
+        while (*ptr == 0 && end < headers->size) {
+            end++;
+            ptr++;
+            padding++;
+        }
+
+        // if enough empty bytes to append value (+separating comma + ending zero)
+        // append immediately
+        if (strlen(value) + 1 + 1 < padding) {
+            v[len] = ',';
+
+            // append the value at the end
+            strncpy(v + len + 1, value, padding - 1);
+
+            return 0;
+        }
+        // else if there are enough bytes left in the array for the new value
+        // name + '\0' + existing_value + ',' + value + '\0' has to fit in the remainging array
+        else if (strlen(value) + 1 + 1 < (unsigned)(MAX_HEADER_LIST_SIZE - headers->size + padding)) {
+            // Create a new value
+            int newlen = len + 1 + strlen(value);
+            char newvalue[newlen + 1];
+            memcpy(newvalue, v, len);
+            newvalue[len] = ',';
+            memcpy(newvalue + len + 1, value, strlen(value));
+            newvalue[newlen] = 0;
+
+            // splice the memory from the array
+            header_list_splice(headers, start, end - start);
+
+            // update the number of entries
+            headers->count -= 1;
+
+            // append name and value at the end
+            return header_list_append(headers, name, newvalue);
+        }
+        else {
+            return -1;
+        }
+    }
+
+    // if we are here append at the end of the array
+    return header_list_append(headers, name, value);
 }
 
+
 /*
- * Function: headers_set
+ * Function: header_list_set
  * Add new header using headers_new function without replacement
  * Input:
  *      -> *headers: header list
@@ -241,164 +226,142 @@ int headers_add(header_list_t *headers, const char *name, const char *value)
  * Output:
  *      0 if success, -1 if error
  */
-int headers_set(header_list_t *headers, const char *name, const char *value)
+int header_list_set(header_list_t *headers, const char *name, const char *value)
 {
-    return headers_new(headers, name, value, 1);
+    assert(value != NULL);
+
+    // go to the position for the name
+    int start = header_list_find(headers, name);
+    int end = start;
+
+    char *ptr = headers->buffer + start;
+    int len = strnlen(ptr, headers->size - end);
+
+    if (len > 0 && strncasecmp(name, ptr, len) == 0) {
+        // skip the name
+        end += len + 1;
+        ptr += len + 1;
+
+        // get value and its length
+        char *v = ptr;
+        len = strnlen(ptr, headers->size - end);
+
+        // update the pointer
+        ptr += len;
+        end += len;
+
+        // get padding zeroes
+        unsigned int padding = 0;
+        while (*ptr == 0 && end < headers->size) {
+            end++;
+            ptr++;
+            padding++;
+        }
+
+        // if enough empty bytes to fit the new value
+        // replace
+        unsigned int newlen = strlen(value);
+        unsigned int available = len + padding;
+        if (newlen + 1 < available) {
+            // replace the value
+            memcpy(v, value, available - 1);
+            
+            // set the remaining memory to zero
+            memset(v + newlen, 0, available - newlen);
+
+            // compress padding if larger than the one defined
+            // by the constant
+            if (available - newlen > HEADER_LIST_PADDING + 1) {
+                unsigned int newend = newlen + 1 + HEADER_LIST_PADDING;
+                memmove(v + newend, v + newlen + padding, headers->size - end);
+                headers->size -= (available - newlen) - (HEADER_LIST_PADDING + 1);
+            }
+
+            return 0;
+        }
+        // else if there are enough bytes left in the array for the new value
+        // splice the array and append at the end
+        else if (strlen(value) + 1 < (unsigned)(MAX_HEADER_LIST_SIZE - headers->size + len + padding)) {
+            // splice the memory from the array
+            header_list_splice(headers, start, end - start);
+            
+            // update the number of entries
+            headers->count -= 1;
+
+            // append name and value at the end
+            return header_list_append(headers, name, value);
+        }
+        else {
+            return -1;
+        }
+    }
+
+    // if we are here append at the end of the array
+    return header_list_append(headers, name, value);
 }
 
 /*
- * Function: headers_count
+ * Function: header_list_count
  * Returns the amount of entries in the header list
  * Input:
  *      -> *headers: header list
  * Output:
  *      Amount of entries in the header list
  */
-int headers_count(header_list_t *headers)
+unsigned int header_list_count(header_list_t *headers)
 {
-    return headers->n_entries;
+    return headers->count;
 }
 
 /*
- * Function: headers_get_name_from_index
- * Returns the name of the header of a certain index in the list
+ * Function: header_list_size
+ * Returns the size in bytes of the header list
  * Input:
  *      -> *headers: header list
- *      -> index: index of the header list to search
- * Output:
- *      String with the name of the header, NULL if it doesn't exist
+ * Output: Size in bytes of in the header list
  */
-char *headers_get_name_from_index(header_list_t *headers, int index)
+unsigned int header_list_size(header_list_t *headers)
 {
-    // Assertions for debugging
+    return headers->size;
+}
+
+http_header_t * header_list_all(header_list_t *headers, http_header_t * hlist) {
     assert(headers != NULL);
 
-    if (index > headers->n_entries - 1) {
-        return NULL;
-    }
+    int pos = 0;
+    char *ptr = headers->buffer;
+    int index = 0;
 
-    uint16_t words_count = 0;
-    uint16_t entries_count = 0;
-
-    // Every two words is an entry
-    for (uint16_t i = 0; i < headers->size; i++) {
-        // Case find header of exact index
-        if (words_count % 2 == 0 && index == entries_count) {
-            return headers->buffer + i;
+    while (pos < headers->size) {
+        int len = strnlen(ptr, headers->size - pos);
+        if (len == 0) {
+            return hlist;
         }
-        // Else advance the len of the string
-        i += strlen(headers->buffer + i);
-        words_count++;
+        
+        // set the name pointer
+        hlist[index].name = ptr;
 
-        if (words_count % 2 == 0) {
-            entries_count++;
+        // increase the counter
+        pos += len + 1;
+        ptr += len + 1;
+
+        // set the value pointer
+        hlist[index].value = ptr;
+
+        // skip the value
+        while (*ptr != 0 && pos < headers->size) {
+            ++pos;
+            ++ptr;
         }
 
-    }
-    return NULL;
-
-}
-
-/*
- * Function: headers_get_value_from_index
- * Returns the value of the header of a certain index in the list
- * Input:
- *      -> *headers: header list
- *      -> index: index of the header list to search
- * Output:
- *      String with the value of the header, NULL if it doesn't exist
- */
-char *headers_get_value_from_index(header_list_t *headers, int index)
-{
-    char *name_pos = headers_get_name_from_index(headers, index);
-
-    return name_pos + strlen(name_pos) + 1;
-}
-
-/*
- * Function: headers_get_all
- * Copy pointers of name and value of each header in the header list to a header array
- * Input:
- *      -> *headers: header list struct
- *      -> *headers_array: array of pointers to headers name and value.
- * Output:
- *      (void)
- */
-void headers_get_all(header_list_t *headers, header_t *headers_array)
-{
-
-    assert(headers != NULL);
-    uint16_t n_entries = 0;
-
-    for (int i = 0; i < headers->size; i++) {
-        //for every header
-
-        //get name
-        char *name = headers->buffer + i;
-        headers_array[n_entries].name = name;
-        //plus one for 0 between them
-        i += strlen(name) + 1;
-        //get value
-        char *value = headers->buffer + i;
-        headers_array[n_entries].value = value;
-        i += strlen(value);
-        n_entries++;
-    }
-}
-
-
-/*
- * Function: headers_validate
- * Check if the header list is correct, which means, every header in it is correct
- *
- * There shouldn't be any empty values nor duplicated ones
- *
- * Input:
- *      -> *headers: header list
- * Output:
- *      0 if correct, -1 otherwise
- */
-int headers_validate(header_list_t *headers)
-{
-    // Assertions for debugging
-    assert(headers != NULL);
-
-    header_t headers_array[headers_count(headers)];
-    headers_get_all(headers, headers_array);
-
-    for (int i = 0; i < headers_count(headers); i++) {
-        char *name = headers_array[i].name;
-        char *value = headers_array[i].value;
-        if (value == NULL) {
-            ERROR("Headers validation failed, the \"%s\" field had no value", name);
-            return -1;
+        // skip padding
+        while (*ptr == 0 && pos < headers->size) {
+            ++pos;
+            ++ptr;
         }
-        if (strchr(value, ',') != NULL) {
-            ERROR("Headers validation failed, the \"%s\" field was ducplicated", name);
-            return -1;
-        }
+
+        // update count
+        index += 1;
     }
-
-    return 0;
-}
-
-
-/*
- * Function: headers_get_header_list_size
- * Returns the size of the header list related to the RFC Standards
- * Input:
- *      -> *headers: header list
- * Output:
- *      Size of the header list in bytes
- */
-uint32_t headers_get_header_list_size(header_list_t *headers)
-{
-    uint32_t header_list_size = headers->size;
-
-    // minus all the 0's to end string
-    header_list_size -= 2 * (headers->n_entries);
-    // plus an overhead of 32 octects for each string, name and value
-    header_list_size += 64 * (headers->n_entries);
-
-    return header_list_size;    //OK
+    return hlist;
 }
