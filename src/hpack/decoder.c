@@ -306,7 +306,10 @@ int32_t hpack_decoder_decode_string(char *str,
  * Output:
  *      -> returns the amount of octets of the header, less than 0 in case of error
  */
-int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header, char *tmp_name, char *tmp_value)
+int hpack_decoder_decode_indexed_header_field(hpack_dynamic_table_t *dynamic_table,
+                                              hpack_encoded_header_t *encoded_header,
+                                              char *tmp_name,
+                                              char *tmp_value)
 {
     int pointer = 0;
     int8_t rc = hpack_tables_find_entry_name_and_value(dynamic_table,
@@ -573,7 +576,7 @@ int8_t hpack_check_eos_symbol(uint8_t *encoded_buffer, uint8_t buffer_length)
     const uint32_t eos = 0x3fffffff;
     uint8_t eos_bit_length = 30;
 
-    for (uint16_t bit_position = 0; (bit_position + eos_bit_length) / 8 < buffer_length; bit_position++) {     //search through all lengths possible
+    for (uint16_t bit_position = 0; (bit_position + eos_bit_length - 1) < buffer_length * 8; bit_position++) {     //search through all lengths possible
 
         uint32_t result = hpack_decoder_read_bits_from_bytes(bit_position, eos_bit_length, encoded_buffer);
         if ((result & eos) == eos) {
