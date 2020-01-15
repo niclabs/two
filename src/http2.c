@@ -452,17 +452,43 @@ int handle_ping_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
 
 int validate_pseudoheaders(header_list_t *headers)
 {
+    char *tests[3] = { ":method", ":scheme", ":path" };
 
-    if (header_list_get(headers, ":method") == NULL) {
+    for (int i = 0; i < 3; i++) {
+        char *val = header_list_get(headers, tests[i]);
+        // check non existent header
+        if (val == NULL) {
+            return -1;
+        }
+
+        // check empty header
+        if (strlen(val) == 0) {
+            return -1;
+        }
+
+        // check duplicated header
+        if (index(val, ',') != NULL) {
+            return -1;
+        }
+    }
+
+    // check connection-specific Header Fields
+    char *connection = header_list_get(headers, "connection");
+    if (connection != NULL) {
+        DEBUG("connection: %s", connection);
+        // An endpoint MUST NOT generate an HTTP/2 message containing
+        // connection-specific header fields; any message containing
+        // connection-specific header fields MUST be treated as
+        // malformed (Section 8.1.2.6).
         return -1;
     }
-    // TODO: check for duplicate :method
 
-    if (header_list_get(headers, ":scheme") == NULL) {
-        return -1;
-    }
-
-    if (header_list_get(headers, ":path") == NULL) {
+    char *te = header_list_get(headers, "te");
+    if (te != NULL && strcmp(te, "trailers") != 0) {
+        DEBUG("TWO");
+        // The only exception to this is the TE header field,
+        // which MAY be present in an HTTP/2 request; when it is,
+        // it MUST NOT contain any value other than "trailers".
         return -1;
     }
 
@@ -576,6 +602,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
         http2_error(ctx, HTTP2_COMPRESSION_ERROR);
         return -1;
     }
+    
 
     if (validate_pseudoheaders(&header_list) < 0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
@@ -605,7 +632,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
 
     // content type and length
     header_list_set(&header_list, "content-type", res.content_type);
-    
+
     char strLen[10]; // 10 digits to be safe
     snprintf(strLen, 10, "%d", res.content_length);
     header_list_set(&header_list, "content-length", strLen);
@@ -615,7 +642,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
 
     // send headers
     if (send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table,
-                       stream->id, stream->buflen > 0, close_on_write_error) < 0) {
+                           stream->id, stream->buflen > 0, close_on_write_error) < 0) {
         http2_error(ctx, HTTP2_INTERNAL_ERROR);
         return -1;
     }
@@ -804,6 +831,7 @@ int handle_continuation_frame(http2_context_t *ctx, frame_header_t header, uint8
 
 int handle_rst_stream_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
+    (void)payload;
     INFO("<- RST_STREAM (length: %u, flags: 0x%x, stream_id: %u)", header.length, header.flags, header.stream_id);
     // check stream id and stream state
     if (header.stream_id == 0x0) {
