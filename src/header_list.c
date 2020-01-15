@@ -95,7 +95,7 @@ char *header_list_get(header_list_t *headers, const char *name)
     char *ptr = headers->buffer + pos;
     int len = strnlen(ptr, headers->size - pos);
 
-    if (strncasecmp(name, ptr, len) == 0) {
+    if (len > 0 && strncasecmp(name, ptr, len) == 0) {
         return ptr + len + 1;
     }
     return NULL;

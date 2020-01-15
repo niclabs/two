@@ -109,6 +109,10 @@ void test_header_list(void){
     TEST_ASSERT_EQUAL_STRING("sup", hlist[2].name);
     TEST_ASSERT_EQUAL_STRING("x", hlist[2].value);
 
+    // get a non existing header
+    char * value = header_list_get(&headers, "lala");
+	TEST_ASSERT(value == NULL);
+
     // test that the header list values are reset to zero
     header_list_reset(&headers);
 	TEST_ASSERT_EQUAL(0, header_list_count(&headers));
