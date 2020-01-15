@@ -5,6 +5,7 @@
 #include "hpack/tables.h"
 #include "config.h"
 #define LOG_MODULE LOG_MODULE_HPACK
+#include "logging.h"
 
 
 /*
@@ -41,7 +42,9 @@ int hpack_encode(hpack_dynamic_table_t *dynamic_table,
                  uint8_t *encoded_buffer,
                  uint32_t buffer_size)
 {
-    return hpack_encoder_encode(dynamic_table,  headers_out, encoded_buffer, buffer_size);
+    int rc = hpack_encoder_encode(dynamic_table,  headers_out, encoded_buffer, buffer_size);
+    DEBUG("RETURN FROM HPACK");
+    return rc;
 }
 
 /*

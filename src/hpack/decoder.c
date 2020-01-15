@@ -109,83 +109,27 @@ uint32_t hpack_decoder_read_bits_from_bytes(uint16_t current_bit_pointer, uint8_
 }
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
-/*
- * Function: hpack_decoder_decode_huffman_word
- * Given the bit position from where to start to read, tries to decode de bits using
- * different lengths (from smallest (5) to largest(30)) and stores the result byte in *str.
- * This function is meant to be used internally by hpack_decoder_decode_huffman_string.
- * Input:
- *      -> *str: Pointer to byte to store the result of the decompression process
- *      -> *encoded_string: Buffer storing compressed representation of string to decompress
- *      -> encoded_string_size: Size (in octets) given by header, this is not the same as the decompressed string size
- *      -> bit_position: Starts to decompress from this bit in the *encoded_string
- * Output:
- *      Stores the result in the first byte of str and returns the size in bits of
- *      the encoded word (e.g. 5 or 6 or 7 ...), if an error occurs the return value is -1.
- */
-int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint32_t encoded_string_size, uint16_t bit_position)
-{
-    huffman_encoded_word_t encoded_word;
-    uint8_t length = 30;
-    uint32_t result;
-
-    /*Check if can read buffer*/
-    if (bit_position + length > 8 * encoded_string_size) {
-        uint8_t bits_left = (uint8_t)((8u * encoded_string_size) - bit_position);
-        if (bits_left < 5) {
-            /*This is not a true error, just for checking*/
-            return INTERNAL_ERROR;
-        }
-        else {
-            uint8_t number_of_padding_bits = (uint8_t)(length - bits_left);
-            uint32_t padding = (1u << (number_of_padding_bits)) - 1u;
-            result = hpack_decoder_read_bits_from_bytes(bit_position, bits_left, encoded_string);
-            result <<= number_of_padding_bits;
-            result |= padding;
-
-        }
-    }
-    else {
-        result = hpack_decoder_read_bits_from_bytes(bit_position, 30, encoded_string);
-    }
-
-    encoded_word.code = result;
-    encoded_word.length = 30;
-    uint8_t decoded_sym = 0;
-
-    int8_t rc = hpack_huffman_decode(&encoded_word, &decoded_sym);
-
-    if (rc == 0) {    /*Code is found on huffman tree*/
-        str[0] = (char)decoded_sym;
-        return encoded_word.length;
-    }
-    INFO("Couldn't read bits in hpack_decoder_decode_huffman_word");
-    return INTERNAL_ERROR;
-}
-#endif
-
 
 /*
  * Function: hpack_decoder_check_huffman_padding
  * Checks if the last byte has correct padding
  * Input:
- *      bit_position: position of last read bit, check from that bit forward.
+ *      bits_left: bits NOT read from the last byte of the buffer
  *      *encoded_buffer: Buffer containing encoded bytes.
  *      str_length: Length of the buffer
- *      str_length_size: Size in bytes of the length of the string
  * Output:
- *      returns the number of bytes read from encoded_buffer is successful, if it fails throws an error.
+ *      returns 0 if padding of last byte is correct, if it fails throws an error.
  */
 
-int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, const uint8_t *encoded_buffer, uint32_t str_length, uint32_t str_length_size)
+int32_t hpack_decoder_check_huffman_padding(uint8_t bits_left, const uint8_t *encoded_buffer, uint32_t str_length)
 {
-    uint8_t bits_left = (uint8_t)(8 * str_length - bit_position);
+    //uint8_t bits_left = (uint8_t)(8 * str_length - bit_position);
     uint8_t last_byte = encoded_buffer[str_length - 1];
 
     if (bits_left < 8) {
         uint8_t mask = (uint8_t)((1u << bits_left) - 1u); /*padding of encoding*/
         if ((last_byte & mask) == mask) {
-            return str_length + str_length_size;
+            return 0;
         }
         else {
             DEBUG("Last byte is %d", last_byte);
@@ -204,6 +148,60 @@ int32_t hpack_decoder_check_huffman_padding(uint16_t bit_position, const uint8_t
         return INTERNAL_ERROR;
     }
 }
+
+/*
+ * Function: hpack_decoder_decode_huffman_word
+ * Given the bit position from where to start to read, tries to decode de bits using
+ * different lengths (from smallest (5) to largest(30)) and stores the result byte in *str.
+ * This function is meant to be used internally by hpack_decoder_decode_huffman_string.
+ * Input:
+ *      -> *str: Pointer to byte to store the result of the decompression process
+ *      -> *encoded_string: Buffer storing compressed representation of string to decompress
+ *      -> encoded_string_size: Size (in octets) given by header, this is not the same as the decompressed string size
+ *      -> bit_position: Starts to decompress from this bit in the *encoded_string
+ * Output:
+ *      Stores the result in the first byte of str and returns the size in bits of
+ *      the encoded word (e.g. 5 or 6 or 7 ...),
+ *      returns the number of bytes read from encoded_buffer is successful, if it fails throws an error.
+ */
+int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string, uint32_t encoded_string_size, uint16_t bit_position)
+{
+    huffman_encoded_word_t encoded_word;
+    uint8_t length = 30;
+    uint32_t result;
+    uint8_t bits_left = (uint8_t)((8u * encoded_string_size) - bit_position);
+
+    /*Check if can read buffer*/
+    if (bit_position + length > 8 * encoded_string_size) {
+        if (bits_left < 5) {
+            return hpack_decoder_check_huffman_padding(bits_left, encoded_string, encoded_string_size);
+        }
+        else {
+            uint8_t number_of_padding_bits = (uint8_t)(length - bits_left);
+            uint32_t padding = (1u << (number_of_padding_bits)) - 1u;
+            result = hpack_decoder_read_bits_from_bytes(bit_position, bits_left, encoded_string);
+            result <<= number_of_padding_bits;
+            result |= padding;
+        }
+    }
+    else {
+        result = hpack_decoder_read_bits_from_bytes(bit_position, length, encoded_string);
+    }
+
+    encoded_word.code = result;
+    //encoded_word.length = 30;
+    uint8_t decoded_sym = 0;
+
+    int8_t bit_size = hpack_huffman_decode(&encoded_word, &decoded_sym);
+
+    if (bit_size >= 0) {    /*Code is found on huffman tree*/
+        str[0] = (char)decoded_sym;
+        return bit_size;
+    }
+    INFO("Couldn't read bits in hpack_decoder_decode_huffman_word");
+    return hpack_decoder_check_huffman_padding(bits_left, encoded_string, encoded_string_size);
+}
+#endif
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
 
@@ -225,8 +223,11 @@ int32_t hpack_decoder_decode_huffman_string(char *str, uint8_t *encoded_string, 
 
     for (uint16_t i = 0; ((bit_position - 1) / 8) < (int32_t)str_length; i++) {
         int32_t word_length = hpack_decoder_decode_huffman_word(str + i, encoded_string, str_length, bit_position);
-        if (word_length < 0) {
-            return hpack_decoder_check_huffman_padding(bit_position, encoded_string, str_length, str_length_size);
+        if (word_length == 0) {
+            break;
+        }
+        if (word_length < 0) { //ERROR
+            return word_length;
         }
         bit_position += word_length;
     }
@@ -338,6 +339,7 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
         int8_t rc = hpack_tables_find_entry_name(dynamic_table,
                                                  encoded_header->index,
                                                  tmp_name);
+        DEBUG("RC IS %d",rc);
         if (rc < 0) {
             DEBUG("Error en find_entry ");
             return rc;
@@ -617,8 +619,8 @@ int8_t hpack_decoder_check_errors(hpack_encoded_header_t *encoded_header)
  */
 int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_block, int32_t header_block_size, header_list_t *headers)
 {
-    char tmp_name[MAX_HEADER_NAME_LEN];
-    char tmp_value[MAX_HEADER_VALUE_LEN];
+    char tmp_name[HPACK_HEADER_NAME_LEN];
+    char tmp_value[HPACK_HEADER_VALUE_LEN];
 
     int pointer = 0;
 
@@ -626,8 +628,8 @@ int hpack_decoder_decode(hpack_dynamic_table_t *dynamic_table, uint8_t *header_b
 
     while (pointer < header_block_size) {
         hpack_encoded_header_t encoded_header = { 0 };
-        memset(tmp_name, 0, MAX_HEADER_NAME_LEN);
-        memset(tmp_value, 0, MAX_HEADER_VALUE_LEN);
+        memset(tmp_name, 0, HPACK_HEADER_NAME_LEN);
+        memset(tmp_value, 0, HPACK_HEADER_VALUE_LEN);
 
         int bytes_read = hpack_decoder_parse_encoded_header(&encoded_header,
                                                             header_block + pointer,

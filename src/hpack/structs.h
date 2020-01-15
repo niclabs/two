@@ -26,6 +26,9 @@
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (256)
 #endif
 
+#define HPACK_HEADER_NAME_LEN (32)
+#define HPACK_HEADER_VALUE_LEN (64)
+
 typedef enum __attribute__((__packed__)) {
     INDEXED_HEADER_FIELD                            = (uint8_t) 128,
     LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING  = (uint8_t) 64,

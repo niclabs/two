@@ -406,7 +406,7 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table,
                                              headers_array[i].value,
                                              encoded_buffer + pointer,
                                              buffer_size);
-
+        DEBUG("RETURN encode_header");
         pointer += rc;
     }
     return pointer;

@@ -89,7 +89,7 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
  *      -> *encoded: Struct containing encoded word
  *      -> *sym: Byte to store result
  * Output:
- *      Returns 0 if successful, if it cannot find the symbol it returns -1
+ *      Returns the number of bits read if successful, if it cannot find the symbol it returns -1
  */
 int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
@@ -109,8 +109,7 @@ int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
     uint32_t pos = huffman_tree.F[length] + code - huffman_tree.C[length];
     if (pos < HUFFMAN_TABLE_SIZE) {
         *sym = huffman_tree.L[pos];
-        encoded->length = length;
-        return 0;
+        return length;
     }
     return -1;
 }
