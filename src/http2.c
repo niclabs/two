@@ -598,11 +598,20 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     header_list_t header_list;
 
     header_list_reset(&header_list);
-    if (hpack_decode(&ctx->hpack_dynamic_table, stream->buf, stream->buflen, &header_list) < 0) {
-        http2_error(ctx, HTTP2_COMPRESSION_ERROR);
-        return -1;
+
+    switch (hpack_decode(&ctx->hpack_dynamic_table, stream->buf, stream->buflen, &header_list)) {
+        case HPACK_COMPRESSION_ERROR:
+            http2_error(ctx, HTTP2_COMPRESSION_ERROR);
+            return -1;
+        case HPACK_MEMORY_ERROR:
+            http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
+            return -1;
+        case HPACK_INTERNAL_ERROR:
+            http2_error(ctx, HTTP2_INTERNAL_ERROR);
+            return -1;
+        default:
+            break;
     }
-    
 
     if (validate_pseudoheaders(&header_list) < 0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
