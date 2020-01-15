@@ -27,7 +27,7 @@ void header_list_reset(header_list_t *headers)
 {
     assert(headers != NULL);
 
-    memset(headers->buffer, 0, MAX_HEADER_LIST_SIZE);
+    memset(headers->buffer, 0, HEADER_LIST_MAX_SIZE);
 
     headers->count = 0;
     headers->size = 0;
@@ -107,7 +107,7 @@ int header_list_append(header_list_t *headers, const char *name, const char *val
     unsigned int vlen = strlen(value);
 
     // not enough space left in the header list to append the new value
-    if (nlen + 1 + vlen + 1 >= (unsigned)(MAX_HEADER_LIST_SIZE - headers->size)) {
+    if (nlen + 1 + vlen + 1 >= (unsigned)(HEADER_LIST_MAX_SIZE - headers->size)) {
         return -1;
     }
 
@@ -125,7 +125,7 @@ int header_list_append(header_list_t *headers, const char *name, const char *val
     headers->size += nlen + 1 + vlen + 1;
 
     // append padding bytes if possible
-    unsigned int padding = MIN(HEADER_LIST_PADDING, MAX_HEADER_LIST_SIZE - headers->size);
+    unsigned int padding = MIN(HEADER_LIST_PADDING, HEADER_LIST_MAX_SIZE - headers->size);
     memset(ptr, 0, padding);
     headers->size += padding;
 
@@ -189,7 +189,7 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
         }
         // else if there are enough bytes left in the array for the new value
         // name + '\0' + existing_value + ',' + value + '\0' has to fit in the remainging array
-        else if (strlen(value) + 1 + 1 < (unsigned)(MAX_HEADER_LIST_SIZE - headers->size + padding)) {
+        else if (strlen(value) + 1 + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + padding)) {
             // Create a new value
             int newlen = len + 1 + strlen(value);
             char newvalue[newlen + 1];
@@ -281,7 +281,7 @@ int header_list_set(header_list_t *headers, const char *name, const char *value)
         }
         // else if there are enough bytes left in the array for the new value
         // splice the array and append at the end
-        else if (strlen(value) + 1 < (unsigned)(MAX_HEADER_LIST_SIZE - headers->size + len + padding)) {
+        else if (strlen(value) + 1 < (unsigned)(HEADER_LIST_MAX_SIZE - headers->size + len + padding)) {
             // splice the memory from the array
             header_list_splice(headers, start, end - start);
             

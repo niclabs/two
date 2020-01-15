@@ -6,12 +6,12 @@
 /**
  * Maximum header list size in bytes
  * This value must be taken into account by
- * http2 settings MAX_HEADER_LIST_SIZE
+ * http2 settings HEADER_LIST_MAX_SIZE
  */
-#ifdef CONFIG_MAX_HEADER_LIST_SIZE
-#define MAX_HEADER_LIST_SIZE (CONFIG_MAX_HEADER_LIST_SIZE)
+#ifdef CONFIG_HTTP2_MAX_HEADER_LIST_SIZE
+#define HEADER_LIST_MAX_SIZE (CONFIG_HTTP2_MAX_HEADER_LIST_SIZE)
 #else
-#define MAX_HEADER_LIST_SIZE (512)
+#define HEADER_LIST_MAX_SIZE (512)
 #endif
 
 #ifdef CONFIG_HEADER_LIST_PADDING
@@ -26,7 +26,7 @@
  * Should not be used directly, use provided API methods
  */
 typedef struct {
-    char buffer[MAX_HEADER_LIST_SIZE];
+    char buffer[HEADER_LIST_MAX_SIZE];
     int count;
     int size;
 } header_list_t;
