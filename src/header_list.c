@@ -118,7 +118,6 @@ int header_list_append(header_list_t *headers, const char *name, const char *val
 
     // update size
     headers->size += nlen + 1 + vlen + 1;
-    DEBUG("newsize: %d", headers->size);
 
     // add a new entry
     headers->count += 1;
