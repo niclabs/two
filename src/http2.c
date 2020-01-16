@@ -485,7 +485,6 @@ int validate_pseudoheaders(header_list_t *headers)
 
     char *te = header_list_get(headers, "te");
     if (te != NULL && strcmp(te, "trailers") != 0) {
-        DEBUG("TWO");
         // The only exception to this is the TE header field,
         // which MAY be present in an HTTP/2 request; when it is,
         // it MUST NOT contain any value other than "trailers".
