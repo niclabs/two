@@ -109,9 +109,12 @@ void event_sock_handle_read(event_sock_t *sock, event_handler_t *handler)
     }
 
     int buflen = cbuf_len(&handler->event.read.buf);
-
-    // if a read is not paused notify about the new data
-    if (handler->event.read.cb != NULL && (buflen > 0 || cbuf_has_ended(&handler->event.read.buf))) {
+    if (handler->event.read.cb != NULL && cbuf_has_ended(&handler->event.read.buf)) {
+        // if a read terminated call the callback with -1 
+        handler->event.read.cb(sock, -1, NULL);
+    }
+    else if (handler->event.read.cb != NULL && buflen > 0) {
+        // if a read is not paused notify about the new data
         uint8_t read_buf[buflen];
         cbuf_peek(&handler->event.read.buf, read_buf, buflen);
 
