@@ -296,6 +296,7 @@ void event_sock_handle_timeout(void *data)
 
     // run the callback
     int remove = handler->event.timer.cb(sock);
+
     if (remove > 0) {
         // stop ctimer
         ctimer_stop(&handler->event.timer.ctimer);
@@ -424,8 +425,6 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
     if (uip_newdata()) {
         event_sock_read(sock, rh);
     }
-
-
 
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
@@ -916,7 +915,7 @@ void event_loop(event_loop_t *loop)
 #ifdef CONTIKI
     PROCESS_BEGIN();
 #else
-    // prevent send() raising a SIGPIPE when 
+    // prevent send() raising a SIGPIPE when
     // remote connection has closed
     signal(SIGPIPE, SIG_IGN);
 #endif
