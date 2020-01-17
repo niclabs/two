@@ -109,12 +109,12 @@ void event_sock_handle_read(event_sock_t *sock, event_handler_t *handler)
     }
 
     int buflen = cbuf_len(&handler->event.read.buf);
-    if (handler->event.read.cb != NULL && cbuf_has_ended(&handler->event.read.buf)) {
+    if (cbuf_has_ended(&handler->event.read.buf)) {
         // if a read terminated call the callback with -1 
         handler->event.read.cb(sock, -1, NULL);
     }
-    else if (handler->event.read.cb != NULL && buflen > 0) {
-        // if a read is not paused notify about the new data
+    else if (buflen > 0) {
+        // else notify about the new data
         uint8_t read_buf[buflen];
         cbuf_peek(&handler->event.read.buf, read_buf, buflen);
 
@@ -620,6 +620,7 @@ int event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, eve
     assert(sock != NULL);
     assert(sock->loop != NULL);
     assert(buf != NULL);
+    assert(cb != NULL);
 
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
@@ -650,6 +651,7 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
+    assert(cb != NULL);
 
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
