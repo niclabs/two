@@ -197,6 +197,9 @@ typedef struct http2_context {
     // IMPORTANT: this pointer must be the first of the struct
     struct http2_context *next;
 
+    // identifier for debugging
+    uint8_t id;
+
     // tcp socket
     event_sock_t *socket;
 
