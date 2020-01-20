@@ -26,7 +26,7 @@ struct __ll {
 
 // Get next element of the list
 #define __NEXT(elem) ((struct __ll *)elem)->next
-#define __LL_CONCAT1(a, b) a ## b
+#define __LL_CONCAT1(a, b) a##b
 #define __LL_CONCAT(a, b) __LL_CONCAT1(a, b)
 
 #define LL(type, name, maxlen)              \
@@ -41,7 +41,7 @@ struct __ll {
     do {                                                                        \
         memset(__LL_CONCAT(name,_list), 0, sizeof(__LL_CONCAT(name,_list)));    \
         for (int i = 0; i < maxlen - 1; i++) {                                  \
-            __LL_CONCAT(name,_list)[i] = __LL_CONCAT(name,_list)[i + 1];        \
+            __LL_CONCAT(name,_list)[i].next = &__LL_CONCAT(name,_list)[i + 1];  \
         }                                                                       \
         name = &__LL_CONCAT(name,_list)[0];                                     \
     } while(0)
@@ -51,7 +51,7 @@ struct __ll {
         type * elem = LL_POP(src);          \
         if (elem != NULL) {                 \
             memset(elem, 0, sizeof(type));  \
-            LL_PUSH(elem, dst);             \
+            LL_APPEND(elem, dst);           \
         }                                   \
         elem;                               \
      })
@@ -66,7 +66,7 @@ struct __ll {
     })
 
 // Append an element at the end of the list
-#define LL_APPEND(elem, list)                          \
+#define LL_APPEND(elem, list)                            \
     ({                                                   \
         void *curr = list;                               \
         while (curr != NULL && __NEXT(curr) != NULL)     \
@@ -83,7 +83,7 @@ struct __ll {
     })
 
 // Pop the first element of the list
-#define LL_POP(list)          \
+#define LL_POP(list)            \
     ({                          \
         void *elem = list;      \
         if (list != NULL) {     \
@@ -93,7 +93,7 @@ struct __ll {
     })
 
 // Count the number of elements of the list
-#define LL_COUNT(list)                \
+#define LL_COUNT(list)                  \
     ({                                  \
         int count = 0;                  \
         void *elem = list;              \
@@ -111,7 +111,7 @@ struct __ll {
 
 // Find the first element that matches condition.
 // Use with LL_ELEM
-#define LL_FIND(list, condition)          \
+#define LL_FIND(list, condition)            \
     ({                                      \
         void *elem = list;                  \
         void *res = NULL;                   \
@@ -126,7 +126,7 @@ struct __ll {
     })
 
 // Delete the given element from the list
-#define LL_DELETE(elem, list)                         \
+#define LL_DELETE(elem, list)                           \
     ({                                                  \
         void *res = NULL;                               \
         void *curr = list, *prev = NULL;                \

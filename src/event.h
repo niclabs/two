@@ -172,14 +172,9 @@ typedef struct event_loop {
     event_sock_t *polling;
 
     // static memory
-    event_sock_t sockets[EVENT_MAX_SOCKETS];
-    event_sock_t *unused;
-
-    event_handler_t handlers[EVENT_MAX_HANDLERS];
-    event_handler_t *unused_handlers;
-
-    event_write_op_t write_ops[EVENT_MAX_WRITE_OPS];
-    event_write_op_t *unused_write_ops;
+    LL(event_sock_t, sockets, EVENT_MAX_SOCKETS);
+    LL(event_handler_t, handlers, EVENT_MAX_HANDLERS);
+    LL(event_write_op_t, write_ops, EVENT_MAX_WRITE_OPS);
 
     // loop state
     int running;
