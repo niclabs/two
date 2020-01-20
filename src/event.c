@@ -81,7 +81,6 @@ void event_sock_close(event_sock_t *sock, int status)
         // notify of error if we could not notify the read
         if (re == NULL && op != NULL) {
             op->cb(sock, status);
-
         }
 
         // remove all pending operations
@@ -167,10 +166,14 @@ void event_sock_handle_write(event_sock_t *sock, event_t *event, unsigned int wr
             // reduce the size and push the operation back to
             // the list
             op->bytes -= written;
-            LL_PUSH(op, event->data.write.queue);
-            return;
+            break;
         }
+
         op = LL_POP(event->data.write.queue);
+    }
+
+    if (op != NULL) {
+        LL_PUSH(op, event->data.write.queue);
     }
 }
 
