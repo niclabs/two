@@ -4,7 +4,7 @@
 #include "frames.h"
 #include "http2.h"
 #include "http.h"
-#include "list_macros.h"
+#include "ll.h"
 #include "utils.h"
 
 #define LOG_MODULE LOG_MODULE_HTTP2
@@ -36,9 +36,10 @@
 
 // static variables for reserved http2 client memory
 // and free and connected clients lists
-static http2_context_t http2_clients[HTTP2_MAX_CLIENTS];
+LL_STATIC(http2_context_t, clients, HTTP2_MAX_CLIENTS);
 static http2_context_t *connected_clients;
-static http2_context_t *unused_clients;
+
+// Current client id
 static uint8_t client_id;
 
 // default settings from the protocol specification
@@ -58,12 +59,6 @@ void close_on_write_error(event_sock_t *sock, int status);
 void close_on_goaway_sent(event_sock_t *sock, int status);
 int close_on_timeout(event_sock_t *sock);
 
-// get the first client in the unused_clients list
-http2_context_t *find_unused_client();
-
-// return client to unused list
-void free_client(http2_context_t *ctx);
-
 // state methods, are called by event read while in a specific
 // connection state
 int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf);
@@ -81,16 +76,13 @@ http2_context_t *http2_new_client(event_sock_t *client)
     static int inited = 0;
     if (!inited) {
         // Initialize client memory
-        memset(http2_clients, 0, HTTP2_MAX_CLIENTS * sizeof(http2_context_t));
-        for (int i = 0; i < HTTP2_MAX_CLIENTS - 1; i++) {
-            http2_clients[i].next = &http2_clients[i + 1];
-        }
+        LL_INIT(clients, HTTP2_MAX_CLIENTS);
         connected_clients = NULL;
-        unused_clients = &http2_clients[0];
         inited = 1;
     }
 
-    http2_context_t *ctx = find_unused_client();
+    // get first element from the client list into the connected clients list
+    http2_context_t *ctx = LL_MOVE(http2_context_t, clients, connected_clients);
     assert(ctx != NULL);
 
     INFO("http/2 client %d connected", client_id);
@@ -122,7 +114,9 @@ void http2_on_client_close(event_sock_t *sock)
 {
     http2_context_t *ctx = (http2_context_t *)sock->data;
     INFO("http/2 client %u disconnected", ctx->id);
-    free_client(ctx);
+
+    // free the client
+    LL_PUSH(ctx, clients);
 }
 
 void http2_close_immediate(http2_context_t *ctx)
@@ -213,26 +207,6 @@ void on_settings_sent(event_sock_t *sock, int status)
     ctx->flags |= HTTP2_FLAGS_WAITING_SETTINGS_ACK;
 
     // TODO: set ack timer
-}
-
-// find a free client in the
-http2_context_t *find_unused_client()
-{
-    http2_context_t *ctx = LIST_POP(unused_clients);
-
-    if (ctx != NULL) {
-        memset(ctx, 0, sizeof(http2_context_t));
-        LIST_PUSH(ctx, connected_clients);
-    }
-
-    return ctx;
-}
-
-void free_client(http2_context_t *ctx)
-{
-    if (LIST_DELETE(ctx, connected_clients) != NULL) {
-        LIST_PUSH(ctx, unused_clients);
-    }
 }
 
 // update remote settings from settings payload

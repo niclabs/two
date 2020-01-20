@@ -18,7 +18,6 @@
 #define LOG_MODULE LOG_MODULE_EVENT
 
 #include "logging.h"
-#include "list_macros.h"
 
 #ifdef CONTIKI
 // Main contiki process
@@ -32,21 +31,21 @@ PROCESS(event_loop_process, "Event loop process");
 // find socket file descriptor in socket queue
 event_handler_t *event_handler_find(event_handler_t *queue, event_type_t type)
 {
-    return LIST_FIND(queue, LIST_ELEM(event_handler_t)->type == type);
+    return LL_FIND(queue, LL_ELEM(event_handler_t)->type == type);
 }
 
 // find free handler in loop memory
 event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
 {
     // get event handler from loop memory
-    event_handler_t *handler = LIST_POP(loop->unused_handlers);
+    event_handler_t *handler = LL_POP(loop->unused_handlers);
 
     if (handler != NULL) {
         // reset handler memory
         memset(handler, 0, sizeof(event_handler_t));
 
         // link handler to sock memory
-        LIST_APPEND(handler, sock->handlers);
+        LL_APPEND(handler, sock->handlers);
     }
 
     return handler;
@@ -55,14 +54,14 @@ event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
 event_write_op_t *event_write_op_find_free(event_loop_t *loop, event_handler_t *handler)
 {
     // get event handler from loop memory
-    event_write_op_t *op = LIST_POP(loop->unused_write_ops);
+    event_write_op_t *op = LL_POP(loop->unused_write_ops);
 
     if (op != NULL) {
         // reset handler memory
         memset(op, 0, sizeof(event_write_op_t));
 
         // link handler to sock memory
-        LIST_APPEND(op, handler->event.write.ops);
+        LL_APPEND(op, handler->event.write.ops);
     }
 
     return op;
@@ -71,7 +70,7 @@ event_write_op_t *event_write_op_find_free(event_loop_t *loop, event_handler_t *
 // find socket file descriptor in socket queue
 event_sock_t *event_sock_find(event_sock_t *queue, event_descriptor_t descriptor)
 {
-    return LIST_FIND(queue, LIST_ELEM(event_sock_t)->descriptor == descriptor);
+    return LL_FIND(queue, LL_ELEM(event_sock_t)->descriptor == descriptor);
 }
 
 void event_sock_connect(event_sock_t *sock, event_handler_t *handler)
@@ -105,7 +104,7 @@ void event_sock_close(event_sock_t *sock, int status)
         // empty the buffer
         cbuf_pop(&wh->event.write.buf, NULL, cbuf_len(&wh->event.write.buf));
 
-        event_write_op_t *op = LIST_POP(wh->event.write.ops);
+        event_write_op_t *op = LL_POP(wh->event.write.ops);
         // notify of error if we could not notify the read
         if (rh == NULL && op != NULL) {
             op->cb(sock, status);
@@ -114,8 +113,8 @@ void event_sock_close(event_sock_t *sock, int status)
 
         // remove all pending operations
         while (op != NULL) {
-            LIST_PUSH(op, sock->loop->unused_write_ops);
-            op = LIST_POP(wh->event.write.ops);
+            LL_PUSH(op, sock->loop->unused_write_ops);
+            op = LL_POP(wh->event.write.ops);
         }
     }
 }
@@ -183,7 +182,7 @@ void event_sock_handle_read(event_sock_t *sock, event_handler_t *handler)
 void event_sock_handle_write(event_sock_t *sock, event_handler_t *handler, unsigned int written)
 {
     // notify the waiting write operatinons
-    event_write_op_t *op = LIST_POP(handler->event.write.ops);
+    event_write_op_t *op = LL_POP(handler->event.write.ops);
 
     while (op != NULL && written > 0) {
         if (op->bytes - written <= 0) {
@@ -194,17 +193,17 @@ void event_sock_handle_write(event_sock_t *sock, event_handler_t *handler, unsig
 
             // return the operation to
             // the loop
-            LIST_PUSH(op, sock->loop->unused_write_ops);
+            LL_PUSH(op, sock->loop->unused_write_ops);
         }
         else {
             // if not enough bytes have been written yet
             // reduce the size and pop the operation back to
             // the list
             op->bytes -= written;
-            LIST_PUSH(op, handler->event.write.ops);
+            LL_PUSH(op, handler->event.write.ops);
             return;
         }
-        op = LIST_POP(handler->event.write.ops);
+        op = LL_POP(handler->event.write.ops);
     }
 }
 
@@ -281,10 +280,10 @@ void event_loop_timers(event_loop_t *loop)
             handler->event.timer.start = now;
             if (remove > 0) {
                 // remove handler from list
-                LIST_DELETE(handler, sock->handlers);
+                LL_DELETE(handler, sock->handlers);
 
                 // move handler to loop unused list
-                LIST_PUSH(handler, sock->loop->unused_handlers);
+                LL_PUSH(handler, sock->loop->unused_handlers);
             }
         }
     }
@@ -356,10 +355,10 @@ void event_sock_handle_timeout(void *data)
         ctimer_stop(&handler->event.timer.ctimer);
 
         // remove handler from list
-        LIST_DELETE(handler, sock->handlers);
+        LL_DELETE(handler, sock->handlers);
 
         // move handler to loop unused list
-        LIST_PUSH(handler, sock->loop->unused_handlers);
+        LL_PUSH(handler, sock->loop->unused_handlers);
     }
     else {
         ctimer_restart(&handler->event.timer.ctimer);
@@ -405,9 +404,9 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
 
     if (uip_connected()) {
         if (sock == NULL) { // new client connection
-            sock = LIST_FIND(loop->polling, \
-                             LIST_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING && \
-                             UIP_HTONS(LIST_ELEM(event_sock_t)->descriptor) == uip_conn->lport);
+            sock = LL_FIND(loop->polling, \
+                             LL_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING && \
+                             UIP_HTONS(LL_ELEM(event_sock_t)->descriptor) == uip_conn->lport);
 
             // Save the connection for when
             // accept is called
@@ -528,7 +527,7 @@ void event_loop_close(event_loop_t *loop)
             curr->close_cb(curr);
 
             // Move curr socket to unused list
-            event_sock_t *next = LIST_PUSH(curr, loop->unused);
+            event_sock_t *next = LL_PUSH(curr, loop->unused);
 
             // remove the socket from the polling list
             // and move the socket back to the unused list
@@ -540,7 +539,7 @@ void event_loop_close(event_loop_t *loop)
             }
 
             // move socket handlers back to the unused handler list
-            for (event_handler_t *h = curr->handlers; h != NULL; h = LIST_PUSH(h, loop->unused_handlers)) {}
+            for (event_handler_t *h = curr->handlers; h != NULL; h = LL_PUSH(h, loop->unused_handlers)) {}
 
             // move the head forward
             curr = next;
@@ -623,7 +622,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     sock->state = EVENT_SOCK_LISTENING;
 
     // add socket to polling queue
-    LIST_PUSH(sock, loop->polling);
+    LL_PUSH(sock, loop->polling);
 
     // add event handler to socket
     event_handler_t *handler = event_handler_find_free(loop, sock);
@@ -699,7 +698,7 @@ int event_read_stop(event_sock_t *sock)
     }
 
     // remove read handler from list
-    LIST_DELETE(handler, sock->handlers);
+    LL_DELETE(handler, sock->handlers);
 
     // reset read callback
     handler->event.read.cb = NULL;
@@ -713,7 +712,7 @@ int event_read_stop(event_sock_t *sock)
     memcpy(handler->event.read.buf.ptr, buf, len);
 
     // move handler to loop unused list
-    LIST_PUSH(handler, sock->loop->unused_handlers);
+    LL_PUSH(handler, sock->loop->unused_handlers);
 
     return len;
 }
@@ -864,7 +863,7 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     client->state = EVENT_SOCK_CONNECTED;
 
     // add socket to polling list
-    LIST_PUSH(client, loop->polling);
+    LL_PUSH(client, loop->polling);
 
     return 0;
 }
@@ -942,7 +941,7 @@ event_sock_t *event_sock_create(event_loop_t *loop)
 
     // get the first unused sock
     // and remove sock from unsed list
-    event_sock_t *sock = LIST_POP(loop->unused);
+    event_sock_t *sock = LL_POP(loop->unused);
 
     // reset sock memory
     memset(sock, 0, sizeof(event_sock_t));
@@ -958,7 +957,7 @@ int event_sock_unused(event_loop_t *loop)
 {
     assert(loop != NULL);
 
-    return LIST_COUNT(loop->unused);
+    return LL_COUNT(loop->unused);
 }
 
 #ifdef CONTIKI

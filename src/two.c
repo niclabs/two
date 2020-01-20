@@ -13,8 +13,6 @@
 #define LOG_MODULE LOG_MODULE_HTTP
 #include "logging.h"
 
-#include "list_macros.h"
-
 #ifndef TWO_MAX_CLIENTS
 #define TWO_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
 #endif

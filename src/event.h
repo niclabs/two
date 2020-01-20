@@ -10,6 +10,7 @@
 #endif
 
 #include "cbuf.h"
+#include "ll.h"
 
 #ifndef CONF_EVENT_MAX_DESCRIPTORS
 #define EVENT_MAX_DESCRIPTORS 2

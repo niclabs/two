@@ -1,5 +1,5 @@
-#ifndef LIST_MACROS_H_
-#define LIST_MACROS_H_
+#ifndef LL_MACROS_H_
+#define LL_MACROS_H_
 
 /**
  * Generic list operation macros, a list is any
@@ -20,15 +20,44 @@
 /**
  * Private generic list item.
  */
-struct __li {
+struct __ll {
     void *next;
 };
 
 // Get next element of the list
-#define __NEXT(elem) ((struct __li *)elem)->next
+#define __NEXT(elem) ((struct __ll *)elem)->next
+#define __LL_CONCAT1(a, b) a ## b
+#define __LL_CONCAT(a, b) __LL_CONCAT1(a, b)
+
+#define LL(type, name, maxlen)              \
+    type __LL_CONCAT(name,_list)[maxlen];   \
+    type *name
+
+#define LL_STATIC(type, name, maxlen)               \
+    static type __LL_CONCAT(name,_list)[maxlen];    \
+    static type *name
+
+#define LL_INIT(name, maxlen)                                                   \
+    do {                                                                        \
+        memset(__LL_CONCAT(name,_list), 0, sizeof(__LL_CONCAT(name,_list)));    \
+        for (int i = 0; i < maxlen - 1; i++) {                                  \
+            __LL_CONCAT(name,_list)[i] = __LL_CONCAT(name,_list)[i + 1];        \
+        }                                                                       \
+        name = &__LL_CONCAT(name,_list)[0];                                     \
+    } while(0)
+
+#define LL_MOVE(type, src, dst)             \
+    ({                                      \
+        type * elem = LL_POP(src);          \
+        if (elem != NULL) {                 \
+            memset(elem, 0, sizeof(type));  \
+            LL_PUSH(elem, dst);             \
+        }                                   \
+        elem;                               \
+     })
 
 // Push an element at the beginning of the list
-#define LIST_PUSH(elem, list)       \
+#define LL_PUSH(elem, list)         \
     ({                              \
         void *next = (elem)->next;  \
         (elem)->next = list;        \
@@ -37,7 +66,7 @@ struct __li {
     })
 
 // Append an element at the end of the list
-#define LIST_APPEND(elem, list)                          \
+#define LL_APPEND(elem, list)                          \
     ({                                                   \
         void *curr = list;                               \
         while (curr != NULL && __NEXT(curr) != NULL)     \
@@ -54,7 +83,7 @@ struct __li {
     })
 
 // Pop the first element of the list
-#define LIST_POP(list)          \
+#define LL_POP(list)          \
     ({                          \
         void *elem = list;      \
         if (list != NULL) {     \
@@ -64,7 +93,7 @@ struct __li {
     })
 
 // Count the number of elements of the list
-#define LIST_COUNT(list)                \
+#define LL_COUNT(list)                \
     ({                                  \
         int count = 0;                  \
         void *elem = list;              \
@@ -75,14 +104,14 @@ struct __li {
         count;                          \
     })
 
-// Use this macro for comparisons in LIST_FIND
-// e.g. f = LIST_FIND(list, LIST_ELEM(struct type)->num) == 1);
+// Use this macro for comparisons in LL_FIND
+// e.g. f = LL_FIND(list, LL_ELEM(struct type)->num) == 1);
 // will find the first element with variable num == 1
-#define LIST_ELEM(type) ((type *)elem)
+#define LL_ELEM(type) ((type *)elem)
 
 // Find the first element that matches condition.
-// Use with LIST_ELEM
-#define LIST_FIND(list, condition)          \
+// Use with LL_ELEM
+#define LL_FIND(list, condition)          \
     ({                                      \
         void *elem = list;                  \
         void *res = NULL;                   \
@@ -97,7 +126,7 @@ struct __li {
     })
 
 // Delete the given element from the list
-#define LIST_DELETE(elem, list)                         \
+#define LL_DELETE(elem, list)                         \
     ({                                                  \
         void *res = NULL;                               \
         void *curr = list, *prev = NULL;                \
