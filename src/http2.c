@@ -57,7 +57,6 @@ http2_settings_t default_settings = {
 // error ocurred
 void close_on_write_error(event_sock_t *sock, int status);
 void close_on_goaway_sent(event_sock_t *sock, int status);
-int close_on_timeout(event_sock_t *sock);
 
 // state methods, are called by event read while in a specific
 // connection state
@@ -189,9 +188,9 @@ void close_on_goaway_sent(event_sock_t *sock, int status)
     http2_close_immediate(ctx);
 }
 
-int close_on_timeout(event_sock_t *sock)
-{
-    event_close(sock, http2_on_client_close);
+int on_settings_timeout(event_sock_t *sock) {
+    http2_context_t *ctx = (http2_context_t *)sock->data;
+    http2_error(ctx, HTTP2_SETTINGS_TIMEOUT);
     return 1;
 }
 
@@ -206,7 +205,8 @@ void on_settings_sent(event_sock_t *sock, int status)
     // set waiting for ack flag to true
     ctx->flags |= HTTP2_FLAGS_WAITING_SETTINGS_ACK;
 
-    // TODO: set ack timer
+    // set ack timer
+    ctx->timer = event_timer(sock, HTTP2_SETTINGS_WAIT, on_settings_timeout);
 }
 
 // update remote settings from settings payload
@@ -341,7 +341,8 @@ int handle_settings_frame(http2_context_t *ctx, frame_header_t header, uint8_t *
         // disable flag
         ctx->flags &= ~HTTP2_FLAGS_WAITING_SETTINGS_ACK;
 
-        // TODO: disable settings ack timer
+        // disable settings ack timer
+        event_timer_stop(ctx->timer);
     }
 
     return 0;

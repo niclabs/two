@@ -104,6 +104,16 @@
 #define HTTP2_MAX_HEADER_LIST_SIZE (HEADER_LIST_MAX_SIZE)
 
 /**
+ * The macro CONFIG_HTTP2_SETTINGS_WAIT sets the timeout for receiving
+ * a settings ACK in milliseconds
+ */
+#ifdef CONFIG_HTTP2_SETTINGS_WAIT
+#define HTTP2_SETTINGS_WAIT (CONFIG_HTTP2_SETTINGS_WAIT)
+#else
+#define HTTP2_SETTINGS_WAIT (300)
+#endif
+
+/**
  * The macro CONFIG_HTTP2_SOCK_READ_SIZE sets the maximum size of the
  * read buffer for incoming connections. This means that at most
  * CONFIG_HTTP2_SOCK_READ_SIZE bytes can be pending on a given connection
@@ -245,6 +255,9 @@ typedef struct http2_context {
 
     // hpack dynamic table
     hpack_dynamic_table_t hpack_dynamic_table;
+
+    // timer
+    event_t * timer;
 } __attribute__((packed)) http2_context_t;
 
 
