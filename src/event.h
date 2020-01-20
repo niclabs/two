@@ -25,13 +25,13 @@
 #define EVENT_MAX_SOCKETS (CONF_EVENT_MAX_SOCKETS)
 #endif
 
-// event max handlers should be at least 3
-// 1 listen handler for a server socket
-// 1 read and 1 write handler for a client socket
-#ifndef CONF_EVENT_MAX_HANDLERS
-#define EVENT_MAX_HANDLERS (EVENT_MAX_SOCKETS * 3)
+// event max should be at least 3
+// 1 listen event for a server socket
+// 1 read and 1 write event for a client socket
+#ifndef CONF_EVENT_MAX_EVENTS
+#define EVENT_MAX_EVENTS (EVENT_MAX_SOCKETS * 3)
 #else
-#define EVENT_MAX_HANDLERS (CONF_EVENT_MAX_HANDLERS)
+#define EVENT_MAX_EVENTS (CONF_EVENT_MAX_EVENTS)
 #endif
 
 // Defines the total number of write operation handlers
@@ -125,16 +125,16 @@ typedef struct event_timer {
     event_timer_cb cb;
 } event_timer_t;
 
-typedef struct event_handler {
-    struct event_handler *next;
+typedef struct event {
+    struct event *next;
     event_type_t type;
     union {
         event_connection_t connection;
         event_read_t read;
         event_write_t write;
         event_timer_t timer;
-    } event;
-} event_handler_t;
+    } data;
+} event_t;
 
 typedef struct event_sock {
     /* "inherited fields" */
@@ -156,8 +156,8 @@ typedef struct event_sock {
         EVENT_SOCK_CLOSING
     } state;
 
-    // event handler list
-    event_handler_t *handlers;
+    // event list
+    event_t *events;
 
     // close operation
     event_close_cb close_cb;
@@ -173,7 +173,7 @@ typedef struct event_loop {
 
     // static memory
     LL(event_sock_t, sockets, EVENT_MAX_SOCKETS);
-    LL(event_handler_t, handlers, EVENT_MAX_HANDLERS);
+    LL(event_t, events, EVENT_MAX_EVENTS);
     LL(event_write_op_t, write_ops, EVENT_MAX_WRITE_OPS);
 
     // loop state

@@ -29,15 +29,15 @@ PROCESS(event_loop_process, "Event loop process");
 /////////////////////////////////////////////////////
 
 // find socket file descriptor in socket queue
-event_handler_t *event_handler_find(event_handler_t *queue, event_type_t type)
+event_t *event_find(event_t *queue, event_type_t type)
 {
-    return LL_FIND(queue, LL_ELEM(event_handler_t)->type == type);
+    return LL_FIND(queue, LL_ELEM(event_t)->type == type);
 }
 
-// find free handler in loop memory
-event_handler_t *event_handler_find_free(event_loop_t *loop, event_sock_t *sock)
+// find free event in loop memory
+event_t *event_find_free(event_loop_t *loop, event_sock_t *sock)
 {
-    return LL_MOVE(event_handler_t, loop->handlers, sock->handlers);
+    return LL_MOVE(event_t, loop->events, sock->events);
 }
 
 // find socket file descriptor in socket queue
@@ -46,13 +46,13 @@ event_sock_t *event_sock_find(event_sock_t *queue, event_descriptor_t descriptor
     return LL_FIND(queue, LL_ELEM(event_sock_t)->descriptor == descriptor);
 }
 
-void event_sock_connect(event_sock_t *sock, event_handler_t *handler)
+void event_sock_connect(event_sock_t *sock, event_t *event)
 {
-    if (handler != NULL) {
+    if (event != NULL) {
         // if this happens there is an error with the implementation
-        assert(handler->event.connection.cb != NULL);
+        assert(event->data.connection.cb != NULL);
         if (sock->loop->sockets != NULL) {
-            handler->event.connection.cb(sock, 0);
+            event->data.connection.cb(sock, 0);
         }
     }
 }
@@ -60,26 +60,26 @@ void event_sock_connect(event_sock_t *sock, event_handler_t *handler)
 void event_sock_close(event_sock_t *sock, int status)
 {
     assert(status <= 0);
-    event_handler_t *rh = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-    if (rh != NULL) {
+    event_t *re = event_find(sock->events, EVENT_READ_TYPE);
+    if (re != NULL) {
         // mark the buffer as closed
-        cbuf_end(&rh->event.read.buf);
+        cbuf_end(&re->data.read.buf);
 
-        // notify the read handler
-        rh->event.read.cb(sock, status, NULL);
+        // notify the read event
+        re->data.read.cb(sock, status, NULL);
     }
 
-    event_handler_t *wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
-    if (wh != NULL) {
+    event_t *we = event_find(sock->events, EVENT_WRITE_TYPE);
+    if (we != NULL) {
         // mark the buffer as closed
-        cbuf_end(&wh->event.write.buf);
+        cbuf_end(&we->data.write.buf);
 
         // empty the buffer
-        cbuf_pop(&wh->event.write.buf, NULL, cbuf_len(&wh->event.write.buf));
+        cbuf_pop(&we->data.write.buf, NULL, cbuf_len(&we->data.write.buf));
 
-        event_write_op_t *op = LL_POP(wh->event.write.ops);
+        event_write_op_t *op = LL_POP(we->data.write.ops);
         // notify of error if we could not notify the read
-        if (rh == NULL && op != NULL) {
+        if (re == NULL && op != NULL) {
             op->cb(sock, status);
 
         }
@@ -87,20 +87,20 @@ void event_sock_close(event_sock_t *sock, int status)
         // remove all pending operations
         while (op != NULL) {
             LL_PUSH(op, sock->loop->write_ops);
-            op = LL_POP(wh->event.write.ops);
+            op = LL_POP(we->data.write.ops);
         }
     }
 }
 
-void event_sock_read(event_sock_t *sock, event_handler_t *handler)
+void event_sock_read(event_sock_t *sock, event_t *event)
 {
     assert(sock != NULL);
-    if (handler == NULL) {
+    if (event == NULL) {
         return;
     }
 
     // check available buffer data
-    int readlen = cbuf_maxlen(&handler->event.read.buf) - cbuf_len(&handler->event.read.buf);
+    int readlen = cbuf_maxlen(&event->data.read.buf) - cbuf_len(&event->data.read.buf);
     uint8_t buf[readlen];
 
 #ifdef CONTIKI
@@ -115,47 +115,47 @@ void event_sock_read(event_sock_t *sock, event_handler_t *handler)
     }
 
     // reset timer if any
-    event_handler_t *timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
-    if (timeout_handler != NULL) {
-        gettimeofday(&timeout_handler->event.timer.start, NULL);
+    event_t *timeout = event_find(sock->events, EVENT_TIMEOUT_TYPE);
+    if (timeout != NULL) {
+        gettimeofday(&timeout->data.timer.start, NULL);
     }
 #endif
     DEBUG("received %d bytes from remote endpoint", count);
     // push data into buffer
-    cbuf_push(&handler->event.read.buf, buf, count);
+    cbuf_push(&event->data.read.buf, buf, count);
 }
 
-void event_sock_handle_read(event_sock_t *sock, event_handler_t *handler)
+void event_sock_handle_read(event_sock_t *sock, event_t *event)
 {
     assert(sock != NULL);
-    if (handler == NULL) {
+    if (event == NULL) {
         return;
     }
 
-    int buflen = cbuf_len(&handler->event.read.buf);
+    int buflen = cbuf_len(&event->data.read.buf);
     if (buflen > 0) {
         // else notify about the new data
         uint8_t read_buf[buflen];
-        cbuf_peek(&handler->event.read.buf, read_buf, buflen);
+        cbuf_peek(&event->data.read.buf, read_buf, buflen);
 
         DEBUG("passing %d bytes to callback", buflen);
-        int readlen = handler->event.read.cb(sock, buflen, read_buf);
+        int readlen = event->data.read.cb(sock, buflen, read_buf);
         DEBUG("callback used %d bytes", readlen);
 
         // remove the read bytes from the buffer
-        cbuf_pop(&handler->event.read.buf, NULL, readlen);
+        cbuf_pop(&event->data.read.buf, NULL, readlen);
     }
 
-    if (cbuf_has_ended(&handler->event.read.buf)) {
+    if (cbuf_has_ended(&event->data.read.buf)) {
         // if a read terminated call the callback with -1
-        handler->event.read.cb(sock, -1, NULL);
+        event->data.read.cb(sock, -1, NULL);
     }
 }
 
-void event_sock_handle_write(event_sock_t *sock, event_handler_t *handler, unsigned int written)
+void event_sock_handle_write(event_sock_t *sock, event_t *event, unsigned int written)
 {
     // notify the waiting write operatinons
-    event_write_op_t *op = LL_POP(handler->event.write.ops);
+    event_write_op_t *op = LL_POP(event->data.write.ops);
 
     while (op != NULL && written > 0) {
         if (op->bytes - written <= 0) {
@@ -173,40 +173,40 @@ void event_sock_handle_write(event_sock_t *sock, event_handler_t *handler, unsig
             // reduce the size and pop the operation back to
             // the list
             op->bytes -= written;
-            LL_PUSH(op, handler->event.write.ops);
+            LL_PUSH(op, event->data.write.ops);
             return;
         }
-        op = LL_POP(handler->event.write.ops);
+        op = LL_POP(event->data.write.ops);
     }
 }
 
-void event_sock_write(event_sock_t *sock, event_handler_t *handler)
+void event_sock_write(event_sock_t *sock, event_t *event)
 {
     assert(sock != NULL);
-    if (handler == NULL) {
+    if (event == NULL) {
         return;
     }
 
     // attempt to write remaining bytes
 #ifdef CONTIKI
     // do nothing if already sending
-    if (handler->event.write.sending > 0) {
+    if (event->data.write.sending > 0) {
         return;
     }
 
-    int len = MIN(cbuf_len(&handler->event.write.buf), uip_mss());
+    int len = MIN(cbuf_len(&event->data.write.buf), uip_mss());
 #else
-    int len = cbuf_len(&handler->event.write.buf);
+    int len = cbuf_len(&event->data.write.buf);
 #endif
     uint8_t buf[len];
-    cbuf_peek(&handler->event.write.buf, buf, len);
+    cbuf_peek(&event->data.write.buf, buf, len);
 
 #ifdef CONTIKI
     // Send data
     uip_send(buf, len);
 
     // set sending length
-    handler->event.write.sending = len;
+    event->data.write.sending = len;
 #else
     int written = send(sock->descriptor, buf, len, MSG_DONTWAIT);
     if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -215,16 +215,16 @@ void event_sock_write(event_sock_t *sock, event_handler_t *handler)
     }
 
     // reset timer if any
-    event_handler_t *timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
-    if (timeout_handler != NULL) {
-        gettimeofday(&timeout_handler->event.timer.start, NULL);
+    event_t *timeout = event_find(sock->events, EVENT_TIMEOUT_TYPE);
+    if (timeout != NULL) {
+        gettimeofday(&timeout->data.timer.start, NULL);
     }
 
     // remove written data from buffer
-    cbuf_pop(&handler->event.write.buf, NULL, written);
+    cbuf_pop(&event->data.write.buf, NULL, written);
 
     // notify waiting callbacks
-    event_sock_handle_write(sock, handler, written);
+    event_sock_handle_write(sock, event, written);
 
     #endif
 }
@@ -237,26 +237,26 @@ void event_loop_timers(event_loop_t *loop)
 
     gettimeofday(&now, NULL);
 
-    // for each socket and handler, check if elapsed time has been reached
+    // for each socket and event, check if elapsed time has been reached
     for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
-        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
-        if (sock->state != EVENT_SOCK_CONNECTED || handler == NULL) {
+        event_t *event = event_find(sock->events, EVENT_TIMEOUT_TYPE);
+        if (sock->state != EVENT_SOCK_CONNECTED || event == NULL) {
             continue;
         }
 
         struct timeval diff;
-        timersub(&now, &handler->event.timer.start, &diff);
+        timersub(&now, &event->data.timer.start, &diff);
         // time has finished
-        if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= handler->event.timer.millis) {
+        if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= event->data.timer.millis) {
             // run the callback and reset timer
-            int remove = handler->event.timer.cb(sock);
-            handler->event.timer.start = now;
+            int remove = event->data.timer.cb(sock);
+            event->data.timer.start = now;
             if (remove > 0) {
-                // remove handler from list
-                LL_DELETE(handler, sock->handlers);
+                // remove event from list
+                LL_DELETE(event, sock->events);
 
-                // move handler to loop unused list
-                LL_PUSH(handler, sock->loop->handlers);
+                // move event to loop unused list
+                LL_PUSH(event, sock->loop->events);
             }
         }
     }
@@ -290,17 +290,17 @@ void event_loop_poll(event_loop_t *loop, int millis)
         if (FD_ISSET(i, &read_fds)) {
             if (sock->state == EVENT_SOCK_CONNECTED) {
                 // read into sock buffer if any
-                event_sock_read(sock, event_handler_find(sock->handlers, EVENT_READ_TYPE));
+                event_sock_read(sock, event_find(sock->events, EVENT_READ_TYPE));
             }
             else {
-                event_sock_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
+                event_sock_connect(sock, event_find(sock->events, EVENT_CONNECTION_TYPE));
             }
         }
 
         // check write operations
         if (FD_ISSET(i, &write_fds)) {
             // write from buffer if possible
-            event_sock_write(sock, event_handler_find(sock->handlers, EVENT_WRITE_TYPE));
+            event_sock_write(sock, event_find(sock->events, EVENT_WRITE_TYPE));
         }
     }
 }
@@ -308,60 +308,60 @@ void event_loop_poll(event_loop_t *loop, int millis)
 void event_loop_pending(event_loop_t *loop)
 {
     for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
-        event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-        if (handler != NULL) {
-            event_sock_handle_read(sock, handler);
+        event_t *event = event_find(sock->events, EVENT_READ_TYPE);
+        if (event != NULL) {
+            event_sock_handle_read(sock, event);
         }
     }
 }
 #else
 void event_sock_handle_timeout(void *data)
 {
-    event_handler_t *handler = (event_handler_t *)data;
-    event_sock_t *sock = handler->event.timer.sock;
+    event_t *event = (event_t *)data;
+    event_sock_t *sock = event->data.timer.sock;
 
     // run the callback
-    int remove = handler->event.timer.cb(sock);
+    int remove = event->data.timer.cb(sock);
 
     if (remove > 0) {
         // stop ctimer
-        ctimer_stop(&handler->event.timer.ctimer);
+        ctimer_stop(&event->data.timer.ctimer);
 
-        // remove handler from list
-        LL_DELETE(handler, sock->handlers);
+        // remove event from list
+        LL_DELETE(event, sock->events);
 
-        // move handler to loop unused list
-        LL_PUSH(handler, sock->loop->handlers);
+        // move event to loop unused list
+        LL_PUSH(event, sock->loop->events);
     }
     else {
-        ctimer_restart(&handler->event.timer.ctimer);
+        ctimer_restart(&event->data.timer.ctimer);
     }
 }
 
-void event_sock_handle_ack(event_sock_t *sock, event_handler_t *handler)
+void event_sock_handle_ack(event_sock_t *sock, event_t *event)
 {
-    if (handler == NULL || handler->event.write.sending == 0) {
+    if (event == NULL || event->data.write.sending == 0) {
         return;
     }
 
     // remove sent data from output buffer
-    cbuf_pop(&handler->event.write.buf, NULL, handler->event.write.sending);
+    cbuf_pop(&event->data.write.buf, NULL, event->data.write.sending);
 
     // notify the operations of successful write
-    event_sock_handle_write(sock, handler, handler->event.write.sending);
+    event_sock_handle_write(sock, event, event->data.write.sending);
 
     // update sending size
-    handler->event.write.sending = 0;
+    event->data.write.sending = 0;
 }
 
-void event_sock_handle_rexmit(event_sock_t *sock, event_handler_t *handler)
+void event_sock_handle_rexmit(event_sock_t *sock, event_t *event)
 {
-    if (handler == NULL || handler->event.write.sending == 0) {
+    if (event == NULL || event->data.write.sending == 0) {
         return;
     }
 
     // reset send counter
-    handler->event.write.sending = 0;
+    event->data.write.sending = 0;
 }
 
 void event_sock_handle_event(event_loop_t *loop, void *data)
@@ -381,12 +381,12 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
                              LL_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING && \
                              UIP_HTONS(LL_ELEM(event_sock_t)->descriptor) == uip_conn->lport);
 
-            // Save the connection for when
+            // Save the connection for ween
             // accept is called
             sock->uip_conn = uip_conn;
 
             // do connect
-            event_sock_connect(sock, event_handler_find(sock->handlers, EVENT_CONNECTION_TYPE));
+            event_sock_connect(sock, event_find(sock->events, EVENT_CONNECTION_TYPE));
         }
 
         if (sock == NULL) { // no one waiting for the socket
@@ -417,35 +417,35 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
         return;
     }
 
-    event_handler_t *wh = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
+    event_t *we = event_find(sock->events, EVENT_WRITE_TYPE);
     if (uip_acked()) {
-        event_sock_handle_ack(sock, wh);
+        event_sock_handle_ack(sock, we);
     }
 
     if (uip_rexmit()) {
-        event_sock_handle_rexmit(sock, wh);
+        event_sock_handle_rexmit(sock, we);
     }
 
-    event_handler_t *rh = event_handler_find(sock->handlers, EVENT_READ_TYPE);
+    event_t *re = event_find(sock->events, EVENT_READ_TYPE);
     if (uip_newdata()) {
-        event_sock_read(sock, rh);
+        event_sock_read(sock, re);
     }
 
     // Handle pending reads and writes if available
     // if it is a poll event, it will jump to here
-    event_sock_handle_read(sock, rh);
+    event_sock_handle_read(sock, re);
 
     // Try to write each time
-    event_sock_write(sock, wh);
+    event_sock_write(sock, we);
 
     // reset timer if any activity was detected from the client side
-    event_handler_t *timeout_handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
-    if (!uip_poll() && timeout_handler != NULL) {
-        ctimer_restart(&timeout_handler->event.timer.ctimer);
+    event_t *timeout = event_find(sock->events, EVENT_TIMEOUT_TYPE);
+    if (!uip_poll() && timeout != NULL) {
+        ctimer_restart(&timeout->data.timer.ctimer);
     }
 
     // Close connection cleanly
-    if (sock->state == EVENT_SOCK_CLOSING && wh != NULL && cbuf_len(&wh->event.write.buf) <= 0) {
+    if (sock->state == EVENT_SOCK_CLOSING && we != NULL && cbuf_len(&we->data.write.buf) <= 0) {
         uip_close();
     }
 }
@@ -462,8 +462,8 @@ void event_loop_close(event_loop_t *loop)
 
     while (curr != NULL) {
         // if the event is closing and we are not waiting to write
-        event_handler_t *wh = event_handler_find(curr->handlers, EVENT_WRITE_TYPE);
-        if (curr->state == EVENT_SOCK_CLOSING && (wh == NULL || wh->event.write.ops == NULL)) {
+        event_t *we = event_find(curr->events, EVENT_WRITE_TYPE);
+        if (curr->state == EVENT_SOCK_CLOSING && (we == NULL || we->data.write.ops == NULL)) {
 #ifndef CONTIKI
             // prevent sock to be used in polling
             FD_CLR(curr->descriptor, &loop->active_fds);
@@ -480,12 +480,12 @@ void event_loop_close(event_loop_t *loop)
             }
 
             // stop timer if any
-            event_handler_t *timeout_handler = event_handler_find(curr->handlers, EVENT_TIMEOUT_TYPE);
-            if (timeout_handler != NULL) {
-                ctimer_stop(&timeout_handler->event.timer.ctimer);
+            event_t *timeout = event_find(curr->events, EVENT_TIMEOUT_TYPE);
+            if (timeout != NULL) {
+                ctimer_stop(&timeout->data.timer.ctimer);
             }
 
-            event_handler_t *ch = event_handler_find(curr->handlers, EVENT_CONNECTION_TYPE);
+            event_t *ch = event_find(curr->events, EVENT_CONNECTION_TYPE);
             if (ch != NULL) {
                 // If server socket
                 // let UIP know that we are no longer accepting connections on the specified port
@@ -511,8 +511,8 @@ void event_loop_close(event_loop_t *loop)
                 prev->next = next;
             }
 
-            // move socket handlers back to the unused handler list
-            for (event_handler_t *h = curr->handlers; h != NULL; h = LL_PUSH(h, loop->handlers)) {}
+            // move socket events back to the unused event list
+            for (event_t *h = curr->events; h != NULL; h = LL_PUSH(h, loop->events)) {}
 
             // move the head forward
             curr = next;
@@ -597,14 +597,14 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     // add socket to polling queue
     LL_PUSH(sock, loop->polling);
 
-    // add event handler to socket
-    event_handler_t *handler = LL_MOVE(event_handler_t, loop->handlers, sock->handlers);
-    assert(handler != NULL);
+    // add event event to socket
+    event_t *event = LL_MOVE(event_t, loop->events, sock->events);
+    assert(event != NULL);
 
-    // set handler event
-    handler->type = EVENT_CONNECTION_TYPE;
-    memset(&handler->event.connection, 0, sizeof(event_connection_t));
-    handler->event.connection.cb = cb;
+    // set event event
+    event->type = EVENT_CONNECTION_TYPE;
+    memset(&event->data.connection, 0, sizeof(event_connection_t));
+    event->data.connection.cb = cb;
 
     return 0;
 }
@@ -620,23 +620,23 @@ void event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, ev
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-    assert(handler == NULL); // read stop must be called before call to event_read_start
+    event_t *event = event_find(sock->events, EVENT_READ_TYPE);
+    assert(event == NULL); // read stop must be called before call to event_read_start
 
-    // find free handler
+    // find free event
     event_loop_t *loop = sock->loop;
-    handler = event_handler_find_free(loop, sock);
-    assert(handler != NULL); // should we return -1 instead?
+    event = event_find_free(loop, sock);
+    assert(event != NULL); // should we return -1 instead?
 
-    // set handler event
-    handler->type = EVENT_READ_TYPE;
-    memset(&handler->event.read, 0, sizeof(event_read_t));
+    // set event event
+    event->type = EVENT_READ_TYPE;
+    memset(&event->data.read, 0, sizeof(event_read_t));
 
     // initialize read buffer
-    cbuf_init(&handler->event.read.buf, buf, bufsize);
+    cbuf_init(&event->data.read.buf, buf, bufsize);
 
     // set read callback
-    handler->event.read.cb = cb;
+    event->data.read.cb = cb;
 }
 
 int event_read(event_sock_t *sock, event_read_cb cb)
@@ -649,12 +649,12 @@ int event_read(event_sock_t *sock, event_read_cb cb)
     // read can only be performed on connected sockets
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    // see if there is already a read handler set
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-    assert(handler != NULL); // event_read_start() must be called before
+    // see if there is already a read event set
+    event_t *event = event_find(sock->events, EVENT_READ_TYPE);
+    assert(event != NULL); // event_read_start() must be called before
 
     // Update read callback
-    handler->event.read.cb = cb;
+    event->data.read.cb = cb;
 
     return 0;
 }
@@ -665,27 +665,27 @@ int event_read_stop(event_sock_t *sock)
     assert(sock != NULL);
     assert(sock->loop != NULL);
 
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_READ_TYPE);
-    if (handler == NULL) {
+    event_t *event = event_find(sock->events, EVENT_READ_TYPE);
+    if (event == NULL) {
         return 0;
     }
 
-    // remove read handler from list
-    LL_DELETE(handler, sock->handlers);
+    // remove read event from list
+    LL_DELETE(event, sock->events);
 
     // reset read callback
-    handler->event.read.cb = NULL;
+    event->data.read.cb = NULL;
 
     // Move data to the beginning of the buffer
-    int len = cbuf_len(&handler->event.read.buf);
+    int len = cbuf_len(&event->data.read.buf);
     uint8_t buf[len];
-    cbuf_pop(&handler->event.read.buf, buf, len);
+    cbuf_pop(&event->data.read.buf, buf, len);
 
     // Copy memory back to cbuf pointer
-    memcpy(handler->event.read.buf.ptr, buf, len);
+    memcpy(event->data.read.buf.ptr, buf, len);
 
-    // move handler to loop unused list
-    LL_PUSH(handler, sock->loop->handlers);
+    // move event to loop unused list
+    LL_PUSH(event, sock->loop->events);
 
     return len;
 }
@@ -702,23 +702,23 @@ void event_write_enable(event_sock_t *sock, uint8_t *buf, unsigned int bufsize)
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
     // see if there is writing is already enabled
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
+    event_t *event = event_find(sock->events, EVENT_WRITE_TYPE);
 
-    // only one write handler is allowed per socket
-    assert(handler == NULL);
+    // only one write event is allowed per socket
+    assert(event == NULL);
 
-    // find free handler
+    // find free event
     event_loop_t *loop = sock->loop;
-    handler = event_handler_find_free(loop, sock);
+    event = event_find_free(loop, sock);
 
-    // If this fails, you need to increase the value of EVENT_MAX_HANDLERS
-    assert(handler != NULL);
+    // If this fails, you need to increase the value of EVENT_MAX_EVENTS
+    assert(event != NULL);
 
-    // set handler event and error callback
-    handler->type = EVENT_WRITE_TYPE;
+    // set event event and error callback
+    event->type = EVENT_WRITE_TYPE;
 
     // initialize write buffer
-    cbuf_init(&handler->event.write.buf, buf, bufsize);
+    cbuf_init(&event->data.write.buf, buf, bufsize);
 }
 
 int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb)
@@ -732,19 +732,19 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    // find write handler
+    // find write event
     event_loop_t * loop = sock->loop;
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
+    event_t *event = event_find(sock->events, EVENT_WRITE_TYPE);
 
     // this will fail if event_write is called before event_write_enable
-    assert(handler != NULL);
+    assert(event != NULL);
 
     // write bytes to output buffer
-    int to_write = cbuf_push(&handler->event.write.buf, bytes, size);
+    int to_write = cbuf_push(&event->data.write.buf, bytes, size);
 
-    // add a write operation to the handler
+    // add a write operation to the event
     if (to_write > 0) {
-        event_write_op_t *op = LL_MOVE(event_write_op_t, loop->write_ops, handler->event.write.ops);
+        event_write_op_t *op = LL_MOVE(event_write_op_t, loop->write_ops, event->data.write.ops);
 
         // If this fails increase CONFIG_EVENT_MAX_WRITE_OPS
         assert(op != NULL);
@@ -772,23 +772,23 @@ void event_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
     // write can only be performed on a connected socket
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_TIMEOUT_TYPE);
-    if (handler == NULL) {
-        handler = event_handler_find_free(sock->loop, sock);
-        assert(handler != NULL);
+    event_t *event = event_find(sock->events, EVENT_TIMEOUT_TYPE);
+    if (event == NULL) {
+        event = event_find_free(sock->loop, sock);
+        assert(event != NULL);
     }
 
-    handler->type = EVENT_TIMEOUT_TYPE;
-    handler->event.timer.cb = cb;
-    handler->event.timer.millis = millis;
+    event->type = EVENT_TIMEOUT_TYPE;
+    event->data.timer.cb = cb;
+    event->data.timer.millis = millis;
 
 #ifndef CONTIKI
     // get start time
-    gettimeofday(&handler->event.timer.start, NULL);
+    gettimeofday(&event->data.timer.start, NULL);
 #else
-    // set socket for handler
-    handler->event.timer.sock = sock;
-    ctimer_set(&handler->event.timer.ctimer, millis * CLOCK_SECOND / 1000, event_sock_handle_timeout, handler);
+    // set socket for event
+    event->data.timer.sock = sock;
+    ctimer_set(&event->data.timer.ctimer, millis * CLOCK_SECOND / 1000, event_sock_handle_timeout, event);
 #endif
 }
 
@@ -853,10 +853,10 @@ int event_close(event_sock_t *sock, event_close_cb cb)
     sock->state = EVENT_SOCK_CLOSING;
     sock->close_cb = cb;
 
-    // find write handler
-    event_handler_t *handler = event_handler_find(sock->handlers, EVENT_WRITE_TYPE);
-    if (handler != NULL) { // mark the buffer as closed
-        cbuf_end(&handler->event.write.buf);
+    // find write event
+    event_t *event = event_find(sock->events, EVENT_WRITE_TYPE);
+    if (event != NULL) { // mark the buffer as closed
+        cbuf_end(&event->data.write.buf);
     }
 
 #ifdef CONTIKI
@@ -882,7 +882,7 @@ void event_loop_init(event_loop_t *loop)
 
     // reset socket memory
     LL_INIT(loop->sockets, EVENT_MAX_SOCKETS);
-    LL_INIT(loop->handlers, EVENT_MAX_HANDLERS);
+    LL_INIT(loop->events, EVENT_MAX_EVENTS);
     LL_INIT(loop->write_ops, EVENT_MAX_WRITE_OPS);
 }
 
@@ -935,7 +935,7 @@ void event_loop(event_loop_t *loop)
 #ifdef CONTIKI
     PROCESS_BEGIN();
 #else
-    // prevent send() raising a SIGPIPE when
+    // prevent send() raising a SIGPIPE ween
     // remote connection has closed
     signal(SIGPIPE, SIG_IGN);
 #endif
