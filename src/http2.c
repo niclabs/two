@@ -113,6 +113,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
     hpack_init(&ctx->hpack_dynamic_table, HTTP2_HEADER_TABLE_SIZE);
 
     event_read_start(client, ctx->read_buf, HTTP2_SOCK_READ_SIZE, waiting_for_preface);
+    event_write_enable(client, ctx->write_buf, HTTP2_SOCK_WRITE_SIZE);
 
     return ctx;
 }
@@ -529,7 +530,7 @@ void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream)
     }
 
     // limit size to write buffer
-    len = MIN(len, EVENT_MAX_BUF_WRITE_SIZE);
+    len = MIN(len, HTTP2_SOCK_WRITE_SIZE);
 
     // send data frame
     INFO("->|%d| DATA (stream: %u, flags: 0x%x, length: %u)", ctx->id, (unsigned int)stream->id, (stream->buflen - len <= 0), len);

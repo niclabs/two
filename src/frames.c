@@ -7,6 +7,7 @@
 
 #include "frames.h"
 #include "utils.h"
+#include "http2.h"
 
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
@@ -144,8 +145,8 @@ int send_headers_frame(event_sock_t *socket,
                        uint8_t end_stream,
                        event_write_cb cb)
 {
-    uint8_t encoded_bytes[EVENT_MAX_BUF_WRITE_SIZE];
-    int size = hpack_encode(dynamic_table, headers_list, encoded_bytes, EVENT_MAX_BUF_WRITE_SIZE);
+    uint8_t encoded_bytes[HTTP2_SOCK_WRITE_SIZE];
+    int size = hpack_encode(dynamic_table, headers_list, encoded_bytes, HTTP2_SOCK_WRITE_SIZE);
 
     if (size < 0) { //Error
         return size;

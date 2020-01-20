@@ -490,6 +490,9 @@ void test_event_write_listen_cb(struct event_sock *server, int status)
     TEST_ASSERT_EQUAL(0, event_accept(server, client));
     TEST_ASSERT_EQUAL(2, client->descriptor);
 
+    // enable event write
+    event_write_enable(client, buf, 32);
+
     // call write
     event_write(client, 13, (unsigned char *)"Hello, World!", test_event_write_hello_world_cb);
 

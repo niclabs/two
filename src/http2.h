@@ -110,11 +110,25 @@
  * while a frame is being procesed by the library.
  */
 #if !defined(CONFIG_HTTP2_SOCK_READ_SIZE) && defined(CONTIKI)
-#define HTTP2_SOCK_READ_SIZE (1024) // maximum segment size is 1280 by default in contiki
+#define HTTP2_SOCK_READ_SIZE (768)
 #elif !defined(CONFIG_HTTP2_SOCK_READ_SIZE)
-#define HTTP2_SOCK_READ_SIZE (4096)
+#define HTTP2_SOCK_READ_SIZE (3072)
 #else
 #define HTTP2_SOCK_READ_SIZE (CONFIG_HTTP2_SOCK_READ_SIZE)
+#endif
+
+/**
+ * The macro CONFIG_HTTP2_SOCK_WRITE_SIZE sets the maximum size of the
+ * write buffer for sending data to the tcp socket. This means that
+ * CONFIG_HTTP2_SOCK_WRITE_SIZE is the effective maximum limit 
+ * for http2 frames in the implementation.
+ */
+#if !defined(CONFIG_HTTP2_SOCK_WRITE_SIZE) && defined(CONTIKI)
+#define HTTP2_SOCK_WRITE_SIZE (256)
+#elif !defined(CONFIG_HTTP2_SOCK_WRITE_SIZE)
+#define HTTP2_SOCK_WRITE_SIZE (1024)
+#else
+#define HTTP2_SOCK_WRITE_SIZE (CONFIG_HTTP2_SOCK_WRITE_SIZE)
 #endif
 
 /**
@@ -136,10 +150,6 @@
 // Verify correct buffer sizes
 #if HTTP2_SOCK_READ_SIZE < HTTP2_INITIAL_WINDOW_SIZE
 #error "The implementation does not allow to receive more bytes than the allocated read buffer. Either increase the value of HTTP2_SOCK_READ_SIZE or reduce the value of HTTP2_INITIAL_WINDOW_SIZE"
-#endif
-
-#if defined(CONTIKI) && HTTP2_SOCK_READ_SIZE > UIP_TCP_MSS
-#error "The socket read size cannot be larger than the maximum TCP segment size"
 #endif
 
 typedef enum {
@@ -231,8 +241,9 @@ typedef struct http2_context {
     // http2 state flags
     uint8_t flags;
 
-    // sock read buffer
+    // sock read and write buffers
     uint8_t read_buf[HTTP2_SOCK_READ_SIZE];
+    uint8_t write_buf[HTTP2_SOCK_WRITE_SIZE];
 
     // hpack dynamic table
     hpack_dynamic_table_t hpack_dynamic_table;

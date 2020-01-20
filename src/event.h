@@ -12,7 +12,7 @@
 #include "cbuf.h"
 
 #ifndef CONF_EVENT_MAX_DESCRIPTORS
-#define EVENT_MAX_DESCRIPTORS 2
+#define EVENT_MAX_DESCRIPTORS 3
 #else
 #define EVENT_MAX_DESCRIPTORS (CONF_EVENT_MAX_DESCRIPTORS)
 #endif
@@ -33,19 +33,13 @@
 #define EVENT_MAX_HANDLERS (CONF_EVENT_MAX_HANDLERS)
 #endif
 
-#ifndef CONF_EVENT_MAX_BUF_WRITE_SIZE
-#define EVENT_MAX_BUF_WRITE_SIZE 64
+// Defines the total number of write operation handlers
+#ifndef CONF_EVENT_MAX_WRITE_OPS
+#define EVENT_MAX_WRITE_OPS 4 * (EVENT_MAX_SOCKETS)
 #else
-#define EVENT_MAX_BUF_WRITE_SIZE (CONF_EVENT_MAX_BUF_WRITE_SIZE)
+#define EVENT_MAX_WRITE_OPS (CONF_EVENT_MAX_WRITE_OPS)
 #endif
 
-#ifdef EVENT_SOCK_POLL_TIMER
-#ifndef CONF_EVENT_SOCK_POLL_TIMER_FREQ
-#define EVENT_SOCK_POLL_TIMER_FREQ (100)
-#else
-#define EVENT_SOCK_POLL_TIMER_FREQ (CONF_EVENT_SOCK_POLL_TIMER_FREQ)
-#endif
-#endif
 
 struct event;
 struct event_sock;
@@ -60,7 +54,9 @@ typedef void (*event_connection_cb)(struct event_sock *server, int status);
 // it must return the number of bytes read in order to remove them from the input buffer
 typedef int (*event_read_cb)(struct event_sock *sock, int size, uint8_t *bytes);
 
-// Will be called when the output buffer is empty
+// Called whenever a write operation is performed. If an error occurs
+// Status will be <0
+// Remaining contains the number of remaining bytes in the write buffer
 typedef void (*event_write_cb)(struct event_sock *sock, int status);
 
 // Will be called after all write operations are finished and
@@ -99,13 +95,20 @@ typedef struct event_read {
     event_read_cb cb;
 } event_read_t;
 
+typedef struct event_write_op {
+    struct event_write_op * next;
+    unsigned int bytes;
+    event_write_cb cb;
+} event_write_op_t;
+
 typedef struct event_write {
     // type variables
-    uint8_t buf_data[EVENT_MAX_BUF_WRITE_SIZE];
     cbuf_t buf;
-    event_write_cb cb;
+    event_write_op_t * ops;
 #ifdef CONTIKI
-    int sending;
+    // > 0 if there is data waiting
+    // to be acked
+    unsigned int sending;
 #endif
 } event_write_t;
 
@@ -160,9 +163,6 @@ typedef struct event_sock {
 
 #ifdef CONTIKI
     struct uip_conn *uip_conn;
-#ifdef EVENT_SOCK_POLL_TIMER
-    struct ctimer timer;
-#endif
 #endif
 } event_sock_t;
 
@@ -176,6 +176,9 @@ typedef struct event_loop {
 
     event_handler_t handlers[EVENT_MAX_HANDLERS];
     event_handler_t *unused_handlers;
+
+    event_write_op_t write_ops[EVENT_MAX_WRITE_OPS];
+    event_write_op_t *unused_write_ops;
 
     // loop state
     int running;
@@ -204,7 +207,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb);
 // allocation/freeing is responsibility of the user of the library
 //
 // event_read_cb will be called on new data
-int event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, event_read_cb cb);
+void event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, event_read_cb cb);
 
 // Update the notification callback for read operations in the given socket
 // event_read_start MUST be called first
@@ -217,6 +220,12 @@ int event_read(event_sock_t *sock, event_read_cb cb);
 // leave them untouched at the beginning of the memory pointed
 // by the buffer and return the number of bytes available
 int event_read_stop(event_sock_t *sock);
+
+// Enable the socket for writing, and provide memory for buffering writing events
+// event_write will fail (assert error) if event_write is called before event_write_alloc
+// the allocated memory will be freed once the socket is successfull closed
+// the callback will be called on succesful write or on socket error
+void event_write_enable(event_sock_t *sock, uint8_t *buf, unsigned int bufsize);
 
 // Write to the output buffer, will notify the callback when all bytes are
 // written
