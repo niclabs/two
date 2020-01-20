@@ -106,6 +106,7 @@ void event_sock_close(event_sock_t *sock, int status)
         cbuf_pop(&wh->event.write.buf, NULL, cbuf_len(&wh->event.write.buf));
 
         event_write_op_t *op = LIST_POP(wh->event.write.ops);
+        // notify of error if we could not notify the read
         if (rh == NULL && op != NULL) {
             op->cb(sock, status);
 
@@ -436,7 +437,7 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
 
     if (uip_timedout() || uip_aborted() || uip_closed()) { // Remote connection closed or timed out
         // perform close operations
-        event_sock_close(sock);
+        event_sock_close(sock, -1);
 
         // Finish connection
         uip_close();
