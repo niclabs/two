@@ -14,9 +14,10 @@
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
  
-event_loop_t loop;
-event_sock_t *server;
-uint8_t event_buf[1024];
+static event_loop_t loop;
+static event_sock_t *server;
+static uint8_t read_buf[512];
+static uint8_t write_buf[512];
 
 #ifdef CONTIKI
 PROCESS(echo_server_process, "Echo server process");
@@ -66,13 +67,6 @@ int echo_read(event_sock_t *client, int nread, uint8_t *buf)
     return 0;
 }
 
-int echo_timeout(event_sock_t *client) {
-    (void)client;
-    DEBUG("No read activity in 5s. Closing client");
-    event_close(client, on_client_close);
-    return 0;
-}
-
 void on_new_connection(event_sock_t *server, int status)
 {
     if (status < 0) {
@@ -84,8 +78,8 @@ void on_new_connection(event_sock_t *server, int status)
     INFO("New client connection");
     event_sock_t *client = event_sock_create(server->loop);
     if (event_accept(server, client) == 0) {
-        event_timeout(client, 5000, echo_timeout);
-        event_read_start(client, event_buf, 1024, echo_read);
+        event_read_start(client, read_buf, 512, echo_read);
+        event_write_enable(client, write_buf, 512);
     }
     else {
         event_close(client, on_client_close);
