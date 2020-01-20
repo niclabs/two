@@ -66,7 +66,7 @@
  * INITIAL_WINDOW_SIZE.
  */
 #ifndef CONFIG_HTTP2_INITIAL_WINDOW_SIZE
-#define HTTP2_INITIAL_WINDOW_SIZE (1024)
+#define HTTP2_INITIAL_WINDOW_SIZE (768)
 #elif CONFIG_HTTP2_INITIAL_WINDOW_SIZE > ((1 << 31) - 1)
 #error "Settings initial window size cannot be larger than 2^31 - 1."
 #else
@@ -109,10 +109,8 @@
  * CONFIG_HTTP2_SOCK_READ_SIZE bytes can be pending on a given connection
  * while a frame is being procesed by the library.
  */
-#if !defined(CONFIG_HTTP2_SOCK_READ_SIZE) && defined(CONTIKI)
-#define HTTP2_SOCK_READ_SIZE (768)
-#elif !defined(CONFIG_HTTP2_SOCK_READ_SIZE)
-#define HTTP2_SOCK_READ_SIZE (3072)
+#ifndef CONFIG_HTTP2_SOCK_READ_SIZE
+#define HTTP2_SOCK_READ_SIZE (HTTP2_INITIAL_WINDOW_SIZE)
 #else
 #define HTTP2_SOCK_READ_SIZE (CONFIG_HTTP2_SOCK_READ_SIZE)
 #endif
