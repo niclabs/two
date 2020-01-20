@@ -113,12 +113,6 @@ void event_sock_read(event_sock_t *sock, event_t *event)
         event_sock_close(sock, count == 0 ? 0 : -errno);
         return;
     }
-
-    // reset timer if any
-    event_t *timeout = event_find(sock->events, EVENT_TIMEOUT_TYPE);
-    if (timeout != NULL) {
-        gettimeofday(&timeout->data.timer.start, NULL);
-    }
 #endif
     DEBUG("received %d bytes from remote endpoint", count);
     // push data into buffer
@@ -214,12 +208,6 @@ void event_sock_write(event_sock_t *sock, event_t *event)
         return;
     }
 
-    // reset timer if any
-    event_t *timeout = event_find(sock->events, EVENT_TIMEOUT_TYPE);
-    if (timeout != NULL) {
-        gettimeofday(&timeout->data.timer.start, NULL);
-    }
-
     // remove written data from buffer
     cbuf_pop(&event->data.write.buf, NULL, written);
 
@@ -239,25 +227,32 @@ void event_loop_timers(event_loop_t *loop)
 
     // for each socket and event, check if elapsed time has been reached
     for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
-        event_t *event = event_find(sock->events, EVENT_TIMEOUT_TYPE);
-        if (sock->state != EVENT_SOCK_CONNECTED || event == NULL) {
-            continue;
-        }
-
-        struct timeval diff;
-        timersub(&now, &event->data.timer.start, &diff);
-        // time has finished
-        if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= event->data.timer.millis) {
-            // run the callback and reset timer
-            int remove = event->data.timer.cb(sock);
-            event->data.timer.start = now;
-            if (remove > 0) {
-                // remove event from list
-                LL_DELETE(event, sock->events);
-
-                // move event to loop unused list
-                LL_PUSH(event, sock->loop->events);
+        event_t *event = sock->events;
+        while (event != NULL) {
+            if (event->type != EVENT_TIMER_TYPE) {
+                event = event->next;
+                continue;
             }
+
+            struct timeval diff;
+
+            // Get time difference
+            timersub(&now, &event->data.timer.start, &diff);
+
+            // time has finished
+            if ((diff.tv_sec * 1000 + diff.tv_usec / 1000) >= event->data.timer.millis) {
+                // run the callback and reset timer
+                int remove = event->data.timer.cb(sock);
+                event->data.timer.start = now;
+                if (remove > 0) {
+                    // remove event from list
+                    LL_DELETE(event, sock->events);
+
+                    // move event to loop unused list
+                    LL_PUSH(event, loop->events);
+                }
+            }
+            event = event->next;
         }
     }
 }
@@ -282,7 +277,8 @@ void event_loop_poll(event_loop_t *loop, int millis)
         event_sock_t *sock;
         if (FD_ISSET(i, &loop->active_fds)) {
             sock = event_sock_find(loop->polling, i);
-        } else {
+        }
+        else {
             continue;
         }
 
@@ -315,10 +311,10 @@ void event_loop_pending(event_loop_t *loop)
     }
 }
 #else
-void event_sock_handle_timeout(void *data)
+void event_sock_handle_timer(void *data)
 {
     event_t *event = (event_t *)data;
-    event_sock_t *sock = event->data.timer.sock;
+    event_sock_t *sock = event->sock;
 
     // run the callback
     int remove = event->data.timer.cb(sock);
@@ -378,8 +374,8 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
     if (uip_connected()) {
         if (sock == NULL) { // new client connection
             sock = LL_FIND(loop->polling, \
-                             LL_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING && \
-                             UIP_HTONS(LL_ELEM(event_sock_t)->descriptor) == uip_conn->lport);
+                           LL_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING && \
+                           UIP_HTONS(LL_ELEM(event_sock_t)->descriptor) == uip_conn->lport);
 
             // Save the connection for ween
             // accept is called
@@ -438,12 +434,6 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
     // Try to write each time
     event_sock_write(sock, we);
 
-    // reset timer if any activity was detected from the client side
-    event_t *timeout = event_find(sock->events, EVENT_TIMEOUT_TYPE);
-    if (!uip_poll() && timeout != NULL) {
-        ctimer_restart(&timeout->data.timer.ctimer);
-    }
-
     // Close connection cleanly
     if (sock->state == EVENT_SOCK_CLOSING && we != NULL && cbuf_len(&we->data.write.buf) <= 0) {
         uip_close();
@@ -480,9 +470,9 @@ void event_loop_close(event_loop_t *loop)
             }
 
             // stop timer if any
-            event_t *timeout = event_find(curr->events, EVENT_TIMEOUT_TYPE);
-            if (timeout != NULL) {
-                ctimer_stop(&timeout->data.timer.ctimer);
+            event_t *timer = event_find(curr->events, EVENT_TIMER_TYPE);
+            if (timer != NULL) {
+                ctimer_stop(&timer->data.timer.ctimer);
             }
 
             event_t *ch = event_find(curr->events, EVENT_CONNECTION_TYPE);
@@ -603,6 +593,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
 
     // set event event
     event->type = EVENT_CONNECTION_TYPE;
+    event->sock = sock;
     memset(&event->data.connection, 0, sizeof(event_connection_t));
     event->data.connection.cb = cb;
 
@@ -630,6 +621,7 @@ void event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, ev
 
     // set event event
     event->type = EVENT_READ_TYPE;
+    event->sock = sock;
     memset(&event->data.read, 0, sizeof(event_read_t));
 
     // initialize read buffer
@@ -716,6 +708,7 @@ void event_write_enable(event_sock_t *sock, uint8_t *buf, unsigned int bufsize)
 
     // set event event and error callback
     event->type = EVENT_WRITE_TYPE;
+    event->sock = sock;
 
     // initialize write buffer
     cbuf_init(&event->data.write.buf, buf, bufsize);
@@ -733,7 +726,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     assert(sock->state == EVENT_SOCK_CONNECTED);
 
     // find write event
-    event_loop_t * loop = sock->loop;
+    event_loop_t *loop = sock->loop;
     event_t *event = event_find(sock->events, EVENT_WRITE_TYPE);
 
     // this will fail if event_write is called before event_write_enable
@@ -762,34 +755,69 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     return to_write;
 }
 
-void event_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
+event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
 {
     // check socket status
     assert(sock != NULL);
     assert(sock->loop != NULL);
     assert(cb != NULL);
 
-    // write can only be performed on a connected socket
-    assert(sock->state == EVENT_SOCK_CONNECTED);
+    // Get a new event
+    event_t *event = event_find_free(sock->loop, sock);
+    assert(event != NULL);
 
-    event_t *event = event_find(sock->events, EVENT_TIMEOUT_TYPE);
-    if (event == NULL) {
-        event = event_find_free(sock->loop, sock);
-        assert(event != NULL);
+    // 0 == infinite
+    if (millis == 0) {
+        return NULL;
     }
 
-    event->type = EVENT_TIMEOUT_TYPE;
+    event->type = EVENT_TIMER_TYPE;
     event->data.timer.cb = cb;
     event->data.timer.millis = millis;
+    event->sock = sock;
 
 #ifndef CONTIKI
     // get start time
     gettimeofday(&event->data.timer.start, NULL);
 #else
-    // set socket for event
-    event->data.timer.sock = sock;
-    ctimer_set(&event->data.timer.ctimer, millis * CLOCK_SECOND / 1000, event_sock_handle_timeout, event);
+    ctimer_set(&event->data.timer.ctimer, millis * CLOCK_SECOND / 1000, event_sock_handle_timer, event);
 #endif
+
+    return event;
+}
+
+void event_timer_reset(event_t *timer)
+{
+    assert(timer->type == EVENT_TIMER_TYPE);
+    if (timer == NULL) {
+        return;
+    }
+#ifdef CONTIKI
+    ctimer_restart(&timer->data.timer.ctimer)
+#else
+    gettimeofday(&timer->data.timer.start, NULL);
+#endif
+}
+
+void event_timer_stop(event_t *timer)
+{
+    assert(timer->type == EVENT_TIMER_TYPE);
+    if (timer == NULL) {
+        return;
+    }
+
+    assert(timer->sock != NULL);
+    event_sock_t *sock = timer->sock;
+
+#ifdef CONTIKI
+    // stop ctimer
+    ctimer_stop(&timer->data.timer.ctimer);
+#endif
+    // remove event from list
+    LL_DELETE(timer, sock->events);
+
+    // move event to loop unused list
+    LL_PUSH(timer, sock->loop->events);
 }
 
 int event_accept(event_sock_t *server, event_sock_t *client)

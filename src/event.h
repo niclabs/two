@@ -82,7 +82,7 @@ typedef enum {
     EVENT_CONNECTION_TYPE   = (uint8_t)0x0,
     EVENT_WRITE_TYPE        = (uint8_t)0x1,
     EVENT_READ_TYPE         = (uint8_t)0x2,
-    EVENT_TIMEOUT_TYPE      = (uint8_t)0x3,
+    EVENT_TIMER_TYPE        = (uint8_t)0x3,
 } event_type_t;
 
 typedef struct event_connection {
@@ -118,7 +118,6 @@ typedef struct event_timer {
     int millis;
 #ifdef CONTIKI
     struct ctimer ctimer;
-    struct event_sock *sock;
 #else
     struct timeval start;
 #endif
@@ -127,6 +126,7 @@ typedef struct event_timer {
 
 typedef struct event {
     struct event *next;
+    struct event_sock *sock;
     event_type_t type;
     union {
         event_connection_t connection;
@@ -227,9 +227,14 @@ void event_write_enable(event_sock_t *sock, uint8_t *buf, unsigned int bufsize);
 // written
 int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
 
-// Notify the callback on socket inactivity
-// the timer is reset on every successful read/write operation
-void event_timeout(event_sock_t *sock, unsigned int millis, event_timer_cb cb);
+// Notify the callback on elapsed time
+event_t * event_timer(event_sock_t * sock, unsigned int millis, event_timer_cb cb);
+
+// Reset the given timer (will fail if called event other than a timer)
+void event_timer_reset(event_t * timer);
+
+// Stop the given timer (will fail if called event other than a timer)
+void event_timer_stop(event_t * timer);
 
 // Close the socket
 // will notify the callback after all write operations are finished
