@@ -35,10 +35,10 @@
 #endif
 
 // Defines the total number of write operation handlers
-#ifndef CONF_EVENT_MAX_WRITE_OPS
-#define EVENT_MAX_WRITE_OPS 4 * (EVENT_MAX_SOCKETS)
+#ifndef CONF_EVENT_WRITE_QUEUE_SIZE
+#define EVENT_WRITE_QUEUE_SIZE (4 * EVENT_MAX_SOCKETS)
 #else
-#define EVENT_MAX_WRITE_OPS (CONF_EVENT_MAX_WRITE_OPS)
+#define EVENT_WRITE_QUEUE_SIZE (CONF_EVENT_WRITE_QUEUE_SIZE)
 #endif
 
 
@@ -105,7 +105,7 @@ typedef struct event_write_op {
 typedef struct event_write {
     // type variables
     cbuf_t buf;
-    event_write_op_t * ops;
+    event_write_op_t * queue;
 #ifdef CONTIKI
     // > 0 if there is data waiting
     // to be acked
@@ -174,7 +174,7 @@ typedef struct event_loop {
     // static memory
     LL(event_sock_t, sockets, EVENT_MAX_SOCKETS);
     LL(event_t, events, EVENT_MAX_EVENTS);
-    LL(event_write_op_t, write_ops, EVENT_MAX_WRITE_OPS);
+    LL(event_write_op_t, writes, EVENT_WRITE_QUEUE_SIZE);
 
     // loop state
     int running;

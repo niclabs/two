@@ -77,7 +77,7 @@ void event_sock_close(event_sock_t *sock, int status)
         // empty the buffer
         cbuf_pop(&we->data.write.buf, NULL, cbuf_len(&we->data.write.buf));
 
-        event_write_op_t *op = LL_POP(we->data.write.ops);
+        event_write_op_t *op = LL_POP(we->data.write.queue);
         // notify of error if we could not notify the read
         if (re == NULL && op != NULL) {
             op->cb(sock, status);
@@ -86,8 +86,8 @@ void event_sock_close(event_sock_t *sock, int status)
 
         // remove all pending operations
         while (op != NULL) {
-            LL_PUSH(op, sock->loop->write_ops);
-            op = LL_POP(we->data.write.ops);
+            LL_PUSH(op, sock->loop->writes);
+            op = LL_POP(we->data.write.queue);
         }
     }
 }
@@ -155,28 +155,28 @@ void event_sock_handle_read(event_sock_t *sock, event_t *event)
 void event_sock_handle_write(event_sock_t *sock, event_t *event, unsigned int written)
 {
     // notify the waiting write operatinons
-    event_write_op_t *op = LL_POP(event->data.write.ops);
+    event_write_op_t *op = LL_POP(event->data.write.queue);
 
     while (op != NULL && written > 0) {
         if (op->bytes - written <= 0) {
+            // if all bytes have been read
             written -= op->bytes;
 
             // notify the callback
             op->cb(sock, 0);
 
-            // return the operation to
-            // the loop
-            LL_PUSH(op, sock->loop->write_ops);
+            // free the memory
+            LL_PUSH(op, sock->loop->writes);
         }
         else {
             // if not enough bytes have been written yet
-            // reduce the size and pop the operation back to
+            // reduce the size and push the operation back to
             // the list
             op->bytes -= written;
-            LL_PUSH(op, event->data.write.ops);
+            LL_PUSH(op, event->data.write.queue);
             return;
         }
-        op = LL_POP(event->data.write.ops);
+        op = LL_POP(event->data.write.queue);
     }
 }
 
@@ -463,7 +463,7 @@ void event_loop_close(event_loop_t *loop)
     while (curr != NULL) {
         // if the event is closing and we are not waiting to write
         event_t *we = event_find(curr->events, EVENT_WRITE_TYPE);
-        if (curr->state == EVENT_SOCK_CLOSING && (we == NULL || we->data.write.ops == NULL)) {
+        if (curr->state == EVENT_SOCK_CLOSING && (we == NULL || we->data.write.queue == NULL)) {
 #ifndef CONTIKI
             // prevent sock to be used in polling
             FD_CLR(curr->descriptor, &loop->active_fds);
@@ -744,9 +744,9 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
 
     // add a write operation to the event
     if (to_write > 0) {
-        event_write_op_t *op = LL_MOVE(event_write_op_t, loop->write_ops, event->data.write.ops);
+        event_write_op_t *op = LL_MOVE(event_write_op_t, loop->writes, event->data.write.queue);
 
-        // If this fails increase CONFIG_EVENT_MAX_WRITE_OPS
+        // If this fails increase CONFIG_EVENT_WRITE_QUEUE_SIZE
         assert(op != NULL);
 
         op->cb = cb;
@@ -883,7 +883,7 @@ void event_loop_init(event_loop_t *loop)
     // reset socket memory
     LL_INIT(loop->sockets, EVENT_MAX_SOCKETS);
     LL_INIT(loop->events, EVENT_MAX_EVENTS);
-    LL_INIT(loop->write_ops, EVENT_MAX_WRITE_OPS);
+    LL_INIT(loop->writes, EVENT_WRITE_QUEUE_SIZE);
 }
 
 event_sock_t *event_sock_create(event_loop_t *loop)
