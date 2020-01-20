@@ -309,6 +309,8 @@ void event_loop_poll(event_loop_t *loop, int millis)
         event_sock_t *sock;
         if (FD_ISSET(i, &loop->active_fds)) {
             sock = event_sock_find(loop->polling, i);
+        } else {
+            continue;
         }
 
         // check read operations
