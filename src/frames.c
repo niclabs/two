@@ -146,6 +146,7 @@ int send_headers_frame(event_sock_t *socket,
                        event_write_cb cb)
 {
     uint8_t encoded_bytes[HTTP2_SOCK_WRITE_SIZE];
+    memset(encoded_bytes,0, HTTP2_SOCK_WRITE_SIZE);
     int size = hpack_encode(dynamic_table, headers_list, encoded_bytes, HTTP2_SOCK_WRITE_SIZE);
 
     if (size < 0) { //Error
@@ -168,7 +169,7 @@ int send_headers_frame(event_sock_t *socket,
     int size_bytes = frame_header_to_bytes(&header, response_bytes);
 
     /*Then we put the payload*/
-    memcpy(response_bytes + size_bytes, response_bytes, header.length);
+    memcpy(response_bytes + size_bytes, encoded_bytes, header.length);
     size_bytes += header.length;
 
     return event_write(socket, size_bytes, response_bytes, cb);

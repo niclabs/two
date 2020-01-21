@@ -87,6 +87,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
  */
 int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
+    DEBUG("Encoding integer %u", integer);
     if (integer > HPACK_MAXIMUM_INTEGER) {
         return -1;
     }
@@ -409,7 +410,14 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table,
                                              headers_array[i].value,
                                              encoded_buffer + pointer,
                                              buffer_size);
+        uint8_t buffer[4096];
+        memset(buffer, 0, 4096);
+        memcpy(buffer,encoded_buffer,rc + pointer);
         DEBUG("RETURN encode_header");
+
+        for(uint8_t i = 0; i < rc + pointer; i++){
+            DEBUG("BYTE %d is %d",i, buffer[i]);
+        }
         pointer += rc;
     }
     return pointer;
