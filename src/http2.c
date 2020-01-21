@@ -91,7 +91,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
     ctx->socket = client;
     ctx->settings = default_settings;
     ctx->stream.id = 0;
-    ctx->stream.state = HTTP2_STREAM_CLOSED;
+    ctx->stream.state = HTTP2_STREAM_IDLE;
     ctx->state = HTTP2_WAITING_PREFACE;
     ctx->flags = HTTP2_FLAGS_NONE;
     ctx->last_opened_stream_id = 0;
@@ -112,6 +112,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
 void http2_on_client_close(event_sock_t *sock)
 {
     http2_context_t *ctx = (http2_context_t *)sock->data;
+
     INFO("http/2 client %u disconnected", ctx->id);
 
     // free the client
@@ -188,8 +189,10 @@ void close_on_goaway_sent(event_sock_t *sock, int status)
     http2_close_immediate(ctx);
 }
 
-int on_settings_timeout(event_sock_t *sock) {
+int on_settings_timeout(event_sock_t *sock)
+{
     http2_context_t *ctx = (http2_context_t *)sock->data;
+
     http2_error(ctx, HTTP2_SETTINGS_TIMEOUT);
     return 1;
 }
@@ -508,7 +511,7 @@ void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream)
     len = MIN(len, HTTP2_SOCK_WRITE_SIZE);
 
     // send data frame
-    INFO("->|%u| DATA (stream: %u, flags: 0x%x, length: %u)", ctx->id, (unsigned int)stream->id, (stream->buflen - len <= 0), len);
+    INFO("->|%u| DATA (length: %u, flags: 0x%x, stream_id: %u)", ctx->id, len, (unsigned int)stream->id, (stream->buflen - len <= 0));
     send_data_frame(ctx->socket, stream->bufptr, len, stream->id, (stream->buflen - len <= 0), on_stream_data_sent);
 
     // use actual size sent here
@@ -692,21 +695,25 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *p
         return -1;
     }
 
-    // client is exceeding max concurrent streams
-    if (ctx->stream.state != HTTP2_STREAM_CLOSED) {
-        http2_error(ctx, HTTP2_REFUSED_STREAM);
-        return -1;
-    }
-
-    if (header.stream_id == ctx->last_opened_stream_id) {
-        http2_error(ctx, HTTP2_STREAM_CLOSED_ERROR);
-        return -1;
-    }
-
     // stream id must be bigger than previous
     // odd numbers must be used for client initiated streams
     if (header.stream_id < ctx->last_opened_stream_id || header.stream_id % 2 == 0) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
+        return -1;
+    }
+
+    // client is trying to open a new stream when the old
+    // one has not been closed yet
+    if (header.stream_id > ctx->last_opened_stream_id &&
+        ctx->stream.state != HTTP2_STREAM_IDLE) {
+        http2_error(ctx, HTTP2_REFUSED_STREAM);
+        return -1;
+    }
+
+    // new headers frame for a strean in HALF_CLOSED_REMOTE
+    // TODO: check stream state and handle trailing headers
+    if (header.stream_id == ctx->last_opened_stream_id) {
+        http2_error(ctx, HTTP2_STREAM_CLOSED_ERROR);
         return -1;
     }
 
@@ -770,8 +777,7 @@ int handle_data_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payl
         return -1;
     }
 
-    if (ctx->stream.state != HTTP2_STREAM_OPEN &&
-        ctx->stream.state != HTTP2_STREAM_HALF_CLOSED_REMOTE) {
+    if (ctx->stream.state != HTTP2_STREAM_OPEN) {
         http2_stream_error(ctx, header.stream_id, HTTP2_STREAM_CLOSED_ERROR);
         return -1;
     }
@@ -833,8 +839,7 @@ int handle_rst_stream_frame(http2_context_t *ctx, frame_header_t header, uint8_t
         return -1;
     }
 
-    if (header.stream_id < ctx->last_opened_stream_id ||
-        ctx->stream.state == HTTP2_STREAM_CLOSED) {
+    if (header.stream_id != ctx->last_opened_stream_id) {
         http2_error(ctx, HTTP2_PROTOCOL_ERROR);
         return -1;
     }
