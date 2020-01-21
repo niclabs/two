@@ -149,9 +149,11 @@ void event_sock_handle_write(event_sock_t *sock, event_t *event, unsigned int wr
     event_write_op_t *op = LL_POP(event->data.write.queue);
 
     while (op != NULL && written > 0) {
-        if (op->bytes - written <= 0) {
+        if (op->bytes <= written) {
             // if all bytes have been read
             written -= op->bytes;
+
+            DEBUG("wrote %d bytes, notifying callback", op->bytes);
 
             // notify the callback
             op->cb(sock, 0);
@@ -209,13 +211,14 @@ void event_sock_write(event_sock_t *sock, event_t *event)
         return;
     }
 
-    // remove written data from buffer
-    cbuf_pop(&event->data.write.buf, NULL, written);
+    if (written > 0) {
+        // remove written data from buffer
+        cbuf_pop(&event->data.write.buf, NULL, written);
 
-    // notify waiting callbacks
-    event_sock_handle_write(sock, event, written);
-
-    #endif
+        // notify waiting callbacks
+        event_sock_handle_write(sock, event, written);
+    }
+#endif
 }
 
 #ifndef CONTIKI
@@ -735,6 +738,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
 
     // write bytes to output buffer
     int to_write = cbuf_push(&event->data.write.buf, bytes, size);
+    DEBUG("queued %d bytes for writing", to_write);
 
     // add a write operation to the event
     if (to_write > 0) {
