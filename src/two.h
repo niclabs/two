@@ -17,10 +17,6 @@
 #define TWO_MAX_PATH_SIZE (32)
 #endif
 
-// 1-byte aligned data
-#pragma pack(push, 1)
-
-
 // Defines a resource handler method
 // 
 typedef int (*two_resource_handler_t) (char *method, char *uri, char *response, unsigned int maxlen);
@@ -30,9 +26,7 @@ typedef struct {
     char method[8];
     char content_type[32];
     two_resource_handler_t handler;
-} two_resource_t;
-
-#pragma pack(pop)
+} __attribute__((__packed__)) two_resource_t;
 
 /*
  * Given a port number, this function start a server
