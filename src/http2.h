@@ -2,9 +2,14 @@
 #define HTTP2_V3_H
 
 #include <stdint.h>
+
+// library configuration
+#include "two-conf.h"
+
 #include "event.h"
 #include "header_list.h"
 #include "hpack/hpack.h"
+
 
 /**
  * SETTINGS_HEADER_TABLE_SIZE
@@ -18,12 +23,10 @@
  * The macro CONFIG_HTTP2_HEADER_TABLE_SIZE sets the local default for the
  * HEADER_TABLE_SIZE.
  */
-#ifndef CONFIG_HTTP2_HEADER_TABLE_SIZE
+#ifndef HTTP2_HEADER_TABLE_SIZE
 #define HTTP2_HEADER_TABLE_SIZE (HPACK_MAX_DYNAMIC_TABLE_SIZE)
-#elif (CONFIG_HTTP2_HEADER_TABLE_SIZE) > (HPACK_MAX_DYNAMIC_TABLE_SIZE)
+#elif (HTTP2_HEADER_TABLE_SIZE) > (HPACK_MAX_DYNAMIC_TABLE_SIZE)
 #error "HTTP2_HEADER_TABLE_SIZE cannot be larger than HPACK_MAX_DYNAMIC_TABLE_SIZE"
-#else
-#define HTTP2_HEADER_TABLE_SIZE (CONFIG_HTTP2_HEADER_TABLE_SIZE)
 #endif
 
 /**
@@ -37,9 +40,9 @@
  *
  * Server push is not supported by the current implementation
  */
-#ifndef CONFIG_HTTP2_ENABLE_PUSH
+#ifndef HTTP2_ENABLE_PUSH
 #define HTTP2_ENABLE_PUSH (0)
-#elif CONFIG_HTTP2_ENABLE_PUSH != 0
+#elif HTTP2_ENABLE_PUSH != 0
 #error "Server push is not implemented."
 #endif
 
@@ -52,9 +55,11 @@
  *
  * The server does not provide support for multiple streams.
  */
-#ifndef CONFIG_HTTP2_MAX_CONCURRENT_STREAMS
+#ifndef HTTP2_MAX_CONCURRENT_STREAMS
 #define HTTP2_MAX_CONCURRENT_STREAMS (1)
-#elif CONFIG_HTTP2_MAX_CONCURRENT_STREAMS > 1
+#elif HTTP2_MAX_CONCURRENT_STREAMS < 0
+#error "Invalid number of concurrent streams given"
+#elif HTTP2_MAX_CONCURRENT_STREAMS > 1
 #error "Support for multiple concurrent streams is not implemented."
 #endif
 
@@ -67,12 +72,10 @@
  * The macro CONFIG_HTTP2_INITIAL_WINDOW_SIZE sets the local default for the
  * INITIAL_WINDOW_SIZE.
  */
-#ifndef CONFIG_HTTP2_INITIAL_WINDOW_SIZE
+#ifndef HTTP2_INITIAL_WINDOW_SIZE
 #define HTTP2_INITIAL_WINDOW_SIZE (768)
-#elif CONFIG_HTTP2_INITIAL_WINDOW_SIZE > ((1 << 31) - 1)
+#elif HTTP2_INITIAL_WINDOW_SIZE > ((1 << 31) - 1)
 #error "Settings initial window size cannot be larger than 2^31 - 1."
-#else
-#define HTTP2_INITIAL_WINDOW_SIZE (CONFIG_HTTP2_INITIAL_WINDOW_SIZE)
 #endif
 
 /**
@@ -86,12 +89,10 @@
  *
  * The macro CONFIG_HTTP2_MAX_FRAME_SIZE sets the local default for MAX_FRAME_SIZE.
  */
-#ifndef CONFIG_HTTP2_MAX_FRAME_SIZE
+#ifndef HTTP2_MAX_FRAME_SIZE
 #define HTTP2_MAX_FRAME_SIZE (16384)
-#elif CONFIG_HTTP2_MAX_FRAME_SIZE < (1 << 14) || CONFIG_HTTP2_MAX_FRAME_SIZE > ((1 << 24) - 1)
+#elif HTTP2_MAX_FRAME_SIZE < (1 << 14) || HTTP2_MAX_FRAME_SIZE > ((1 << 24) - 1)
 #error "Settings max frame size can only be a number between 2^14 and 2^24 - 1."
-#else
-#define HTTP2_MAX_FRAME_SIZE (CONFIG_HTTP2_MAX_FRAME_SIZE)
 #endif
 
 /**
@@ -103,15 +104,17 @@
  * The macro CONFIG_HTTP2_MAX_HEADER_LIST_SIZE sets the local default for
  * MAX_HEADER_LIST_SIZE.
  */
+#ifndef HTTP2_MAX_HEADER_LIST_SIZE
 #define HTTP2_MAX_HEADER_LIST_SIZE (HEADER_LIST_MAX_SIZE)
+#elif HTTP2_MAX_HEADER_LIST_SIZE > HEADER_LIST_MAX_SIZE
+#error "HTTP2_MAX_HEADER_LIST_SIZE cannot be larger than the value of HEADER_LIST_MAX_SIZE in header_list.h"
+#endif
 
 /**
  * The macro CONFIG_HTTP2_SETTINGS_WAIT sets the timeout for receiving
  * a settings ACK in milliseconds
  */
-#ifdef CONFIG_HTTP2_SETTINGS_WAIT
-#define HTTP2_SETTINGS_WAIT (CONFIG_HTTP2_SETTINGS_WAIT)
-#else
+#ifndef HTTP2_SETTINGS_WAIT
 #define HTTP2_SETTINGS_WAIT (300)
 #endif
 
@@ -121,10 +124,10 @@
  * CONFIG_HTTP2_SOCK_READ_SIZE bytes can be pending on a given connection
  * while a frame is being procesed by the library.
  */
-#ifndef CONFIG_HTTP2_SOCK_READ_SIZE
+#ifndef HTTP2_SOCK_READ_SIZE
 #define HTTP2_SOCK_READ_SIZE (HTTP2_INITIAL_WINDOW_SIZE)
-#else
-#define HTTP2_SOCK_READ_SIZE (CONFIG_HTTP2_SOCK_READ_SIZE)
+#elif (HTTP2_SOCK_READ_SIZE) < (HTTP2_INITIAL_WINDOW_SIZE)
+#error "The implementation does not allow to receive more bytes than the allocated read buffer. Either increase the value of HTTP2_SOCK_READ_SIZE or reduce the value of HTTP2_INITIAL_WINDOW_SIZE"
 #endif
 
 /**
@@ -133,12 +136,8 @@
  * CONFIG_HTTP2_SOCK_WRITE_SIZE is the effective maximum limit 
  * for http2 frames in the implementation.
  */
-#if !defined(CONFIG_HTTP2_SOCK_WRITE_SIZE) && defined(CONTIKI)
-#define HTTP2_SOCK_WRITE_SIZE (256)
-#elif !defined(CONFIG_HTTP2_SOCK_WRITE_SIZE)
-#define HTTP2_SOCK_WRITE_SIZE (1024)
-#else
-#define HTTP2_SOCK_WRITE_SIZE (CONFIG_HTTP2_SOCK_WRITE_SIZE)
+#ifndef HTTP2_SOCK_WRITE_SIZE
+#define HTTP2_SOCK_WRITE_SIZE (512)
 #endif
 
 /**
@@ -149,17 +148,10 @@
  * sum(header_block_size) < max_header_list_size
  * (TODO: study compression rates).
  */
-#ifndef CONTIG_HTTP2_STREAM_BUF_SIZE
+#ifndef HTTP2_STREAM_BUF_SIZE
 #define HTTP2_STREAM_BUF_SIZE (512)
-#elif CONFIG_HTTP2_STREAM_BUF_SIZE > ((1 << 16) - 1)
+#elif HTTP2_STREAM_BUF_SIZE > ((1 << 16) - 1)
 #error "Stream buffer size can be at most a 16-bit unsigned integer by implementation."
-#else
-#define HTTP2_STREAM_BUF_SIZE (CONFIG_HTTP2_STREAM_BUF_SIZE)
-#endif
-
-// Verify correct buffer sizes
-#if HTTP2_SOCK_READ_SIZE < HTTP2_INITIAL_WINDOW_SIZE
-#error "The implementation does not allow to receive more bytes than the allocated read buffer. Either increase the value of HTTP2_SOCK_READ_SIZE or reduce the value of HTTP2_INITIAL_WINDOW_SIZE"
 #endif
 
 typedef enum {

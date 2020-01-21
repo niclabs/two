@@ -13,10 +13,6 @@
 #define LOG_MODULE LOG_MODULE_HTTP
 #include "logging.h"
 
-#ifndef TWO_MAX_CLIENTS
-#define TWO_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
-#endif
-
 /***********************************************
 * Aplication static data
 ***********************************************/
@@ -100,11 +96,8 @@ static void on_new_connection(event_sock_t *server, int status)
 {
     (void)status;
     event_sock_t *client = event_sock_create(server->loop);
-    if (event_accept(server, client) == 0) {
-        http2_new_client(client);
-    }
-    else {
-        ERROR("The server cannot receive more clients (current maximum is %d). Increase CONFIG_EVENT_MAX_SOCKETS", EVENT_MAX_SOCKETS);
+    if (event_accept(server, client) != 0 || http2_new_client(client) == NULL) {
+        ERROR("The server cannot receive more clients (current maximum is %d). Increase CONFIG_HTTP2_MAX_CLIENTS", EVENT_MAX_SOCKETS);
         event_close(client, on_client_close);
     }
 }

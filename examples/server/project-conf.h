@@ -10,4 +10,14 @@
    in the .bss memory section. */
 #define QUEUEBUF_CONF_NUM 4
 
+/**
+ * Not enough memory in contiki for multiple clients
+ */
+#define CONFIG_HTTP2_MAX_CLIENTS (1)
+
+/** 
+ * Disable hpack dynamic table by default
+ */
+#define CONFIG_HTTP2_HEADER_TABLE_SIZE (0)
+
 #endif

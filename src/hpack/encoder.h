@@ -8,7 +8,6 @@
 #include <stdint.h>         /* for uint8_t, uint32_t    */
 #include "hpack.h"
 #include "tables.h"         /* for hpack_dynamic_table_t    */
-#include "config.h"
 
 
 int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table,

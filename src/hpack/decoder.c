@@ -1,9 +1,11 @@
 #include <stdint.h>             /* for int8_t, int32_t*/
 #include <string.h>             /* for memset, NULL*/
+
 #include "hpack/decoder.h"
 #include "hpack/utils.h"
 #include "hpack/huffman.h"
-#include "config.h"
+
+
 #define LOG_MODULE LOG_MODULE_HPACK
 #include "logging.h"
 
@@ -392,7 +394,7 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
         }
 #else
         ERROR("Dynamic Table is not included, couldn't add header to table");
-        return PROTOCOL_ERROR;
+        return HPACK_MEMORY_ERROR;
 #endif
     }
     return pointer;
@@ -409,19 +411,19 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
 int hpack_decoder_decode_dynamic_table_size_update(hpack_dynamic_table_t *dynamic_table, hpack_encoded_header_t *encoded_header)
 {
     DEBUG("New table size is %d", encoded_header->dynamic_table_size);
-    #if HPACK_INCLUDE_DYNAMIC_TABLE
+#if HPACK_INCLUDE_DYNAMIC_TABLE
     int8_t rc = hpack_tables_dynamic_table_resize(dynamic_table, encoded_header->dynamic_table_size);
     if (rc < 0) {
         DEBUG("Dynamic table failed to resize");
         return rc;
     }
     return hpack_utils_encoded_integer_size(encoded_header->dynamic_table_size, hpack_utils_find_prefix_size(encoded_header->preamble));
-    #else
+#else
     (void)dynamic_table;
     (void)encoded_header;
     ERROR("Couldn't resize non-existent dynamic table, returning an INTERNAL_ERROR");
-    return INTERNAL_ERROR;
-    #endif
+    return HPACK_MEMORY_ERROR;
+#endif
 }
 
 /*

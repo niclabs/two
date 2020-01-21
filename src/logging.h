@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <errno.h>
 
+// system configuration
+#include "two-conf.h"
+
 // Log levels
 #define LOG_LEVEL_DEBUG (1)
 #define LOG_LEVEL_INFO  (2)

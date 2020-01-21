@@ -1,13 +1,10 @@
 #ifndef TWO_H
 #define TWO_H
 
+// general library configuration
+#include "two-conf.h"
 
-#undef MIN
-#define MIN(a,b) ((a) < (b)) ? (a) : (b)
-
-#ifdef CONFIG_TWO_MAX_RESOURCES
-#define TWO_MAX_RESOURCES (CONFIG_TWO_MAX_RESOURCES)
-#else
+#ifndef TWO_MAX_RESOURCES
 #define TWO_MAX_RESOURCES (4)
 #endif
 
@@ -16,6 +13,10 @@
 #else
 #define TWO_MAX_PATH_SIZE (32)
 #endif
+
+
+#undef MIN
+#define MIN(a,b) ((a) < (b)) ? (a) : (b)
 
 // Defines a resource handler method
 // 

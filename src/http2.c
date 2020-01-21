@@ -29,7 +29,9 @@
 #define HTTP2_SETTINGS_MAX_FRAME_SIZE           (0x5)
 #define HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE     (0x6)
 
+#ifndef HTTP2_MAX_CLIENTS
 #define HTTP2_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
+#endif
 
 #undef MIN
 #define MIN(x, y) (x) < (y) ? (x) : (y)
@@ -82,8 +84,9 @@ http2_context_t *http2_new_client(event_sock_t *client)
 
     // get first element from the client list into the connected clients list
     http2_context_t *ctx = LL_MOVE(http2_context_t, clients, connected_clients);
-    assert(ctx != NULL);
-
+    if (ctx == NULL) {
+        return NULL;
+    }
     INFO("http/2 client %d connected", client_id);
 
     client->data = ctx;

@@ -1,7 +1,7 @@
-#include "hpack/tables.h"
 #include <string.h>                                     /* for strlen, strncmp, memset*/
 #include <assert.h>
-#include "config.h"
+
+#include "hpack/tables.h"
 
 #define LOG_MODULE LOG_MODULE_HPACK
 #include "logging.h"

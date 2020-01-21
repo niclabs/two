@@ -1,6 +1,7 @@
 #ifndef HEADERS_H
 #define HEADERS_H
 
+#include "two-conf.h" // library configuration
 #include "http.h"
 
 /**
@@ -27,10 +28,10 @@
  * Maximum header list size in bytes. It is the value
  * used by http2 MAX_HEADER_LIST_SIZE setting
  */
-#ifdef CONFIG_HTTP2_MAX_HEADER_LIST_SIZE
-#define HEADER_LIST_MAX_SIZE (CONFIG_HTTP2_MAX_HEADER_LIST_SIZE)
-#else
+#ifndef HTTP2_MAX_HEADER_LIST_SIZE
 #define HEADER_LIST_MAX_SIZE (512)
+#else
+#define HEADER_LIST_MAX_SIZE (HTTP2_MAX_HEADER_LIST_SIZE)
 #endif
 
 /**

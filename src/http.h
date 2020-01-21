@@ -4,7 +4,9 @@
 /***********************************************
 * Data buffer struct
 ***********************************************/
+#ifndef HTTP2_MAX_CONTENT_TYPE_SIZE
 #define HTTP_MAX_CONTENT_TYPE_SIZE (32)
+#endif
 
 typedef struct http_header {
     char *name;

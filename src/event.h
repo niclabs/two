@@ -9,36 +9,30 @@
 #include "net/ipv6/tcpip.h"
 #endif
 
+#include "two-conf.h"
+
 #include "cbuf.h"
 #include "ll.h"
 
-#ifndef CONF_EVENT_MAX_DESCRIPTORS
-#define EVENT_MAX_DESCRIPTORS 2
-#else
-#define EVENT_MAX_DESCRIPTORS (CONF_EVENT_MAX_DESCRIPTORS)
+#ifndef EVENT_MAX_DESCRIPTORS
+#define EVENT_MAX_DESCRIPTORS 4
 #endif
 
 // event max sockets should be at least 2 (1 server and 1 client)
-#ifndef CONF_EVENT_MAX_SOCKETS
+#ifndef EVENT_MAX_SOCKETS
 #define EVENT_MAX_SOCKETS (EVENT_MAX_DESCRIPTORS)
-#else
-#define EVENT_MAX_SOCKETS (CONF_EVENT_MAX_SOCKETS)
 #endif
 
 // event max should be at least 3
 // 1 listen event for a server socket
 // 1 read and 1 write event for a client socket
-#ifndef CONF_EVENT_MAX_EVENTS
+#ifndef EVENT_MAX_EVENTS
 #define EVENT_MAX_EVENTS (EVENT_MAX_SOCKETS * 3)
-#else
-#define EVENT_MAX_EVENTS (CONF_EVENT_MAX_EVENTS)
 #endif
 
 // Defines the total number of write operation handlers
-#ifndef CONF_EVENT_WRITE_QUEUE_SIZE
+#ifndef EVENT_WRITE_QUEUE_SIZE
 #define EVENT_WRITE_QUEUE_SIZE (4 * EVENT_MAX_SOCKETS)
-#else
-#define EVENT_WRITE_QUEUE_SIZE (CONF_EVENT_WRITE_QUEUE_SIZE)
 #endif
 
 
