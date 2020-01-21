@@ -97,7 +97,6 @@ static void on_new_connection(event_sock_t *server, int status)
     (void)status;
     event_sock_t *client = event_sock_create(server->loop);
     if (event_accept(server, client) != 0 || http2_new_client(client) == NULL) {
-        ERROR("The server cannot receive more clients (current maximum is %d). Increase CONFIG_HTTP2_MAX_CLIENTS", EVENT_MAX_SOCKETS);
         event_close(client, on_client_close);
     }
 }
@@ -194,16 +193,16 @@ void http_handle_request(http_request_t *req, http_response_t *res, unsigned int
     }
 
 end:
-    DEBUG("%s %s HTTP/2.0", req->method, req->path);
+    INFO("%s %s HTTP/2.0 - %d", req->method, req->path, res->status);
+    DEBUG("Request");
     for (int i = 0; i < (signed)req->headers.len; i++) {
         DEBUG("%s: %s", req->headers.list[i].name, req->headers.list[i].value);
     }
-    DEBUG("HTTP/2.0 %d", res->status);
+    DEBUG("Response status %d", res->status);
     DEBUG("Content-Type: %s", res->content_type);
     DEBUG("Content-Length: %d", res->content_length);
     DEBUG("%s", res->body);
 
-    PRINTF("%s %s HTTP/2.0 - %d\n", req->method, req->path, res->status);
 }
 
 

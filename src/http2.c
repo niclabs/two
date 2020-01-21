@@ -85,6 +85,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
     // get first element from the client list into the connected clients list
     http2_context_t *ctx = LL_MOVE(http2_context_t, clients, connected_clients);
     if (ctx == NULL) {
+        ERROR("The server cannot receive more clients (current maximum is %d). Increase CONFIG_HTTP2_MAX_CLIENTS", HTTP2_MAX_CLIENTS);
         return NULL;
     }
     INFO("http/2 client %d connected", client_id);
