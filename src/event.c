@@ -13,10 +13,8 @@
 #endif
 
 #include "event.h"
-#include "config.h"
 
 #define LOG_MODULE LOG_MODULE_EVENT
-
 #include "logging.h"
 
 #ifdef CONTIKI

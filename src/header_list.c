@@ -3,7 +3,6 @@
 #include <assert.h>
 
 #include "header_list.h"
-#include "config.h"
 #include "logging.h"
 
 #undef MIN
