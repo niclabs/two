@@ -794,7 +794,7 @@ void event_timer_reset(event_t *timer)
         return;
     }
 #ifdef CONTIKI
-    ctimer_restart(&timer->data.timer.ctimer)
+    ctimer_restart(&timer->data.timer.ctimer);
 #else
     gettimeofday(&timer->data.timer.start, NULL);
 #endif
