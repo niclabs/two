@@ -1,8 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "cbuf.h"
-
 // HTTP2 macros
 #define CONFIG_MAX_HBF_BUFFER 256
 #define CONFIG_MAX_BUFFER_SIZE 256
