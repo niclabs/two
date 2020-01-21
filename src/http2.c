@@ -631,15 +631,12 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     // send headers
     int hlen = 0;
     if ((hlen = send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table,
-                           stream->id, stream->buflen > 0, close_on_write_error)) < 0) {
+                                   stream->id, stream->buflen == 0, on_stream_data_sent)) < 0) {
         http2_error(ctx, HTTP2_INTERNAL_ERROR);
         return -1;
     }
-    INFO("->|%u| HEADERS (length: %u, flags: 0x%x, stream_id: %u)", ctx->id, hlen, 
-            FRAME_FLAGS_END_HEADERS | (stream->buflen > 0 ? 0 : FRAME_FLAGS_END_STREAM), (unsigned int)stream->id);
-
-    // send data
-    http2_continue_send(ctx, stream);
+    INFO("->|%u| HEADERS (length: %u, flags: 0x%x, stream_id: %u)", ctx->id, hlen,
+         FRAME_FLAGS_END_HEADERS | (stream->buflen > 0 ? 0 : FRAME_FLAGS_END_STREAM), (unsigned int)stream->id);
 
     return 0;
 }
