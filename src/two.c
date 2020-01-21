@@ -96,7 +96,10 @@ static void on_new_connection(event_sock_t *server, int status)
 {
     (void)status;
     event_sock_t *client = event_sock_create(server->loop);
-    if (event_accept(server, client) != 0 || http2_new_client(client) == NULL) {
+    if (event_accept(server, client) == 0) {
+        http2_new_client(client);
+    }
+    else {
         event_close(client, on_client_close);
     }
 }

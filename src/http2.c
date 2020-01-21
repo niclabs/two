@@ -68,6 +68,7 @@ int receiving(event_sock_t *client, int size, uint8_t *buf);
 
 // send as much data as flow control allows from the stream buffer
 void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream);
+void http2_on_client_close(event_sock_t *sock);
 
 http2_context_t *http2_new_client(event_sock_t *client)
 {
@@ -86,6 +87,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
     http2_context_t *ctx = LL_MOVE(http2_context_t, clients, connected_clients);
     if (ctx == NULL) {
         ERROR("The server cannot receive more clients (current maximum is %d). Increase CONFIG_HTTP2_MAX_CLIENTS", HTTP2_MAX_CLIENTS);
+        event_close(client, http2_on_client_close);
         return NULL;
     }
     INFO("http/2 client %d connected", client_id);
@@ -120,6 +122,7 @@ void http2_on_client_close(event_sock_t *sock)
     INFO("http/2 client %u disconnected", ctx->id);
 
     // free the client
+    LL_DELETE(ctx, connected_clients);
     LL_PUSH(ctx, clients);
 }
 
