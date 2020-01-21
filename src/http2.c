@@ -477,7 +477,7 @@ int validate_pseudoheaders(header_list_t *headers)
     return 0;
 }
 
-void on_stream_data_sent(event_sock_t *sock, int status)
+void on_stream_send_complete(event_sock_t *sock, int status)
 {
     http2_context_t *ctx = (http2_context_t *)sock->data;
 
@@ -512,7 +512,7 @@ void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream)
 
     // send data frame
     INFO("->|%u| DATA (length: %u, flags: 0x%x, stream_id: %u)", ctx->id, len, (unsigned int)stream->id, (stream->buflen - len <= 0));
-    send_data_frame(ctx->socket, stream->bufptr, len, stream->id, (stream->buflen - len <= 0), on_stream_data_sent);
+    send_data_frame(ctx->socket, stream->bufptr, len, stream->id, (stream->buflen - len <= 0), on_stream_send_complete);
 
     // use actual size sent here
     stream->bufptr += len;
@@ -634,7 +634,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     // send headers
     int hlen = 0;
     if ((hlen = send_headers_frame(ctx->socket, &header_list, &ctx->hpack_dynamic_table,
-                                   stream->id, stream->buflen == 0, on_stream_data_sent)) < 0) {
+                                   stream->id, stream->buflen == 0, on_stream_send_complete)) < 0) {
         http2_error(ctx, HTTP2_INTERNAL_ERROR);
         return -1;
     }
