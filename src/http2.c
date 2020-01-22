@@ -736,6 +736,11 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *p
 
     // Header trailers.
     if (header.stream_id == ctx->last_opened_stream_id) {
+        if (!(header.flags & FRAME_FLAGS_END_STREAM)) {
+            http2_stream_error(ctx, header.stream_id, HTTP2_PROTOCOL_ERROR);
+            return -1;
+        }
+
         ctx->flags |= HTTP2_FLAGS_WAITING_TRAILERS;
         ctx->flags |= HTTP2_FLAGS_WAITING_END_HEADERS;
     }
