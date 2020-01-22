@@ -41,7 +41,7 @@ void pad_code(uint32_t *code, uint8_t length)
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int8_t, hpack_huffman_decode, huffman_encoded_word_t *, uint8_t *);
-FAKE_VALUE_FUNC(int,  headers_add, header_list_t *, const char *, const char * );
+FAKE_VALUE_FUNC(int,  header_list_add, header_list_t *, const char *, const char * );
 FAKE_VALUE_FUNC(hpack_preamble_t, hpack_utils_get_preamble, uint8_t);
 FAKE_VALUE_FUNC(uint8_t, hpack_utils_find_prefix_size, hpack_preamble_t);
 FAKE_VALUE_FUNC(int, hpack_encoder_encode, hpack_dynamic_table_t *, char *, char *,  uint8_t *);
@@ -65,7 +65,7 @@ FAKE_VALUE_FUNC(int8_t, hpack_tables_find_entry_name, hpack_dynamic_table_t *, u
     FAKE(hpack_tables_find_entry_name_and_value) \
     FAKE(hpack_tables_find_entry_name)           \
     FAKE(hpack_tables_dynamic_table_resize)      \
-    FAKE(headers_add)                            \
+    FAKE(header_list_add)                            \
     FAKE(hpack_huffman_decode)
 
 /*Decode*/
@@ -211,7 +211,7 @@ void hpack_tables_init_dynamic_table_custom_fake(hpack_dynamic_table_t *dynamic_
     dynamic_table->next = 0;
 }
 
-int headers_add_check_inputs(header_list_t *headers, const char *name, const char *value)
+int header_list_add_check_inputs(header_list_t *headers, const char *name, const char *value)
 {
     TEST_ASSERT_EQUAL(0, memcmp("new_name", name, strlen("new_name")));
     TEST_ASSERT_EQUAL(0, memcmp("val", value, strlen("val")));
@@ -236,7 +236,6 @@ void test_hpack_decoder_check_huffman_padding(void)
     encoded_buffer[0] = 0x7f;
     encoded_buffer[1] = 0;
     uint32_t str_length = 1;
-    uint32_t str_length_size = 1;
     int32_t rc = hpack_decoder_check_huffman_padding(bits_left, encoded_buffer, str_length);
     TEST_ASSERT_EQUAL(0, rc); //ok
     /*Test with wrong padding*/
@@ -652,7 +651,7 @@ void test_decode_header_literal_with_incremental_indexing(void)
 
     header_list_t headers;
 
-    headers.n_entries = 0;
+    headers.count = 0;
     headers.size = 0;
     //int rc = hpack_decoder_decode_literal_header_field_with_incremental_indexing(&dynamic_table, header_block_name_literal, name, value);
     int rc = hpack_decoder_decode(&dynamic_table, header_block_name_literal, header_block_size, &headers);
@@ -694,7 +693,7 @@ void test_decode_header_literal_never_indexed(void)
     hpack_dynamic_table_t dynamic_table;
     hpack_tables_init_dynamic_table_custom_fake(&dynamic_table, 100); // 100 is a dummy value
 
-    headers.n_entries = 0;
+    headers.count = 0;
     headers.size = 0;
 
     uint32_t hpack_encoded_integer_size_fake_seq[] = {
@@ -722,15 +721,15 @@ void test_decode_header_literal_never_indexed(void)
     int rc = hpack_decoder_decode(&dynamic_table, header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
+    TEST_ASSERT_EQUAL(1, header_list_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, header_list_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, header_list_add_fake.arg2_val);
 
     //Literal Header Field Representation
     //Never indexed
     //No huffman encoding - Header name as static table index
 
-    headers.n_entries = 0;
+    headers.count = 0;
     headers.size = 0;
 
     header_block_size = 5;
@@ -746,9 +745,9 @@ void test_decode_header_literal_never_indexed(void)
     rc = hpack_decoder_decode(&dynamic_table, header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
+    TEST_ASSERT_EQUAL(2, header_list_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, header_list_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, header_list_add_fake.arg2_val);
 
     //Literal Header Field Representation
     //Never indexed
@@ -775,13 +774,13 @@ void test_decode_header_literal_never_indexed(void)
         'l'
     };
 
-    headers_add_fake.custom_fake = headers_add_check_inputs;
+    header_list_add_fake.custom_fake = header_list_add_check_inputs;
     rc = hpack_decoder_decode(&dynamic_table, header_block_dynamic_index, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);
-    TEST_ASSERT_EQUAL(3, headers_add_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(new_name, headers_add_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
+    TEST_ASSERT_EQUAL(3, header_list_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(new_name, header_list_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, header_list_add_fake.arg2_val);
 
 }
 
@@ -811,7 +810,7 @@ void test_decode_header_literal_without_indexing(void)
     hpack_dynamic_table_t dynamic_table;
     hpack_tables_init_dynamic_table_custom_fake(&dynamic_table, 100); //100 is a dummy value btw
 
-    headers.n_entries = 0;
+    headers.count = 0;
     headers.size = 0;
 
     hpack_utils_get_preamble_fake.return_val = (hpack_preamble_t)0;
@@ -834,15 +833,15 @@ void test_decode_header_literal_without_indexing(void)
     int rc = hpack_decoder_decode(&dynamic_table, header_block_name_literal, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL(1, headers_add_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
+    TEST_ASSERT_EQUAL(1, header_list_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, header_list_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, header_list_add_fake.arg2_val);
 
     //Literal Header Field Representation
     //without indexing
     //No huffman encoding - Header name as static table index
 
-    headers.n_entries = 0;
+    headers.count = 0;
     headers.size = 0;
 
     header_block_size = 6;
@@ -859,9 +858,9 @@ void test_decode_header_literal_without_indexing(void)
     rc = hpack_decoder_decode(&dynamic_table, header_block_name_indexed, header_block_size, &headers);
 
     TEST_ASSERT_EQUAL(header_block_size, rc);//bytes decoded
-    TEST_ASSERT_EQUAL(2, headers_add_fake.call_count);
-    TEST_ASSERT_EQUAL_STRING(expected_name, headers_add_fake.arg1_val);
-    TEST_ASSERT_EQUAL_STRING(expected_value, headers_add_fake.arg2_val);
+    TEST_ASSERT_EQUAL(2, header_list_add_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING(expected_name, header_list_add_fake.arg1_val);
+    TEST_ASSERT_EQUAL_STRING(expected_value, header_list_add_fake.arg2_val);
 
 
 }

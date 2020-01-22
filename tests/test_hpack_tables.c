@@ -1,7 +1,7 @@
 #include "unit.h"
 #include "fff.h"
 #include "hpack/tables.h"
-#include "headers.h"
+#include "header_list.h"
 
 extern int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
 extern int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name);
@@ -11,7 +11,7 @@ extern int8_t hpack_tables_static_find_entry_name(uint8_t index, char *name);
 extern int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value);
 extern int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
 extern int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);
-extern int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t settings_max_size, uint32_t new_max_size);
+extern int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size);
 extern int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table);
 extern int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, uint32_t index);
 extern int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer);
@@ -281,8 +281,8 @@ void test_hpack_tables_static_find_entry_name_and_value(void)
     char *expected_value[] = { "", "POST", "GET", "gzip, deflate", "404", "", "" };
     uint32_t example_index[] = { 1, 3, 2, 16, 13, 30, 43 };
 
-    char name[MAX_HEADER_NAME_LEN];
-    char value[MAX_HEADER_VALUE_LEN];
+    char name[HPACK_HEADER_NAME_LEN];
+    char value[HPACK_HEADER_VALUE_LEN];
 
     for (int i = 0; i < 7; i++) {
         memset(name, 0, sizeof(name));
@@ -298,7 +298,7 @@ void test_hpack_tables_static_find_entry_name(void)
     char *expected_name[] = { ":path", "age", "accept", "allow", "cookie" };
     uint32_t example_index[] = { 5, 21, 19, 22, 32 };
 
-    char name[MAX_HEADER_NAME_LEN];
+    char name[HPACK_HEADER_NAME_LEN];
 
     for (int i = 0; i < 5; i++) {
         memset(name, 0, sizeof(name));
@@ -318,15 +318,15 @@ void test_hpack_tables_dynamic_add_find_entry_and_reset_table(void)
     char *new_names[] = { "hola", "sol3", "bien1" };
     char *new_values[] = { "chao", "luna4", "mal2" };
 
-    char name[MAX_HEADER_NAME_LEN];
-    char value[MAX_HEADER_VALUE_LEN];
+    char name[HPACK_HEADER_NAME_LEN];
+    char value[HPACK_HEADER_VALUE_LEN];
 
     TEST_ASSERT_EQUAL(0, dynamic_table.first);
     TEST_ASSERT_EQUAL(0, dynamic_table.next);
 
     //test error case, in the beginning there isn't any entry
     int8_t rc_fail = hpack_tables_dynamic_find_entry_name_and_value(&dynamic_table, 62, name, value); // 62 -> doesn't exist ...
-    TEST_ASSERT_EQUAL(PROTOCOL_ERROR, rc_fail);
+    TEST_ASSERT_EQUAL(HPACK_COMPRESSION_ERROR, rc_fail);
 
 
     //ITERATION 1, add first entry
@@ -385,13 +385,13 @@ void test_hpack_tables_dynamic_add_find_entry_and_reset_table(void)
     TEST_ASSERT_EQUAL(-1, rc_fail);
 
     //Now try reset the table, resizing to 0 and then back to normal
-    hpack_tables_dynamic_table_resize(&dynamic_table, HPACK_MAX_DYNAMIC_TABLE_SIZE,0 );
+    hpack_tables_dynamic_table_resize(&dynamic_table, 0);
     TEST_ASSERT_EQUAL(0, dynamic_table.n_entries);
     TEST_ASSERT_EQUAL(0, dynamic_table.max_size);
     TEST_ASSERT_EQUAL(0, dynamic_table.actual_size);
     TEST_ASSERT_EQUAL(0, dynamic_table.first);
     TEST_ASSERT_EQUAL(0, dynamic_table.next);
-    hpack_tables_dynamic_table_resize(&dynamic_table, HPACK_MAX_DYNAMIC_TABLE_SIZE, dynamic_table_max_size);
+    hpack_tables_dynamic_table_resize(&dynamic_table, dynamic_table_max_size);
     TEST_ASSERT_EQUAL(0, dynamic_table.n_entries);
     TEST_ASSERT_EQUAL(dynamic_table_max_size, dynamic_table.max_size);
     TEST_ASSERT_EQUAL(0, dynamic_table.actual_size);
@@ -422,8 +422,8 @@ void test_hpack_tables_dynamic_pop_old_entry(void)
     char *new_names[] = { "hola1", "sol2", "bota3" };
     char *new_values[] = { "chao1", "luna2", "pato3" };
 
-    char name[MAX_HEADER_NAME_LEN];
-    char value[MAX_HEADER_VALUE_LEN];
+    char name[HPACK_HEADER_NAME_LEN];
+    char value[HPACK_HEADER_VALUE_LEN];
 
     TEST_ASSERT_EQUAL(0, dynamic_table.first);
     TEST_ASSERT_EQUAL(0, dynamic_table.next);
@@ -522,15 +522,15 @@ void test_hpack_tables_dynamic_resize_not_circular(void)
     }
 
     // so if a resize is made to size 100, the old entry must be deleted and everything should work normal
-    hpack_tables_dynamic_table_resize(&dynamic_table,  HPACK_MAX_DYNAMIC_TABLE_SIZE ,100);
+    hpack_tables_dynamic_table_resize(&dynamic_table, 100);
     TEST_ASSERT_EQUAL(2, dynamic_table.n_entries);
     TEST_ASSERT_EQUAL(100, dynamic_table.max_size);
     TEST_ASSERT_EQUAL(82, dynamic_table.actual_size);
     TEST_ASSERT_EQUAL(0, dynamic_table.first);
     TEST_ASSERT_EQUAL(22, dynamic_table.next);
 
-    char name[MAX_HEADER_NAME_LEN];
-    char value[MAX_HEADER_VALUE_LEN];
+    char name[HPACK_HEADER_NAME_LEN];
+    char value[HPACK_HEADER_VALUE_LEN];
 
     memset(name, 0, sizeof(name));
     memset(value, 0, sizeof(value));
@@ -585,7 +585,7 @@ void test_hpack_tables_dynamic_resize_circular(void)
     TEST_ASSERT_EQUAL(1, dynamic_table.next > (dynamic_table.max_size - dynamic_table.first)); // this proves that is case *2*
     //resize to the same size, only to prove "sort" algorithm
     //now it has to be instead ->|hola como estas?xxxxxxxxx...|
-    hpack_tables_dynamic_table_resize(&dynamic_table,  HPACK_MAX_DYNAMIC_TABLE_SIZE, dynamic_table_max_size);
+    hpack_tables_dynamic_table_resize(&dynamic_table, dynamic_table_max_size);
 
     TEST_ASSERT_EQUAL(1, dynamic_table.first < dynamic_table.next);
     TEST_ASSERT_EQUAL(1, dynamic_table.n_entries);
@@ -600,8 +600,8 @@ void test_hpack_tables_dynamic_resize_circular(void)
     // Previous part of test tested optimization 2, so now 1 is left to test...
 
     //first reset dynamic table
-    hpack_tables_dynamic_table_resize(&dynamic_table, HPACK_MAX_DYNAMIC_TABLE_SIZE, 0);
-    hpack_tables_dynamic_table_resize(&dynamic_table, HPACK_MAX_DYNAMIC_TABLE_SIZE, dynamic_table_max_size);
+    hpack_tables_dynamic_table_resize(&dynamic_table, 0);
+    hpack_tables_dynamic_table_resize(&dynamic_table, dynamic_table_max_size);
     char *new_names1[] = { "Dias antes de la devastacion paso algo terrible, los piratas se llevaron a Ellie, quien lo diria",
                            "Creo que todo fue un sueño, que raro!" };
     char *new_values1[] = { "!",
@@ -612,7 +612,7 @@ void test_hpack_tables_dynamic_resize_circular(void)
 
     TEST_ASSERT_EQUAL(1, dynamic_table.next <= dynamic_table.first);
     TEST_ASSERT_EQUAL(1, dynamic_table.next <= (dynamic_table.max_size - dynamic_table.first)); // this proves that is case *1*
-    hpack_tables_dynamic_table_resize(&dynamic_table, HPACK_MAX_DYNAMIC_TABLE_SIZE, dynamic_table_max_size);
+    hpack_tables_dynamic_table_resize(&dynamic_table, dynamic_table_max_size);
 
     TEST_ASSERT_EQUAL(1, dynamic_table.first < dynamic_table.next);
     TEST_ASSERT_EQUAL(1, dynamic_table.n_entries);
@@ -642,8 +642,8 @@ void test_hpack_tables_find_entry(void)
     char *new_name = "hola";
     char *new_value = "chao";
 
-    char name[MAX_HEADER_NAME_LEN];
-    char value[MAX_HEADER_VALUE_LEN];
+    char name[HPACK_HEADER_NAME_LEN];
+    char value[HPACK_HEADER_VALUE_LEN];
 
     hpack_tables_dynamic_table_add_entry(&dynamic_table, new_name, new_value);
 
@@ -664,8 +664,8 @@ void test_hpack_tables_find_entry(void)
     char *expected_name[] = { ":authority", ":method", ":method", "www-authenticate" };
     char *expected_value[] = { "", "GET", "POST", "" };
 
-    char name[MAX_HEADER_NAME_LEN];
-    char value[MAX_HEADER_VALUE_LEN];
+    char name[HPACK_HEADER_NAME_LEN];
+    char value[HPACK_HEADER_VALUE_LEN];
     for (int i = 0; i < 4; i++) {
         memset(name, 0, sizeof(name));
         memset(value, 0, sizeof(value));
