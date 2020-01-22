@@ -1000,6 +1000,7 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
 
         // check frame size against local settings
         if (frame_header.length > HTTP2_MAX_FRAME_SIZE) {
+            ERROR("cannot process frame (type: 0x%x, length %u) for http/2 client %u", frame_header.type, frame_header.length, ctx->id);
             http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
             return bytes_read;
         }
@@ -1007,6 +1008,7 @@ int receiving(event_sock_t *sock, int size, uint8_t *buf)
         // we cannot allocate frames larger than the buffer
         // send a FLOW_CONTROL_ERROR
         if (frame_header.length > HTTP2_SOCK_READ_SIZE) {
+            ERROR("cannot process frame (type: 0x%x, length %u) for http/2 client %u", frame_header.type, frame_header.length, ctx->id);
             http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
             return bytes_read;
         }
