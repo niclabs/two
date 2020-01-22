@@ -20,6 +20,7 @@
 #define HTTP2_FLAGS_WAITING_END_STREAM   (0x4)
 #define HTTP2_FLAGS_GOAWAY_RECV          (0x8)
 #define HTTP2_FLAGS_GOAWAY_SENT          (0x10)
+#define HTTP2_FLAGS_WAITING_TRAILERS     (0x20)
 
 // settings
 #define HTTP2_SETTINGS_HEADER_TABLE_SIZE        (0x1)
@@ -663,8 +664,10 @@ int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *da
     }
 
     // copy memory to the stream buffer
-    memcpy(ctx->stream.buf + ctx->stream.buflen, data, copylen);
-    ctx->stream.buflen += copylen;
+    if (!(ctx->flags & HTTP2_FLAGS_WAITING_TRAILERS)) {
+        memcpy(ctx->stream.buf + ctx->stream.buflen, data, copylen);
+        ctx->stream.buflen += copylen;
+    }
 
     if (header.flags & FRAME_FLAGS_END_STREAM) {
         // set the stream to the correct state
@@ -719,24 +722,33 @@ int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *p
 
     // new headers frame for a strean in HALF_CLOSED_REMOTE
     // TODO: check stream state and handle trailing headers
-    if (header.stream_id == ctx->last_opened_stream_id) {
+    if (header.stream_id == ctx->last_opened_stream_id &&
+        (ctx->stream.state == HTTP2_STREAM_HALF_CLOSED_REMOTE ||
+         ctx->stream.state == HTTP2_STREAM_CLOSED)) {
         http2_error(ctx, HTTP2_STREAM_CLOSED_ERROR);
         return -1;
     }
 
-    // open a new stream
-    ctx->stream.id = header.stream_id;
-    ctx->stream.state = HTTP2_STREAM_OPEN;
-    ctx->stream.window_size = ctx->settings.initial_window_size;
-    ctx->last_opened_stream_id = header.stream_id;
+    // Header trailers.
+    if (header.stream_id == ctx->last_opened_stream_id) {
+        ctx->flags |= HTTP2_FLAGS_WAITING_TRAILERS;
+        ctx->flags |= HTTP2_FLAGS_WAITING_END_HEADERS;
+    }
+    else {
+        // open a new stream
+        ctx->stream.id = header.stream_id;
+        ctx->stream.state = HTTP2_STREAM_OPEN;
+        ctx->stream.window_size = ctx->settings.initial_window_size;
+        ctx->last_opened_stream_id = header.stream_id;
 
-    // reset stream flags
-    ctx->flags |= HTTP2_FLAGS_WAITING_END_HEADERS;
-    ctx->flags |= HTTP2_FLAGS_WAITING_END_STREAM;
+        // reset stream flags
+        ctx->flags |= HTTP2_FLAGS_WAITING_END_HEADERS;
+        ctx->flags |= HTTP2_FLAGS_WAITING_END_STREAM;
 
-    // initialize stream buffer
-    ctx->stream.buflen = 0;
-    ctx->stream.bufptr = ctx->stream.buf;
+        // initialize stream buffer
+        ctx->stream.buflen = 0;
+        ctx->stream.bufptr = ctx->stream.buf;
+    }
 
     // calculate header payload size
     int size = header.length;
