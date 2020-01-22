@@ -122,9 +122,9 @@
  * memory used by the implementation
  */
 #ifdef CONFIG_HTTP2_MAX_CLIENTS
-#define HTTP2_MAX_CLIENTS (CONFIG_HTTP2_MAX_CLIENTS)
+#define EVENT_MAX_SOCKETS ((CONFIG_HTTP2_MAX_CLIENTS) + 1)
 #else
-#define HTTP2_MAX_CLIENTS (2)
+#define EVENT_MAX_SOCKETS (3)
 #endif
 
 /**
