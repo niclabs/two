@@ -393,8 +393,7 @@ int hpack_decoder_decode_literal_header_field(hpack_dynamic_table_t *dynamic_tab
             return rc;
         }
 #else
-        ERROR("Dynamic Table is not included, couldn't add header to table");
-        return HPACK_MEMORY_ERROR;
+        DEBUG("Dynamic Table is not included, couldn't add header to table");
 #endif
     }
     return pointer;

@@ -506,6 +506,16 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
     }
 #else
     (void)dynamic_table;
+
+    // see if the value is in the static table
+    if (index > 62) {
+        // remote endpoint should not be trying to get a value if 
+        // we specified that the table size was 0
+        ERROR("Remote endpoint attempted to retrieve a value from zero-size dynamic table.");
+        return HPACK_COMPRESSION_ERROR;
+    }
+
+    // see 
     hpack_tables_static_find_entry_name_and_value(index, name, value);
 #endif
 
