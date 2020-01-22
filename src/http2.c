@@ -87,7 +87,8 @@ http2_context_t *http2_new_client(event_sock_t *client)
     // get first element from the client list into the connected clients list
     http2_context_t *ctx = LL_MOVE(http2_context_t, clients, connected_clients);
     if (ctx == NULL) {
-        ERROR("The server cannot receive more clients (current maximum is %d). Increase CONFIG_HTTP2_MAX_CLIENTS", HTTP2_MAX_CLIENTS);
+        // increase CONFIG_HTTP2_MAX_CLIENTS to avoid this error
+        ERROR("Maximum number of clients (%d) reached.", HTTP2_MAX_CLIENTS);
         event_close(client, http2_on_client_close);
         return NULL;
     }
@@ -118,13 +119,17 @@ http2_context_t *http2_new_client(event_sock_t *client)
 
 void http2_on_client_close(event_sock_t *sock)
 {
-    http2_context_t *ctx = (http2_context_t *)sock->data;
+    if (sock->data != NULL) {
+        http2_context_t *ctx = (http2_context_t *)sock->data;
+        INFO("http/2 client %u disconnected", ctx->id);
 
-    INFO("http/2 client %u disconnected", ctx->id);
-
-    // free the client
-    LL_DELETE(ctx, connected_clients);
-    LL_PUSH(ctx, clients);
+        // free the client
+        LL_DELETE(ctx, connected_clients);
+        LL_PUSH(ctx, clients);
+    }
+    else {
+        INFO("http/2 client disconnected");
+    }
 }
 
 void http2_close_immediate(http2_context_t *ctx)
