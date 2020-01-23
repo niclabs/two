@@ -1,10 +1,7 @@
 #include <errno.h>
-
-#ifdef CONTIKI
-#include "contiki-net.h"
-#include "lib/assert.h"
-#else
 #include <assert.h>
+
+#ifndef CONTIKI
 #include <unistd.h>
 #include <signal.h>
 #include <sys/select.h>
@@ -767,26 +764,28 @@ event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
     assert(sock->loop != NULL);
     assert(cb != NULL);
 
-    // Get a new event
-    event_t *event = event_find_free(sock->loop, sock);
-    assert(event != NULL);
-
     // 0 == infinite
     if (millis == 0) {
         return NULL;
     }
 
+    // Get a new event
+    event_t *event = event_find_free(sock->loop, sock);
+    assert(event != NULL);
+    
     event->type = EVENT_TIMER_TYPE;
-    event->data.timer.cb = cb;
-    event->data.timer.millis = millis;
     event->sock = sock;
+    event->data.timer.cb = cb;
+    DEBUG("SET EVENT DATA");
 
 #ifndef CONTIKI
+    event->data.timer.millis = millis;
     // get start time
     gettimeofday(&event->data.timer.start, NULL);
 #else
-    ctimer_set(&event->data.timer.ctimer, millis * CLOCK_SECOND / 1000, event_sock_handle_timer, event);
+    ctimer_set(&event->data.timer.ctimer, (millis * CLOCK_SECOND) / 1000, event_sock_handle_timer, event);
 #endif
+    DEBUG("SET TIMER");
 
     return event;
 }

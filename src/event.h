@@ -109,10 +109,10 @@ typedef struct event_write {
 
 typedef struct event_timer {
     // type variables
-    int millis;
 #ifdef CONTIKI
     struct ctimer ctimer;
 #else
+    int millis;
     struct timeval start;
 #endif
     event_timer_cb cb;
