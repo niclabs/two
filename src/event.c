@@ -792,10 +792,10 @@ event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
 
 void event_timer_reset(event_t *timer)
 {
-    assert(timer->type == EVENT_TIMER_TYPE);
     if (timer == NULL) {
         return;
     }
+    assert(timer->type == EVENT_TIMER_TYPE);
 #ifdef CONTIKI
     ctimer_restart(&timer->data.timer.ctimer);
 #else
@@ -805,11 +805,10 @@ void event_timer_reset(event_t *timer)
 
 void event_timer_stop(event_t *timer)
 {
-    assert(timer->type == EVENT_TIMER_TYPE);
     if (timer == NULL) {
         return;
     }
-
+    assert(timer->type == EVENT_TIMER_TYPE);
     assert(timer->sock != NULL);
     event_sock_t *sock = timer->sock;
 
