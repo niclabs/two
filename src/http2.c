@@ -104,7 +104,6 @@ http2_context_t *http2_new_client(event_sock_t *client)
     ctx->flags = HTTP2_FLAGS_NONE;
     ctx->last_opened_stream_id = 0;
 
-
     // this value can only be updated by a WINDOW_UPDATE frame
     ctx->window_size = default_settings.initial_window_size;
 

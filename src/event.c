@@ -772,7 +772,7 @@ event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
     // Get a new event
     event_t *event = event_find_free(sock->loop, sock);
     assert(event != NULL);
-    
+
     event->type = EVENT_TIMER_TYPE;
     event->sock = sock;
     event->data.timer.cb = cb;
