@@ -32,7 +32,7 @@ event_t *event_find(event_t *queue, event_type_t type)
 // find free event in loop memory
 event_t *event_find_free(event_loop_t *loop, event_sock_t *sock)
 {
-    return LL_MOVE(event_t, loop->events, sock->events);
+    return LL_MOVEP(loop->events, sock->events);
 }
 
 // find socket file descriptor in socket queue
@@ -589,7 +589,7 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     LL_PUSH(sock, loop->polling);
 
     // add event event to socket
-    event_t *event = LL_MOVE(event_t, loop->events, sock->events);
+    event_t *event = event_find_free(loop, sock);
     assert(event != NULL);
 
     // set event event
@@ -739,7 +739,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
 
     // add a write operation to the event
     if (to_write > 0) {
-        event_write_op_t *op = LL_MOVE(event_write_op_t, loop->writes, event->data.write.queue);
+        event_write_op_t *op = LL_MOVE(loop->writes, event->data.write.queue);
 
         // If this fails increase CONFIG_EVENT_WRITE_QUEUE_SIZE
         assert(op != NULL);

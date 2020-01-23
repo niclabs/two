@@ -46,12 +46,26 @@ struct __ll {
         name = &__LL_CONCAT(name,_list)[0];                                     \
     } while(0)
 
-#define LL_MOVE(type, src, dst)             \
+// Move the first element (if any) from the source list into
+// the end of the destination list
+#define LL_MOVE(src, dst)                   \
     ({                                      \
-        type * elem = LL_POP(src);          \
+        void * elem = LL_POP(src);          \
         if (elem != NULL) {                 \
-            memset(elem, 0, sizeof(type));  \
+            memset(elem, 0, sizeof(*src));  \
             LL_APPEND(elem, dst);           \
+        }                                   \
+        elem;                               \
+     })
+
+// Move the first element (if any) from the source list into
+// the beginning (push) of the destination list
+#define LL_MOVEP(src, dst)                  \
+    ({                                      \
+        void * elem = LL_POP(src);          \
+        if (elem != NULL) {                 \
+            memset(elem, 0, sizeof(*src));  \
+            LL_PUSH(elem, dst);             \
         }                                   \
         elem;                               \
      })
@@ -59,8 +73,8 @@ struct __ll {
 // Push an element at the beginning of the list
 #define LL_PUSH(elem, list)         \
     ({                              \
-        void *next = (elem)->next;  \
-        (elem)->next = list;        \
+        void *next = __NEXT(elem);  \
+        __NEXT(elem) = list;        \
         list = (elem);              \
         next;                       \
     })
