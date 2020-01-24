@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 #include <assert.h>
 
 #include "frames.h"

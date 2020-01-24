@@ -3,6 +3,7 @@
    HTTP/2
  */
 
+#include <strings.h>
 #include <assert.h>
 
 #include "two.h"
