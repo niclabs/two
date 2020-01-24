@@ -6,7 +6,7 @@ SRC = $(TWO)/src
 CONTIKI ?= ../../../contiki-ng
 
 HTTP2_PORT ?= 8888
-ADDR = fd00::302:304:506:708
+HTTP2_ADDR ?= fd00::302:304:506:708
 
 PROJECTDIRS += $(SRC) $(SRC)/frames $(SRC)/hpack $(SRC)/http2
 PROJECT_SOURCEFILES=two.c \
@@ -49,11 +49,12 @@ h2spec-pre:
 	@echo "------------------------------"
 
 .PHONY: $(ALL_SPECS)
-$(ALL_SPECS): TARGET=native
-$(ALL_SPECS): /usr/local/bin/h2spec $(CONTIKI_PROJECT)
+
+$(ALL_SPECS): /usr/local/bin/h2spec
+ifeq (TARGET,)
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
 	@(sudo ./server.native 2>/dev/null > server.log & echo $$! > server.pid) && sleep 0.5 && \
-		(h2spec $@ -p $(HTTP2_PORT) -h [$(ADDR)] > h2spec.log && rm h2spec.log); \
+		(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
 		PID=$$(cat server.pid); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \
@@ -78,6 +79,24 @@ $(ALL_SPECS): /usr/local/bin/h2spec $(CONTIKI_PROJECT)
 		fi; \
 		echo "$$TOTAL $$FAILURES" > summary.txt; \
 		rm server.pid server.log
+else
+	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
+	@(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
+		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
+		FAILURES=$$(awk '{print $$2}' summary.txt); \
+		/bin/echo -n "$@: "; \
+		if test -f h2spec.log; then \
+			echo "FAIL"; \
+			echo "  Client output: "; \
+			FAILURES=$$(($$FAILURES + 1)); \
+			cat h2spec.log | sed -e/^Failures:/\{ -e:1 -en\;b1 -e\} -ed | grep -a -B 1 -A 4 "×" | sed /^$$/q; \
+			if test -s server.log; then echo "  Server output:"; cat server.log | sed "s/^/    /"; fi; \
+			rm h2spec.log; \
+		else \
+			echo "PASS"; \
+		fi; \
+		echo "$$TOTAL $$FAILURES" > summary.txt
+endif
 
 h2spec: h2spec-pre $(SPEC)
 	@echo "------------------------------"
