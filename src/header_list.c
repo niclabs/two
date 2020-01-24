@@ -8,6 +8,12 @@
 #undef MIN
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
 
+// Use this if strnlen is missing.
+size_t strnlen(const char *str, size_t max)
+{
+    const char *end = memchr (str, 0, max);
+    return end ? (size_t)(end - str) : max;
+}
 
 /*
  * Function: headers_init
