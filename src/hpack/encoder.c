@@ -86,7 +86,7 @@ int8_t hpack_encoder_pack_encoded_words_to_bytes(huffman_encoded_word_t *encoded
  */
 int hpack_encoder_encode_integer(uint32_t integer, uint8_t prefix, uint8_t *encoded_integer)
 {
-    DEBUG("Encoding integer %u", integer);
+    DEBUG("Encoding integer %u", (unsigned int)integer);
     if (integer > HPACK_MAXIMUM_INTEGER) {
         return -1;
     }
