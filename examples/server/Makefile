@@ -23,24 +23,24 @@ PROJECT_SOURCEFILES=two.c \
 					hpack_utils.c \
 					http2.c
 
+#Default contiki target
+TARGET ?= native
 
 # Disable UDP
 DEFINES += UIP_CONF_TCP=1
 DEFINES += UIP_CONF_UDP=0
+
+# Override contiki configuration
 DEFINES += PROJECT_CONF_H=\"project-conf.h\"
 
 MODULES += os/services/shell
 
-CFLAGS += -ffunction-sections -I$(SRC)
-ifeq ($(word 1, $(shell uname -m -s)),Darwin)
-LDFLAGS += -Wl,-dead_strip
-else
-LDFLAGS += -Wl,--gc-sections,--undefined=_reset_vector__,--undefined=InterruptVectors,--undefined=_copy_data_init__,--undefined=_clear_bss_init__,--undefined=_end_of_init__
-endif
+CFLAGS += -I$(SRC)
 
 # Get specs from configuration file
 ALL_SPECS = $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" $(TWO)/h2spec.conf)
 SPEC ?= $(ALL_SPECS)
+
 
 .PHONY: h2spec-pre
 h2spec-pre:
