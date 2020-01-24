@@ -436,7 +436,7 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
     event_sock_write(sock, we);
 
     // Close connection cleanly
-    if (sock->state == EVENT_SOCK_CLOSING && we != NULL && cbuf_len(&we->data.write.buf) <= 0) {
+    if (sock->state == EVENT_SOCK_CLOSING && (we == NULL || we->data.write.queue == NULL)) {
         uip_close();
     }
 }
