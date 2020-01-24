@@ -193,7 +193,7 @@ typedef struct http2_stream {
     uint8_t buf[HTTP2_STREAM_BUF_SIZE];
     uint16_t buflen;
     uint8_t *bufptr;
-} __attribute__((packed)) http2_stream_t;
+} http2_stream_t;
 
 typedef struct http2_settings {
     uint32_t header_table_size;
@@ -252,7 +252,7 @@ typedef struct http2_context {
 
     // timer
     event_t * timer;
-} __attribute__((packed)) http2_context_t;
+} http2_context_t;
 
 
 http2_context_t *http2_new_client(event_sock_t *client);

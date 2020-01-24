@@ -21,7 +21,6 @@
 #endif
 
 #if (INCLUDE_HUFFMAN_COMPRESSION)
-#pragma pack(push, 1)
 typedef struct {
     uint32_t code;
     uint8_t length;
@@ -33,7 +32,6 @@ typedef struct {
     const uint8_t F[NUMBER_OF_CODE_LENGTHS];
     const uint32_t C[NUMBER_OF_CODE_LENGTHS];
 } hpack_huffman_tree_t;
-#pragma pack(pop)
 
 
 int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym);

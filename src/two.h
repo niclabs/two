@@ -27,7 +27,7 @@ typedef struct {
     char method[8];
     char content_type[32];
     two_resource_handler_t handler;
-} __attribute__((__packed__)) two_resource_t;
+} two_resource_t;
 
 /*
  * Given a port number, this function start a server

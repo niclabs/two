@@ -160,14 +160,10 @@
 #define STATIC_TABLE_NAME_SIZE sizeof(NAME_TABLE_LITERAL)
 #define STATIC_TABLE_VALUE_SIZE sizeof(VALUE_TABLE_LITERAL)
 
-#pragma pack(push, 1)
-
 typedef struct {
     char name_table[STATIC_TABLE_NAME_SIZE];
     char value_table[STATIC_TABLE_VALUE_SIZE];
 } hpack_static_table_t;
-
-#pragma pack(pop)
 
 int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value);
 int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name);

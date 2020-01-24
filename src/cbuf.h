@@ -32,7 +32,7 @@ typedef struct {
         CBUF_OPEN   = (uint8_t)0x1,
         CBUF_ENDED  = (uint8_t)0x2
     } state;
-} __attribute__((__packed__)) cbuf_t;
+} cbuf_t;
 
 /** 
  * Initialize circular buffer with the specified

@@ -30,15 +30,13 @@
 #define HPACK_HEADER_VALUE_LEN (64)
 #endif
 
-typedef enum __attribute__((__packed__)) {
+typedef enum {
     INDEXED_HEADER_FIELD                            = (uint8_t) 128,
     LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING  = (uint8_t) 64,
     LITERAL_HEADER_FIELD_WITHOUT_INDEXING           = (uint8_t) 0,
     LITERAL_HEADER_FIELD_NEVER_INDEXED              = (uint8_t) 16,
     DYNAMIC_TABLE_SIZE_UPDATE                       = (uint8_t) 32
 } hpack_preamble_t;
-
-#pragma pack(push, 1)
 
 typedef struct {
     uint32_t index;
@@ -70,9 +68,7 @@ typedef
 #endif
 hpack_dynamic_table_t;
 
-#pragma pack(pop)
-
-typedef enum __attribute__((__packed__)){
+typedef enum {
     HPACK_NO_ERROR          = (int8_t)  0,
     HPACK_COMPRESSION_ERROR = (int8_t) -1,
     HPACK_INTERNAL_ERROR    = (int8_t) -2,

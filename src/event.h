@@ -69,9 +69,6 @@ typedef uint16_t event_descriptor_t;
 typedef int event_descriptor_t;
 #endif
 
-// 1-byte alignment
-#pragma pack(push, 1)
-
 typedef enum {
     EVENT_CONNECTION_TYPE   = (uint8_t) 0x0,
     EVENT_WRITE_TYPE        = (uint8_t) 0x1,
@@ -179,9 +176,6 @@ typedef struct event_loop {
     int nfds;
 #endif
 } event_loop_t;
-
-// end byte alignment
-#pragma pack(pop)
 
 // Sock operations
 
