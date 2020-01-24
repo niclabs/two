@@ -50,8 +50,8 @@ h2spec-pre:
 
 .PHONY: $(ALL_SPECS)
 
+ifeq ($(TARGET),native)
 $(ALL_SPECS): /usr/local/bin/h2spec
-ifeq (TARGET,)
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
 	@(sudo ./server.native 2>/dev/null > server.log & echo $$! > server.pid) && sleep 0.5 && \
 		(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
@@ -80,6 +80,11 @@ ifeq (TARGET,)
 		echo "$$TOTAL $$FAILURES" > summary.txt; \
 		rm server.pid server.log
 else
+# Specs to skip on embedded targets (frame size too large)
+SKIP = http2/4.2/1 http2/4.2/2 http2/4.2/3 http2/6.10/1
+
+ALL_SPECS := $(filter-out $(SKIP),$(ALL_SPECS))
+$(ALL_SPECS): /usr/local/bin/h2spec
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
 	@(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
