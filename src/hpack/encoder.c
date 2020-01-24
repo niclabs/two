@@ -409,13 +409,9 @@ int hpack_encoder_encode(hpack_dynamic_table_t *dynamic_table,
                                              headers_array[i].value,
                                              encoded_buffer + pointer,
                                              buffer_size);
-        uint8_t buffer[4096];
-        memset(buffer, 0, 4096);
-        memcpy(buffer,encoded_buffer,rc + pointer);
         DEBUG("RETURN encode_header");
-
         for(uint8_t i = 0; i < rc + pointer; i++){
-            DEBUG("BYTE %d is %d",i, buffer[i]);
+            DEBUG("BYTE %d is %d",i, encoded_buffer[i]);
         }
         pointer += rc;
     }
