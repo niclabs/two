@@ -1,3 +1,5 @@
 [submodule "bearssl"]
 	path = bearssl
 	url = https://github.com/nogoegst/bearssl.git
+	ignore = dirty
+
