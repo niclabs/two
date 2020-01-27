@@ -78,8 +78,8 @@ http2_context_t *http2_new_client(event_sock_t *client)
 
     // initialize memory first
     static int inited = 0;
-    int a = read_ssl_data(NULL, 0, NULL);
-    DEBUG("A %d",a);
+    //int a = read_ssl_data(NULL, 0, NULL);
+    //DEBUG("A %d",a);
     if (!inited) {
         // Initialize client memory
         LL_INIT(clients, HTTP2_MAX_CLIENTS);
