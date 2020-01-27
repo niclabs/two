@@ -100,7 +100,7 @@ $(ALL_SPECS): /usr/local/bin/h2spec
 		else \
 			echo "PASS"; \
 		fi; \
-		echo "$$TOTAL $$FAILURES" > summary.txt
+		echo "$$TOTAL $$FAILURES" > summary.txt && sleep 1
 endif
 
 h2spec: h2spec-pre $(SPEC)
