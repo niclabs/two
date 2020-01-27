@@ -204,6 +204,10 @@ void event_sock_write(event_sock_t *sock, event_t *event)
     uip_send(buf, len);
     //DEBUG("trying to send %d bytes", len);
 
+    if (len > 0) {
+        DEBUG("sending %d bytes, waiting for ack", len);
+    }
+
     // set sending length
     event->data.write.sending = len;
 #else
@@ -322,6 +326,8 @@ void event_sock_handle_timer(void *data)
     event_t *event = (event_t *)data;
     event_sock_t *sock = event->sock;
 
+    DEBUG("timer expired, notifying callback");
+
     // run the callback
     int remove = event->data.timer.cb(sock);
 
@@ -345,6 +351,9 @@ void event_sock_handle_ack(event_sock_t *sock, event_t *event)
     if (event == NULL || event->data.write.sending == 0) {
         return;
     }
+
+
+    DEBUG("received ack for %d bytes", event->data.write.sending);
 
     // remove sent data from output buffer
     cbuf_pop(&event->data.write.buf, NULL, event->data.write.sending);
@@ -785,7 +794,6 @@ event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
     event->type = EVENT_TIMER_TYPE;
     event->sock = sock;
     event->data.timer.cb = cb;
-    DEBUG("SET EVENT DATA");
 
 #ifndef CONTIKI
     event->data.timer.millis = millis;
@@ -794,7 +802,6 @@ event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
 #else
     ctimer_set(&event->data.timer.ctimer, (millis * CLOCK_SECOND) / 1000, event_sock_handle_timer, event);
 #endif
-    DEBUG("SET TIMER");
 
     return event;
 }
