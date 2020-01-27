@@ -5,6 +5,15 @@
 #include PROJECT_CONF_H
 #endif
 
+/*
+ * Configure if run protocol over TLS 1.2)
+ * default value is false
+ * */
+#ifdef CONFIG_ENABLE_HTTPS
+#define TLS_ENABLE (CONFIG_ENABLE_HTTPS)
+#else
+#define TLS_ENABLE (0)
+#endif
 /**
  * Configure the initial size for the http2 HEADER_TABLE_SIZE
  * in bytes. This value is limited by the HPACK_MAX_DYNAMIC_TABLE_SIZE

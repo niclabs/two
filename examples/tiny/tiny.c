@@ -13,7 +13,10 @@
 #endif
 
 #include "event.h"
+
+#if TLS_ENABLE
 #include <bearssl.h>
+#endif
 
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "logging.h"
@@ -90,11 +93,12 @@ typedef struct http2_ctx {
         HTTP2_WAITING_SETTINGS,
         HTTP2_WAITING_SETTINGS_PAYLOAD,
     } state;
-
+#if TLS_ENABLE
     br_ssl_server_context sc;
     uint8_t handshake;
     unsigned char iobuf_in[BR_SSL_BUFSIZE_INPUT];
     unsigned char iobuf_out[BR_SSL_BUFSIZE_OUTPUT];
+#endif
     // Client settings
     http2_settings_t settings;
 
@@ -123,6 +127,7 @@ static http2_ctx_t http2_ctx_list[TINY_MAX_CLIENTS];
 static http2_ctx_t *connected;
 static http2_ctx_t *unused;
 
+#if TLS_ENABLE
 static const unsigned char RSA_P[] = {
         0xE9, 0x1F, 0xBC, 0xC1, 0x84, 0x19, 0x00, 0x1B, 0x87, 0xC2, 0x10, 0xF6,
         0x04, 0xF8, 0xF9, 0x24, 0xBD, 0xA7, 0x8F, 0xB6, 0xCB, 0xB1, 0xA5, 0x8A,
@@ -298,7 +303,6 @@ static const br_x509_certificate CHAIN[] = {
 };
 
 #define CHAIN_LEN   1
-
 char *supported_protocols = "h2";
 
 void init_tls_server(http2_ctx_t *ctx)
@@ -430,25 +434,6 @@ int engine_error(br_ssl_server_context *cc)
     }
 }
 
-/*
-   int write_ssl_recvapp(event_sock_t *client, uint8_t *buf){
-    if (recvapp) {
-            unsigned char *buf;
-            size_t len;
-            ssize_t wlen;
-
-            buf = br_ssl_engine_recvapp_buf(cc, &len);
-            wlen = write(1, buf, len);
-            if (wlen <= 0) {
-                DEBUG("stdout closed...\n");
-                return -2;
-            }
-            br_ssl_engine_recvapp_ack(cc, wlen);
-            continue;
-    }
-   }
- */
-
 void write_ssl_handshake(event_sock_t *client, int status);
 void on_client_close(event_sock_t *handle);
 int read_preface(event_sock_t *client, int size, uint8_t *buf);
@@ -457,6 +442,7 @@ void on_settings_sent(event_sock_t *client, int status);
 int read_header(event_sock_t *client, int size, uint8_t *buf);
 int read_settings_payload(event_sock_t *client, int size, uint8_t *buf);
 int read_ssl_data(event_sock_t *client, int size, uint8_t *buf);
+
 int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf){
    // DEBUG("I'm here :) (SENDAPP)");
 
@@ -500,6 +486,7 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf){
     event_read(client, read_ssl_data);
     return count;
 }
+
 int read_ssl_data(event_sock_t *client, int size, uint8_t *buf){
    // DEBUG("I'm here :)");
     http2_ctx_t *ctx = (http2_ctx_t *)client->data;
@@ -761,7 +748,7 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
     }
     return 0;
 }
-
+#endif // ENABLE_SSL
 
 // define the process here
 #ifdef CONTIKI
@@ -837,7 +824,7 @@ void on_client_close(event_sock_t *handle)
 
     INFO("Client closed");
 }
-
+#if TLS_ENABLE
 void write_ssl_handshake(event_sock_t *client, int status)
 {
     //DEBUG("On ssl sent");
@@ -924,7 +911,7 @@ void write_ssl(event_sock_t *client, int status)
     }
     return;
 }
-
+#endif//ENABLE SSL
 
 void parse_frame_header(uint8_t *data, frame_header_t *header)
 {
@@ -969,10 +956,11 @@ void send_settings_frame(http2_ctx_t *ctx, struct frame_settings_field *fields, 
         DEBUG("SENDING SETTINGS ACK");
         raw_frame_header_t hd;
         create_frame_header(&hd, 0, ack, SETTINGS_FRAME, 0);
-        //TODO CHANGE THIS TO MACRO (FOR SSL)
-        //event_write(ctx->sock, HTTP2_HEADER_SIZE, hd.data, on_send);
-        //event_write(ctx->sock, HTTP2_HEADER_SIZE, hd.data, write_ssl);
+#if TLS_ENABLE
         send_app_ssl_data(ctx->sock, HTTP2_HEADER_SIZE, hd.data);
+#else
+        event_write(ctx->sock, HTTP2_HEADER_SIZE, hd.data, on_send);
+#endif
     }
     else {
         DEBUG("SENDING SETTINGS");
@@ -984,10 +972,12 @@ void send_settings_frame(http2_ctx_t *ctx, struct frame_settings_field *fields, 
         uint8_t buf[HTTP2_HEADER_SIZE + size];
         memcpy(buf, hd.data, HTTP2_HEADER_SIZE);
         memcpy(buf + HTTP2_HEADER_SIZE, &fields, size - HTTP2_HEADER_SIZE);
-            //TODO CHANGE THIS TO MACRO (FOR SSL)
 
-        //event_write(ctx->sock, size, buf, write_ssl);
+#if TLS_ENABLE
         send_app_ssl_data(ctx->sock, size, buf);
+#else
+        event_write(ctx->sock, size, buf, on_send);
+#endif
     }
 }
 
@@ -1081,11 +1071,14 @@ int process_header(event_sock_t *client, http2_ctx_t *ctx, frame_header_t *heade
             if (header->type == SETTINGS_FRAME) {
                 // wait for payload
                 DEBUG("waiting for SETTINGS frame payload");
-                //TODO: CHANGE THIS TO USE MACRO FOR SSL
                 //event_read(client, read_settings_payload);
                 //new code
+#if TLS_ENABLE
                 ctx->state=HTTP2_WAITING_SETTINGS_PAYLOAD;
                 event_read(client, read_ssl_data);
+#else
+                event_read(client, read_settings_payload);
+#endif
             }
             break;
         default:
@@ -1148,8 +1141,11 @@ void on_settings_sent(event_sock_t *client, int status)
     ctx->state = HTTP2_WAITING_SETTINGS;
 
     // read frame header
-    //TODO CHANGE THIS TO MACRO FOR SSL
+#if TLS_ENABLE
     event_read(client, read_ssl_data);
+#else
+    event_read(client, read_header);
+#endif
 }
 
 int read_preface(event_sock_t *client, int size, uint8_t *buf)
@@ -1226,11 +1222,16 @@ void on_new_connection(event_sock_t *server, int status)
         // reference http2_ctx in socket data
         client->data = ctx;
         ctx->settings = default_settings;
+        event_write_enable(client, ctx->event_wbuf, HTTP2_MAX_FRAME_SIZE);
+
+#if TLS_ENABLE
         init_tls_server(ctx);
         br_ssl_server_reset(&ctx->sc);
 
-        event_write_enable(client, ctx->event_wbuf, HTTP2_MAX_FRAME_SIZE);
         event_read_start(client, ctx->event_buf, HTTP2_MAX_FRAME_SIZE, read_ssl_handshake);
+#else
+        event_read_start(client, ctx->event_buf, HTTP2_MAX_FRAME_SIZE, read_preface);
+#endif
     }
     else {
         event_close(client, on_client_close);
