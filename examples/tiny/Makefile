@@ -3,15 +3,15 @@ all: $(CONTIKI_PROJECT)
 
 TWO ?= ../../src
 CONTIKI ?= ../../../contiki-ng
-
+BEARSSL ?= inc
 PROJECTDIRS += $(TWO)
 PROJECT_SOURCEFILES=cbuf.c event.c
-
+PROJECT_LIBRARIES=libbearssl.a
 # Disable UDP
 DEFINES += UIP_CONF_TCP=1
 DEFINES += UIP_CONF_UDP=0
 
-CFLAGS += -ffunction-sections -I$(TWO)
+CFLAGS += -ffunction-sections -I$(TWO) -I$(BEARSSL)
 ifeq ($(word 1, $(shell uname -m -s)),Darwin)
 LDFLAGS += -Wl,-dead_strip
 else

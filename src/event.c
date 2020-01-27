@@ -198,6 +198,7 @@ void event_sock_write(event_sock_t *sock, event_t *event)
 #ifdef CONTIKI
     // Send data
     uip_send(buf, len);
+    //DEBUG("trying to send %d bytes", len);
 
     // set sending length
     event->data.write.sending = len;
@@ -343,6 +344,8 @@ void event_sock_handle_ack(event_sock_t *sock, event_t *event)
 
     // remove sent data from output buffer
     cbuf_pop(&event->data.write.buf, NULL, event->data.write.sending);
+
+    //DEBUG("wrote %d bytes", event->data.write.sending);
 
     // notify the operations of successful write
     event_sock_handle_write(sock, event, event->data.write.sending);
