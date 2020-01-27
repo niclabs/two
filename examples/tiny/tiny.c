@@ -327,7 +327,6 @@ void init_tls_server(http2_ctx_t *ctx)
     br_ssl_engine_set_buffers_bidi(&sc->eng,
                                    ctx->iobuf_in, sizeof ctx->iobuf_in,
                                    ctx->iobuf_out, sizeof ctx->iobuf_out);
-    //char *supported_protocols = "h2";
     br_ssl_engine_set_protocol_names(&sc->eng, (const char **)&supported_protocols, 1);
 }
 
@@ -464,7 +463,7 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf){
         event_close(client, on_client_close);
         return engine_error(sc);
     }
-    uint32_t count = 0;
+    int32_t count = 0;
     while (sendapp && count < size) {
         //DEBUG("sendapp");
 
@@ -472,7 +471,7 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf){
         size_t len;
 
         ssl_buf = br_ssl_engine_sendapp_buf(cc, &len);
-        len = len > size ? size : len;
+        len = len > (size_t) size ? (size_t) size : len;
         //DEBUG("LEN IS %d", len);
         //DEBUG("SIZE IS %d",size);
         memcpy(ssl_buf, buf, len);
@@ -567,7 +566,7 @@ int read_ssl_data(event_sock_t *client, int size, uint8_t *buf){
             unsigned char *ssl_buf;
             size_t len;
             ssl_buf = br_ssl_engine_recvrec_buf(cc, &len);
-            len = size < len ? size : len;
+            len = (size_t) size < len ? (size_t) size : len;
             memcpy(ssl_buf, buf, len);
            // DEBUG("HTTP2 state %d", ctx->state);
 
@@ -700,14 +699,14 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
             //DEBUG("recvrec");
 
             unsigned char *ssl_buf;
-            uint32_t count = 0;
+            int32_t count = 0;
             while(recvrec && count < size) {
                 size_t len;
                 ssl_buf = br_ssl_engine_recvrec_buf(cc, &len);
                 if (size < 0) {
                     return 0;
                 }
-                len = size < len ? size : len;
+                len = (size_t) size < len ? (size_t) size : len;
                 memcpy(ssl_buf, buf+count, len);
                 count += len;
                 br_ssl_engine_recvrec_ack(cc, len);
@@ -951,7 +950,7 @@ void send_settings_frame(http2_ctx_t *ctx, struct frame_settings_field *fields, 
 {
     assert(ctx->sock != NULL);
     assert(fields == NULL || ack == false);
-
+    (void) on_send;
     if (ack) {
         DEBUG("SENDING SETTINGS ACK");
         raw_frame_header_t hd;
@@ -1109,7 +1108,7 @@ int read_header(event_sock_t *client, int size, uint8_t *buf)
               header->length, header->type, header->flags, header->stream_id);
 #endif
 
-        if ((size - 9)  < header->length && process_header(client, ctx, header) < 0) {
+        if ((uint32_t)size < header->length + 9 && process_header(client, ctx, header) < 0) {
             event_close(client, on_client_close);
         } else {
             return 9 + read_settings_payload(client, size - 9, buf + 9);
