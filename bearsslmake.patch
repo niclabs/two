@@ -1,0 +1,47 @@
+diff --git a/Makefile b/Makefile
+index 809b960..a2a3618 100644
+--- a/Makefile
++++ b/Makefile
+@@ -26,7 +26,7 @@
+ # Configurable elements: C compiler and flags, linker flags, static
+ # library archival command.
+ 
+-CC = gcc
++CC ?= arm-none-eabi-gcc
+ CFLAGS = -std=c99 -W -Wall -Os -fPIC -I src -I inc
+ #CFLAGS = -W -Wall -g -fPIC -I src -I inc
+ LDFLAGS = 
+@@ -40,7 +40,6 @@ HEADERS = inc/bearssl.h inc/bearssl_block.h inc/bearssl_ec.h inc/bearssl_hash.h
+ BUILD = build
+ 
+ BEARSSLLIB = libbearssl.a
+-BRSSL = brssl
+ TESTCRYPTO = testcrypto
+ TESTSPEED = testspeed
+ TESTX509 = testx509
+@@ -60,7 +59,7 @@ OBJSSL = $(BUILD)/prf.o $(BUILD)/prf_md5sha1.o $(BUILD)/prf_sha256.o $(BUILD)/pr
+ OBJSYMCIPHER = $(BUILD)/aes_big_cbcdec.o $(BUILD)/aes_big_cbcenc.o $(BUILD)/aes_big_ctr.o $(BUILD)/aes_big_dec.o $(BUILD)/aes_big_enc.o $(BUILD)/aes_common.o $(BUILD)/aes_ct.o $(BUILD)/aes_ct64.o $(BUILD)/aes_ct64_cbcdec.o $(BUILD)/aes_ct64_cbcenc.o $(BUILD)/aes_ct64_ctr.o $(BUILD)/aes_ct64_dec.o $(BUILD)/aes_ct64_enc.o $(BUILD)/aes_ct_cbcdec.o $(BUILD)/aes_ct_cbcenc.o $(BUILD)/aes_ct_ctr.o $(BUILD)/aes_ct_dec.o $(BUILD)/aes_ct_enc.o $(BUILD)/aes_small_cbcdec.o $(BUILD)/aes_small_cbcenc.o $(BUILD)/aes_small_ctr.o $(BUILD)/aes_small_dec.o $(BUILD)/aes_small_enc.o $(BUILD)/chacha20_ct.o $(BUILD)/des_ct.o $(BUILD)/des_ct_cbcdec.o $(BUILD)/des_ct_cbcenc.o $(BUILD)/des_support.o $(BUILD)/des_tab.o $(BUILD)/des_tab_cbcdec.o $(BUILD)/des_tab_cbcenc.o $(BUILD)/poly1305_ctmul.o $(BUILD)/poly1305_ctmul32.o $(BUILD)/poly1305_i15.o
+ OBJX509 = $(BUILD)/skey_decoder.o $(BUILD)/x509_decoder.o $(BUILD)/x509_knownkey.o $(BUILD)/x509_minimal.o $(BUILD)/x509_minimal_full.o
+ OBJ = $(OBJCODEC) $(OBJEC) $(OBJHASH) $(OBJINT15) $(OBJINT31) $(OBJINT32) $(OBJMAC) $(OBJRAND) $(OBJRSA) $(OBJSSL) $(OBJSYMCIPHER) $(OBJX509)
+-OBJBRSSL = $(BUILD)/brssl.o $(BUILD)/certs.o $(BUILD)/chain.o $(BUILD)/client.o $(BUILD)/errors.o $(BUILD)/files.o $(BUILD)/keys.o $(BUILD)/names.o $(BUILD)/server.o $(BUILD)/skey.o $(BUILD)/sslio.o $(BUILD)/ta.o $(BUILD)/vector.o $(BUILD)/verify.o $(BUILD)/xmem.o
++#OBJBRSSL = $(BUILD)/brssl.o $(BUILD)/certs.o $(BUILD)/chain.o $(BUILD)/client.o $(BUILD)/errors.o $(BUILD)/files.o $(BUILD)/keys.o $(BUILD)/names.o $(BUILD)/server.o $(BUILD)/skey.o $(BUILD)/sslio.o $(BUILD)/ta.o $(BUILD)/vector.o $(BUILD)/verify.o $(BUILD)/xmem.o
+ OBJTESTCRYPTO = $(BUILD)/test_crypto.o
+ OBJTESTSPEED = $(BUILD)/test_speed.o
+ OBJTESTX509 = $(BUILD)/test_x509.o
+@@ -72,13 +71,13 @@ T0KERN = T0/kern.t0
+ 
+ all: compile
+ 
+-compile: $(BEARSSLLIB) $(BRSSL) $(TESTCRYPTO) $(TESTSPEED) $(TESTX509)
++compile: $(BEARSSLLIB) $(TESTCRYPTO) $(TESTSPEED) $(TESTX509)
+ 
+ $(BEARSSLLIB): $(BUILD) $(OBJ)
+ 	$(AR) $(BEARSSLLIB) $(OBJ)
+ 
+-$(BRSSL): $(BEARSSLLIB) $(OBJBRSSL)
+-	$(CC) $(LDFLAGS) -o $(BRSSL) $(OBJBRSSL) $(BEARSSLLIB)
++#$(BRSSL): $(BEARSSLLIB) $(OBJBRSSL)
++#	$(CC) $(LDFLAGS) -o $(BRSSL) $(OBJBRSSL) $(BEARSSLLIB)
+ 
+ $(TESTCRYPTO): $(BEARSSLLIB) $(OBJTESTCRYPTO)
+ 	$(CC) $(LDFLAGS) -o $(TESTCRYPTO) $(OBJTESTCRYPTO) $(BEARSSLLIB)
