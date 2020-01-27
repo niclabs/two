@@ -12,7 +12,7 @@
 #ifdef CONFIG_ENABLE_HTTPS
 #define TLS_ENABLE (CONFIG_ENABLE_HTTPS)
 #else
-#define TLS_ENABLE (1)
+#define TLS_ENABLE (0)
 #endif
 /**
  * Configure the initial size for the http2 HEADER_TABLE_SIZE
