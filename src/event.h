@@ -42,8 +42,10 @@ struct event_loop;
 
 // Callbacks
 
-// Called on a new client connection
-typedef void (*event_connection_cb)(struct event_sock *server, int status);
+// Called on a new client connection if there are available
+// sockets. It must return a pointer to the created client socket
+// or NULL if no socket could be created
+typedef struct event_sock * (*event_connection_cb)(struct event_sock *server);
 
 // Called whenever new data is available, or a read error occurrs
 // it must return the number of bytes read in order to remove them from the input buffer

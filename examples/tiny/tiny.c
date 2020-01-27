@@ -1200,14 +1200,8 @@ int read_preface(event_sock_t *client, int size, uint8_t *buf)
     return 0;
 }
 
-void on_new_connection(event_sock_t *server, int status)
+event_sock_t * on_new_connection(event_sock_t *server)
 {
-    if (status < 0) {
-        ERROR("Connection error");
-        // error!
-        return;
-    }
-
     INFO("New client connection");
     event_sock_t *client = event_sock_create(server->loop);
     if (event_accept(server, client) == 0) {
@@ -1235,6 +1229,7 @@ void on_new_connection(event_sock_t *server, int status)
     else {
         event_close(client, on_client_close);
     }
+    return client;
 }
 
 #ifdef CONTIKI

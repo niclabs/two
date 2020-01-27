@@ -41,15 +41,19 @@ event_sock_t *event_sock_find(event_sock_t *queue, event_descriptor_t descriptor
     return LL_FIND(queue, LL_ELEM(event_sock_t)->descriptor == descriptor);
 }
 
-void event_sock_connect(event_sock_t *sock, event_t *event)
+event_sock_t * event_sock_connect(event_sock_t *sock, event_t *event)
 {
     if (event != NULL) {
         // if this happens there is an error with the implementation
         assert(event->data.connection.cb != NULL);
+
+        // only notify of new connection if there 
+        // are sockets available to receive it
         if (sock->loop->sockets != NULL) {
-            event->data.connection.cb(sock, 0);
+            return event->data.connection.cb(sock);
         }
     }
+    return NULL;
 }
 
 void event_sock_close(event_sock_t *sock, int status)
@@ -377,24 +381,26 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
 
     if (uip_connected()) {
         if (sock == NULL) { // new client connection
-            sock = LL_FIND(loop->polling, \
+            DEBUG("new client connection");
+            event_sock_t * server = LL_FIND(loop->polling, \
                            LL_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING && \
                            UIP_HTONS(LL_ELEM(event_sock_t)->descriptor) == uip_conn->lport);
 
-            // Save the connection for ween
+            // Save the connection for when
             // accept is called
-            sock->uip_conn = uip_conn;
+            server->uip_conn = uip_conn;
 
             // do connect
-            event_sock_connect(sock, event_find(sock->events, EVENT_CONNECTION_TYPE));
+            sock = event_sock_connect(server, event_find(server->events, EVENT_CONNECTION_TYPE));
         }
 
-        if (sock == NULL) { // no one waiting for the socket
+        if (sock == NULL) { // no one accepted the socket
             uip_abort();
         }
         else {
             if (uip_newdata()) {
-                WARN("read new data but there is no socket ready to receive it yet");
+                event_t *re = event_find(sock->events, EVENT_READ_TYPE);
+                event_sock_read(sock, re);
             }
         }
         return;
