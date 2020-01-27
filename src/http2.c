@@ -71,6 +71,8 @@ int receiving(event_sock_t *client, int size, uint8_t *buf);
 
 // send as much data as flow control allows from the stream buffer
 void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream);
+void http2_on_client_close(event_sock_t *sock);
+void http2_close_stream(http2_context_t *ctx);
 
 http2_context_t *http2_new_client(event_sock_t *client)
 {
@@ -138,9 +140,11 @@ void http2_close_immediate(http2_context_t *ctx)
 {
     assert(ctx->socket != NULL);
 
-    // stop receiving data and close connection
+    // close stream and connection
+    http2_close_stream(ctx);
     ctx->state = HTTP2_CLOSED;
-    ctx->stream.state = HTTP2_STREAM_CLOSED;
+
+    // stop receiving data
     event_read_stop(ctx->socket);
     event_close(ctx->socket, http2_on_client_close);
 }
@@ -184,8 +188,15 @@ void http2_stream_error(http2_context_t *ctx, uint32_t stream_id, http2_error_t 
     INFO("->|%u| RST_STREAM (stream_id: %u, error_code: 0x%x)", ctx->id, (unsigned int)stream_id, error);
     send_rst_stream_frame(ctx->socket, error, stream_id, close_on_write_error);
     if (stream_id == ctx->stream.id) {
-        ctx->stream.state = HTTP2_STREAM_CLOSED;
+        http2_close_stream(ctx);
     }
+}
+
+void http2_close_stream(http2_context_t *ctx) {
+    ctx->stream.state = HTTP2_STREAM_CLOSED;
+    ctx->flags &= ~HTTP2_FLAGS_WAITING_END_HEADERS;
+    ctx->flags &= ~HTTP2_FLAGS_WAITING_END_STREAM;
+    ctx->flags &= ~HTTP2_FLAGS_WAITING_TRAILERS;
 }
 
 void close_on_write_error(event_sock_t *sock, int status)
@@ -403,7 +414,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_t header, uint8_t *pa
         ctx->flags |= HTTP2_FLAGS_GOAWAY_RECV;
         if (ctx->stream.id > last_stream_id) {
             // close current stream
-            ctx->stream.state = HTTP2_STREAM_CLOSED;
+            http2_close_stream(ctx);
         }
         // update connection state
         ctx->state = HTTP2_CLOSING;
@@ -503,8 +514,8 @@ void on_stream_send_complete(event_sock_t *sock, int status)
     }
 
     if (ctx->stream.buflen <= 0) {
-        // close the stream if we send all available data
-        ctx->stream.state = HTTP2_STREAM_CLOSED;
+        // close the stream if we sent all available data
+        http2_close_stream(ctx);
     }
     else {
         // else send remaining data
@@ -879,8 +890,8 @@ int handle_rst_stream_frame(http2_context_t *ctx, frame_header_t header, uint8_t
     DEBUG("     - error_code: 0x%x", (unsigned int)bytes_to_uint32(payload));
 
     // close the stream
-    ctx->stream.state = HTTP2_STREAM_CLOSED;
-
+    http2_close_stream(ctx);
+    
     return 0;
 }
 
