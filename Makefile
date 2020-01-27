@@ -1,12 +1,17 @@
 TWO = .
-CFLAGS = -std=c99 -Wall -Wextra -D_DEFAULT_SOURCE
+BEARSSL ?= ./bearssl
+
+CFLAGS = -std=c99 -Wall -Wextra -D_DEFAULT_SOURCE -I$(BEARSSL)/inc
 
 TARGETDIRS = examples/server/ examples/echo/ examples/tiny/
 TESTDIRS = tests/
-
+EXTRA_LIBRARIES = $(BEARSSL)/libbearssl.a
 MODULES	+= hpack
 
 all: server echo tiny
+
+$(BEARSSL)/libbearssl.a:
+	$(MAKE) -C $(BEARSSL)
 
 PORT ?= 8888
 

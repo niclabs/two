@@ -9,7 +9,9 @@
 #include "event.h"
 #include "header_list.h"
 #include "hpack/hpack.h"
-
+#if TLS_ENABLE
+#include <bearssl.h>
+#endif
 
 /**
  * SETTINGS_HEADER_TABLE_SIZE
@@ -252,6 +254,12 @@ typedef struct http2_context {
 
     // timer
     event_t * timer;
+#if TLS_ENABLE
+    br_ssl_server_context sc;
+    uint8_t handshake;
+    unsigned char iobuf_in[BR_SSL_BUFSIZE_INPUT];
+    unsigned char iobuf_out[BR_SSL_BUFSIZE_OUTPUT];
+#endif
 } http2_context_t;
 
 
@@ -259,5 +267,9 @@ http2_context_t *http2_new_client(event_sock_t *client);
 int http2_close_gracefully(http2_context_t *ctx);
 void http2_close_immediate(http2_context_t *ctx);
 void http2_error(http2_context_t *ctx, http2_error_t error);
+void http2_on_client_close(event_sock_t *sock);
 
+void on_settings_sent(event_sock_t *sock, int status);
+int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf);
+int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf);
 #endif

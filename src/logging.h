@@ -37,9 +37,14 @@
 #define LOG_MODULE_HTTP    HTTP
 #define LOG_MODULE_FRAME   FRAME
 #define LOG_MODULE_HPACK   HPACK
+#define LOG_MODULE_TLS     TLS
 
 #ifndef LOG_LEVEL_EVENT
 #define LOG_LEVEL_EVENT (LOG_LEVEL_OFF)
+#endif
+
+#ifndef LOG_LEVEL_TLS
+#define LOG_LEVEL_TLS (LOG_LEVEL_OFF)
 #endif
 
 #ifndef LOG_LEVEL_HTTP2

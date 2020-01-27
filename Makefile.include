@@ -226,7 +226,7 @@ $(LIBRARY): $(LIBRARY_OBJECTS)
 	$(Q)$(strip $(AR) $(ARFLAGS) $@ $^)
 
 # Build target rule
-$(TARGET_DIR)/%: %.o $(OBJECTS) $(LIBRARY) | $(TARGET_DIR)
+$(TARGET_DIR)/%: %.o $(OBJECTS) $(LIBRARY) $(EXTRA_LIBRARIES) | $(TARGET_DIR)
 	$(TRACE_LD)
 	$(Q)$(strip $(CC) $(LDFLAGS) -o $@ ${filter-out %.a,$^} ${filter %.a,$^} $(LDLIBS))
 

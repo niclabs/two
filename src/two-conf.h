@@ -6,13 +6,13 @@
 #endif
 
 /*
- * Configure if run protocol over TLS 1.2)
+ * Configure if run protocol over TLS 1.2
  * default value is false
  * */
 #ifdef CONFIG_ENABLE_HTTPS
 #define TLS_ENABLE (CONFIG_ENABLE_HTTPS)
 #else
-#define TLS_ENABLE (0)
+#define TLS_ENABLE (1)
 #endif
 /**
  * Configure the initial size for the http2 HEADER_TABLE_SIZE
@@ -157,6 +157,15 @@
 #define LOG_LEVEL_EVENT (CONFIG_LOG_LEVEL_EVENT)
 #else
 #define LOG_LEVEL_EVENT (LOG_LEVEL_DEBUG)
+#endif
+
+/**
+ * TLS module log level (info by default)
+ */
+#ifdef CONFIG_LOG_LEVEL_TLS
+#define LOG_LEVEL_TLS (CONFIG_LOG_LEVEL_TLS)
+#else
+#define LOG_LEVEL_TLS (LOG_LEVEL_DEBUG)
 #endif
 
 /**

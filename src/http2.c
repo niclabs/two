@@ -2,6 +2,7 @@
 #include <strings.h>
 #include <assert.h>
 
+#include "tls.h"
 #include "frames.h"
 #include "http2.h"
 #include "http.h"
@@ -70,7 +71,6 @@ int receiving(event_sock_t *client, int size, uint8_t *buf);
 
 // send as much data as flow control allows from the stream buffer
 void http2_continue_send(http2_context_t *ctx, http2_stream_t *stream);
-void http2_on_client_close(event_sock_t *sock);
 
 http2_context_t *http2_new_client(event_sock_t *client)
 {
@@ -78,6 +78,8 @@ http2_context_t *http2_new_client(event_sock_t *client)
 
     // initialize memory first
     static int inited = 0;
+    int a = read_ssl_data(NULL, 0, NULL);
+    DEBUG("A %d",a);
     if (!inited) {
         // Initialize client memory
         LL_INIT(clients, HTTP2_MAX_CLIENTS);
@@ -568,14 +570,14 @@ int handle_window_update_frame(http2_context_t *ctx, frame_header_t header, uint
 
     // update connection window size
     if (header.stream_id == 0) {
-        if (ctx->window_size + window_size_increment > ((uint32_t)(1 << 31) - 1)) {
+        if (ctx->window_size + window_size_increment > ((uint32_t)(1u << 31) - 1)) {
             http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
             return -1;
         }
         ctx->window_size += window_size_increment;
     }
     else { // update stream window size
-        if (ctx->stream.window_size + window_size_increment > ((uint32_t)(1 << 31) - 1)) {
+        if (ctx->stream.window_size + window_size_increment > ((uint32_t)(1u << 31) - 1)) {
             http2_stream_error(ctx, ctx->stream.id, HTTP2_FLOW_CONTROL_ERROR);
             return -1;
         }
