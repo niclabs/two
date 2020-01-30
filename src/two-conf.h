@@ -156,7 +156,16 @@
 #ifdef CONFIG_LOG_LEVEL_EVENT
 #define LOG_LEVEL_EVENT (CONFIG_LOG_LEVEL_EVENT)
 #else
-#define LOG_LEVEL_EVENT (LOG_LEVEL_DEBUG)
+#define LOG_LEVEL_EVENT (LOG_LEVEL_OFF)
+#endif
+
+/**
+ * Frames module log level (off by default)
+ */
+#ifdef CONFIG_LOG_LEVEL_FRAME
+#define LOG_LEVEL_FRAMES (CONFIG_LOG_LEVEL_FRAME)
+#else
+#define LOG_LEVEL_FRAME (LOG_LEVEL_OFF)
 #endif
 
 /**
@@ -174,7 +183,7 @@
 #ifdef CONFIG_LOG_LEVEL_HPACK
 #define LOG_LEVEL_HPACK (CONFIG_LOG_LEVEL_HPACK)
 #else
-#define LOG_LEVEL_HPACK (LOG_LEVEL_OFF)
+#define LOG_LEVEL_HPACK (LOG_LEVEL_INFO)
 #endif
 
 /**
