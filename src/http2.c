@@ -414,7 +414,7 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_t header, uint8_t *pa
         }
         // update connection state
         ctx->state = HTTP2_CLOSING;
-        event_read(ctx->socket, receiving);
+        //event_read(ctx->socket, receiving);
 
         // send goaway and and close connection
         INFO("->|%u| GOAWAY (last_stream_id: %u, error_code: 0x%x)", ctx->id, (unsigned int)ctx->last_opened_stream_id, HTTP2_NO_ERROR);
@@ -992,9 +992,13 @@ int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf)
 
     // go to next state
     ctx->state = HTTP2_READY;
+#if TLS_ENABLE
+    return frame_size;
+#else
     event_read(sock, receiving);
 
     return frame_size;
+#endif
 }
 
 // Handle read operations while the server is in a ready or closing state
