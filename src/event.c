@@ -149,7 +149,7 @@ void event_sock_handle_write(event_sock_t *sock, event_t *event, unsigned int wr
     // notify the waiting write operatinons
     event_write_op_t *op = LL_POP(event->data.write.queue);
 
-    while (op != NULL && written > 0) {
+    while (op != NULL && written >= 0) {
         if (op->bytes <= written) {
             // if all bytes have been read
             written -= op->bytes;
@@ -217,7 +217,7 @@ void event_sock_write(event_sock_t *sock, event_t *event)
         return;
     }
 
-    if (written > 0) {
+    if (written >=0) {
         // remove written data from buffer
         cbuf_pop(&event->data.write.buf, NULL, written);
 
@@ -756,7 +756,7 @@ int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_wri
     DEBUG("queued %d bytes for writing", to_write);
 
     // add a write operation to the event
-    if (to_write > 0) {
+    if (to_write >= 0) {
         event_write_op_t *op = LL_MOVE(loop->writes, event->data.write.queue);
 
         // If this fails increase CONFIG_EVENT_WRITE_QUEUE_SIZE

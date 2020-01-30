@@ -11,18 +11,8 @@
 
 #define LOG_MODULE LOG_MODULE_HTTP2
 #include "logging.h"
-
 #define HTTP2_PREFACE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 #define HTTP2_FRAME_HEADER_SIZE (9)
-
-// http2 context state flags
-#define HTTP2_FLAGS_NONE                 (0x0)
-#define HTTP2_FLAGS_WAITING_SETTINGS_ACK (0x1)
-#define HTTP2_FLAGS_WAITING_END_HEADERS  (0x2)
-#define HTTP2_FLAGS_WAITING_END_STREAM   (0x4)
-#define HTTP2_FLAGS_GOAWAY_RECV          (0x8)
-#define HTTP2_FLAGS_GOAWAY_SENT          (0x10)
-#define HTTP2_FLAGS_WAITING_TRAILERS     (0x20)
 
 // settings
 #define HTTP2_SETTINGS_HEADER_TABLE_SIZE        (0x1)
@@ -115,7 +105,14 @@ http2_context_t *http2_new_client(event_sock_t *client)
     // initialize hpack
     hpack_init(&ctx->hpack_dynamic_table, HTTP2_HEADER_TABLE_SIZE);
 
+#if TLS_ENABLE
+    init_tls_server(ctx);
+    br_ssl_server_reset(&ctx->sc);
+
+    event_read_start(client, ctx->read_buf, HTTP2_SOCK_READ_SIZE, read_ssl_handshake);
+#else
     event_read_start(client, ctx->read_buf, HTTP2_SOCK_READ_SIZE, waiting_for_preface);
+#endif
     event_write_enable(client, ctx->write_buf, HTTP2_SOCK_WRITE_SIZE);
 
     return ctx;
@@ -226,7 +223,6 @@ int on_settings_timeout(event_sock_t *sock)
 void on_settings_sent(event_sock_t *sock, int status)
 {
     http2_context_t *ctx = (http2_context_t *)sock->data;
-
     if (status < 0) {
         http2_close_immediate(ctx);
         return;
@@ -297,7 +293,7 @@ int update_settings(http2_context_t *ctx, uint8_t *data, int length)
 
                     // check max window size
                     if (ctx->stream.window_size + diff > 0 &&
-                        (unsigned)(ctx->stream.window_size + diff) > ((uint32_t)(1 << 31) - 1)) {
+                        (unsigned)(ctx->stream.window_size + diff) > ((uint32_t)(1u << 31) - 1)) {
                         http2_error(ctx, HTTP2_FLOW_CONTROL_ERROR);
                         return 0;
                     }
@@ -673,6 +669,7 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
 
 int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *data, int size)
 {
+    INFO("HANDLING HEADER BLOCK");
     // copy header data to stream buffer
     int copylen = MIN(size, HTTP2_STREAM_BUF_SIZE - ctx->stream.buflen);
 
@@ -711,6 +708,7 @@ int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *da
 
 int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
+    INFO("HANDLING HEADERS");
     // ignore new streams after starting close
     if (ctx->state == HTTP2_CLOSING) {
         INFO("X-|%u| HEADERS (length: %u, flags: 0x%x, stream_id: %u)", ctx->id, header.length, header.flags, header.stream_id);
@@ -945,10 +943,13 @@ int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf)
     DEBUG("     - max_header_list_size: %u", HTTP2_MAX_HEADER_LIST_SIZE);
     send_settings_frame(client, 0, settings, on_settings_sent);
 
+#if TLS_ENABLE
+    return 24;
+#else
     // go to next state
     event_read(client, waiting_for_settings);
-
     return 24;
+#endif
 }
 
 // Handle read operations while waiting for a settings frame

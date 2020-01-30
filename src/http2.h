@@ -156,6 +156,15 @@
 #error "Stream buffer size can be at most a 16-bit unsigned integer by implementation."
 #endif
 
+// http2 context state flags
+#define HTTP2_FLAGS_NONE                 (0x0)
+#define HTTP2_FLAGS_WAITING_SETTINGS_ACK (0x1)
+#define HTTP2_FLAGS_WAITING_END_HEADERS  (0x2)
+#define HTTP2_FLAGS_WAITING_END_STREAM   (0x4)
+#define HTTP2_FLAGS_GOAWAY_RECV          (0x8)
+#define HTTP2_FLAGS_GOAWAY_SENT          (0x10)
+#define HTTP2_FLAGS_WAITING_TRAILERS     (0x20)
+
 typedef enum {
     HTTP2_NO_ERROR              = (uint8_t) 0x0,
     HTTP2_PROTOCOL_ERROR        = (uint8_t) 0x1,
@@ -272,4 +281,5 @@ void http2_on_client_close(event_sock_t *sock);
 void on_settings_sent(event_sock_t *sock, int status);
 int waiting_for_preface(event_sock_t *client, int size, uint8_t *buf);
 int waiting_for_settings(event_sock_t *sock, int size, uint8_t *buf);
+int receiving(event_sock_t *sock, int size, uint8_t *buf);
 #endif

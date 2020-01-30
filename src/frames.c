@@ -7,8 +7,7 @@
 
 #include "frames.h"
 #include "utils.h"
-#include "http2.h"
-
+#include "tls.h"
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"
 
@@ -75,7 +74,13 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack, event_w
     size_bytes += header.length;
 
     // We write the ping to NET
+#if TLS_ENABLE
+    int len = send_app_ssl_data(socket, size_bytes, response_bytes);
+    event_write(socket, 0, response_bytes, cb);
+    return len;
+#else
     return event_write(socket, size_bytes, response_bytes, cb);
+#endif
 }
 
 int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_open_stream_id, event_write_cb cb)
@@ -100,7 +105,13 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code, uint32_t last_o
     uint32_to_byte_array(error_code, response_bytes + size_bytes);
     size_bytes += 4;
 
+#if TLS_ENABLE
+    int len = send_app_ssl_data(socket, size_bytes, response_bytes);
+    event_write(socket, 0, response_bytes, cb);
+    return len;
+#else
     return event_write(socket, size_bytes, response_bytes, cb);
+#endif
 }
 
 int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[], event_write_cb cb)
@@ -133,8 +144,14 @@ int send_settings_frame(event_sock_t *socket, int ack, uint32_t settings_values[
         uint32_to_byte_array(value, response_bytes + size_bytes);
         size_bytes += 4;
     }
-
-    return event_write(socket, size_bytes, response_bytes, cb);
+    DEBUG("SENDING SETTINGS");
+    #if TLS_ENABLE
+        int len = send_app_ssl_data(socket, size_bytes, response_bytes);
+        event_write(socket, 0, response_bytes, cb);
+        return len;
+    #else
+        return event_write(socket, size_bytes, response_bytes, cb);
+    #endif
 }
 
 
@@ -145,6 +162,7 @@ int send_headers_frame(event_sock_t *socket,
                        uint8_t end_stream,
                        event_write_cb cb)
 {
+    DEBUG("SENDING HEADERS");
     uint8_t encoded_bytes[HTTP2_SOCK_WRITE_SIZE];
     memset(encoded_bytes,0, HTTP2_SOCK_WRITE_SIZE);
     int size = hpack_encode(dynamic_table, headers_list, encoded_bytes, HTTP2_SOCK_WRITE_SIZE);
@@ -171,8 +189,13 @@ int send_headers_frame(event_sock_t *socket,
     /*Then we put the payload*/
     memcpy(response_bytes + size_bytes, encoded_bytes, header.length);
     size_bytes += header.length;
-
+#if TLS_ENABLE
+    int len = send_app_ssl_data(socket, size_bytes, response_bytes);
+    event_write(socket, 0, response_bytes, cb);
+    return len;
+#else
     return event_write(socket, size_bytes, response_bytes, cb);
+#endif
 }
 
 int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment, uint32_t stream_id, event_write_cb cb)
@@ -195,7 +218,13 @@ int send_window_update_frame(event_sock_t *socket, uint8_t window_size_increment
     uint32_31_to_byte_array(window_size_increment, response_bytes + size_bytes);
     size_bytes += header.length;
 
+#if TLS_ENABLE
+    int len = send_app_ssl_data(socket, size_bytes, response_bytes);
+    event_write(socket, 0, response_bytes, cb);
+    return len;
+#else
     return event_write(socket, size_bytes, response_bytes, cb);
+#endif
 }
 
 int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t stream_id, event_write_cb cb)
@@ -218,7 +247,13 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code, uint32_t st
     uint32_to_byte_array(error_code, response_bytes + size_bytes);
     size_bytes += header.length;
 
+#if TLS_ENABLE
+    int len = send_app_ssl_data(socket, size_bytes, response_bytes);
+    event_write(socket, 0, response_bytes, cb);
+    return len;
+#else
     return event_write(socket, size_bytes, response_bytes, cb);
+#endif
 }
 
 int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t stream_id, uint8_t end_stream, event_write_cb cb)
@@ -239,5 +274,11 @@ int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size, uint32_t
     memcpy(response_bytes + size_bytes, data, header.length);
     size_bytes += header.length;
 
+#if TLS_ENABLE
+    int len = send_app_ssl_data(socket, size_bytes, response_bytes);
+    event_write(socket, 0, response_bytes, cb);
+    return len;
+#else
     return event_write(socket, size_bytes, response_bytes, cb);
+#endif
 }
