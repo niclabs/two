@@ -328,7 +328,7 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf){
     //If engine is closed
     if (st == BR_SSL_CLOSED) {
         //DEBUG("ERROR IN CALLBACK WHILE");
-        event_close(client, http2_on_client_close);
+        http2_close_immediate(ctx);
         return engine_error(sc);
     }
     int32_t count = 0;
@@ -355,7 +355,7 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf){
         //If engine is closed
         if (st == BR_SSL_CLOSED) {
             //DEBUG("ERROR IN CALLBACK WHILE");
-            event_close(client, http2_on_client_close);
+            http2_close_immediate(ctx);
             return engine_error(sc);
         }
     }
@@ -393,10 +393,11 @@ int read_ssl_data(event_sock_t *client, int size, uint8_t *buf){
      DEBUG("recvrec is %d",recvrec);
      DEBUG("sendapp is %d",sendapp);
      DEBUG("recvapp is %d",recvapp);
+     DEBUG("size is %d", size);
     //If engine is closed
     if (st == BR_SSL_CLOSED) {
         DEBUG("ERROR IN CALLBACK WHILE");
-        event_close(client, http2_on_client_close);
+        http2_close_immediate(ctx);
         return engine_error(sc);
     }
     if (size >= 0) {
@@ -468,7 +469,7 @@ int read_ssl_data(event_sock_t *client, int size, uint8_t *buf){
             //If engine is closed
             if (st == BR_SSL_CLOSED) {
                 DEBUG("ERROR IN CALLBACK WHILE");
-                event_close(client, http2_on_client_close);
+                http2_close_immediate(ctx);
                 return engine_error(sc);
             }
             if (recvapp && ctx->state != HTTP2_WAITING_PREFACE) {
@@ -493,7 +494,7 @@ int read_ssl_data(event_sock_t *client, int size, uint8_t *buf){
                     DEBUG("ELSE AHHH STATE: %d", (int) ctx->state);
                 }
             }
-            //event_read(client, read_ssl_data);
+            event_read(client, read_ssl_data);
             return len;
         }
         if (sendapp) {
@@ -515,7 +516,7 @@ int read_ssl_data(event_sock_t *client, int size, uint8_t *buf){
     }
     else {
         INFO("Remote client closed");
-        event_close(client, http2_on_client_close);
+        http2_close_immediate(ctx);
     }
     return 0;
 }
@@ -537,7 +538,7 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
     //If engine is closed
     if (st == BR_SSL_CLOSED) {
         DEBUG("ERROR IN CALLBACK WHILE");
-        event_close(client, http2_on_client_close);
+        http2_close_immediate(ctx);
 
         return engine_error(sc);
     }
@@ -630,7 +631,7 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
     else if (size < 0) {
         INFO("Remote client closed");
         br_ssl_engine_close(cc);
-        event_close(client, http2_on_client_close);
+        http2_close_immediate(ctx);
     }
     return 0;
 }
@@ -638,12 +639,15 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
 void write_ssl_handshake(event_sock_t *client, int status)
 {
     //DEBUG("On ssl sent");
+    // read context from client data
+    assert(client->data != NULL);
+    //DEBUG("In callback");
+    http2_context_t *ctx = (http2_context_t *)client->data;
     if (status < 0) {
         ERROR("Could not send ssl ack");
-        event_close(client, http2_on_client_close);
+        http2_close_immediate(ctx);
         return;
     }
-    http2_context_t *ctx = (http2_context_t *)client->data;
     br_ssl_server_context *sc = &ctx->sc;
     br_ssl_engine_context *cc = &sc->eng;
     unsigned st;
@@ -686,12 +690,15 @@ void write_ssl_handshake(event_sock_t *client, int status)
 void write_ssl(event_sock_t *client, int status)
 {
     DEBUG("On write_ssl");
+    // read context from client data
+    assert(client->data != NULL);
+    //DEBUG("In callback");
+    http2_context_t *ctx = (http2_context_t *)client->data;
     if (status < 0) {
         ERROR("Could not send ssl record");
-        event_close(client, http2_on_client_close);
+        http2_close_immediate(ctx);
         return;
     }
-    http2_context_t *ctx = (http2_context_t *)client->data;
     br_ssl_server_context *sc = &ctx->sc;
     br_ssl_engine_context *cc = &sc->eng;
     unsigned st;
