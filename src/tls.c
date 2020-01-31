@@ -189,7 +189,7 @@ void init_tls_server(http2_context_t *ctx)
     ctx->handshake = 0; //handshake not done
     br_ssl_server_zero(sc);
 
-    //br_ssl_server_init_full_rsa(sc, CHAIN, CHAIN_LEN, &RSA);
+    //SET ALGORITHM
     br_ssl_server_init_mine2g(sc, CHAIN, CHAIN_LEN, &RSA);
     br_ssl_engine_set_versions(&sc->eng, BR_TLS12, BR_TLS12); //ONLY TLS 1.2
 
@@ -198,12 +198,16 @@ void init_tls_server(http2_context_t *ctx)
     flags |= BR_OPT_NO_RENEGOTIATION;
     flags |= BR_OPT_TOLERATE_NO_CLIENT_AUTH;
     flags |= BR_OPT_FAIL_ON_ALPN_MISMATCH;
+    //SET FLAGS
     br_ssl_engine_set_all_flags(&sc->eng, flags);
+    //CLEAN INTERNAL MEMORY OF BEAR
     memset(ctx->iobuf_in, 0, BR_SSL_BUFSIZE_INPUT);
     memset(ctx->iobuf_out, 0, BR_SSL_BUFSIZE_INPUT);
+    //SET INTERNAL BUFFERS OF BEAR
     br_ssl_engine_set_buffers_bidi(&sc->eng,
                                    ctx->iobuf_in, sizeof ctx->iobuf_in,
                                    ctx->iobuf_out, sizeof ctx->iobuf_out);
+    //SET SUPPORTED PROTOCOLS, in this case only "h2"
     br_ssl_engine_set_protocol_names(&sc->eng, (const char **)&supported_protocols, 1);
 }
 
@@ -312,9 +316,13 @@ int engine_error(br_ssl_server_context *cc)
 
 int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf)
 {
-    // DEBUG("I'm here :) (SENDAPP)");
-
     http2_context_t *ctx = (http2_context_t *)client->data;
+
+    if (size <= 0) {
+        http2_close_immediate(ctx);
+        return 0;
+    }
+
     br_ssl_server_context *sc = &ctx->sc;
     br_ssl_engine_context *cc = &sc->eng;
     int sendapp, sendrec;
@@ -326,25 +334,24 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf)
     st = br_ssl_engine_current_state(cc);
     sendapp = ((st & BR_SSL_SENDAPP) != 0);
 
-    // DEBUG("sendapp is %d",sendapp);
     //If engine is closed
     if (st == BR_SSL_CLOSED) {
-        //DEBUG("ERROR IN CALLBACK WHILE");
         http2_close_immediate(ctx);
-        return engine_error(sc);
+        engine_error(sc);
+        return size;
     }
     int32_t count = 0;
+    //Try to push the most bytes possible to bear
     while (sendapp && count < size) {
-        //DEBUG("sendapp");
 
         unsigned char *ssl_buf;
         size_t len;
 
         ssl_buf = br_ssl_engine_sendapp_buf(cc, &len);
-        len = len > (size_t)size ? (size_t)size : len;
-        //DEBUG("LEN IS %d", len);
-        //DEBUG("SIZE IS %d",size);
-        memcpy(ssl_buf, buf, len);
+        //Only push at most size bytes;
+        len = len > (size_t)(size - count) ? (size_t)(size - count) : len;
+
+        memcpy(ssl_buf, buf + count, len);
         if (!run_command(cc, ssl_buf, len)) {
             br_ssl_engine_sendapp_ack(cc, len);
             count += len;
@@ -353,12 +360,12 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf)
         st = br_ssl_engine_current_state(cc);
         sendapp = ((st & BR_SSL_SENDAPP) != 0);
         sendrec = ((st & BR_SSL_SENDREC) != 0);
-        // DEBUG("sendapp is %d",sendapp);
+
         //If engine is closed
         if (st == BR_SSL_CLOSED) {
-            //DEBUG("ERROR IN CALLBACK WHILE");
             http2_close_immediate(ctx);
-            return engine_error(sc);
+            engine_error(sc);
+            return count;
         }
     }
     if (sendrec) {
@@ -376,8 +383,12 @@ int send_app_ssl_data(event_sock_t *client, int size, uint8_t *buf)
 
 int read_ssl_data(event_sock_t *client, int size, uint8_t *buf)
 {
-    // DEBUG("I'm here :)");
     http2_context_t *ctx = (http2_context_t *)client->data;
+
+    if (size <= 0) {
+        http2_close_immediate(ctx);
+        return 0;
+    }
     br_ssl_server_context *sc = &ctx->sc;
     br_ssl_engine_context *cc = &sc->eng;
     int sendrec, recvrec, sendapp, recvapp;
@@ -399,164 +410,133 @@ int read_ssl_data(event_sock_t *client, int size, uint8_t *buf)
     DEBUG("size is %d", size);
     //If engine is closed
     if (st == BR_SSL_CLOSED) {
-        DEBUG("ERROR IN CALLBACK WHILE");
+        // stop receiving data
         http2_close_immediate(ctx);
-        return engine_error(sc);
+        engine_error(sc);
+        return size;
     }
-    if (size >= 0) {
-        if (recvapp) {
-            //      DEBUG("RECVAPP");
-            unsigned char *rbuf;
-            size_t len;
+    if (recvapp) {
+        unsigned char *rbuf;
+        size_t len;
 
-            rbuf = br_ssl_engine_recvapp_buf(cc, &len);
-            //HTTP2_IDLE,
-            //        HTTP2_WAITING_PREFACE,
-            //        HTTP2_WAITING_SETTINGS
-            // DEBUG("HTTP2 state %d", ctx->state);
-            if (ctx->state == HTTP2_WAITING_PREFACE) {
-                len = waiting_for_preface(client, len, (uint8_t *) rbuf);
-            } else if (ctx->state == HTTP2_WAITING_SETTINGS) {
-                len = waiting_for_settings(client, len, (uint8_t *) rbuf);
-            } else if (ctx->state == HTTP2_READY) {
-                DEBUG("RECEIVING");
-                len = receiving(client, len, (uint8_t *) rbuf);
-                DEBUG("HTTP2 read %u bytes", (uint32_t) len);
-                if(len == 0){
-                    rbuf = br_ssl_engine_recvapp_buf(cc, &len);
-                    uint8_t tmp_buf[len];
-                    uint8_t tmp_buf_size = len;
-                    memcpy(tmp_buf,rbuf,len);
-                    br_ssl_engine_recvapp_ack(cc, len);
-                    int count = 0;
-                    while((rbuf = br_ssl_engine_recvrec_buf(cc, &len)) && count < size){
-                        memcpy(rbuf,buf + count,len);
-                        br_ssl_engine_recvrec_ack(cc, len);
-                        count += len;
-                    }
-                    if((rbuf = br_ssl_engine_recvapp_buf(cc, &len))){
-                        uint8_t tmp_buf2[tmp_buf_size + len];
-                        memcpy(tmp_buf2, tmp_buf, tmp_buf_size);
-                        memcpy(tmp_buf2 + tmp_buf_size, rbuf, len);
-                        len = receiving(client, len + tmp_buf_size, (uint8_t *) tmp_buf2);
-                        DEBUG("HTTP2 read %u bytes", (uint32_t) len);
-                        br_ssl_engine_recvapp_ack(cc, len - tmp_buf_size);
-                    }
-                    return count;
-                }
-            }else {
-                DEBUG("ELSE AHHH ");
-                len = 0;
-            }
+        rbuf = br_ssl_engine_recvapp_buf(cc, &len);
+
+        if (ctx->state == HTTP2_WAITING_PREFACE) {
+            len = waiting_for_preface(client, len, (uint8_t *)rbuf);
+        }
+        else if (ctx->state == HTTP2_WAITING_SETTINGS) {
+            len = waiting_for_settings(client, len, (uint8_t *)rbuf);
+        }
+        else if (ctx->state == HTTP2_READY) {
+            len = receiving(client, len, (uint8_t *)rbuf);
             DEBUG("HTTP2 read %u bytes", (uint32_t)len);
-            br_ssl_engine_recvapp_ack(cc, len);
-            /*if (ctx->state != HTTP2_CLOSED) {
-                event_read(client, read_ssl_data);
-            }*/
-
-            return 0;
-        }
-        if (sendrec) {
-            //DEBUG("sendrecREADSSL1");
-            size_t len;
-            buf = br_ssl_engine_sendrec_buf(cc, &len);
-            //DEBUG("Len is %d", len);
-            len = len < HTTP2_MAX_FRAME_SIZE ? len : HTTP2_MAX_FRAME_SIZE;
-            //DEBUG("WLen is %d",len);
-            //DEBUG("HTTP2 state %d", ctx->state);
-            uint32_t wlen;
-
-            /*if (ctx->state == HTTP2_WAITING_SETTINGS) {
-                wlen = event_write(ctx->socket, len, buf, on_settings_sent);
-               } else {
-                DEBUG("ELSE AHHH ");*/
-            wlen = event_write(ctx->socket, len, buf, write_ssl);
-            //}
-            br_ssl_engine_sendrec_ack(cc, wlen);
-            /*if (ctx->state != HTTP2_CLOSED) {
-                event_read(client, read_ssl_data);
-            }*/
-            return 0;
-        }
-        if (recvrec && size > 0) {
-            DEBUG("recvrec");
-
-            unsigned char *ssl_buf;
-            size_t len;
-            ssl_buf = br_ssl_engine_recvrec_buf(cc, &len);
-            len = (size_t)size < len ? (size_t)size : len;
-            memcpy(ssl_buf, buf, len);
-            // DEBUG("HTTP2 state %d", ctx->state);
-
-            br_ssl_engine_recvrec_ack(cc, len);
-
-            st = br_ssl_engine_current_state(cc);
-            sendrec = ((st & BR_SSL_SENDREC) != 0);
-            recvrec = ((st & BR_SSL_RECVREC) != 0);
-            sendapp = ((st & BR_SSL_SENDAPP) != 0);
-            recvapp = ((st & BR_SSL_RECVAPP) != 0);
-
-            DEBUG("sendrec is %d", sendrec);
-            DEBUG("recvrec is %d", recvrec);
-            DEBUG("sendapp is %d", sendapp);
-            DEBUG("recvapp is %d", recvapp);
-            //If engine is closed
-            if (st == BR_SSL_CLOSED) {
-                DEBUG("ERROR IN CALLBACK WHILE");
-                http2_close_immediate(ctx);
-                return engine_error(sc);
-            }
-            if (recvapp) {
-                //   DEBUG("RECVAPP2");
-                size_t wlen;
-                buf = br_ssl_engine_recvapp_buf(cc, &wlen);
-                //HTTP2_IDLE,
-                //        HTTP2_WAITING_PREFACE,
-                //        HTTP2_WAITING_SETTINGS
-                //   DEBUG("HTTP2 state %d", ctx->state);
-                if (ctx->state == HTTP2_WAITING_PREFACE) {
-                    wlen = waiting_for_preface(client, wlen, (uint8_t *) buf);
-                    DEBUG("HTTP2 read %u bytes", (uint32_t) wlen);
-                    br_ssl_engine_recvapp_ack(cc, wlen);
-                } else if (ctx->state == HTTP2_WAITING_SETTINGS) {
-                    wlen = waiting_for_settings(client, wlen, (uint8_t *) buf);
-                    //event_write(ctx->sock, len, buf, on_ssl_sent);
-                    DEBUG("HTTP2 read %u bytes", (uint32_t) wlen);
-                    br_ssl_engine_recvapp_ack(cc, wlen);
-                } else if (ctx->state == HTTP2_READY) {
-                    DEBUG("RECEIVING");
-                    wlen = receiving(client, wlen, (uint8_t *) buf);
-                    DEBUG("HTTP2 read %u bytes", (uint32_t) wlen);
-                    br_ssl_engine_recvapp_ack(cc, wlen);
-                } else {
-                    DEBUG("ELSE AHHH STATE: %d", (int) ctx->state);
+            //If len == 0, the record was not complete, so try to read more encrypted data
+            if (len == 0) {
+                //simulate a read from bear, so the engine can accept more encrypted records
+                rbuf = br_ssl_engine_recvapp_buf(cc, &len);
+                uint8_t tmp_buf[len];
+                uint8_t tmp_buf_size = len;
+                //save the partial data on to tmp_buf
+                memcpy(tmp_buf, rbuf, len);
+                br_ssl_engine_recvapp_ack(cc, len);
+                int count = 0;
+                //try to push encrypted data to engine
+                while ((rbuf = br_ssl_engine_recvrec_buf(cc, &len)) && count < size) {
+                    memcpy(rbuf, buf + count, len);
+                    br_ssl_engine_recvrec_ack(cc, len);
+                    count += len;
                 }
+                //now read decrypted data
+                if ((rbuf = br_ssl_engine_recvapp_buf(cc, &len))) {
+                    //create new buffer to store the previous decrypted data and the new decrypted data
+                    uint8_t tmp_buf2[tmp_buf_size + len];
+                    //copy previous data
+                    memcpy(tmp_buf2, tmp_buf, tmp_buf_size);
+                    //copy new data
+                    memcpy(tmp_buf2 + tmp_buf_size, rbuf, len);
+                    len = receiving(client, len + tmp_buf_size, (uint8_t *)tmp_buf2);
+                    DEBUG("HTTP2 read %u bytes", (uint32_t)len);
+                    //only notify the bytes from the new data read
+                    br_ssl_engine_recvapp_ack(cc, len - tmp_buf_size);
+                }
+                //return that we read count from the buffer
+                return count;
             }
-            /*if (ctx->state != HTTP2_CLOSED) {
-                event_read(client, read_ssl_data);
-            }*/
-            return len;
         }
-        if (sendapp) {
-            //DEBUG("sendappLOOP");
-/*
+        else {
+            DEBUG("ELSE AHHH ");
+            len = 0;
+        }
+        DEBUG("HTTP2 read %u bytes", (uint32_t)len);
+        br_ssl_engine_recvapp_ack(cc, len);
+        //Always return 0 because we didn't read from the buffer
+        return 0;
+    }
+    if (sendrec) {
+        size_t len;
+        buf = br_ssl_engine_sendrec_buf(cc, &len);
+        //only write the maximum
+        len = len < HTTP2_MAX_FRAME_SIZE ? len : HTTP2_MAX_FRAME_SIZE;
+        uint32_t wlen;
+
+        wlen = event_write(ctx->socket, len, buf, write_ssl);
+        //notify the engine how many bytes we read
+        br_ssl_engine_sendrec_ack(cc, wlen);
+        //we didn't read from the buffer so return 0 bytes read
+        return 0;
+    }
+    if (recvrec && size > 0) {
         unsigned char *ssl_buf;
         size_t len;
 
-        ssl_buf = br_ssl_engine_sendapp_buf(cc, &len);
-        len = len > size ? size : len;
+        ssl_buf = br_ssl_engine_recvrec_buf(cc, &len);
+        //Read the most that we can
+        len = (size_t)size < len ? (size_t)size : len;
         memcpy(ssl_buf, buf, len);
-        if (!run_command(cc, ssl_buf, len)) {
-            br_ssl_engine_sendapp_ack(cc, len);
+        //Notify the engine
+        br_ssl_engine_recvrec_ack(cc, len);
+        //attempt to recvapp data, because if we read all the data
+        //from the encrypted buffer, then we won't be called again (deadlock)
+        st = br_ssl_engine_current_state(cc);
+        sendrec = ((st & BR_SSL_SENDREC) != 0);
+        recvrec = ((st & BR_SSL_RECVREC) != 0);
+        sendapp = ((st & BR_SSL_SENDAPP) != 0);
+        recvapp = ((st & BR_SSL_RECVAPP) != 0);
+
+        DEBUG("sendrec is %d", sendrec);
+        DEBUG("recvrec is %d", recvrec);
+        DEBUG("sendapp is %d", sendapp);
+        DEBUG("recvapp is %d", recvapp);
+        //If engine is closed
+        if (st == BR_SSL_CLOSED) {
+            http2_close_immediate(ctx);
+            return engine_error(sc);
         }
-        br_ssl_engine_flush(cc, 0);
-        return len;*/
-            return 0;
+        if (recvapp) {
+            size_t wlen;
+            buf = br_ssl_engine_recvapp_buf(cc, &wlen);
+
+            if (ctx->state == HTTP2_WAITING_PREFACE) {
+                wlen = waiting_for_preface(client, wlen, (uint8_t *)buf);
+            }
+            else if (ctx->state == HTTP2_WAITING_SETTINGS) {
+                wlen = waiting_for_settings(client, wlen, (uint8_t *)buf);
+            }
+            else if (ctx->state == HTTP2_READY) {
+                wlen = receiving(client, wlen, (uint8_t *)buf);
+            }
+            else {
+                DEBUG("READ SSL: HTTP STATE INVALID: %d", (int)ctx->state);
+                wlen = 0;
+            }
+            br_ssl_engine_recvapp_ack(cc, wlen);
+
         }
+        return len;
     }
-    else {
-        INFO("Remote client closed");
-        http2_close_immediate(ctx);
+    if (sendapp) {
+        //We don't manage the sending
+        return 0;
     }
     return 0;
 }
@@ -565,8 +545,11 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
 {
     // read context from client data
     assert(client->data != NULL);
-    //DEBUG("In callback");
     http2_context_t *ctx = (http2_context_t *)client->data;
+    if (size <= 0) {
+        http2_close_immediate(ctx);
+        return 0;
+    }
     br_ssl_server_context *sc = &ctx->sc;
     br_ssl_engine_context *cc = &sc->eng;
     unsigned st;
@@ -579,15 +562,14 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
     if (st == BR_SSL_CLOSED) {
         DEBUG("ERROR IN CALLBACK WHILE");
         http2_close_immediate(ctx);
-
-        return engine_error(sc);
+        engine_error(sc);
+        return 0;
     }
-    //sendrec = ((st & BR_SSL_SENDREC) != 0);
     recvrec = ((st & BR_SSL_RECVREC) != 0);
     sendapp = ((st & BR_SSL_SENDAPP) != 0);
-    //recvapp = ((st & BR_SSL_RECVAPP) != 0);
+    //Current state of the handshake
     uint8_t *handshake = &ctx->handshake;
-    //DEBUG("Handshake is %d",*handshake);
+    //The first time this flag is set, then the ssl handshake is done
     if (sendapp) {
         const char *pname;
 
@@ -618,28 +600,27 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
             INFO("   protocol name (ALPN):  %s",
                  pname);
         }
+        //give read control to read_ssl_data
         event_read(client, read_ssl_data);
         return 0;
     }
     if (size >= 0 || *handshake < 2) {
         if (recvrec) {
-            //DEBUG("recvrec");
-
             unsigned char *ssl_buf;
             int32_t count = 0;
+            //attempt to read the most encrypted bytes that we can
             while (recvrec && count < size) {
                 size_t len;
                 ssl_buf = br_ssl_engine_recvrec_buf(cc, &len);
-                if (size < 0) {
-                    return 0;
-                }
+                ///read at most len bytes
                 len = (size_t)size < len ? (size_t)size : len;
                 memcpy(ssl_buf, buf + count, len);
                 count += len;
+                //notify engine
                 br_ssl_engine_recvrec_ack(cc, len);
+                //get current engine state
                 st = br_ssl_engine_current_state(cc);
                 recvrec = ((st & BR_SSL_RECVREC) != 0);
-
             }
             // prepare response
             if (*handshake <= 1) {
@@ -647,15 +628,17 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
                 st = br_ssl_engine_current_state(cc);
                 //If engine is closed
                 if (st == BR_SSL_CLOSED) {
-                    return engine_error(sc);
+                    engine_error(sc);
+                    http2_close_immediate(ctx);
+                    return 0;
                 }
                 sendrec = ((st & BR_SSL_SENDREC) != 0);
+                //This should always be true during handshake
                 if (sendrec) {
-                    //DEBUG("sendrec2");
                     buf = br_ssl_engine_sendrec_buf(cc, &len);
                     len = len < HTTP2_MAX_FRAME_SIZE ? len : HTTP2_MAX_FRAME_SIZE;
+                    //start writing response
                     uint32_t wlen = event_write(ctx->socket, len, buf, write_ssl_handshake);
-                    //DEBUG("L is %d", wlen);
                     br_ssl_engine_sendrec_ack(cc, wlen);
                     st = br_ssl_engine_current_state(cc);
                     sendrec = ((st & BR_SSL_SENDREC) != 0);
@@ -664,29 +647,20 @@ int read_ssl_handshake(event_sock_t *client, int size, uint8_t *buf)
                     }
                 }
             }
-            /*if (ctx->state != HTTP2_CLOSED) {
-                event_read(client, read_ssl_handshake);
-            }*/
             return count;
         }
-    }
-    else if (size < 0) {
-        INFO("Remote client closed");
-        br_ssl_engine_close(cc);
-        http2_close_immediate(ctx);
     }
     return 0;
 }
 
 void write_ssl_handshake(event_sock_t *client, int status)
 {
-    //DEBUG("On ssl sent");
     // read context from client data
     assert(client->data != NULL);
     //DEBUG("In callback");
     http2_context_t *ctx = (http2_context_t *)client->data;
     if (status < 0) {
-        ERROR("Could not send ssl ack");
+        DEBUG("Could not send ssl ack");
         http2_close_immediate(ctx);
         return;
     }
@@ -702,22 +676,19 @@ void write_ssl_handshake(event_sock_t *client, int status)
     if (st == BR_SSL_CLOSED) {
         // DEBUG("ERROR IN CALLBACK WHILE");
         engine_error(sc);
+        http2_close_immediate(ctx);
         return;
     }
     sendrec = ((st & BR_SSL_SENDREC) != 0);
-    //recvapp = ((st & BR_SSL_RECVAPP) != 0);
     uint8_t *handshake = &ctx->handshake;
-    // DEBUG("Handshake is %d",*handshake);
+
     if (sendrec) {
-        //DEBUG("sendrecW");
 
         unsigned char *buf;
         size_t len;
 
         buf = br_ssl_engine_sendrec_buf(cc, &len);
-        //DEBUG("Len is %d", len);
         len = len < HTTP2_MAX_FRAME_SIZE ? len : HTTP2_MAX_FRAME_SIZE;
-        //DEBUG("WLen is %d",len);
         uint32_t wlen = event_write(ctx->socket, len, buf, write_ssl_handshake);
 
         br_ssl_engine_sendrec_ack(cc, wlen);
@@ -731,13 +702,9 @@ void write_ssl_handshake(event_sock_t *client, int status)
 
 void write_ssl(event_sock_t *client, int status)
 {
-    DEBUG("On write_ssl");
-    // read context from client data
     assert(client->data != NULL);
-    //DEBUG("In callback");
     http2_context_t *ctx = (http2_context_t *)client->data;
     if (status < 0) {
-        ERROR("Could not send ssl record");
         http2_close_immediate(ctx);
         return;
     }
@@ -753,18 +720,15 @@ void write_ssl(event_sock_t *client, int status)
     if (st == BR_SSL_CLOSED) {
         DEBUG("ERROR IN CALLBACK WHILE");
         engine_error(sc);
+        http2_close_immediate(ctx);
         return;
     }
     sendrec = ((st & BR_SSL_SENDREC) != 0);
-    //recvapp = ((st & BR_SSL_RECVAPP) != 0);
     if (sendrec) {
-        // DEBUG("sendrecWRITESSL");
         unsigned char *buf;
         size_t len;
         buf = br_ssl_engine_sendrec_buf(cc, &len);
-//DEBUG("Len is %d", len);
         len = len < HTTP2_MAX_FRAME_SIZE ? len : HTTP2_MAX_FRAME_SIZE;
-//DEBUG("WLen is %d",len);
         uint32_t wlen = event_write(ctx->socket, len, buf, write_ssl);
         br_ssl_engine_sendrec_ack(cc, wlen);
         return;

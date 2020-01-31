@@ -77,6 +77,7 @@ http2_context_t *http2_new_client(event_sock_t *client)
         LL_INIT(clients, HTTP2_MAX_CLIENTS);
         connected_clients = NULL;
         inited = 1;
+        client_id = 0;
     }
 
     // get first element from the client list into the connected clients list
@@ -669,7 +670,6 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
 
 int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *data, int size)
 {
-    INFO("HANDLING HEADER BLOCK");
     // copy header data to stream buffer
     int copylen = MIN(size, HTTP2_STREAM_BUF_SIZE - ctx->stream.buflen);
 
@@ -708,7 +708,6 @@ int handle_header_block(http2_context_t *ctx, frame_header_t header, uint8_t *da
 
 int handle_headers_frame(http2_context_t *ctx, frame_header_t header, uint8_t *payload)
 {
-    INFO("HANDLING HEADERS");
     // ignore new streams after starting close
     if (ctx->state == HTTP2_CLOSING) {
         INFO("X-|%u| HEADERS (length: %u, flags: 0x%x, stream_id: %u)", ctx->id, header.length, header.flags, header.stream_id);
