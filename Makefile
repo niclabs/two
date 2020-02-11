@@ -22,7 +22,7 @@ H2SPEC_ALL = $(filter-out $(H2SPEC_SKIP), $(shell sed -e 's/\#.*$$//' -e "/^\s*$
 H2SPEC_TEST ?= $(H2SPEC_ALL)
 
 # Port to use for h2spec tests
-HTTP2_PORT ?= 8888
+H2SPEC_PORT ?= 8888
 
 .PHONY: h2spec-pre h2spec-post
 h2spec-pre: 
@@ -41,8 +41,8 @@ h2spec-post:
 .PHONY: $(H2SPEC_ALL)
 $(H2SPEC_ALL): /usr/local/bin/h2spec ./bin/basic
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi 
-	@(./bin/basic $(HTTP2_PORT) 2> server.log & echo $$! > server.pid) && sleep 0.3 && \
-		(h2spec $@ -p $(HTTP2_PORT) > h2spec.log && rm h2spec.log); \
+	@(./bin/basic $(H2SPEC_PORT) 2> server.log & echo $$! > server.pid) && sleep 0.3 && \
+		(h2spec $@ -p $(H2SPEC_PORT) > h2spec.log && rm h2spec.log); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \
 		echo -n "$@: "; \

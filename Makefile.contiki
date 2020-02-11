@@ -47,16 +47,16 @@ endif
 # `make <spec>` will run one of the specs
 # in h2spec.conf against a native target
 #
-# `TARGET=<target != native> HTTP2_ADDR=<addr> make h2spec`
-# will run h2spec against a remote target with IPv6 address HTTP2_ADDR
+# `TARGET=<target != native> H2SPEC_ADDR=<addr> make h2spec`
+# will run h2spec against a remote target with IPv6 address H2SPEC_ADDR
 
 # Get specs from configuration file
 H2SPEC_ALL = $(filter-out $(H2SPEC_SKIP), $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" $(TWO)/h2spec.conf))
 H2SPEC_TEST ?= $(H2SPEC_ALL)
 
 # HTTP2 server port and address for h2spec testing
-HTTP2_PORT ?= 8888
-HTTP2_ADDR ?= fd00::302:304:506:708
+H2SPEC_PORT ?= 8888
+H2SPEC_ADDR ?= fd00::302:304:506:708
 
 .PHONY: h2spec-pre h2spec-post
 h2spec-pre:
@@ -72,7 +72,7 @@ ifeq ($(TARGET),native)
 $(H2SPEC_ALL): server.native /usr/local/bin/h2spec
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
 	@(sudo ./server.native 2>/dev/null > server.log & echo $$! > server.pid) && sleep 0.5 && \
-		(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
+		(h2spec $@ -p $(H2SPEC_PORT) -h [$(H2SPEC_ADDR)] > h2spec.log && rm h2spec.log); \
 		PID=$$(cat server.pid); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \
@@ -105,7 +105,7 @@ H2SPEC_SKIP = http2/4.2/1 http2/4.2/2 http2/4.2/3 http2/6.10/1
 
 $(H2SPEC_ALL): /usr/local/bin/h2spec
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
-	@(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
+	@(h2spec $@ -p $(H2SPEC_PORT) -h [$(H2SPEC_ADDR)] > h2spec.log && rm h2spec.log); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \
 		/bin/echo -n "$@: "; \
