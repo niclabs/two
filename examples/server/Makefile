@@ -1,14 +1,17 @@
 CONTIKI_PROJECT = server
 all: $(CONTIKI_PROJECT)
 
+# Relevant directories
+
+# Source directories
 TWO ?= ../..
 SRC = $(TWO)/src
+
+# Contiki sources
 CONTIKI ?= ../../../contiki-ng
 
-HTTP2_PORT ?= 8888
-HTTP2_ADDR ?= fd00::302:304:506:708
 
-PROJECTDIRS += $(SRC) $(SRC)/frames $(SRC)/hpack $(SRC)/http2
+PROJECTDIRS += $(SRC) $(SRC)/hpack
 PROJECT_SOURCEFILES=two.c \
 					cbuf.c \
 					event.c \
@@ -23,35 +26,57 @@ PROJECT_SOURCEFILES=two.c \
 					hpack_utils.c \
 					http2.c
 
-#Default contiki target
-TARGET ?= native
-
-# Disable UDP
-DEFINES += UIP_CONF_TCP=1
-DEFINES += UIP_CONF_UDP=0
-
 # Override contiki configuration
 DEFINES += PROJECT_CONF_H=\"project-conf.h\"
 
-MODULES += os/services/shell
+#Default contiki target
+TARGET ?= native
 
+# Include src directory first
+# to avoid clashes with system include
+# files
 CFLAGS += -I$(SRC)
 
+# Include shell module by default
+ifeq ($(DISABLE_SHELL),)
+MODULES += os/services/shell
+endif
+
+# Use newlib for ARM based targets
+# (save memory)
+ifneq ($(filter $(TARGET),zoul openmote iotlab cc2538dk nrf52dk),)
+LDFLAGS += -specs=nano.specs
+endif
+
 # Get specs from configuration file
-ALL_SPECS = $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" $(TWO)/h2spec.conf)
-SPEC ?= $(ALL_SPECS)
+H2SPEC_ALL = $(filter-out $(H2SPEC_SKIP), $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" $(TWO)/h2spec.conf))
+H2SPEC_TEST ?= $(H2SPEC_ALL)
 
+# HTTP2 server port and address for h2spec testing
+HTTP2_PORT ?= 8888
+HTTP2_ADDR ?= fd00::302:304:506:708
 
-.PHONY: h2spec-pre
+# Begin h2spec targets
+# `make h2spec` will run all h2spec tests
+# against a native target
+# 
+# `make <spec>` will run one of the specs
+# in h2spec.conf against a native target 
+#
+# `TARGET=<target != native> HTTP2_ADDR=<addr> make h2spec`
+# will run h2spec against a remote target with IPv6 address HTTP2_ADDR
+.PHONY: h2spec-pre h2spec-post
 h2spec-pre:
+	@rm -f summary.txt
 	@echo "------------------------------"
 	@echo "Integration tests with h2spec"
 	@echo "------------------------------"
 
-.PHONY: $(ALL_SPECS)
+.PHONY: $(H2SPEC_ALL)
 
+# if we are testing a native target
 ifeq ($(TARGET),native)
-$(ALL_SPECS): /usr/local/bin/h2spec
+$(H2SPEC_ALL): server.native /usr/local/bin/h2spec
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
 	@(sudo ./server.native 2>/dev/null > server.log & echo $$! > server.pid) && sleep 0.5 && \
 		(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
@@ -80,11 +105,12 @@ $(ALL_SPECS): /usr/local/bin/h2spec
 		echo "$$TOTAL $$FAILURES" > summary.txt; \
 		rm server.pid server.log
 else
-# Specs to skip on embedded targets (frame size too large)
-SKIP = http2/4.2/1 http2/4.2/2 http2/4.2/3 http2/6.10/1
+# we are testing a remote target
 
-ALL_SPECS := $(filter-out $(SKIP),$(ALL_SPECS))
-$(ALL_SPECS): /usr/local/bin/h2spec
+# Specs to skip on embedded targets (frame size too large)
+H2SPEC_SKIP = http2/4.2/1 http2/4.2/2 http2/4.2/3 http2/6.10/1
+
+$(H2SPEC_ALL): /usr/local/bin/h2spec
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
 	@(h2spec $@ -p $(HTTP2_PORT) -h [$(HTTP2_ADDR)] > h2spec.log && rm h2spec.log); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
@@ -103,12 +129,13 @@ $(ALL_SPECS): /usr/local/bin/h2spec
 		echo "$$TOTAL $$FAILURES" > summary.txt && sleep 1
 endif
 
-h2spec: h2spec-pre $(SPEC)
+h2spec-post:
 	@echo "------------------------------"
 	@awk '{printf "total: %d, passed: %d, failed: %d\n", $$1,$$1 - $$2,$$2}' summary.txt; \
 		FAILED=$$(awk '{print $$2}' summary.txt); \
 		rm summary.txt; \
 		test $$FAILED -eq 0
 
+h2spec: h2spec-pre $(H2SPEC_TEST) h2spec-post
 
 include $(CONTIKI)/Makefile.include
