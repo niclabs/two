@@ -1,31 +1,54 @@
+# Base directory
 TWO = .
+
+# Default flags
 CFLAGS = -std=c99 -Wall -Wextra -D_DEFAULT_SOURCE
 
-TARGETDIRS = examples/server/ examples/echo/ examples/tiny/
+# Where are the source files for implementation
+TARGETDIRS = examples/server/ examples/echo/
+
+# Where are test files located
 TESTDIRS = tests/
 
+# Include hpack module
 MODULES	+= hpack
 
-all: server echo tiny
-
-PORT ?= 8888
-
-# Get specs from configuration file
-ALL_SPECS = $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" h2spec.conf)
-SPEC ?= $(ALL_SPECS)
+# All targets
+all: server echo
 
 
-.PHONY: h2spec-pre
+# Integration tests with h2spec
+# `make h2spec` will run all h2spec tests
+# against a local server
+# 
+# `make <spec>` will run one of the specs
+# in h2spec.conf against a native target 
+H2SPEC_ALL = $(filter-out $(H2SPEC_SKIP), $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" $(TWO)/h2spec.conf))
+H2SPEC_TEST ?= $(H2SPEC_ALL)
+
+# Port to use for h2spec tests
+HTTP2_PORT ?= 8888
+
+
+.PHONY: h2spec-pre h2spec-post
 h2spec-pre: 
+	@rm -f summary.txt
 	@echo "------------------------------"
 	@echo "Integration tests with h2spec"
 	@echo "------------------------------"
 
-.PHONY: $(ALL_SPECS)
-$(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
+h2spec-post:
+	@echo "------------------------------"
+	@awk '{printf "total: %d, passed: %d, failed: %d\n", $$1,$$1 - $$2,$$2}' summary.txt; \
+		FAILED=$$(awk '{print $$2}' summary.txt); \
+		rm summary.txt; \
+		test $$FAILED -eq 0
+
+.PHONY: $(H2SPEC_ALL)
+$(H2SPEC_ALL): /usr/local/bin/h2spec ./bin/server
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi 
-	@(./bin/server $(PORT) 2> server.log & echo $$! > server.pid) && sleep 0.3 && \
-		(h2spec $@ -p $(PORT) > h2spec.log && rm h2spec.log); \
+	@(./bin/server $(HTTP2_PORT) 2> server.log & echo $$! > server.pid) && sleep 0.3 && \
+		(h2spec $@ -p $(HTTP2_PORT) > h2spec.log && rm h2spec.log); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \
 		echo -n "$@: "; \
@@ -50,11 +73,7 @@ $(ALL_SPECS): /usr/local/bin/h2spec ./bin/server
 		echo "$$TOTAL $$FAILURES" > summary.txt; \
 		rm server.pid server.log
 
-h2spec: h2spec-pre $(SPEC)
-	@echo "------------------------------"
-	@awk '{printf "total: %d, passed: %d, failed: %d\n", $$1,$$1 - $$2,$$2}' summary.txt; \
-		FAILED=$$(awk '{print $$2}' summary.txt); \
-		rm summary.txt; \
-		test $$FAILED -eq 0
-
+# Run all target
+h2spec: h2spec-pre $(H2SPEC_ALL) h2spec-post
+	
 include $(TWO)/Makefile.include
