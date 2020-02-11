@@ -1,12 +1,6 @@
 # Base directory
 TWO = .
 
-# Default flags
-CFLAGS = -std=c99 -Wall -Wextra
-
-# Use BSD timers
-CFLAGS += -D_DEFAULT_SOURCE
-
 # Where are the source files for implementation
 TARGETDIRS = examples/basic/
 

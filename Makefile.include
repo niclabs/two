@@ -7,12 +7,18 @@ endif
 # Find OS
 OS = $(word 1, $(shell uname -m -s))
 
+# Default CFLAGS
+CFLAGS = -std=c99 -Wall -Wextra
+
+# Use bsd timers
+CFLAGS += -D_DEFAULT_SOURCE
+
 # Configure output directories
 # Path for final binaries to be stored
-TARGET_DIR ?= $(call QUALIFY_PATH,${TWO},bin)
+TARGET_DIR ?= bin
 
 # Build dir is for temporary files
-BUILD_DIR ?= $(call QUALIFY_PATH,${TWO},build)
+BUILD_DIR ?= build
 
 SHELL = bash
 
@@ -31,28 +37,12 @@ ifdef CI
   endif
 endif
 
-# CANONICAL_PATH - Given one or more paths, converts the paths to the canonical
-#   form. The canonical form is the path, relative to the project's top-level
-#   directory (the directory from which "make" is run), and without
-#   any "./" or "../" sequences. For paths that are not  located below the
-#   top-level directory, the canonical form is the absolute path (i.e. from
-#   the root of the filesystem) also without "./" or "../" sequences.
-define CANONICAL_PATH
-$(patsubst ${CURDIR}/%,%,$(abspath ${1}))
-endef
-
-# QUALIFY_PATH - Given a "root" directory and one or more paths, qualifies the
-#   paths using the "root" directory (i.e. appends the root directory name to
-#   the paths) except for paths that are absolute.
-define QUALIFY_PATH
-$(addprefix ${1}/,$(filter-out /%,${2}))$(filter /%,${2})
-endef
 
 # Remove duplicates
 uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
 
 # Path for objects and dependencies
-SRC = src
+SRC = ${TWO}/src
 OBJECTDIR = $(BUILD_DIR)/obj
 
 # Path for test builds
@@ -78,9 +68,7 @@ $(DIRS):
 
 # Library module configuration (under src/)
 # One big module under src for now
-MODULES := . hpack
-
-MODULEDIRS = $(call CANONICAL_PATH,$(call QUALIFY_PATH,${TWO},$(addprefix $(SRC)/,$(MODULES))))
+MODULEDIRS = $(SRC) $(SRC)/hpack
 UNIQUEMODULES = $(call uniq,$(MODULEDIRS))
 MODULES_SOURCES = $(foreach d, $(UNIQUEMODULES), ${subst ${SRC}/,,${wildcard $(d)/*.c}})
 
@@ -114,11 +102,11 @@ $(foreach s,${LIBRARY_SOURCES},$(eval $(call SET_SOURCE_FOR_TARGET,${s})))
 
 define INCLUDE_TEST
     TEST_SUBDIRS :=
-    DIR := $$(call QUALIFY_PATH,$${TWO},$$(call CANONICAL_PATH,${1}))
+    DIR := $${TWO}/${1}
     ifneq ($$(wildcard $${DIR}/Makefile.$$(notdir $$(DIR))),)
         include $$(DIR)/Makefile.$$(notdir $$(DIR))
 
-        TEST_SUBDIRS := $$(call QUALIFY_PATH,$${DIR},$${TEST_SUBDIRS})    
+        TEST_SUBDIRS := $(addprefix $${DIR}/,$${TEST_SUBDIRS})
         TESTDIRS += $${TEST_SUBDIRS}
         
         # Include Makefile.<dirname> if it exists
@@ -127,7 +115,7 @@ define INCLUDE_TEST
 endef
 
 #Include all tests in TESTDIRS
-$(foreach d,${TESTDIRS},$(eval $(call INCLUDE_TEST,${d})))
+$(foreach d,${TESTDIRS},$(eval $(call INCLUDE_TEST,${d:%/=%})))
 
 
 ### Verbosity control. Use  make QUIET=0  to get verbose builds.
