@@ -2,33 +2,33 @@
 TWO = .
 
 # Default flags
-CFLAGS = -std=c99 -Wall -Wextra -D_DEFAULT_SOURCE
+CFLAGS = -std=c99 -Wall -Wextra
+
+# Use BSD timers
+CFLAGS += -D_DEFAULT_SOURCE
 
 # Where are the source files for implementation
-TARGETDIRS = examples/server/ examples/echo/
+TARGETDIRS = examples/basic/
 
 # Where are test files located
 TESTDIRS = tests/
 
-# Include hpack module
-MODULES	+= hpack
-
 # All targets
-all: server echo
-
+all: basic
 
 # Integration tests with h2spec
 # `make h2spec` will run all h2spec tests
 # against a local server
 # 
 # `make <spec>` will run one of the specs
-# in h2spec.conf against a native target 
+# in h2spec.conf against a local target 
+#
+# NOTE: it does not work in OS X
 H2SPEC_ALL = $(filter-out $(H2SPEC_SKIP), $(shell sed -e 's/\#.*$$//' -e "/^\s*$$/d" $(TWO)/h2spec.conf))
 H2SPEC_TEST ?= $(H2SPEC_ALL)
 
 # Port to use for h2spec tests
 HTTP2_PORT ?= 8888
-
 
 .PHONY: h2spec-pre h2spec-post
 h2spec-pre: 
@@ -45,9 +45,9 @@ h2spec-post:
 		test $$FAILED -eq 0
 
 .PHONY: $(H2SPEC_ALL)
-$(H2SPEC_ALL): /usr/local/bin/h2spec ./bin/server
+$(H2SPEC_ALL): /usr/local/bin/h2spec ./bin/basic
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi 
-	@(./bin/server $(HTTP2_PORT) 2> server.log & echo $$! > server.pid) && sleep 0.3 && \
+	@(./bin/basic $(HTTP2_PORT) 2> server.log & echo $$! > server.pid) && sleep 0.3 && \
 		(h2spec $@ -p $(HTTP2_PORT) > h2spec.log && rm h2spec.log); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \

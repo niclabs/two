@@ -78,7 +78,7 @@ $(DIRS):
 
 # Library module configuration (under src/)
 # One big module under src for now
-MODULES := . $(MODULES)
+MODULES := . hpack
 
 MODULEDIRS = $(call CANONICAL_PATH,$(call QUALIFY_PATH,${TWO},$(addprefix $(SRC)/,$(MODULES))))
 UNIQUEMODULES = $(call uniq,$(MODULEDIRS))
