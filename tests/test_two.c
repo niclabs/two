@@ -186,12 +186,11 @@ void test_http_error(void)
     char content[32];
     http_response_t res = { .content = content };
 
-    http_error(&res, 404, "Not Found", 32);
-    TEST_ASSERT_EQUAL_STRING("Not Found", res.content);
+    http_error(&res, 404);
     TEST_ASSERT_EQUAL(404, res.status);
-    TEST_ASSERT_EQUAL(9, res.content_length);
+    TEST_ASSERT_EQUAL(0, res.content_length);
 
-    http_error(&res, 500, NULL, 32);
+    http_error(&res, 500);
     TEST_ASSERT_EQUAL(500, res.status);
     TEST_ASSERT_EQUAL(0, res.content_length);
 }
@@ -218,16 +217,14 @@ void test_http_handle_request(void)
     // request invalid path
     http_handle_request(&req, &res, 32);
     TEST_ASSERT_EQUAL(404, res.status);
-    TEST_ASSERT_EQUAL(9, res.content_length);
-    TEST_ASSERT_EQUAL_STRING("Not Found", res.content);
+    TEST_ASSERT_EQUAL(0, res.content_length);
 
     // request unsupported method
     req.method = "POST";
     req.path   = "/";
     http_handle_request(&req, &res, 32);
     TEST_ASSERT_EQUAL(501, res.status);
-    TEST_ASSERT_EQUAL(15, res.content_length);
-    TEST_ASSERT_EQUAL_STRING("Not Implemented", res.content);
+    TEST_ASSERT_EQUAL(0, res.content_length);
 
     // request ok
     req.method = "GET";
@@ -250,8 +247,7 @@ void test_http_handle_request(void)
     req.path   = "/err";
     http_handle_request(&req, &res, 32);
     TEST_ASSERT_EQUAL(500, res.status);
-    TEST_ASSERT_EQUAL(21, res.content_length);
-    TEST_ASSERT_EQUAL_STRING("Internal Server Error", res.content);
+    TEST_ASSERT_EQUAL(0, res.content_length);
 }
 
 int main(void)

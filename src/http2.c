@@ -655,8 +655,10 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     snprintf(strCode, 4, "%d", res.status);
     header_list_set(&header_list, ":status", strCode);
 
-    // content type and length
-    header_list_set(&header_list, "content-type", res.content_type);
+    // content type can be null for http errors
+    if (res.content_type != NULL) {
+        header_list_set(&header_list, "content-type", res.content_type);
+    }
 
     char strLen[10]; // 10 digits to be safe
     snprintf(strLen, 10, "%d", res.content_length);

@@ -179,23 +179,14 @@ int http_has_method_support(char *method)
 /**
  * Send an http error with the given code and message
  */
-void http_error(http_response_t *res, int code, char *msg, unsigned int maxlen)
+void http_error(http_response_t *res, int code)
 {
     assert(res != NULL);
     assert(res->content != NULL);
 
     // prepare response data
-    res->status       = code;
-    res->content_type = content_type_allowed("text/plain");
-
-    // prepare msg body
+    res->status         = code;
     res->content_length = 0;
-    memset(res->content, 0, maxlen);
-    if (msg != NULL) {
-        int copylen = MIN(strlen(msg), maxlen);
-        memcpy(res->content, msg, copylen);
-        res->content_length = copylen;
-    }
 }
 
 void http_handle_request(http_request_t *req, http_response_t *res,
@@ -211,7 +202,7 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     assert(res->content != NULL);
 
     if (!http_has_method_support(req->method)) {
-        http_error(res, 501, "Not Implemented", maxlen);
+        http_error(res, 501);
         goto end;
     }
 
@@ -222,7 +213,7 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     // find callback for resource
     two_resource_t *uri_resource;
     if ((uri_resource = find_resource(req->method, path)) == NULL) {
-        http_error(res, 404, "Not Found", maxlen);
+        http_error(res, 404);
         goto end;
     }
 
@@ -233,7 +224,7 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     int content_length = 0;
     if ((content_length = uri_resource->handler(req->method, path, res->content,
                                                 maxlen)) < 0) {
-        http_error(res, 500, "Internal Server Error", maxlen);
+        http_error(res, 500);
         goto end;
     }
 
