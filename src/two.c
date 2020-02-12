@@ -48,23 +48,30 @@ static void (*global_close_cb)();
  *
  * TODO: improve according to https://tools.ietf.org/html/rfc3986
  */
-void parse_uri(char *uri, char *path, char *query_params)
+void parse_uri(char *uri, char *path, unsigned int maxpath, char *query_params,
+               unsigned int maxquery)
 {
-    if (strlen(uri) == 0) {
-        strcpy(path, "/");
+    unsigned int len = strlen(uri);
+    if (len == 0 || *uri != '/') {
+        *path++ = '/';
+        maxpath--;
     }
 
     char *ptr = index(uri, '?');
     if (ptr) {
         if (query_params) {
-            strcpy(query_params, ptr + 1);
+            int copylen = MIN(strlen(ptr + 1), maxquery - 1);
+            strncpy(query_params, ptr + 1, copylen);
+            query_params[copylen] = '\0';
         }
-        *ptr = '\0';
+        len -= strlen(ptr);
     } else if (query_params) {
         strcpy(query_params, "");
     }
 
-    strcpy(path, uri);
+    int copylen = MIN(len, maxpath - 1);
+    strncpy(path, uri, copylen);
+    path[copylen] = 0;
 }
 
 /*
@@ -200,7 +207,7 @@ void http_handle_request(http_request_t *req, http_response_t *res,
 
     // process the request
     char path[TWO_MAX_PATH_SIZE];
-    parse_uri(req->path, path, NULL);
+    parse_uri(req->path, path, TWO_MAX_PATH_SIZE, NULL, 0);
 
     // find callback for resource
     two_resource_t *uri_resource;
