@@ -126,7 +126,6 @@ two_resource_t *find_resource(char *method, char *path)
 
     for (int i = 0; i < server_resources_size; i++) {
         res = &server_resources[i];
-        DEBUG("res->method %s", res->method);
         if (strncmp(res->path, path, TWO_MAX_PATH_SIZE) == 0 &&
             strncmp(res->method, method, strlen(res->method)) == 0) {
             return res;
