@@ -4,9 +4,7 @@
 
 #include "header_list.h"
 #include "logging.h"
-
-#undef MIN
-#define MIN(a, b) ((a) < (b)) ? (a) : (b)
+#include "macros.h"
 
 // Use this if strnlen is missing.
 size_t strnlen(const char *str, size_t max)

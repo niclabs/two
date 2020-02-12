@@ -7,6 +7,7 @@
 #include "frames.h"
 #include "http.h"
 #include "ll.h"
+#include "macros.h"
 #include "utils.h"
 
 #define LOG_MODULE LOG_MODULE_HTTP2
@@ -35,9 +36,6 @@
 #ifndef HTTP2_MAX_CLIENTS
 #define HTTP2_MAX_CLIENTS (EVENT_MAX_SOCKETS - 1)
 #endif
-
-#undef MIN
-#define MIN(x, y) (x) < (y) ? (x) : (y)
 
 // static variables for reserved http2 client memory
 // and free and connected clients lists

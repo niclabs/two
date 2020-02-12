@@ -2,9 +2,7 @@
 
 #include "cbuf.h"
 #include "logging.h"
-
-#undef MIN
-#define MIN(n, m) (((n) < (m)) ? (n) : (m))
+#include "macros.h"
 
 void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen)
 {
