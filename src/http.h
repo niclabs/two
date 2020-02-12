@@ -9,15 +9,17 @@ typedef struct http_header
 
 typedef struct http_request
 {
+    // request method
     char *method;
+
+    // request path
     char *path;
 
-    // headers
-    struct
-    {
-        unsigned int len;
-        http_header_t *list;
-    } headers;
+    // length of http_header list
+    unsigned int headers_length;
+
+    // http_header_t list
+    http_header_t *headers;
 } http_request_t;
 
 typedef struct http_response
@@ -32,7 +34,7 @@ typedef struct http_response
     int content_length;
 
     // response body
-    char *body;
+    char *content;
 } http_response_t;
 
 /***********************************************

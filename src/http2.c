@@ -638,16 +638,15 @@ int handle_end_stream(http2_context_t *ctx, http2_stream_t *stream)
     // handle request at end headers
     // data frames are ignored
     // prepare http request
-    int count = header_list_count(&header_list);
-    http_header_t hlist[count];
+    int headers_length = header_list_count(&header_list);
+    http_header_t headers[headers_length];
 
-    http_request_t req = { .method  = header_list_get(&header_list, ":method"),
-                           .path    = header_list_get(&header_list, ":path"),
-                           .headers = {
-                             .len  = count,
-                             .list = header_list_all(&header_list, hlist) } };
+    http_request_t req = { .method = header_list_get(&header_list, ":method"),
+                           .path   = header_list_get(&header_list, ":path"),
+                           .headers_length = headers_length,
+                           .headers = header_list_all(&header_list, headers) };
 
-    http_response_t res = { .body = (char *)stream->buf };
+    http_response_t res = { .content = (char *)stream->buf };
     http_handle_request(&req, &res, HTTP2_STREAM_BUF_SIZE);
 
     // prepare HTTP2 headers

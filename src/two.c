@@ -183,9 +183,9 @@ void http_error(http_response_t *res, int code, char *msg, unsigned int maxlen)
 
     // prepare msg body
     res->content_length = 0;
-    memset(res->body, 0, maxlen);
+    memset(res->content, 0, maxlen);
     if (msg != NULL) {
-        memcpy(res->body, msg, strlen(msg));
+        memcpy(res->content, msg, strlen(msg));
         res->content_length = strlen(msg);
     }
 }
@@ -212,9 +212,9 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     int content_length = 0;
 
     // clean response memory
-    memset(res->body, 0, maxlen);
-    if ((content_length =
-           uri_resource->handler(req->method, path, res->body, maxlen)) < 0) {
+    memset(res->content, 0, maxlen);
+    if ((content_length = uri_resource->handler(req->method, path, res->content,
+                                                maxlen)) < 0) {
         http_error(res, 500, "Server error", maxlen);
         goto end;
     }
@@ -226,13 +226,13 @@ void http_handle_request(http_request_t *req, http_response_t *res,
 end:
     INFO("%s %s HTTP/2.0 - %d", req->method, req->path, res->status);
     DEBUG("Request");
-    for (int i = 0; i < (signed)req->headers.len; i++) {
-        DEBUG("%s: %s", req->headers.list[i].name, req->headers.list[i].value);
+    for (int i = 0; i < (signed)req->headers_length; i++) {
+        DEBUG("%s: %s", req->headers[i].name, req->headers[i].value);
     }
     DEBUG("Response status %d", res->status);
     DEBUG("Content-Type: %s", res->content_type);
     DEBUG("Content-Length: %d", res->content_length);
-    DEBUG("%s", res->body);
+    DEBUG("%s", res->content);
 }
 
 /***********************************************
