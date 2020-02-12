@@ -181,7 +181,8 @@ int http_has_method_support(char *method)
  */
 void http_error(http_response_t *res, int code, char *msg, unsigned int maxlen)
 {
-    assert(strlen(msg) < maxlen);
+    assert(res != NULL);
+    assert(res->content != NULL);
 
     // prepare response data
     res->status       = code;
@@ -191,14 +192,24 @@ void http_error(http_response_t *res, int code, char *msg, unsigned int maxlen)
     res->content_length = 0;
     memset(res->content, 0, maxlen);
     if (msg != NULL) {
-        memcpy(res->content, msg, strlen(msg));
-        res->content_length = strlen(msg);
+        int copylen = MIN(strlen(msg), maxlen);
+        memcpy(res->content, msg, copylen);
+        res->content_length = copylen;
     }
 }
 
 void http_handle_request(http_request_t *req, http_response_t *res,
                          unsigned int maxlen)
 {
+    assert(req != NULL);
+    assert(req->method != NULL && req->path != NULL);
+    assert(req->headers_length > 0 && req->headers != NULL);
+    assert(res != NULL);
+
+    // the caller of the method must allocate
+    // the content
+    assert(res->content != NULL);
+
     if (!http_has_method_support(req->method)) {
         http_error(res, 501, "Not Implemented", maxlen);
         goto end;
@@ -215,10 +226,11 @@ void http_handle_request(http_request_t *req, http_response_t *res,
         goto end;
     }
 
-    int content_length = 0;
-
     // clean response memory
     memset(res->content, 0, maxlen);
+
+    // call the resource handler
+    int content_length = 0;
     if ((content_length = uri_resource->handler(req->method, path, res->content,
                                                 maxlen)) < 0) {
         http_error(res, 500, "Server error", maxlen);

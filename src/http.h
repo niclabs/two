@@ -33,7 +33,8 @@ typedef struct http_response
     // Length of HTTP response in bytes
     int content_length;
 
-    // response body
+    // response body, it must be allocated
+    // by the caller
     char *content;
 } http_response_t;
 
