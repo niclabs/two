@@ -131,8 +131,8 @@ two_resource_t *find_resource(char *method, char *path)
  */
 int http_has_method_support(char *method)
 {
-    if ((method == NULL) || ((strncmp("GET", method, 8) != 0) &&
-                             (strncmp("HEAD", method, 8) != 0))) {
+    if ((method == NULL) || ((strncmp("GET", method, 3) != 0) &&
+                             (strncmp("HEAD", method, 4) != 0))) {
         return 0;
     }
     return 1;
