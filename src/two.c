@@ -238,7 +238,7 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     }
 
     res->status         = 200;
-    res->content_length = content_length;
+    res->content_length = MIN((unsigned)content_length, maxlen);
     res->content_type   = uri_resource->content_type;
 
 end:
