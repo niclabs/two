@@ -170,7 +170,7 @@ int http_has_method_support(char *method)
         return 0;
     }
 
-    if (strncmp("GET", method, 3) == 0 || strncmp("HEAD", method, 4) == 0) {
+    if (strncmp("GET", method, 3) == 0) {
         return 1;
     }
     return 0;
