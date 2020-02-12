@@ -8,6 +8,7 @@ CONTIKI ?= ../contiki-ng
 TWO_SRC = $(TWO)/src
 PROJECTDIRS += $(TWO_SRC) $(TWO_SRC)/hpack
 PROJECT_SOURCEFILES=two.c \
+					content_type.c \
 					cbuf.c \
 					event.c \
 					header_list.c \

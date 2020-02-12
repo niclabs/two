@@ -1,13 +1,6 @@
 #ifndef HTTP_H
 #define HTTP_H
 
-/***********************************************
- * Data buffer struct
- ***********************************************/
-#ifndef HTTP2_MAX_CONTENT_TYPE_SIZE
-#define HTTP_MAX_CONTENT_TYPE_SIZE (32)
-#endif
-
 typedef struct http_header
 {
     char *name;
@@ -33,7 +26,7 @@ typedef struct http_response
     int status;
 
     // value of the Content-Type header
-    char content_type[HTTP_MAX_CONTENT_TYPE_SIZE];
+    char *content_type;
 
     // Length of HTTP response in bytes
     int content_length;
@@ -55,8 +48,7 @@ typedef struct http_response
  * @param maxlen maximum size of the http payload
  * @return 0 if ok -1 if an error ocurred
  */
-void http_handle_request(http_request_t *req,
-                         http_response_t *res,
+void http_handle_request(http_request_t *req, http_response_t *res,
                          unsigned int maxlen);
 
 /**

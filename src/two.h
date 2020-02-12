@@ -22,14 +22,6 @@
 typedef int (*two_resource_handler_t)(char *method, char *uri, char *response,
                                       unsigned int maxlen);
 
-typedef struct
-{
-    char path[TWO_MAX_PATH_SIZE];
-    char method[8];
-    char content_type[32];
-    two_resource_handler_t handler;
-} two_resource_t;
-
 /*
  * Given a port number, this function start a server
  *

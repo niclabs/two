@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <strings.h>
 
+#include "content_type.h"
 #include "event.h"
 #include "http.h"
 #include "http2.h"
@@ -18,6 +19,13 @@
 /***********************************************
  * Aplication static data
  ***********************************************/
+typedef struct
+{
+    char path[TWO_MAX_PATH_SIZE];
+    char *method;
+    char *content_type;
+    two_resource_handler_t handler;
+} two_resource_t;
 
 static two_resource_t server_resources[TWO_MAX_RESOURCES];
 static int server_resources_size = 0;
@@ -111,8 +119,9 @@ two_resource_t *find_resource(char *method, char *path)
 
     for (int i = 0; i < server_resources_size; i++) {
         res = &server_resources[i];
+        DEBUG("res->method %s", res->method);
         if (strncmp(res->path, path, TWO_MAX_PATH_SIZE) == 0 &&
-            strcmp(res->method, method) == 0) {
+            strncmp(res->method, method, strlen(res->method)) == 0) {
             return res;
         }
     }
@@ -123,6 +132,25 @@ two_resource_t *find_resource(char *method, char *path)
 /***********************************************
  * HTTP (http.h) implementation methods
  ***********************************************/
+static char *allowed_http_methods[] = { "GET", "HEAD", "POST", "PUT",
+                                        "DELETE" };
+#define HTTP_METHODS_LEN                                                       \
+    (sizeof(allowed_http_methods) / sizeof(*allowed_http_methods))
+
+char *http_get_method(char *method)
+{
+    if (method == NULL) {
+        return NULL;
+    }
+
+    for (unsigned int i = 0; i < HTTP_METHODS_LEN; i++) {
+        if (strncmp(method, allowed_http_methods[i],
+                    strlen(allowed_http_methods[i])) == 0) {
+            return allowed_http_methods[i];
+        }
+    }
+    return NULL;
+}
 
 /**
  * Utility function to check for method support
@@ -131,11 +159,15 @@ two_resource_t *find_resource(char *method, char *path)
  */
 int http_has_method_support(char *method)
 {
-    if ((method == NULL) || ((strncmp("GET", method, 3) != 0) &&
-                             (strncmp("HEAD", method, 4) != 0))) {
+    method = http_get_method(method);
+    if (method == NULL) {
         return 0;
     }
-    return 1;
+
+    if (strncmp("GET", method, 3) == 0 || strncmp("HEAD", method, 4) == 0) {
+        return 1;
+    }
+    return 0;
 }
 
 /**
@@ -146,8 +178,8 @@ void http_error(http_response_t *res, int code, char *msg, unsigned int maxlen)
     assert(strlen(msg) < maxlen);
 
     // prepare response data
-    res->status = code;
-    memcpy(res->content_type, "text/plain", 10);
+    res->status       = code;
+    res->content_type = content_type_allowed("text/plain");
 
     // prepare msg body
     res->content_length = 0;
@@ -167,7 +199,7 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     }
 
     // process the request
-    char path[32];
+    char path[TWO_MAX_PATH_SIZE];
     parse_uri(req->path, path, NULL);
 
     // find callback for resource
@@ -188,12 +220,8 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     }
 
     res->status         = 200;
-    res->content_length = 0;
-    if ((content_length > 0) && (strncmp("GET", req->method, 8) == 0)) {
-        strncpy(res->content_type, uri_resource->content_type,
-                HTTP_MAX_CONTENT_TYPE_SIZE);
-        res->content_length = content_length;
-    }
+    res->content_length = content_length;
+    res->content_type   = uri_resource->content_type;
 
 end:
     INFO("%s %s HTTP/2.0 - %d", req->method, req->path, res->status);
@@ -252,6 +280,13 @@ int two_register_resource(char *method, char *path, char *content_type,
         return -1;
     }
 
+    char *ct = content_type_allowed(content_type);
+    if (ct == NULL) {
+        errno = EINVAL;
+        ERROR("Unsupported content/type: %s", content_type);
+        return -1;
+    }
+
     // Checks if the app_resources variable is initialized
     static uint8_t inited_app_resources = 0;
     if (!inited_app_resources) {
@@ -266,8 +301,8 @@ int two_register_resource(char *method, char *path, char *content_type,
         if (strncmp(res->path, path, TWO_MAX_PATH_SIZE) == 0 &&
             strcmp(res->method, method) == 0) {
             // If it does, replaces the resource
-            strncpy(res->content_type, content_type, 32);
-            res->handler = handler;
+            res->content_type = ct;
+            res->handler      = handler;
             return 0;
         }
     }
@@ -283,11 +318,11 @@ int two_register_resource(char *method, char *path, char *content_type,
     // Adds the resource to the list
     res = &server_resources[server_resources_size++];
 
-    // Sets values
-    strncpy(res->method, method, 8);
+    // Set values
     strncpy(res->path, path, TWO_MAX_PATH_SIZE);
-    strncpy(res->content_type, content_type, 32);
-    res->handler = handler;
+    res->method       = http_get_method(method);
+    res->content_type = ct;
+    res->handler      = handler;
 
     return 0;
 }
