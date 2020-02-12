@@ -233,7 +233,7 @@ void http_handle_request(http_request_t *req, http_response_t *res,
     int content_length = 0;
     if ((content_length = uri_resource->handler(req->method, path, res->content,
                                                 maxlen)) < 0) {
-        http_error(res, 500, "Server error", maxlen);
+        http_error(res, 500, "Internal Server Error", maxlen);
         goto end;
     }
 
