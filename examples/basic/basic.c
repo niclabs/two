@@ -1,9 +1,8 @@
-#include <stdlib.h>
 #include <signal.h>
+#include <stdlib.h>
 
-#include "two.h"
 #include "logging.h"
-
+#include "two.h"
 
 void on_server_close()
 {
@@ -23,13 +22,12 @@ int hello_world(char *method, char *uri, char *response, unsigned int maxlen)
     (void)uri;
 
     char *msg = "Hello, World!!!";
-    int len = MIN(strlen(msg), maxlen);
+    int len   = MIN(strlen(msg), maxlen);
 
     // Copy the response
     memcpy(response, msg, len);
     return len;
 }
-
 
 int main(int argc, char **argv)
 {

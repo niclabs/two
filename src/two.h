@@ -14,15 +14,16 @@
 #define TWO_MAX_PATH_SIZE (32)
 #endif
 
-
 #undef MIN
-#define MIN(a,b) ((a) < (b)) ? (a) : (b)
+#define MIN(a, b) ((a) < (b)) ? (a) : (b)
 
 // Defines a resource handler method
-// 
-typedef int (*two_resource_handler_t) (char *method, char *uri, char *response, unsigned int maxlen);
+//
+typedef int (*two_resource_handler_t)(char *method, char *uri, char *response,
+                                      unsigned int maxlen);
 
-typedef struct {
+typedef struct
+{
     char path[TWO_MAX_PATH_SIZE];
     char method[8];
     char content_type[32];
@@ -53,25 +54,25 @@ int two_server_start(unsigned int port);
  *
  * Attempting to define a malformed path, or a path for an unsupported method
  * will result in an error return
- * 
+ *
  * @param   method          HTTP method for the resource
  * @param   path            Path string, as described above
- * @param   content_type    A IANA valid content type string in the form <type>/<subtype>
+ * @param   content_type    A IANA valid content type string in the form
+ * <type>/<subtype>
  * @param   handler         Callback handler
  *
- * @return  0           if ok 
+ * @return  0           if ok
  * @return  -1          if error
  */
-int two_register_resource(char *method, char *path, char *content_type, two_resource_handler_t handler);
-
+int two_register_resource(char *method, char *path, char *content_type,
+                          two_resource_handler_t handler);
 
 /**
  * Stop the server as soon as possible
  *
- * This only stops the server from receiving more clients, it does not disconnect
- * already connected clients
+ * This only stops the server from receiving more clients, it does not
+ * disconnect already connected clients
  */
 void two_server_stop(void (*close_cb)());
-
 
 #endif /* TWO_H */

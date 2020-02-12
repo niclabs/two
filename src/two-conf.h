@@ -9,7 +9,7 @@
  * Configure the initial size for the http2 HEADER_TABLE_SIZE
  * in bytes. This value is limited by the HPACK_MAX_DYNAMIC_TABLE_SIZE
  * value.
- * 
+ *
  * This size increases the total static memory used by http2 client
  * in the implementation.
  *
@@ -32,7 +32,7 @@
 #endif
 
 /**
- * Set the initial value for http2 window size. This value cannot 
+ * Set the initial value for http2 window size. This value cannot
  * be larger than the HTTP2 read socket size
  */
 #ifdef CONFIG_HTTP2_INITIAL_WINDOW_SIZE
@@ -41,7 +41,7 @@
 #define HTTP2_INITIAL_WINDOW_SIZE (512)
 #endif
 
-/** 
+/**
  * Set the initial value for http2 settings MAX_FRAME_SIZE
  */
 #ifdef CONFIG_HTTP2_MAX_FRAME_SIZE
@@ -72,13 +72,13 @@
 #define HTTP2_SETTINGS_WAIT (300)
 #endif
 
-/** 
- * Set the size for the read socket buffer. This effectively 
+/**
+ * Set the size for the read socket buffer. This effectively
  * limits the maximum frame size that can be received by the
  * remote endpoint. This value must be larger than the
- * HTTP2_INITIAL_WINDOW_SIZE. 
+ * HTTP2_INITIAL_WINDOW_SIZE.
  *
- * Changes in this value alter the total static memory used 
+ * Changes in this value alter the total static memory used
  * by the implementation.
  */
 #ifdef CONFIG_HTTP2_SOCK_READ_SIZE
@@ -91,7 +91,7 @@
  * Set the size for the write socket buffer. This effectively limits
  * the maximum size of frame that can be sent.
  *
- * Changes in this value alter the total static memory used 
+ * Changes in this value alter the total static memory used
  * by the implementation.
  */
 #ifdef CONFIG_HTTP2_SOCK_WRITE_SIZE
@@ -101,12 +101,12 @@
 #endif
 
 /**
- * Set the maximum total data that can be received by 
+ * Set the maximum total data that can be received by
  * a stream. This means, the total header block size that
  * can be received in a single http2 stream, or the maximum total
  * data that can be sent in a http response.
  *
- * Changes in this value alter the total static memory used 
+ * Changes in this value alter the total static memory used
  * by the implementation.
  */
 #ifdef CONFIG_HTTP2_STREAM_BUF_SIZE
@@ -115,8 +115,8 @@
 #define HTTP2_STREAM_BUF_SIZE (512)
 #endif
 
-/** 
- * Set the maximum number of clients allowed by the server 
+/**
+ * Set the maximum number of clients allowed by the server
  *
  * This is effectively a multiplier for the total static
  * memory used by the implementation
@@ -129,9 +129,9 @@
 
 /**
  * Set the maximum number of resource paths allowed by
- * http servers. 
+ * http servers.
  *
- * Changes in this value alter the total static memory used 
+ * Changes in this value alter the total static memory used
  * by the implementation.
  */
 #ifdef CONFIG_TWO_MAX_RESOURCES
@@ -139,7 +139,6 @@
 #else
 #define TWO_MAX_RESOURCES (4)
 #endif
-
 
 /**
  * Event module log level (off by default)

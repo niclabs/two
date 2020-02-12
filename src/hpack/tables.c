@@ -1,5 +1,5 @@
-#include <string.h>                                     /* for strlen, strncmp, memset*/
 #include <assert.h>
+#include <string.h> /* for strlen, strncmp, memset*/
 
 #include "hpack/tables.h"
 
@@ -8,10 +8,10 @@
 
 #define HPACK_TABLES_FIRST_INDEX_DYNAMIC 62
 
-//HeaderPairs in static table
+// HeaderPairs in static table
 
 static hpack_static_table_t hpack_static_table = {
-    .name_table = NAME_TABLE_LITERAL,
+    .name_table  = NAME_TABLE_LITERAL,
     .value_table = VALUE_TABLE_LITERAL,
 };
 
@@ -23,12 +23,13 @@ static hpack_static_table_t hpack_static_table = {
  *      -> *name: Buffer to store name of the header
  *      -> *value: Buffer to store the value of the header
  */
-void hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, char *value)
+void hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name,
+                                                   char *value)
 {
     assert(index > 0);
     assert(index < 62);
-    index--;                    //because static table begins at index 1
-    char *table_name_pointer = hpack_static_table.name_table;
+    index--; // because static table begins at index 1
+    char *table_name_pointer  = hpack_static_table.name_table;
     char *table_value_pointer = hpack_static_table.value_table;
 
     for (uint8_t i = 0; i < index; i++) {
@@ -38,11 +39,11 @@ void hpack_tables_static_find_entry_name_and_value(uint8_t index, char *name, ch
         size_t sz2 = strlen(table_value_pointer);
         table_value_pointer += sz2 + 1;
     }
-    //printf("NAME %s VALUE %s \n", table_name_pointer, table_value_pointer);
+    // printf("NAME %s VALUE %s \n", table_name_pointer, table_value_pointer);
 
     strncpy(name, table_name_pointer, strlen(table_name_pointer));
     strncpy(value, table_value_pointer, strlen(table_value_pointer));
-    //printf("NAME %s VALUE %s \n", name, value);
+    // printf("NAME %s VALUE %s \n", name, value);
 }
 
 /*
@@ -64,9 +65,9 @@ void hpack_tables_static_find_entry_name(uint8_t index, char *name)
         size_t sz = strlen(table_name_pointer);
         table_name_pointer += sz + 1;
     }
-    //printf("NAME %s \n", table_name_pointer);
+    // printf("NAME %s \n", table_name_pointer);
     strncpy(name, table_name_pointer, strlen(table_name_pointer));
-    //printf("NAME %s \n", name);
+    // printf("NAME %s \n", name);
 }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
@@ -78,21 +79,24 @@ void hpack_tables_static_find_entry_name(uint8_t index, char *name)
  *      -> *dynamic_table: table which can be modified by server or client
  *      -> index: table's position of the entry
  * Output:
- *      Position in dynamic_table->buffer of entry... used like dynamic_table->buffer[(next-POS) % size], -2 if error
+ *      Position in dynamic_table->buffer of entry... used like
+ * dynamic_table->buffer[(next-POS) % size], -2 if error
  */
-int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, uint32_t index)
+int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table,
+                                          uint32_t index)
 {
     assert(dynamic_table != NULL);
     assert(index > 61);
 
     uint16_t entries_counter = 0;
-    uint16_t counter0 = 0;
+    uint16_t counter0        = 0;
 
     for (uint16_t i = 1; i < dynamic_table->max_size; i++) {
-        if (!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) %
-                                   dynamic_table->max_size]) {      // If char is 0, ENDSTR
+        if (!dynamic_table
+               ->buffer[(dynamic_table->next - i + dynamic_table->max_size) %
+                        dynamic_table->max_size]) { // If char is 0, ENDSTR
             counter0++;
-            if (counter0 % 2 == 0) {                                // name and value found
+            if (counter0 % 2 == 0) { // name and value found
                 entries_counter++;
             }
         }
@@ -100,7 +104,8 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
             return i;
         }
     }
-    //ERROR("Dynamic table is not initialized right, don't have 0's between words");
+    // ERROR("Dynamic table is not initialized right, don't have 0's between
+    // words");
     return HPACK_INTERNAL_ERROR;
 }
 
@@ -118,25 +123,28 @@ int16_t hpack_tables_dynamic_pos_of_index(hpack_dynamic_table_t *dynamic_table, 
  * Output:
  *      Position of the end of the string in the table's buffer, -2 if error
  */
-int16_t
-hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position, char *ext_buffer)
+int16_t hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table,
+                                         int16_t initial_position,
+                                         char *ext_buffer)
 {
     assert(dynamic_table != NULL);
     for (uint16_t i = 1; i < dynamic_table->max_size; i++) {
-        if (!dynamic_table->buffer[(dynamic_table->next - initial_position + i + dynamic_table->max_size) %
-                                   dynamic_table->max_size]) { //If char is 0, ENDSTR
+        if (!dynamic_table
+               ->buffer[(dynamic_table->next - initial_position + i +
+                         dynamic_table->max_size) %
+                        dynamic_table->max_size]) { // If char is 0, ENDSTR
             ext_buffer[i - 1] = 0;
             return initial_position - i;
         }
-        //else copy
-        ext_buffer[i - 1] = dynamic_table->buffer[
-            (dynamic_table->next - initial_position + i + dynamic_table->max_size) % dynamic_table->max_size];
-
+        // else copy
+        ext_buffer[i - 1] =
+          dynamic_table->buffer[(dynamic_table->next - initial_position + i +
+                                 dynamic_table->max_size) %
+                                dynamic_table->max_size];
     }
-    //if copy failed
-    //ERROR("Dynamic table is not used right, can't find ENDSTR in buffer");
+    // if copy failed
+    // ERROR("Dynamic table is not used right, can't find ENDSTR in buffer");
     return HPACK_INTERNAL_ERROR;
-
 }
 
 #endif
@@ -145,29 +153,31 @@ hpack_tables_dynamic_copy_to_ext(hpack_dynamic_table_t *dynamic_table, int16_t i
 
 /*
  * Function: hpack_tables_dynamic_compare_string
- * Compare a string in a buffer with a string in a position of the dynamic table buffer
- * Input:
+ * Compare a string in a buffer with a string in a position of the dynamic table
+ * buffer Input:
  *      -> *dynamic_table: table which can be modified by server or client
  *      -> initial position: table's current position
  *      -> char *buff: string to compare
  * Output:
- *      In case of equal strings, returns the end position of the string in the table's buffer, -1 otherwise
+ *      In case of equal strings, returns the end position of the string in the
+ * table's buffer, -1 otherwise
  */
-int16_t
-hpack_tables_dynamic_compare_string(hpack_dynamic_table_t *dynamic_table, uint16_t initial_position, char *buffer)
+int16_t hpack_tables_dynamic_compare_string(
+  hpack_dynamic_table_t *dynamic_table, uint16_t initial_position, char *buffer)
 {
     assert(dynamic_table != NULL);
     int16_t max_size = (int16_t)strlen(buffer);
 
     for (uint16_t i = 0; i < max_size; i++) {
         if (buffer[i] !=
-            dynamic_table->buffer[(dynamic_table->next - initial_position + 1 + i + dynamic_table->max_size) %
+            dynamic_table->buffer[(dynamic_table->next - initial_position + 1 +
+                                   i + dynamic_table->max_size) %
                                   dynamic_table->max_size]) {
             return -1; // different strings
         }
     }
 
-    return (int16_t)(max_size + 1);   // plus the 0'
+    return (int16_t)(max_size + 1); // plus the 0'
 }
 
 #endif
@@ -184,28 +194,31 @@ hpack_tables_dynamic_compare_string(hpack_dynamic_table_t *dynamic_table, uint16
  * Output:
  *      Position of the end of the string in the table's buffer, -2 if error
  */
-int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table, int16_t initial_position,
+int16_t hpack_tables_dynamic_copy_from_ext(hpack_dynamic_table_t *dynamic_table,
+                                           int16_t initial_position,
                                            const char *ext_buffer)
 {
     assert(dynamic_table != NULL);
-    dynamic_table->buffer[(dynamic_table->next + initial_position + dynamic_table->max_size) %
-                          dynamic_table->max_size] = 0; //set initial
+    dynamic_table->buffer[(dynamic_table->next + initial_position +
+                           dynamic_table->max_size) %
+                          dynamic_table->max_size] = 0; // set initial
 
     for (uint16_t i = 1; i < dynamic_table->max_size; i++) {
 
-        if (!ext_buffer[i - 1]) { //If char is 0, ENDSTR
-            dynamic_table->buffer[(dynamic_table->next + initial_position + i + dynamic_table->max_size) %
+        if (!ext_buffer[i - 1]) { // If char is 0, ENDSTR
+            dynamic_table->buffer[(dynamic_table->next + initial_position + i +
+                                   dynamic_table->max_size) %
                                   dynamic_table->max_size] = 0;
             return initial_position + i;
         }
-        //else copy
-        dynamic_table->buffer[(dynamic_table->next + initial_position + i + dynamic_table->max_size) %
+        // else copy
+        dynamic_table->buffer[(dynamic_table->next + initial_position + i +
+                               dynamic_table->max_size) %
                               dynamic_table->max_size] = ext_buffer[i - 1];
     }
-    //if copy failed
-    //ERROR("String given don't have ENDSTR");
+    // if copy failed
+    // ERROR("String given don't have ENDSTR");
     return HPACK_INTERNAL_ERROR;
-
 }
 
 #endif
@@ -224,7 +237,7 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
 {
     assert(dynamic_table != NULL);
     uint16_t entry_length = 0;
-    uint8_t counter0 = 0;
+    uint8_t counter0      = 0;
 
     if (dynamic_table->n_entries == 0) {
         ERROR("Trying to delete entry in dynamic table when it's empty");
@@ -232,23 +245,28 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
     }
 
     for (uint16_t i = 1; i < dynamic_table->max_size; i++) {
-        if (!dynamic_table->buffer[(dynamic_table->first + i + dynamic_table->max_size) %
-                                   dynamic_table->max_size]) { // if 0, ENDSTR
+        if (!dynamic_table
+               ->buffer[(dynamic_table->first + i + dynamic_table->max_size) %
+                        dynamic_table->max_size]) { // if 0, ENDSTR
 
             counter0++;
 
-            if (counter0 == 2) { //END
-                dynamic_table->first = (dynamic_table->first + i + dynamic_table->max_size) % dynamic_table->max_size;
-                dynamic_table->actual_size = (uint16_t)(dynamic_table->actual_size - (entry_length + 32u));
-                dynamic_table->n_entries = (uint16_t)(dynamic_table->n_entries - 1u);
+            if (counter0 == 2) { // END
+                dynamic_table->first =
+                  (dynamic_table->first + i + dynamic_table->max_size) %
+                  dynamic_table->max_size;
+                dynamic_table->actual_size =
+                  (uint16_t)(dynamic_table->actual_size - (entry_length + 32u));
+                dynamic_table->n_entries =
+                  (uint16_t)(dynamic_table->n_entries - 1u);
                 return 0;
             }
-        }
-        else {
+        } else {
             entry_length++;
         }
     }
-    //ERROR("Dynamic table is not initialized right, don't have 0's between words");
+    // ERROR("Dynamic table is not initialized right, don't have 0's between
+    // words");
     return HPACK_INTERNAL_ERROR;
 }
 
@@ -267,30 +285,34 @@ int8_t hpack_tables_dynamic_pop(hpack_dynamic_table_t *dynamic_table)
  * Output:
  *      0 if success, -1 in case of protocol error, -2 in case of internal error
  */
-int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name,
-                                                      char *value)
+int8_t hpack_tables_dynamic_find_entry_name_and_value(
+  hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     assert(dynamic_table != NULL);
-    if (dynamic_table->n_entries < index - 61) { //CASE entry doesnt exist
-        //ERROR("Decoding error: %d index is greater than the number of entries", index);
+    if (dynamic_table->n_entries < index - 61) { // CASE entry doesnt exist
+        // ERROR("Decoding error: %d index is greater than the number of
+        // entries", index);
         return HPACK_COMPRESSION_ERROR;
     }
 
-    int16_t initial_position = hpack_tables_dynamic_pos_of_index(dynamic_table, index);
+    int16_t initial_position =
+      hpack_tables_dynamic_pos_of_index(dynamic_table, index);
     if (initial_position < 0) {
         DEBUG("Error at finding position in buffer");
         return HPACK_INTERNAL_ERROR;
     }
 
-    //first copy name
-    initial_position = hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name);
+    // first copy name
+    initial_position =
+      hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name);
     if (initial_position < 0) {
         DEBUG("Error while copying name into external buffer");
         return HPACK_INTERNAL_ERROR;
     }
 
-    //then copy value
-    if (hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, value) < 0) {
+    // then copy value
+    if (hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position,
+                                         value) < 0) {
         DEBUG("Error while copying value into external buffer");
         return HPACK_INTERNAL_ERROR;
     }
@@ -299,7 +321,6 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
 }
 
 #endif
-
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
 
@@ -313,22 +334,26 @@ int8_t hpack_tables_dynamic_find_entry_name_and_value(hpack_dynamic_table_t *dyn
  * Output:
  *      0 if success, -1 in case of protocol error, -2 in case of internal error
  */
-int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+int8_t hpack_tables_dynamic_find_entry_name(
+  hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
 {
     assert(dynamic_table != NULL);
-    if (dynamic_table->n_entries < index - 61) { //CASE entry doesnt exist
-        //ERROR("Decoding error: %d index is greater than the number of entries", index);
+    if (dynamic_table->n_entries < index - 61) { // CASE entry doesnt exist
+        // ERROR("Decoding error: %d index is greater than the number of
+        // entries", index);
         return HPACK_COMPRESSION_ERROR;
     }
 
-    int16_t initial_position = hpack_tables_dynamic_pos_of_index(dynamic_table, index);
+    int16_t initial_position =
+      hpack_tables_dynamic_pos_of_index(dynamic_table, index);
     if (initial_position < 0) {
         DEBUG("Error at finding position in buffer");
         return HPACK_INTERNAL_ERROR;
     }
 
-    //only copy name
-    if (hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position, name) < 0) {
+    // only copy name
+    if (hpack_tables_dynamic_copy_to_ext(dynamic_table, initial_position,
+                                         name) < 0) {
         DEBUG("Error while copying name into external buffer");
         return HPACK_INTERNAL_ERROR;
     }
@@ -344,92 +369,98 @@ int8_t hpack_tables_dynamic_find_entry_name(hpack_dynamic_table_t *dynamic_table
  * Makes an update of the size of the dynamic table_length
  * Input:
  *      -> *dynamic_table: Dynamic table to search
- *      -> settings_max_size: max size setted in settings frame at the beggining of the connection
- *      -> new_max_size: new virtual max size of the table, setted in the header of resize
- * Output:
- *      return 0 if the update is succesful, or -1 otherwise
+ *      -> settings_max_size: max size setted in settings frame at the beggining
+ * of the connection
+ *      -> new_max_size: new virtual max size of the table, setted in the header
+ * of resize Output: return 0 if the update is succesful, or -1 otherwise
  */
 
-int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, uint32_t new_max_size)
+int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table,
+                                         uint32_t new_max_size)
 {
     assert(dynamic_table != NULL);
     if (new_max_size > dynamic_table->settings_max_table_size) {
-        ERROR("Decoding Error: Resize operation exceeds the maximum size set by the protocol %u", (unsigned int)dynamic_table->settings_max_table_size);
+        ERROR("Decoding Error: Resize operation exceeds the maximum size set "
+              "by the protocol %u",
+              (unsigned int)dynamic_table->settings_max_table_size);
         return HPACK_COMPRESSION_ERROR;
     }
-    //delete old entries to fit in new size
+    // delete old entries to fit in new size
     while (dynamic_table->actual_size > new_max_size) {
         hpack_tables_dynamic_pop(dynamic_table);
     }
-    //now reorganize table
+    // now reorganize table
     if (dynamic_table->next <= dynamic_table->first) {
         if (dynamic_table->n_entries == 0) {
             dynamic_table->first = 0;
-            dynamic_table->next = 0;
-        }
-        else {
-            //two cases: [0, next] > [first, max_size] or else
-            //always choose the smaller one
-            if (dynamic_table->next <= (dynamic_table->max_size - dynamic_table->first)) {
-                char aux_buffer[dynamic_table->next + 1];  //+1 for the zero -> end string
-                //copy into aux
+            dynamic_table->next  = 0;
+        } else {
+            // two cases: [0, next] > [first, max_size] or else
+            // always choose the smaller one
+            if (dynamic_table->next <=
+                (dynamic_table->max_size - dynamic_table->first)) {
+                char aux_buffer[dynamic_table->next +
+                                1]; //+1 for the zero -> end string
+                // copy into aux
                 for (uint16_t i = 0; i <= dynamic_table->next; i++) {
                     aux_buffer[i] = dynamic_table->buffer[i];
                 }
-                //shift
+                // shift
                 uint16_t shift = dynamic_table->first;
-                for (uint16_t i = 0; i < dynamic_table->max_size - dynamic_table->first; i++) {
+                for (uint16_t i = 0;
+                     i < dynamic_table->max_size - dynamic_table->first; i++) {
                     dynamic_table->buffer[i] = dynamic_table->buffer[i + shift];
                 }
-                //now copy aux at the end
-                uint16_t next_pos = dynamic_table->max_size - dynamic_table->first;
+                // now copy aux at the end
+                uint16_t next_pos =
+                  dynamic_table->max_size - dynamic_table->first;
                 for (uint16_t i = 0; i <= dynamic_table->next; i++) {
                     dynamic_table->buffer[i + next_pos] = aux_buffer[i];
                 }
-                dynamic_table->first = dynamic_table->first - shift;
-                dynamic_table->next = next_pos + dynamic_table->next;
+                dynamic_table->first    = dynamic_table->first - shift;
+                dynamic_table->next     = next_pos + dynamic_table->next;
                 dynamic_table->max_size = (uint16_t)new_max_size;
 
-            }
-            else {
+            } else {
                 char aux_buffer[dynamic_table->max_size - dynamic_table->first];
-                //copy into aux
-                for (uint16_t i = 0; i < dynamic_table->max_size - dynamic_table->first; i++) {
-                    aux_buffer[i] = dynamic_table->buffer[dynamic_table->first + i];
+                // copy into aux
+                for (uint16_t i = 0;
+                     i < dynamic_table->max_size - dynamic_table->first; i++) {
+                    aux_buffer[i] =
+                      dynamic_table->buffer[dynamic_table->first + i];
                 }
-                //shift
+                // shift
                 uint16_t shift = dynamic_table->max_size - dynamic_table->first;
                 for (uint16_t i = 0; i <= dynamic_table->next; i++) {
-                    //se copia de izquierda a derecha, para evitar sobreescribir al escribir a la derecha
-                    dynamic_table->buffer[(dynamic_table->next - i) + shift] = dynamic_table->buffer[(
-                                                                                                         dynamic_table->next - i)];
+                    // se copia de izquierda a derecha, para evitar
+                    // sobreescribir al escribir a la derecha
+                    dynamic_table->buffer[(dynamic_table->next - i) + shift] =
+                      dynamic_table->buffer[(dynamic_table->next - i)];
                 }
-                //now copy aux at the beginning
-                for (uint16_t i = 0; i < dynamic_table->max_size - dynamic_table->first; i++) {
+                // now copy aux at the beginning
+                for (uint16_t i = 0;
+                     i < dynamic_table->max_size - dynamic_table->first; i++) {
                     dynamic_table->buffer[i] = aux_buffer[i];
                 }
                 dynamic_table->first = 0;
-                dynamic_table->next = shift + dynamic_table->next;
-
+                dynamic_table->next  = shift + dynamic_table->next;
             }
-
         }
-    }
-    else {
-        //SIMPLE SHIFT
+    } else {
+        // SIMPLE SHIFT
         uint16_t shift = dynamic_table->first;
-        //now shift in order
-        for (uint16_t i = 0; i <= dynamic_table->next - dynamic_table->first; i++) {
-            dynamic_table->buffer[i] = dynamic_table->buffer[shift + i]; //shifting...
+        // now shift in order
+        for (uint16_t i = 0; i <= dynamic_table->next - dynamic_table->first;
+             i++) {
+            dynamic_table->buffer[i] =
+              dynamic_table->buffer[shift + i]; // shifting...
         }
         dynamic_table->first = dynamic_table->first - shift;
-        dynamic_table->next = dynamic_table->next - shift;
-
+        dynamic_table->next  = dynamic_table->next - shift;
     }
 
     dynamic_table->max_size = (uint16_t)new_max_size;
     return 0;
-
 }
 
 #endif
@@ -446,34 +477,39 @@ int8_t hpack_tables_dynamic_table_resize(hpack_dynamic_table_t *dynamic_table, u
  * Output:
  *      0 if success, -1 in case of protocol error, -2 in case of internal error
  */
-int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+int8_t hpack_tables_dynamic_table_add_entry(
+  hpack_dynamic_table_t *dynamic_table, char *name, char *value)
 {
     assert(dynamic_table != NULL);
     uint16_t entry_size = (uint16_t)(strlen(name) + strlen(value) + 32);
 
     if (entry_size > dynamic_table->max_size) {
         DEBUG("New entry size exceeds the size of table ");
-        return HPACK_INTERNAL_ERROR; //entry's size exceeds the size of table
+        return HPACK_INTERNAL_ERROR; // entry's size exceeds the size of table
     }
 
     while (entry_size + dynamic_table->actual_size > dynamic_table->max_size) {
         hpack_tables_dynamic_pop(dynamic_table);
     }
 
-    int16_t continue_pos = hpack_tables_dynamic_copy_from_ext(dynamic_table, 0, name); // copy name into table
+    int16_t continue_pos = hpack_tables_dynamic_copy_from_ext(
+      dynamic_table, 0, name); // copy name into table
     if (continue_pos < 0) {
         DEBUG("Error while adding name in table's buffer");
         return (int8_t)continue_pos;
     }
-    continue_pos = hpack_tables_dynamic_copy_from_ext(dynamic_table, continue_pos, value); // copy value into table
+    continue_pos = hpack_tables_dynamic_copy_from_ext(
+      dynamic_table, continue_pos, value); // copy value into table
     if (continue_pos < 0) {
         DEBUG("Error while adding value in table's buffer");
         return (int8_t)continue_pos;
     }
 
-    dynamic_table->n_entries = (uint16_t)(dynamic_table->n_entries + 1u);
+    dynamic_table->n_entries   = (uint16_t)(dynamic_table->n_entries + 1u);
     dynamic_table->actual_size = dynamic_table->actual_size + entry_size;
-    dynamic_table->next = (dynamic_table->next + continue_pos + dynamic_table->max_size) % dynamic_table->max_size;
+    dynamic_table->next =
+      (dynamic_table->next + continue_pos + dynamic_table->max_size) %
+      dynamic_table->max_size;
 
     return 0;
 }
@@ -489,33 +525,34 @@ int8_t hpack_tables_dynamic_table_add_entry(hpack_dynamic_table_t *dynamic_table
  *      -> *name: buffer where the name of the entry will be stored
  *      -> *value: buffer where the value of the entry will be stored
  * Output:
- *      0 if success,  -1 in case of protocol error, -2 in case of internal error
+ *      0 if success,  -1 in case of protocol error, -2 in case of internal
+ * error
  */
-int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_table,
-                                              uint32_t index,
-                                              char *name,
-                                              char *value)
+int8_t hpack_tables_find_entry_name_and_value(
+  hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name, char *value)
 {
     assert(index > 0);
 #if HPACK_INCLUDE_DYNAMIC_TABLE
     if (index >= HPACK_TABLES_FIRST_INDEX_DYNAMIC) {
-        return hpack_tables_dynamic_find_entry_name_and_value(dynamic_table, index, name, value);
-    }
-    else {
-        hpack_tables_static_find_entry_name_and_value((uint8_t)index, name, value);
+        return hpack_tables_dynamic_find_entry_name_and_value(
+          dynamic_table, index, name, value);
+    } else {
+        hpack_tables_static_find_entry_name_and_value((uint8_t)index, name,
+                                                      value);
     }
 #else
     (void)dynamic_table;
 
     // see if the value is in the static table
     if (index > 62) {
-        // remote endpoint should not be trying to get a value if 
+        // remote endpoint should not be trying to get a value if
         // we specified that the table size was 0
-        ERROR("Remote endpoint attempted to retrieve a value from zero-size dynamic table.");
+        ERROR("Remote endpoint attempted to retrieve a value from zero-size "
+              "dynamic table.");
         return HPACK_COMPRESSION_ERROR;
     }
 
-    // see 
+    // see
     hpack_tables_static_find_entry_name_and_value(index, name, value);
 #endif
 
@@ -530,9 +567,11 @@ int8_t hpack_tables_find_entry_name_and_value(hpack_dynamic_table_t *dynamic_tab
  *      -> index: table's position of the entry
  *      -> *name: buffer where the name of the entry will be stored
  * Output:
- *      0 if success,  -1 in case of protocol error, -2 in case of internal error
+ *      0 if success,  -1 in case of protocol error, -2 in case of internal
+ * error
  */
-int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32_t index, char *name)
+int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table,
+                                    uint32_t index, char *name)
 {
     assert(index > 0);
 #if HPACK_INCLUDE_DYNAMIC_TABLE
@@ -542,8 +581,7 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
             return HPACK_INTERNAL_ERROR;
         }
         return hpack_tables_dynamic_find_entry_name(dynamic_table, index, name);
-    }
-    else {
+    } else {
         hpack_tables_static_find_entry_name((uint8_t)index, name);
     }
 #else
@@ -556,25 +594,27 @@ int8_t hpack_tables_find_entry_name(hpack_dynamic_table_t *dynamic_table, uint32
 
 /*
  *  Function: hpack_tables_find_index
- *  Given a buffer containing a name and another buffer containing the value of a header
- *  Searches both static and Dynamic tables
- *  Input:
+ *  Given a buffer containing a name and another buffer containing the value of
+ * a header Searches both static and Dynamic tables Input:
  *      -> *dynamic_table: Dynamic table to search
  *      -> *name: Buffer containing the name of a header to search
  *      -> *value: Buffer containing the value of a header to search
  *  Output:
- *      Returns the index in the static or dynamic table containing both name and value if successful,
- *      otherwise it returns -2.
+ *      Returns the index in the static or dynamic table containing both name
+ * and value if successful, otherwise it returns -2.
  */
-int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, char *value)
+int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name,
+                            char *value)
 {
-    //Search first in static table
-    char *table_name = hpack_static_table.name_table;
+    // Search first in static table
+    char *table_name  = hpack_static_table.name_table;
     char *table_value = hpack_static_table.value_table;
 
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
-        if ((strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) &&
-            ((strlen(value) == strlen(table_value) && strncmp(table_value, value, strlen(value)) == 0))) {
+        if ((strlen(name) == strlen(table_name) &&
+             strncmp(table_name, name, strlen(name)) == 0) &&
+            ((strlen(value) == strlen(table_value) &&
+              strncmp(table_value, value, strlen(value)) == 0))) {
             return i + 1;
         }
         table_name += strlen(table_name) + 1;
@@ -582,27 +622,32 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
     }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
-    //Then search in dynamic table with a linear search
+    // Then search in dynamic table with a linear search
     assert(dynamic_table != NULL);
     uint8_t strings_counter = 0;
     for (uint16_t i = 1; i <= dynamic_table->max_size; i++) {
 
-        if (!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]) {
-            //found an end of string
+        if (!dynamic_table
+               ->buffer[(dynamic_table->next - i + dynamic_table->max_size) %
+                        dynamic_table->max_size]) {
+            // found an end of string
             strings_counter++;
             if (strings_counter % 2 == 0 && strings_counter > 0) {
-                int16_t rc = hpack_tables_dynamic_compare_string(dynamic_table, i, name);
-                if (rc > 0) { //match name
-                    rc = hpack_tables_dynamic_compare_string(dynamic_table, i - rc, value);
+                int16_t rc =
+                  hpack_tables_dynamic_compare_string(dynamic_table, i, name);
+                if (rc > 0) { // match name
+                    rc = hpack_tables_dynamic_compare_string(dynamic_table,
+                                                             i - rc, value);
                     if (rc > 0) {
-                        return (strings_counter / 2) + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
+                        return (strings_counter / 2) +
+                               HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
                     }
                 }
             }
         }
 
         if (strings_counter / 2 >= dynamic_table->n_entries) {
-            break; //not found
+            break; // not found
         }
     }
 #else
@@ -620,41 +665,47 @@ int hpack_tables_find_index(hpack_dynamic_table_t *dynamic_table, char *name, ch
  *      -> *dynamic_table: Dynamic table to search
  *      -> *name: Buffer containing the name of a header to search
  *  Output:
- *      Returns the index in the static or dynamic table containing name if successful,
- *      otherwise it returns -2.
+ *      Returns the index in the static or dynamic table containing name if
+ * successful, otherwise it returns -2.
  */
-int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *name)
+int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table,
+                                 char *name)
 {
 
-    //Search first in static table
+    // Search first in static table
     char *table_name = hpack_static_table.name_table;
 
     for (uint8_t i = 0; i < HPACK_TABLES_FIRST_INDEX_DYNAMIC; i++) {
-        if (strlen(name) == strlen(table_name) && strncmp(table_name, name, strlen(name)) == 0) {
+        if (strlen(name) == strlen(table_name) &&
+            strncmp(table_name, name, strlen(name)) == 0) {
             return i + 1;
         }
         table_name += strlen(table_name) + 1;
     }
 
 #if HPACK_INCLUDE_DYNAMIC_TABLE
-    //Then search in dynamic table with a linear search
+    // Then search in dynamic table with a linear search
     assert(dynamic_table != NULL);
     uint8_t strings_counter = 0;
     for (uint16_t i = 1; i <= dynamic_table->max_size; i++) {
 
-        if (!dynamic_table->buffer[(dynamic_table->next - i + dynamic_table->max_size) % dynamic_table->max_size]) {
-            //found an end of string
+        if (!dynamic_table
+               ->buffer[(dynamic_table->next - i + dynamic_table->max_size) %
+                        dynamic_table->max_size]) {
+            // found an end of string
             strings_counter++;
             if (strings_counter % 2 == 0 && strings_counter > 0) {
-                int16_t rc = hpack_tables_dynamic_compare_string(dynamic_table, i, name);
-                if (rc > 0) { //match name
-                    return (strings_counter / 2) + HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
+                int16_t rc =
+                  hpack_tables_dynamic_compare_string(dynamic_table, i, name);
+                if (rc > 0) { // match name
+                    return (strings_counter / 2) +
+                           HPACK_TABLES_FIRST_INDEX_DYNAMIC - 1;
                 }
             }
         }
 
         if (strings_counter / 2 >= dynamic_table->n_entries) {
-            break; //not found
+            break; // not found
         }
     }
 #else
@@ -668,22 +719,23 @@ int hpack_tables_find_index_name(hpack_dynamic_table_t *dynamic_table, char *nam
 
 /*
  * Function: hpack_init_dynamic_table
- * Initialize dynamic_table for protocol uses, but it requires a previous header_pair_t table initialization
- * Input:
+ * Initialize dynamic_table for protocol uses, but it requires a previous
+ * header_pair_t table initialization Input:
  *      -> *dynamic_table: Dynamic table to search
- *      -> dynamic_table_max_size: Max size in bytes of new dynamic_table, it is set in HTTP SETTING-
- * Output:
- *     (void)
+ *      -> dynamic_table_max_size: Max size in bytes of new dynamic_table, it is
+ * set in HTTP SETTING- Output: (void)
  */
-void hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table, uint32_t dynamic_table_max_size)
+void hpack_tables_init_dynamic_table(hpack_dynamic_table_t *dynamic_table,
+                                     uint32_t dynamic_table_max_size)
 {
     assert(dynamic_table != NULL);
     memset(dynamic_table->buffer, 0, dynamic_table_max_size);
-    dynamic_table->max_size = dynamic_table->settings_max_table_size = (uint16_t)dynamic_table_max_size;
+    dynamic_table->max_size = dynamic_table->settings_max_table_size =
+      (uint16_t)dynamic_table_max_size;
     dynamic_table->actual_size = 0;
-    dynamic_table->n_entries = 0;
-    dynamic_table->first = 0;
-    dynamic_table->next = 0;
+    dynamic_table->n_entries   = 0;
+    dynamic_table->first       = 0;
+    dynamic_table->next        = 0;
 }
 
 #endif

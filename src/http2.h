@@ -10,7 +10,6 @@
 #include "header_list.h"
 #include "hpack/hpack.h"
 
-
 /**
  * SETTINGS_HEADER_TABLE_SIZE
  *
@@ -26,17 +25,18 @@
 #ifndef HTTP2_HEADER_TABLE_SIZE
 #define HTTP2_HEADER_TABLE_SIZE (HPACK_MAX_DYNAMIC_TABLE_SIZE)
 #elif (HTTP2_HEADER_TABLE_SIZE) > (HPACK_MAX_DYNAMIC_TABLE_SIZE)
-#error "HTTP2_HEADER_TABLE_SIZE cannot be larger than HPACK_MAX_DYNAMIC_TABLE_SIZE"
+#error                                                                         \
+  "HTTP2_HEADER_TABLE_SIZE cannot be larger than HPACK_MAX_DYNAMIC_TABLE_SIZE"
 #endif
 
 /**
  * SETTINGS_ENABLE_PUSH
  *
  * This setting can be used to disable server push (Section 8.2).
- * An endpoint MUST NOT send a PUSH_PROMISE frame if it receives this parameter set
- * to a value of 0. An endpoint that has both set this parameter to 0 and had it
- * acknowledged MUST treat the receipt of a PUSH_PROMISE frame as a connection error
- * (Section 5.4.1) of type PROTOCOL_ERROR.
+ * An endpoint MUST NOT send a PUSH_PROMISE frame if it receives this parameter
+ * set to a value of 0. An endpoint that has both set this parameter to 0 and
+ * had it acknowledged MUST treat the receipt of a PUSH_PROMISE frame as a
+ * connection error (Section 5.4.1) of type PROTOCOL_ERROR.
  *
  * Server push is not supported by the current implementation
  */
@@ -87,7 +87,8 @@
  * (2^24-1 or 16,777,215 octets), inclusive. Values outside this range MUST
  * be treated as a connection error (Section 5.4.1) of type PROTOCOL_ERROR.
  *
- * The macro CONFIG_HTTP2_MAX_FRAME_SIZE sets the local default for MAX_FRAME_SIZE.
+ * The macro CONFIG_HTTP2_MAX_FRAME_SIZE sets the local default for
+ * MAX_FRAME_SIZE.
  */
 #ifndef HTTP2_MAX_FRAME_SIZE
 #define HTTP2_MAX_FRAME_SIZE (16384)
@@ -98,8 +99,8 @@
 /**
  * This advisory setting informs a peer of the maximum size of header list
  * that the sender is prepared to accept, in octets. The value is based on
- * the uncompressed size of header fields, including the length of the name and value in
- * octets plus an overhead of 32 octets for each header field.
+ * the uncompressed size of header fields, including the length of the name and
+ * value in octets plus an overhead of 32 octets for each header field.
  *
  * The macro CONFIG_HTTP2_MAX_HEADER_LIST_SIZE sets the local default for
  * MAX_HEADER_LIST_SIZE.
@@ -107,7 +108,8 @@
 #ifndef HTTP2_MAX_HEADER_LIST_SIZE
 #define HTTP2_MAX_HEADER_LIST_SIZE (HEADER_LIST_MAX_SIZE)
 #elif HTTP2_MAX_HEADER_LIST_SIZE > HEADER_LIST_MAX_SIZE
-#error "HTTP2_MAX_HEADER_LIST_SIZE cannot be larger than the value of HEADER_LIST_MAX_SIZE in header_list.h"
+#error                                                                         \
+  "HTTP2_MAX_HEADER_LIST_SIZE cannot be larger than the value of HEADER_LIST_MAX_SIZE in header_list.h"
 #endif
 
 /**
@@ -127,13 +129,14 @@
 #ifndef HTTP2_SOCK_READ_SIZE
 #define HTTP2_SOCK_READ_SIZE (HTTP2_INITIAL_WINDOW_SIZE)
 #elif (HTTP2_SOCK_READ_SIZE) < (HTTP2_INITIAL_WINDOW_SIZE)
-#error "The implementation does not allow to receive more bytes than the allocated read buffer. Either increase the value of HTTP2_SOCK_READ_SIZE or reduce the value of HTTP2_INITIAL_WINDOW_SIZE"
+#error                                                                         \
+  "The implementation does not allow to receive more bytes than the allocated read buffer. Either increase the value of HTTP2_SOCK_READ_SIZE or reduce the value of HTTP2_INITIAL_WINDOW_SIZE"
 #endif
 
 /**
  * The macro CONFIG_HTTP2_SOCK_WRITE_SIZE sets the maximum size of the
  * write buffer for sending data to the tcp socket. This means that
- * CONFIG_HTTP2_SOCK_WRITE_SIZE is the effective maximum limit 
+ * CONFIG_HTTP2_SOCK_WRITE_SIZE is the effective maximum limit
  * for http2 frames in the implementation.
  */
 #ifndef HTTP2_SOCK_WRITE_SIZE
@@ -151,36 +154,40 @@
 #ifndef HTTP2_STREAM_BUF_SIZE
 #define HTTP2_STREAM_BUF_SIZE (512)
 #elif HTTP2_STREAM_BUF_SIZE > ((1 << 16) - 1)
-#error "Stream buffer size can be at most a 16-bit unsigned integer by implementation."
+#error                                                                         \
+  "Stream buffer size can be at most a 16-bit unsigned integer by implementation."
 #endif
 
-typedef enum {
-    HTTP2_NO_ERROR              = (uint8_t) 0x0,
-    HTTP2_PROTOCOL_ERROR        = (uint8_t) 0x1,
-    HTTP2_INTERNAL_ERROR        = (uint8_t) 0x2,
-    HTTP2_FLOW_CONTROL_ERROR    = (uint8_t) 0x3,
-    HTTP2_SETTINGS_TIMEOUT      = (uint8_t) 0x4,
-    HTTP2_STREAM_CLOSED_ERROR   = (uint8_t) 0x5,
-    HTTP2_FRAME_SIZE_ERROR      = (uint8_t) 0x6,
-    HTTP2_REFUSED_STREAM        = (uint8_t) 0x7,
-    HTTP2_CANCEL                = (uint8_t) 0x8,
-    HTTP2_COMPRESSION_ERROR     = (uint8_t) 0x9,
-    HTTP2_CONNECT_ERROR         = (uint8_t) 0xa,
-    HTTP2_ENHANCE_YOUR_CALM     = (uint8_t) 0xb,
-    HTTP2_INADEQUATE_SECURITY   = (uint8_t) 0xc,
-    HTTP2_HTTP_1_1_REQUIRED     = (uint8_t) 0xd
+typedef enum
+{
+    HTTP2_NO_ERROR = (uint8_t)0x0,
+    HTTP2_PROTOCOL_ERROR = (uint8_t)0x1,
+    HTTP2_INTERNAL_ERROR = (uint8_t)0x2,
+    HTTP2_FLOW_CONTROL_ERROR = (uint8_t)0x3,
+    HTTP2_SETTINGS_TIMEOUT = (uint8_t)0x4,
+    HTTP2_STREAM_CLOSED_ERROR = (uint8_t)0x5,
+    HTTP2_FRAME_SIZE_ERROR = (uint8_t)0x6,
+    HTTP2_REFUSED_STREAM = (uint8_t)0x7,
+    HTTP2_CANCEL = (uint8_t)0x8,
+    HTTP2_COMPRESSION_ERROR = (uint8_t)0x9,
+    HTTP2_CONNECT_ERROR = (uint8_t)0xa,
+    HTTP2_ENHANCE_YOUR_CALM = (uint8_t)0xb,
+    HTTP2_INADEQUATE_SECURITY = (uint8_t)0xc,
+    HTTP2_HTTP_1_1_REQUIRED = (uint8_t)0xd
 } http2_error_t;
 
-typedef struct http2_stream {
+typedef struct http2_stream
+{
     uint32_t id;
-    enum {
-        HTTP2_STREAM_IDLE               = (uint8_t) 0x0,
-        HTTP2_STREAM_OPEN               = (uint8_t) 0x1,
-        HTTP2_STREAM_HALF_CLOSED_LOCAL  = (uint8_t) 0x2,
-        HTTP2_STREAM_HALF_CLOSED_REMOTE = (uint8_t) 0x3,
+    enum
+    {
+        HTTP2_STREAM_IDLE = (uint8_t)0x0,
+        HTTP2_STREAM_OPEN = (uint8_t)0x1,
+        HTTP2_STREAM_HALF_CLOSED_LOCAL = (uint8_t)0x2,
+        HTTP2_STREAM_HALF_CLOSED_REMOTE = (uint8_t)0x3,
 
         // states idle and closed are equal in our implementation
-        HTTP2_STREAM_CLOSED             = (uint8_t) 0x0
+        HTTP2_STREAM_CLOSED = (uint8_t)0x0
     } state;
 
     // stream window size has by default
@@ -195,7 +202,8 @@ typedef struct http2_stream {
     uint8_t *bufptr;
 } http2_stream_t;
 
-typedef struct http2_settings {
+typedef struct http2_settings
+{
     uint32_t header_table_size;
     uint32_t enable_push;
     uint32_t max_concurrent_streams;
@@ -204,7 +212,8 @@ typedef struct http2_settings {
     uint32_t max_header_list_size;
 } http2_settings_t;
 
-typedef struct http2_context {
+typedef struct http2_context
+{
     // make http2_context a linked lists
     // IMPORTANT: this pointer must be the first of the struct
     struct http2_context *next;
@@ -219,12 +228,13 @@ typedef struct http2_context {
     http2_settings_t settings;
 
     // local state
-    enum {
-        HTTP2_CLOSED            = (uint8_t) 0x0,
-        HTTP2_WAITING_PREFACE   = (uint8_t) 0x1,
-        HTTP2_WAITING_SETTINGS  = (uint8_t) 0x2,
-        HTTP2_READY             = (uint8_t) 0x3,
-        HTTP2_CLOSING           = (uint8_t) 0x4
+    enum
+    {
+        HTTP2_CLOSED = (uint8_t)0x0,
+        HTTP2_WAITING_PREFACE = (uint8_t)0x1,
+        HTTP2_WAITING_SETTINGS = (uint8_t)0x2,
+        HTTP2_READY = (uint8_t)0x3,
+        HTTP2_CLOSING = (uint8_t)0x4
     } state;
 
     // connection window size
@@ -251,9 +261,8 @@ typedef struct http2_context {
     hpack_dynamic_table_t hpack_dynamic_table;
 
     // timer
-    event_t * timer;
+    event_t *timer;
 } http2_context_t;
-
 
 http2_context_t *http2_new_client(event_sock_t *client);
 int http2_close_gracefully(http2_context_t *ctx);

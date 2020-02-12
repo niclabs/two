@@ -2,7 +2,7 @@
 #ifndef TWO_HPACK_STRUCTS
 #define TWO_HPACK_STRUCTS
 
-#include <stdint.h>             /* for int8_t, uint8_t, uint32_t, uint16_t*/
+#include <stdint.h> /* for int8_t, uint8_t, uint32_t, uint16_t*/
 
 // library configuration
 #include "two-conf.h"
@@ -12,13 +12,13 @@
 #endif
 
 #ifndef HTTP2_HEADER_TABLE_SIZE
-#define HPACK_INCLUDE_DYNAMIC_TABLE (1)
+#define HPACK_INCLUDE_DYNAMIC_TABLE  (1)
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (4096)
 #elif (HTTP2_HEADER_TABLE_SIZE) == 0
-#define HPACK_INCLUDE_DYNAMIC_TABLE (0)
+#define HPACK_INCLUDE_DYNAMIC_TABLE  (0)
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (0)
 #else
-#define HPACK_INCLUDE_DYNAMIC_TABLE (1)
+#define HPACK_INCLUDE_DYNAMIC_TABLE  (1)
 #define HPACK_MAX_DYNAMIC_TABLE_SIZE (HTTP2_HEADER_TABLE_SIZE)
 #endif
 
@@ -30,15 +30,17 @@
 #define HPACK_HEADER_VALUE_LEN (64)
 #endif
 
-typedef enum {
-    INDEXED_HEADER_FIELD                            = (uint8_t) 128,
-    LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING  = (uint8_t) 64,
-    LITERAL_HEADER_FIELD_WITHOUT_INDEXING           = (uint8_t) 0,
-    LITERAL_HEADER_FIELD_NEVER_INDEXED              = (uint8_t) 16,
-    DYNAMIC_TABLE_SIZE_UPDATE                       = (uint8_t) 32
+typedef enum
+{
+    INDEXED_HEADER_FIELD                           = (uint8_t)128,
+    LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING = (uint8_t)64,
+    LITERAL_HEADER_FIELD_WITHOUT_INDEXING          = (uint8_t)0,
+    LITERAL_HEADER_FIELD_NEVER_INDEXED             = (uint8_t)16,
+    DYNAMIC_TABLE_SIZE_UPDATE                      = (uint8_t)32
 } hpack_preamble_t;
 
-typedef struct {
+typedef struct
+{
     uint32_t index;
     uint32_t name_length;
     uint32_t value_length;
@@ -50,11 +52,12 @@ typedef struct {
     hpack_preamble_t preamble;
 } hpack_encoded_header_t;
 
-//typedefs for dinamic
-//size: 10 bytes in params + size of buffer
+// typedefs for dinamic
+// size: 10 bytes in params + size of buffer
 typedef
 #if HPACK_INCLUDE_DYNAMIC_TABLE
-    struct {
+  struct
+{
     uint16_t max_size;
     uint16_t first;
     uint16_t next;
@@ -64,15 +67,17 @@ typedef
     char buffer[HPACK_MAX_DYNAMIC_TABLE_SIZE];
 }
 #else
-    char //case No dynamic table mode, this conversion to char makes the code cleaner
+  char // case No dynamic table mode, this conversion to char makes the code
+       // cleaner
 #endif
 hpack_dynamic_table_t;
 
-typedef enum {
-    HPACK_NO_ERROR          = (int8_t)  0,
-    HPACK_COMPRESSION_ERROR = (int8_t) -1,
-    HPACK_INTERNAL_ERROR    = (int8_t) -2,
-    HPACK_MEMORY_ERROR      = (int8_t) -3
+typedef enum
+{
+    HPACK_NO_ERROR          = (int8_t)0,
+    HPACK_COMPRESSION_ERROR = (int8_t)-1,
+    HPACK_INTERNAL_ERROR    = (int8_t)-2,
+    HPACK_MEMORY_ERROR      = (int8_t)-3
 } hpack_error_t;
 
 #endif

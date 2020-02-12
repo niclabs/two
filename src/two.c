@@ -3,20 +3,21 @@
    HTTP/2
  */
 
-#include <strings.h>
-#include <assert.h>
-
 #include "two.h"
+
+#include <assert.h>
+#include <strings.h>
+
 #include "event.h"
-#include "http2.h"
 #include "http.h"
+#include "http2.h"
 
 #define LOG_MODULE LOG_MODULE_HTTP
 #include "logging.h"
 
 /***********************************************
-* Aplication static data
-***********************************************/
+ * Aplication static data
+ ***********************************************/
 
 static two_resource_t server_resources[TWO_MAX_RESOURCES];
 static int server_resources_size = 0;
@@ -30,11 +31,9 @@ static event_sock_t *server;
 // Global callback for closing
 static void (*global_close_cb)();
 
-
-
 /***********************************************
-* Private server methods
-***********************************************/
+ * Private server methods
+ ***********************************************/
 
 /**
  * Parse URI into path and query parameters
@@ -53,8 +52,7 @@ void parse_uri(char *uri, char *path, char *query_params)
             strcpy(query_params, ptr + 1);
         }
         *ptr = '\0';
-    }
-    else if (query_params) {
+    } else if (query_params) {
         strcpy(query_params, "");
     }
 
@@ -93,13 +91,12 @@ static void on_client_close(event_sock_t *client)
     (void)client;
 }
 
-static event_sock_t * on_new_connection(event_sock_t *server)
+static event_sock_t *on_new_connection(event_sock_t *server)
 {
     event_sock_t *client = event_sock_create(server->loop);
     if (event_accept(server, client) == 0) {
         http2_new_client(client);
-    }
-    else {
+    } else {
         event_close(client, on_client_close);
     }
     return client;
@@ -114,7 +111,8 @@ two_resource_t *find_resource(char *method, char *path)
 
     for (int i = 0; i < server_resources_size; i++) {
         res = &server_resources[i];
-        if (strncmp(res->path, path, TWO_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
+        if (strncmp(res->path, path, TWO_MAX_PATH_SIZE) == 0 &&
+            strcmp(res->method, method) == 0) {
             return res;
         }
     }
@@ -122,10 +120,9 @@ two_resource_t *find_resource(char *method, char *path)
     return NULL;
 }
 
-
 /***********************************************
-* HTTP (http.h) implementation methods
-***********************************************/
+ * HTTP (http.h) implementation methods
+ ***********************************************/
 
 /**
  * Utility function to check for method support
@@ -134,9 +131,8 @@ two_resource_t *find_resource(char *method, char *path)
  */
 int http_has_method_support(char *method)
 {
-    if ((method == NULL) ||
-        ((strncmp("GET", method, 8) != 0) &&
-         (strncmp("HEAD", method, 8) != 0))) {
+    if ((method == NULL) || ((strncmp("GET", method, 8) != 0) &&
+                             (strncmp("HEAD", method, 8) != 0))) {
         return 0;
     }
     return 1;
@@ -162,7 +158,8 @@ void http_error(http_response_t *res, int code, char *msg, unsigned int maxlen)
     }
 }
 
-void http_handle_request(http_request_t *req, http_response_t *res, unsigned int maxlen)
+void http_handle_request(http_request_t *req, http_response_t *res,
+                         unsigned int maxlen)
 {
     if (!http_has_method_support(req->method)) {
         http_error(res, 501, "Not Implemented", maxlen);
@@ -184,15 +181,17 @@ void http_handle_request(http_request_t *req, http_response_t *res, unsigned int
 
     // clean response memory
     memset(res->body, 0, maxlen);
-    if ((content_length = uri_resource->handler(req->method, path, res->body, maxlen)) < 0) {
+    if ((content_length =
+           uri_resource->handler(req->method, path, res->body, maxlen)) < 0) {
         http_error(res, 500, "Server error", maxlen);
         goto end;
     }
 
-    res->status = 200;
+    res->status         = 200;
     res->content_length = 0;
     if ((content_length > 0) && (strncmp("GET", req->method, 8) == 0)) {
-        strncpy(res->content_type, uri_resource->content_type, HTTP_MAX_CONTENT_TYPE_SIZE);
+        strncpy(res->content_type, uri_resource->content_type,
+                HTTP_MAX_CONTENT_TYPE_SIZE);
         res->content_length = content_length;
     }
 
@@ -206,13 +205,11 @@ end:
     DEBUG("Content-Type: %s", res->content_type);
     DEBUG("Content-Length: %d", res->content_length);
     DEBUG("%s", res->body);
-
 }
 
-
 /***********************************************
-* Public methods
-***********************************************/
+ * Public methods
+ ***********************************************/
 
 int two_server_start(unsigned int port)
 {
@@ -236,9 +233,11 @@ void two_server_stop(void (*close_cb)())
     event_close(server, on_server_close);
 }
 
-int two_register_resource(char *method, char *path, char *content_type, two_resource_handler_t handler)
+int two_register_resource(char *method, char *path, char *content_type,
+                          two_resource_handler_t handler)
 {
-    assert(method != NULL && path != NULL && content_type != NULL && handler != NULL);
+    assert(method != NULL && path != NULL && content_type != NULL &&
+           handler != NULL);
     assert(strlen(path) < TWO_MAX_PATH_SIZE);
 
     if (!http_has_method_support(method)) {
@@ -256,15 +255,17 @@ int two_register_resource(char *method, char *path, char *content_type, two_reso
     // Checks if the app_resources variable is initialized
     static uint8_t inited_app_resources = 0;
     if (!inited_app_resources) {
-        memset(&server_resources, 0, sizeof(two_resource_t) * TWO_MAX_RESOURCES);
+        memset(&server_resources, 0,
+               sizeof(two_resource_t) * TWO_MAX_RESOURCES);
         inited_app_resources = 1;
     }
     // Checks if the path and method already exist
     two_resource_t *res;
     for (int i = 0; i < server_resources_size; i++) {
         res = &server_resources[i];
-        if (strncmp(res->path, path, TWO_MAX_PATH_SIZE) == 0 && strcmp(res->method, method) == 0) {
-            //If it does, replaces the resource
+        if (strncmp(res->path, path, TWO_MAX_PATH_SIZE) == 0 &&
+            strcmp(res->method, method) == 0) {
+            // If it does, replaces the resource
             strncpy(res->content_type, content_type, 32);
             res->handler = handler;
             return 0;
@@ -273,7 +274,9 @@ int two_register_resource(char *method, char *path, char *content_type, two_reso
 
     // Checks if the list is full
     if (server_resources_size >= TWO_MAX_RESOURCES) {
-        ERROR("Server resource limit (%d) reached. Try changing value for CONFIG_TWO_MAX_RESOURCES", TWO_MAX_RESOURCES);
+        ERROR("Server resource limit (%d) reached. Try changing value for "
+              "CONFIG_TWO_MAX_RESOURCES",
+              TWO_MAX_RESOURCES);
         return -1;
     }
 

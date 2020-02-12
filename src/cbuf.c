@@ -4,16 +4,16 @@
 #include "logging.h"
 
 #undef MIN
-#define MIN(n, m)   (((n) < (m)) ? (n) : (m))
+#define MIN(n, m) (((n) < (m)) ? (n) : (m))
 
 void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen)
 {
-    cbuf->ptr = buf;
-    cbuf->head = 0;
-    cbuf->tail = 0;
+    cbuf->ptr    = buf;
+    cbuf->head   = 0;
+    cbuf->tail   = 0;
     cbuf->maxlen = maxlen;
-    cbuf->len = 0;
-    cbuf->state = CBUF_OPEN;
+    cbuf->len    = 0;
+    cbuf->state  = CBUF_OPEN;
 }
 
 int cbuf_push(cbuf_t *cbuf, void *src, int len)
@@ -52,15 +52,15 @@ int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
         if (cbuf->tail < cbuf->head) {
             copylen = MIN(len, cbuf->head - cbuf->tail);
         }
-       
+
         // if dst is NULL, calls to read will only increase the read pointer
-        if (dst != NULL) { 
+        if (dst != NULL) {
             memcpy(dst, cbuf->ptr + cbuf->tail, copylen);
             dst += copylen;
         }
 
         // Update read pointer
-        cbuf->tail = (cbuf->tail + copylen) % cbuf->maxlen; 
+        cbuf->tail = (cbuf->tail + copylen) % cbuf->maxlen;
 
         // Update used count
         cbuf->len -= copylen;
@@ -77,9 +77,9 @@ int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
 
 int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
 {
-    int bytes = 0;
+    int bytes   = 0;
     int cbuflen = cbuf->len;
-    int tail = cbuf->tail;
+    int tail    = cbuf->tail;
 
     while (len > 0 && cbuflen > 0) {
         int copylen = MIN(len, cbuf->maxlen - tail);
@@ -93,7 +93,7 @@ int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
         }
 
         // Update read pointer
-        tail = (tail + copylen) % cbuf->maxlen; 
+        tail = (tail + copylen) % cbuf->maxlen;
 
         // Update used count
         cbuflen -= copylen;
@@ -108,19 +108,22 @@ int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
     return bytes;
 }
 
-
-int cbuf_len(cbuf_t * cbuf) {
+int cbuf_len(cbuf_t *cbuf)
+{
     return cbuf->len;
 }
 
-int cbuf_maxlen(cbuf_t * cbuf) {
+int cbuf_maxlen(cbuf_t *cbuf)
+{
     return cbuf->maxlen;
 }
 
-void cbuf_end(cbuf_t * cbuf) {
+void cbuf_end(cbuf_t *cbuf)
+{
     cbuf->state = CBUF_ENDED;
 }
 
-int cbuf_has_ended(cbuf_t * cbuf) {
+int cbuf_has_ended(cbuf_t *cbuf)
+{
     return cbuf->state == CBUF_ENDED;
 }

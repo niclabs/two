@@ -1,8 +1,8 @@
 #ifndef HEADERS_H
 #define HEADERS_H
 
-#include "two-conf.h" // library configuration
 #include "http.h"
+#include "two-conf.h" // library configuration
 
 /**
  * Here a header list is defined as a structure that tries
@@ -13,14 +13,14 @@
  *
  * When an add or set operation is performed on an existing
  * header, the method removes the old name-value pair, splicing
- * the memory, and appends the updated name-value pair at the 
+ * the memory, and appends the updated name-value pair at the
  * end of the array.
  *
  * Although moving memory may be expensive, it is expected
  * to happen infrequently, so is a tradeoff taken for implementation
  * simplicity.
  *
- * For the same reason, the header list cannot guarantee that the ordering 
+ * For the same reason, the header list cannot guarantee that the ordering
  * of insertion will be preserved
  * */
 
@@ -39,7 +39,8 @@
  *
  * Should not be used directly, use provided API methods
  */
-typedef struct {
+typedef struct
+{
     char buffer[HEADER_LIST_MAX_SIZE];
     int count;
     int size;
@@ -49,7 +50,8 @@ typedef struct {
  * Data structure to indicate location of a header
  * Uses pointer to header buffer
  */
-typedef struct {
+typedef struct
+{
     char *name;
     char *value;
 } header_t;
@@ -74,7 +76,8 @@ void header_list_reset(header_list_t *headers);
  * @param value header value
  * @return 0 if ok -1 if an error ocurred
  */
-int header_list_add(header_list_t *headers, const char *name, const char *value);
+int header_list_add(header_list_t *headers, const char *name,
+                    const char *value);
 
 /**
  * Set the header for a given name, if the header is already set
@@ -85,7 +88,8 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
  * @param value header value
  * @return 0 if ok -1 if an error ocurred
  */
-int header_list_set(header_list_t *headers, const char *name, const char *value);
+int header_list_set(header_list_t *headers, const char *name,
+                    const char *value);
 
 /**
  * Get a pointere to the value of the header with name 'name'
@@ -95,7 +99,6 @@ int header_list_set(header_list_t *headers, const char *name, const char *value)
  * @return value header value of the header with name 'name' or NULL if error
  * */
 char *header_list_get(header_list_t *headers, const char *name);
-
 
 /**
  * Return size of the header list for http/2
@@ -112,9 +115,9 @@ unsigned int header_list_count(header_list_t *headers);
  *
  * This function simply sets the values for (name, value) pointers inside
  * the to the respective memory location inside the header list. If the header
- * list is modified after this call, the value pointed by the elements in the array 
- * WILL change
+ * list is modified after this call, the value pointed by the elements in the
+ * array WILL change
  */
-http_header_t * header_list_all(header_list_t *headers, http_header_t * hlist);
+http_header_t *header_list_all(header_list_t *headers, http_header_t *hlist);
 
 #endif

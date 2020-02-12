@@ -1,14 +1,14 @@
 #if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
-#include <stdlib.h>
 #include <signal.h>
+#include <stdlib.h>
 #endif
 
 #ifdef CONTIKI
 #include "contiki.h"
 #endif
 
-#include "two.h"
 #include "logging.h"
+#include "two.h"
 
 #ifdef CONTIKI
 PROCESS(example_server_process, "http/2 example server");
@@ -35,13 +35,12 @@ int hello_world(char *method, char *uri, char *response, unsigned int maxlen)
     (void)uri;
 
     char *msg = "Hello, World!!!";
-    int len = MIN(strlen(msg), maxlen);
+    int len   = MIN(strlen(msg), maxlen);
 
     // Copy the response
     memcpy(response, msg, len);
     return len;
 }
-
 
 #ifdef CONTIKI
 PROCESS_THREAD(example_server_process, ev, data)

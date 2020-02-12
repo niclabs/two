@@ -2,11 +2,13 @@
  * Logging and debugging API
  *
  * Defines the DEBUG() INFO() WARN() and ERROR() macros that will print
- * a message depending on the level defined by the variable LOG_LEVEL (default is INFO)
+ * a message depending on the level defined by the variable LOG_LEVEL (default
+ * is INFO)
  *
- * When debugging, it might be useful to set level to DEBUG, either by setting the constant
- * ENABLE_DEBUG, by using the -DENABLE_DEBUG on compilation, or by directly setting the LOG_LEVEL
- * variable to DEBUG, by using -DLOG_LEVEL=LOG_LEVEL_DEBUG
+ * When debugging, it might be useful to set level to DEBUG, either by setting
+ * the constant ENABLE_DEBUG, by using the -DENABLE_DEBUG on compilation, or by
+ * directly setting the LOG_LEVEL variable to DEBUG, by using
+ * -DLOG_LEVEL=LOG_LEVEL_DEBUG
  *
  * @author Felipe Lalanne <flalanne@niclabs.cl>
  */
@@ -16,9 +18,9 @@
 #ifndef CONTIKI
 #include <stdlib.h>
 #endif
-#include <string.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
 // system configuration
 #include "two-conf.h"
@@ -32,11 +34,11 @@
 #define LOG_LEVEL_OFF   (6)
 
 // Log modules
-#define LOG_MODULE_EVENT   EVENT
-#define LOG_MODULE_HTTP2   HTTP2
-#define LOG_MODULE_HTTP    HTTP
-#define LOG_MODULE_FRAME   FRAME
-#define LOG_MODULE_HPACK   HPACK
+#define LOG_MODULE_EVENT EVENT
+#define LOG_MODULE_HTTP2 HTTP2
+#define LOG_MODULE_HTTP  HTTP
+#define LOG_MODULE_FRAME FRAME
+#define LOG_MODULE_HPACK HPACK
 
 #ifndef LOG_LEVEL_EVENT
 #define LOG_LEVEL_EVENT (LOG_LEVEL_OFF)
@@ -62,9 +64,9 @@
 // unless ENABLE_DEBUG is defined
 // otherwise use LOG_LEVEL
 #if defined(LOG_MODULE) && !defined(ENABLE_DEBUG)
-#define __LOG_CONCAT0(x,y) x ## y
-#define __LOG_CONCAT1(x,y)__LOG_CONCAT0(x,y)
-#define __LOG_LEVEL(module) __LOG_CONCAT1(LOG_LEVEL_,module)
+#define __LOG_CONCAT0(x, y) x##y
+#define __LOG_CONCAT1(x, y) __LOG_CONCAT0(x, y)
+#define __LOG_LEVEL(module) __LOG_CONCAT1(LOG_LEVEL_, module)
 #else
 #define __LOG_LEVEL(module) LOG_LEVEL
 #endif
@@ -90,9 +92,12 @@
 #endif
 
 #if SHOULD_LOG(LOG_LEVEL_DEBUG, LOG_MODULE)
-#define LOG(level, func, file, line, msg, ...) LOG_PRINT("[" #level "] " msg "; at %s:%d in %s()\n", ## __VA_ARGS__, file, line, func)
-#else 
-#define LOG(level, func, file, line, msg, ...) LOG_PRINT("[" #level "] " msg "\n", ## __VA_ARGS__)
+#define LOG(level, func, file, line, msg, ...)                                 \
+    LOG_PRINT("[" #level "] " msg "; at %s:%d in %s()\n", ##__VA_ARGS__, file, \
+              line, func)
+#else
+#define LOG(level, func, file, line, msg, ...)                                 \
+    LOG_PRINT("[" #level "] " msg "\n", ##__VA_ARGS__)
 #endif
 
 // Macro to print debugging messages
@@ -118,10 +123,14 @@
 
 // Macro to print error messages
 #if SHOULD_LOG(LOG_LEVEL_ERROR, LOG_MODULE)
-#define ERROR(msg, ...)                                                                                             \
-    do {                                                                                                            \
-        if (errno > 0) { LOG(ERROR, __func__, __FILE__, __LINE__, msg " (%s)", ## __VA_ARGS__, strerror(errno)); }  \
-        else { LOG(ERROR, __func__, __FILE__, __LINE__, msg, ## __VA_ARGS__); }                                     \
+#define ERROR(msg, ...)                                                        \
+    do {                                                                       \
+        if (errno > 0) {                                                       \
+            LOG(ERROR, __func__, __FILE__, __LINE__, msg " (%s)",              \
+                ##__VA_ARGS__, strerror(errno));                               \
+        } else {                                                               \
+            LOG(ERROR, __func__, __FILE__, __LINE__, msg, ##__VA_ARGS__);      \
+        }                                                                      \
     } while (0)
 #else
 #define ERROR(...)
@@ -129,11 +138,15 @@
 
 // Macro to print fatal error messages
 #if SHOULD_LOG(LOG_LEVEL_FATAL, LOG_MODULE)
-#define FATAL(msg, ...)                                                                                             \
-    do {                                                                                                            \
-        if (errno > 0) { LOG(FATAL, __func__, __FILE__, __LINE__, msg " (%s)", ## __VA_ARGS__, strerror(errno)); }  \
-        else { LOG(FATAL, __func__, __FILE__, __LINE__, msg, ## __VA_ARGS__); }                                     \
-        LOG_EXIT(EXIT_FAILURE);                                                                                     \
+#define FATAL(msg, ...)                                                        \
+    do {                                                                       \
+        if (errno > 0) {                                                       \
+            LOG(FATAL, __func__, __FILE__, __LINE__, msg " (%s)",              \
+                ##__VA_ARGS__, strerror(errno));                               \
+        } else {                                                               \
+            LOG(FATAL, __func__, __FILE__, __LINE__, msg, ##__VA_ARGS__);      \
+        }                                                                      \
+        LOG_EXIT(EXIT_FAILURE);                                                \
     } while (0)
 #else
 #define FATAL(...)

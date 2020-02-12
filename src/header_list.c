@@ -1,6 +1,6 @@
-#include <strings.h>
-#include <string.h>
 #include <assert.h>
+#include <string.h>
+#include <strings.h>
 
 #include "header_list.h"
 #include "logging.h"
@@ -11,7 +11,7 @@
 // Use this if strnlen is missing.
 size_t strnlen(const char *str, size_t max)
 {
-    const char *end = memchr (str, 0, max);
+    const char *end = memchr(str, 0, max);
     return end ? (size_t)(end - str) : max;
 }
 
@@ -30,9 +30,8 @@ void header_list_reset(header_list_t *headers)
     memset(headers->buffer, 0, HEADER_LIST_MAX_SIZE);
 
     headers->count = 0;
-    headers->size = 0;
+    headers->size  = 0;
 }
-
 
 // return the position in the buffer of the given name
 int header_list_index(header_list_t *headers, const char *name)
@@ -40,7 +39,7 @@ int header_list_index(header_list_t *headers, const char *name)
     assert(headers != NULL);
     assert(name != NULL);
 
-    int pos = 0;
+    int pos   = 0;
     char *ptr = headers->buffer;
     while (pos < headers->size) {
         int len = strnlen(ptr, headers->size - pos);
@@ -68,7 +67,8 @@ int header_list_index(header_list_t *headers, const char *name)
 }
 
 // remove a portion of the array memory
-void header_list_splice(header_list_t *headers, unsigned int start, unsigned int count)
+void header_list_splice(header_list_t *headers, unsigned int start,
+                        unsigned int count)
 {
     char *dst = headers->buffer + start;
     char *src = headers->buffer + start + count;
@@ -97,17 +97,19 @@ char *header_list_get(header_list_t *headers, const char *name)
     }
 
     char *ptr = headers->buffer + pos;
-    int len = strnlen(ptr, headers->size - pos);
+    int len   = strnlen(ptr, headers->size - pos);
     return ptr + len + 1;
 }
 
-int header_list_append(header_list_t *headers, const char *name, const char *value)
+int header_list_append(header_list_t *headers, const char *name,
+                       const char *value)
 {
     unsigned int nlen = strlen(name);
     unsigned int vlen = strlen(value);
 
     // not enough space left in the header list to append the new value
-    if (nlen + 1 + vlen + 1 > (unsigned)(HEADER_LIST_MAX_SIZE - headers->size)) {
+    if (nlen + 1 + vlen + 1 >
+        (unsigned)(HEADER_LIST_MAX_SIZE - headers->size)) {
         return -1;
     }
 
@@ -149,9 +151,9 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
         return header_list_append(headers, name, value);
     }
 
-    int end = start;
+    int end   = start;
     char *ptr = headers->buffer + start;
-    
+
     int nlen = strnlen(ptr, headers->size - end);
 
     // skip the name
@@ -159,7 +161,7 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
     ptr += nlen + 1;
 
     // get value and its length
-    char *v = ptr;
+    char *v  = ptr;
     int vlen = strnlen(ptr, headers->size - end);
 
     // update the pointer
@@ -171,13 +173,13 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
         return -1;
     }
 
-    // otherwise splice the existing name:value and reinsert 
+    // otherwise splice the existing name:value and reinsert
     int newlen = vlen + 1 + strlen(value);
     char newvalue[newlen + 1];
 
     // copy the old value
     memcpy(newvalue, v, vlen);
-    
+
     // add a separating ','
     newvalue[vlen] = ',';
 
@@ -191,7 +193,6 @@ int header_list_add(header_list_t *headers, const char *name, const char *value)
 
     return header_list_append(headers, name, newvalue);
 }
-
 
 /*
  * Function: header_list_set
@@ -212,9 +213,9 @@ int header_list_set(header_list_t *headers, const char *name, const char *value)
         return header_list_append(headers, name, value);
     }
 
-    int end = start;
+    int end   = start;
     char *ptr = headers->buffer + start;
-    
+
     int nlen = strnlen(ptr, headers->size - end);
 
     // skip the name
@@ -229,10 +230,11 @@ int header_list_set(header_list_t *headers, const char *name, const char *value)
     end += vlen + 1;
 
     // if ',' + value + '\0' does not fit in the memory, return -1
-    if (1 + strlen(value) + 1 > (unsigned)(HEADER_LIST_MAX_SIZE - headers->size - vlen)) {
+    if (1 + strlen(value) + 1 >
+        (unsigned)(HEADER_LIST_MAX_SIZE - headers->size - vlen)) {
         return -1;
     }
-    
+
     // splice the memory from the array
     header_list_splice(headers, start, end - start);
     headers->count -= 1;
@@ -269,7 +271,7 @@ http_header_t *header_list_all(header_list_t *headers, http_header_t *hlist)
 {
     assert(headers != NULL);
 
-    int pos = 0;
+    int pos   = 0;
     char *ptr = headers->buffer;
     int index = 0;
 

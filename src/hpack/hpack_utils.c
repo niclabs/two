@@ -1,4 +1,4 @@
-#include <stdint.h>     /* for int8_t */
+#include <stdint.h> /* for int8_t */
 
 #include "hpack/utils.h"
 
@@ -70,13 +70,15 @@ uint8_t hpack_utils_find_prefix_size(hpack_preamble_t octet)
     if ((INDEXED_HEADER_FIELD & octet) == INDEXED_HEADER_FIELD) {
         return (uint8_t)7;
     }
-    if ((LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING & octet) == LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
+    if ((LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING & octet) ==
+        LITERAL_HEADER_FIELD_WITH_INCREMENTAL_INDEXING) {
         return (uint8_t)6;
     }
     if ((DYNAMIC_TABLE_SIZE_UPDATE & octet) == DYNAMIC_TABLE_SIZE_UPDATE) {
         return (uint8_t)5;
     }
-    return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and LITERAL_HEADER_FIELD_NEVER_INDEXED*/
+    return (uint8_t)4; /*LITERAL_HEADER_FIELD_WITHOUT_INDEXING and
+                          LITERAL_HEADER_FIELD_NEVER_INDEXED*/
 }
 
 /* Function: hpack_utils_encoded_integer_size
@@ -92,12 +94,10 @@ uint32_t hpack_utils_encoded_integer_size(uint32_t num, uint8_t prefix)
 
     if (num < p) {
         return 1;
-    }
-    else if (num == p) {
+    } else if (num == p) {
         return 2;
-    }
-    else {
-        uint32_t k = hpack_utils_log128(num - p);//log(num - p) / log(128);
+    } else {
+        uint32_t k = hpack_utils_log128(num - p); // log(num - p) / log(128);
         return k + 2;
     }
 }

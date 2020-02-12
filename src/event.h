@@ -35,7 +35,6 @@
 #define EVENT_WRITE_QUEUE_SIZE (4 * EVENT_MAX_SOCKETS)
 #endif
 
-
 struct event;
 struct event_sock;
 struct event_loop;
@@ -45,10 +44,11 @@ struct event_loop;
 // Called on a new client connection if there are available
 // sockets. It must return a pointer to the created client socket
 // or NULL if no socket could be created
-typedef struct event_sock * (*event_connection_cb)(struct event_sock *server);
+typedef struct event_sock *(*event_connection_cb)(struct event_sock *server);
 
 // Called whenever new data is available, or a read error occurrs
-// it must return the number of bytes read in order to remove them from the input buffer
+// it must return the number of bytes read in order to remove them from the
+// input buffer
 typedef int (*event_read_cb)(struct event_sock *sock, int size, uint8_t *bytes);
 
 // Called whenever a write operation is performed. If an error occurs
@@ -71,31 +71,36 @@ typedef uint16_t event_descriptor_t;
 typedef int event_descriptor_t;
 #endif
 
-typedef enum {
-    EVENT_CONNECTION_TYPE   = (uint8_t) 0x0,
-    EVENT_WRITE_TYPE        = (uint8_t) 0x1,
-    EVENT_READ_TYPE         = (uint8_t) 0x2,
-    EVENT_TIMER_TYPE        = (uint8_t) 0x3,
+typedef enum
+{
+    EVENT_CONNECTION_TYPE = (uint8_t)0x0,
+    EVENT_WRITE_TYPE      = (uint8_t)0x1,
+    EVENT_READ_TYPE       = (uint8_t)0x2,
+    EVENT_TIMER_TYPE      = (uint8_t)0x3,
 } event_type_t;
 
-typedef struct event_connection {
+typedef struct event_connection
+{
     // type variables
     event_connection_cb cb;
 } event_connection_t;
 
-typedef struct event_read {
+typedef struct event_read
+{
     // type variables
     cbuf_t buf;
     event_read_cb cb;
 } event_read_t;
 
-typedef struct event_write_op {
+typedef struct event_write_op
+{
     struct event_write_op *next;
     unsigned int bytes;
     event_write_cb cb;
 } event_write_op_t;
 
-typedef struct event_write {
+typedef struct event_write
+{
     // type variables
     cbuf_t buf;
     event_write_op_t *queue;
@@ -106,7 +111,8 @@ typedef struct event_write {
 #endif
 } event_write_t;
 
-typedef struct event_timer {
+typedef struct event_timer
+{
     // type variables
 #ifdef CONTIKI
     struct ctimer ctimer;
@@ -117,11 +123,13 @@ typedef struct event_timer {
     event_timer_cb cb;
 } event_timer_t;
 
-typedef struct event {
+typedef struct event
+{
     struct event *next;
     struct event_sock *sock;
     event_type_t type;
-    union {
+    union
+    {
         event_connection_t connection;
         event_read_t read;
         event_write_t write;
@@ -129,7 +137,8 @@ typedef struct event {
     } data;
 } event_t;
 
-typedef struct event_sock {
+typedef struct event_sock
+{
     /* "inherited fields" */
     struct event_sock *next;
 
@@ -141,7 +150,8 @@ typedef struct event_sock {
 
     /* type related fields */
     event_descriptor_t descriptor;
-    enum {
+    enum
+    {
         EVENT_SOCK_CLOSED,
         EVENT_SOCK_OPENED,
         EVENT_SOCK_LISTENING,
@@ -160,7 +170,8 @@ typedef struct event_sock {
 #endif
 } event_sock_t;
 
-typedef struct event_loop {
+typedef struct event_loop
+{
     // list of active sockets
     event_sock_t *polling;
 
@@ -187,13 +198,15 @@ typedef struct event_loop {
 // client slots are available
 int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb);
 
-// Start reading events in the socket. This configures the given buffer for reading,
-// this will configure the buffer as a circular buffer until event_read_stop is called,
-// where the handler will be released and writing on the buffer will stop. Memory
-// allocation/freeing is responsibility of the user of the library
+// Start reading events in the socket. This configures the given buffer for
+// reading, this will configure the buffer as a circular buffer until
+// event_read_stop is called, where the handler will be released and writing on
+// the buffer will stop. Memory allocation/freeing is responsibility of the user
+// of the library
 //
 // event_read_cb will be called on new data
-void event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize, event_read_cb cb);
+void event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize,
+                      event_read_cb cb);
 
 // Update the notification callback for read operations in the given socket
 // event_read_start MUST be called first
@@ -207,18 +220,21 @@ int event_read(event_sock_t *sock, event_read_cb cb);
 // by the buffer and return the number of bytes available
 int event_read_stop(event_sock_t *sock);
 
-// Enable the socket for writing, and provide memory for buffering writing events
-// event_write will fail (assert error) if event_write is called before event_write_alloc
-// the allocated memory will be freed once the socket is successfull closed
-// the callback will be called on succesful write or on socket error
+// Enable the socket for writing, and provide memory for buffering writing
+// events event_write will fail (assert error) if event_write is called before
+// event_write_alloc the allocated memory will be freed once the socket is
+// successfull closed the callback will be called on succesful write or on
+// socket error
 void event_write_enable(event_sock_t *sock, uint8_t *buf, unsigned int bufsize);
 
 // Write to the output buffer, will notify the callback when all bytes are
 // written
-int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes, event_write_cb cb);
+int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes,
+                event_write_cb cb);
 
 // Notify the callback on elapsed time
-event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb);
+event_t *event_timer(event_sock_t *sock, unsigned int millis,
+                     event_timer_cb cb);
 
 // Reset the given timer (will fail if called event other than a timer)
 void event_timer_reset(event_t *timer);
