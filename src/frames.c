@@ -5,9 +5,9 @@
 #include <assert.h>
 #include <string.h>
 
+#include "buffer.h"
 #include "frames.h"
 #include "http2.h"
-#include "utils.h"
 
 #define LOG_MODULE LOG_MODULE_FRAME
 #include "logging.h"

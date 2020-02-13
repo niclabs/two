@@ -1,7 +1,8 @@
-#include "utils.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "buffer.h"
 
 // TODO check big endian or little endian...
 

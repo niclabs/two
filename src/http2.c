@@ -4,11 +4,11 @@
 #include <string.h>
 #include <strings.h>
 
+#include "buffer.h"
 #include "frames.h"
 #include "http.h"
 #include "ll.h"
 #include "macros.h"
-#include "utils.h"
 
 #define LOG_MODULE LOG_MODULE_HTTP2
 #include "logging.h"
