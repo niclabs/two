@@ -3,10 +3,7 @@
 #include <stdlib.h>
 #endif
 
-#ifdef CONTIKI
 #include "contiki.h"
-#endif
-
 #include "logging.h"
 #include "two.h"
 
