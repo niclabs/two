@@ -1,4 +1,4 @@
-#if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
+#ifdef CONTIKI_TARGET_NATIVE
 #include <signal.h>
 #include <stdlib.h>
 #endif
@@ -10,14 +10,12 @@
 #include "logging.h"
 #include "two.h"
 
-#ifdef CONTIKI
 PROCESS(example_server_process, "http/2 example server");
 AUTOSTART_PROCESSES(&example_server_process);
-#endif
 
 void on_server_close()
 {
-#if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
+#ifdef CONTIKI_TARGET_NATIVE
     exit(0);
 #endif
 }
@@ -42,30 +40,13 @@ int hello_world(char *method, char *uri, char *response, unsigned int maxlen)
     return len;
 }
 
-#ifdef CONTIKI
 PROCESS_THREAD(example_server_process, ev, data)
-#else
-int main(int argc, char **argv)
-#endif
 {
-#ifdef CONTIKI
     PROCESS_BEGIN();
 
     int port = 8888;
-#else
-    if (argc < 2) {
-        ERROR("Usage: %s <port>", argv[0]);
-        return 1;
-    }
 
-    int port = atoi(argv[1]);
-    if (port < 0) {
-        ERROR("Invalid port given");
-        return 1;
-    }
-#endif
-
-#if !defined(CONTIKI) || defined(CONTIKI_TARGET_NATIVE)
+#ifdef CONTIKI_TARGET_NATIVE
     signal(SIGINT, cleanup);
 #endif
 
@@ -75,7 +56,5 @@ int main(int argc, char **argv)
         ERROR("Failed to start server");
     }
 
-#ifdef CONTIKI
     PROCESS_END();
-#endif
 }
