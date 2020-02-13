@@ -65,7 +65,7 @@ $(H2SPEC_ALL): /usr/local/bin/h2spec ./bin/basic
 		fi; \
 		sleep 0.3; \
 		echo "$$TOTAL $$FAILURES" > summary.txt; \
-		rm server.pid server.log
+		rm server.pid server.log && sleep 0.5
 
 # Run all target
 h2spec: h2spec-pre $(H2SPEC_ALL) h2spec-post
