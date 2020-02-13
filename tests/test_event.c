@@ -1,13 +1,13 @@
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
-#include "event.h"
 #include "cbuf.h"
+#include "event.h"
 //#define LOG_LEVEL (LOG_LEVEL_DEBUG)
-#include "unit.h"
 #include "fff.h"
+#include "unit.h"
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(int, socket, int, int, int);
@@ -16,7 +16,8 @@ FAKE_VALUE_FUNC(int, listen, int, int);
 FAKE_VALUE_FUNC(int, close, int);
 FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
 FAKE_VALUE_FUNC(int, setsockopt, int, int, int, const void *, socklen_t);
-FAKE_VALUE_FUNC(int, select, int, fd_set *, fd_set *, fd_set *, struct timeval *);
+FAKE_VALUE_FUNC(int, select, int, fd_set *, fd_set *, fd_set *,
+                struct timeval *);
 FAKE_VALUE_FUNC(ssize_t, recv, int, void *, size_t, int);
 FAKE_VALUE_FUNC(ssize_t, send, int, const void *, size_t, int);
 FAKE_VOID_FUNC(cbuf_init, cbuf_t *, void *, int);
@@ -28,27 +29,25 @@ FAKE_VALUE_FUNC(int, cbuf_maxlen, cbuf_t *);
 FAKE_VOID_FUNC(cbuf_end, cbuf_t *);
 FAKE_VALUE_FUNC(int, cbuf_has_ended, cbuf_t *);
 
-
 /* List of fakes used by this unit tester */
-#define FFF_FAKES_LIST(FAKE)    \
-    FAKE(socket)                \
-    FAKE(bind)                  \
-    FAKE(listen)                \
-    FAKE(close)                 \
-    FAKE(accept)                \
-    FAKE(setsockopt)            \
-    FAKE(recv)                  \
-    FAKE(send)                  \
-    FAKE(cbuf_init)             \
-    FAKE(cbuf_push)             \
-    FAKE(cbuf_peek)             \
-    FAKE(cbuf_pop)              \
-    FAKE(cbuf_len)              \
-    FAKE(cbuf_end)              \
-    FAKE(cbuf_has_ended)        \
-    FAKE(cbuf_maxlen)           \
+#define FFF_FAKES_LIST(FAKE)                                                   \
+    FAKE(socket)                                                               \
+    FAKE(bind)                                                                 \
+    FAKE(listen)                                                               \
+    FAKE(close)                                                                \
+    FAKE(accept)                                                               \
+    FAKE(setsockopt)                                                           \
+    FAKE(recv)                                                                 \
+    FAKE(send)                                                                 \
+    FAKE(cbuf_init)                                                            \
+    FAKE(cbuf_push)                                                            \
+    FAKE(cbuf_peek)                                                            \
+    FAKE(cbuf_pop)                                                             \
+    FAKE(cbuf_len)                                                             \
+    FAKE(cbuf_end)                                                             \
+    FAKE(cbuf_has_ended)                                                       \
+    FAKE(cbuf_maxlen)                                                          \
     FAKE(select)
-
 
 int fake_cbuf_len;
 int fake_cbuf_ended;
@@ -63,7 +62,7 @@ void setUp(void)
     FFF_RESET_HISTORY();
 
     // reset cbuf len
-    fake_cbuf_len = 0;
+    fake_cbuf_len   = 0;
     fake_cbuf_ended = 0;
     memset(buf, 0, 32);
 }
@@ -72,7 +71,8 @@ void setUp(void)
 // fake functions and generic callbacks
 //////////////////////////////////////////////////////////////////////////
 
-int select_with_no_activity(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
+int select_with_no_activity(int nfds, fd_set *read_set, fd_set *write_set,
+                            fd_set *except_set, struct timeval *tv)
 {
     // Reset read activity
     FD_CLR(0, read_set);
@@ -86,9 +86,9 @@ int select_with_no_activity(int nfds, fd_set *read_set, fd_set *write_set, fd_se
     return 0;
 }
 
-
 // Simulate a read event on socket 1
-int select_with_read_on_s1_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
+int select_with_read_on_s1_fake(int nfds, fd_set *read_set, fd_set *write_set,
+                                fd_set *except_set, struct timeval *tv)
 {
     TEST_ASSERT_GREATER_THAN(1, nfds);
 
@@ -108,7 +108,8 @@ int select_with_read_on_s1_fake(int nfds, fd_set *read_set, fd_set *write_set, f
 }
 
 // Simulate a read event on socket 2
-int select_with_read_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
+int select_with_read_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set,
+                                fd_set *except_set, struct timeval *tv)
 {
     TEST_ASSERT_GREATER_THAN(2, nfds);
 
@@ -128,7 +129,8 @@ int select_with_read_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, f
 }
 
 // Simulate a read event on socket 2
-int select_with_write_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, fd_set *except_set, struct timeval *tv)
+int select_with_write_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set,
+                                 fd_set *except_set, struct timeval *tv)
 {
     TEST_ASSERT_GREATER_THAN(2, nfds);
 
@@ -150,13 +152,15 @@ int select_with_write_on_s2_fake(int nfds, fd_set *read_set, fd_set *write_set, 
 // Generic close calback check
 void close_s1_cb(event_sock_t *sock)
 {
-    TEST_ASSERT_EQUAL_MESSAGE(1, sock->descriptor, "closed socket must be equal to 1");
+    TEST_ASSERT_EQUAL_MESSAGE(1, sock->descriptor,
+                              "closed socket must be equal to 1");
 }
 
 // Generic close calback check
 void close_s2_cb(event_sock_t *sock)
 {
-    TEST_ASSERT_EQUAL_MESSAGE(2, sock->descriptor, "closed socket must be equal to 2");
+    TEST_ASSERT_EQUAL_MESSAGE(2, sock->descriptor,
+                              "closed socket must be equal to 2");
 }
 
 ssize_t recv_nothing(int s, void *dst, size_t len, int flags)
@@ -238,26 +242,29 @@ int test_cbuf_peek(cbuf_t *cb, void *dst, int size)
     return size;
 }
 
-void test_cbuf_end(cbuf_t *cb) {
+void test_cbuf_end(cbuf_t *cb)
+{
     fake_cbuf_ended = 1;
 }
 
-int test_cbuf_has_ended(cbuf_t *cb) {
+int test_cbuf_has_ended(cbuf_t *cb)
+{
     return fake_cbuf_ended == 1;
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // test_event_listen
 //////////////////////////////////////////////////////////////////////////
 
-void test_event_listen_ok_cb(struct event_sock *server, int status)
+event_sock_t *test_event_listen_ok_cb(event_sock_t *server)
 {
-    TEST_ASSERT_EQUAL_MESSAGE(1, server->descriptor, "listen socket must be equal to 1");
-    TEST_ASSERT_EQUAL(0, status);
+    TEST_ASSERT_EQUAL_MESSAGE(1, server->descriptor,
+                              "listen socket must be equal to 1");
 
     // close socket
     event_close(server, close_s1_cb);
+
+    return NULL;
 }
 
 void test_event_listen(void)
@@ -267,39 +274,47 @@ void test_event_listen(void)
     event_loop_init(&loop);
 
     event_sock_t *sock = event_sock_create(&loop);
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock,
+                                  "result of sock_create cannot return null");
 
     // set fake functions
     select_fake.custom_fake = select_with_read_on_s1_fake;
-    socket_fake.return_val = 1;
+    socket_fake.return_val  = 1;
 
     // configure sock as server socket
     event_listen(sock, 8888, test_event_listen_ok_cb);
 
-    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port, "bind should be called with port 8888");
-    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count, "listen should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count,
+                              "socket should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count,
+                              "bind should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(
+      htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port,
+      "bind should be called with port 8888");
+    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count,
+                              "listen should be called once");
 
     // start loop
     event_loop(&loop);
 
-    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
+    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count,
+                              "select should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop),
+                              "all sockets should be unused after loop finish");
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // test_event_listen_no_more_sockets
 //////////////////////////////////////////////////////////////////////////
 
-void test_event_listen_no_more_sockets_cb(struct event_sock *server, int status)
+event_sock_t *test_event_listen_no_more_sockets_cb(event_sock_t *server)
 {
     TEST_ASSERT_EQUAL(1, server->descriptor);
-    TEST_ASSERT_EQUAL_MESSAGE(-1, status, "accept status should be error if no more clients are available");
 
     // close socket
     event_close(server, close_s1_cb);
+
+    return NULL;
 }
 
 void test_event_listen_no_sockets_available(void)
@@ -310,19 +325,25 @@ void test_event_listen_no_sockets_available(void)
     event_loop_init(&loop);
 
     event_sock_t *sock = event_sock_create(&loop);
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock,
+                                  "result of sock_create cannot return null");
 
     // set fake functions
     select_fake.custom_fake = select_with_read_on_s1_fake;
-    socket_fake.return_val = 1;
+    socket_fake.return_val  = 1;
 
     // configure sock as server socket
     event_listen(sock, 8888, test_event_listen_no_more_sockets_cb);
 
-    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count, "socket should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count, "bind should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port, "bind should be called with port 8888");
-    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count, "listen should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(1, socket_fake.call_count,
+                              "socket should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(1, bind_fake.call_count,
+                              "bind should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(
+      htons(8888), ((struct sockaddr_in6 *)bind_fake.arg1_val)->sin6_port,
+      "bind should be called with port 8888");
+    TEST_ASSERT_EQUAL_MESSAGE(1, listen_fake.call_count,
+                              "listen should be called once");
 
     // remove other sockets
     for (int i = 0; i < EVENT_MAX_SOCKETS - 1; i++) {
@@ -332,17 +353,19 @@ void test_event_listen_no_sockets_available(void)
     // start loop
     event_loop(&loop);
 
-    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(1, event_sock_unused(&loop), "server socket should be unused after loop finish");
+    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count,
+                              "select should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(
+      1, event_sock_unused(&loop),
+      "server socket should be unused after loop finish");
 }
 
 //////////////////////////////////////////////////////////////////////////
 // test_event_accept
 //////////////////////////////////////////////////////////////////////////
-void test_event_accept_listen_cb(struct event_sock *server, int status)
+event_sock_t *test_event_accept_listen_cb(event_sock_t *server)
 {
     TEST_ASSERT_EQUAL(1, server->descriptor);
-    TEST_ASSERT_EQUAL(0, status);
     TEST_ASSERT_NOT_EQUAL(NULL, server->loop);
 
     event_sock_t *client = event_sock_create(server->loop);
@@ -357,6 +380,8 @@ void test_event_accept_listen_cb(struct event_sock *server, int status)
     // close sockets
     event_close(client, close_s2_cb);
     event_close(server, close_s1_cb);
+
+    return client;
 }
 
 void test_event_accept(void)
@@ -366,10 +391,13 @@ void test_event_accept(void)
     event_loop_init(&loop);
 
     event_sock_t *sock = event_sock_create(&loop);
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock,
+                                  "result of sock_create cannot return null");
 
     // set fake functions
-    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_no_activity };
+    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *,
+                          struct timeval *) = { select_with_read_on_s1_fake,
+                                                select_with_no_activity };
     SET_CUSTOM_FAKE_SEQ(select, select_fakes, 2);
     socket_fake.return_val = 1;
 
@@ -379,8 +407,10 @@ void test_event_accept(void)
     // start loop
     event_loop(&loop);
 
-    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count, "select should be called once");
-    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
+    TEST_ASSERT_EQUAL_MESSAGE(1, select_fake.call_count,
+                              "select should be called once");
+    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop),
+                              "all sockets should be unused after loop finish");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -406,10 +436,9 @@ int test_event_read_hello_cb(struct event_sock *sock, int size, uint8_t *bytes)
     return 5;
 }
 
-void test_event_read_listen_cb(struct event_sock *server, int status)
+event_sock_t *test_event_read_listen_cb(event_sock_t *server)
 {
     TEST_ASSERT_EQUAL(1, server->descriptor);
-    TEST_ASSERT_EQUAL(0, status);
     TEST_ASSERT_NOT_EQUAL(NULL, server->loop);
 
     event_sock_t *client = event_sock_create(server->loop);
@@ -424,8 +453,9 @@ void test_event_read_listen_cb(struct event_sock *server, int status)
 
     // close sockets
     event_close(server, close_s1_cb);
-}
 
+    return client;
+}
 
 void test_event_read(void)
 {
@@ -434,26 +464,31 @@ void test_event_read(void)
     event_loop_init(&loop);
 
     event_sock_t *sock = event_sock_create(&loop);
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock,
+                                  "result of sock_create cannot return null");
 
     // set fake functions
-    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_read_on_s2_fake, select_with_no_activity };
+    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *,
+                          struct timeval *) = { select_with_read_on_s1_fake,
+                                                select_with_read_on_s2_fake,
+                                                select_with_no_activity };
     SET_CUSTOM_FAKE_SEQ(select, select_fakes, 3);
 
     // The call to socket should return the server socket value
     socket_fake.return_val = 1;
 
     // buffer responses
-    cbuf_peek_fake.custom_fake = test_cbuf_peek;
-    cbuf_pop_fake.custom_fake = test_cbuf_pop;
-    cbuf_len_fake.custom_fake = test_cbuf_len;
-    cbuf_maxlen_fake.custom_fake = test_cbuf_maxlen;
-    cbuf_push_fake.custom_fake = test_cbuf_push;
-    cbuf_end_fake.custom_fake = test_cbuf_end;
+    cbuf_peek_fake.custom_fake      = test_cbuf_peek;
+    cbuf_pop_fake.custom_fake       = test_cbuf_pop;
+    cbuf_len_fake.custom_fake       = test_cbuf_len;
+    cbuf_maxlen_fake.custom_fake    = test_cbuf_maxlen;
+    cbuf_push_fake.custom_fake      = test_cbuf_push;
+    cbuf_end_fake.custom_fake       = test_cbuf_end;
     cbuf_has_ended_fake.custom_fake = test_cbuf_has_ended;
 
     // read "Hello, World!" on first read and nothing after
-    ssize_t (*recv_fakes[])(int, void *, size_t, int) = { recv_hello_world, recv_nothing };
+    ssize_t (*recv_fakes[])(int, void *, size_t, int) = { recv_hello_world,
+                                                          recv_nothing };
     SET_CUSTOM_FAKE_SEQ(recv, recv_fakes, 2);
 
     // configure sock as server socket
@@ -463,9 +498,9 @@ void test_event_read(void)
     event_loop(&loop);
 
     TEST_ASSERT_EQUAL(3, select_fake.call_count);
-    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
+    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop),
+                              "all sockets should be unused after loop finish");
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // test_event_write
@@ -479,10 +514,9 @@ void test_event_write_hello_world_cb(struct event_sock *client, int status)
     event_close(client, close_s2_cb);
 }
 
-void test_event_write_listen_cb(struct event_sock *server, int status)
+event_sock_t *test_event_write_listen_cb(event_sock_t *server)
 {
     TEST_ASSERT_EQUAL(1, server->descriptor);
-    TEST_ASSERT_EQUAL(0, status);
     TEST_ASSERT_NOT_EQUAL(NULL, server->loop);
 
     event_sock_t *client = event_sock_create(server->loop);
@@ -494,10 +528,13 @@ void test_event_write_listen_cb(struct event_sock *server, int status)
     event_write_enable(client, buf, 32);
 
     // call write
-    event_write(client, 13, (unsigned char *)"Hello, World!", test_event_write_hello_world_cb);
+    event_write(client, 13, (unsigned char *)"Hello, World!",
+                test_event_write_hello_world_cb);
 
     // close sockets
     event_close(server, close_s1_cb);
+
+    return client;
 }
 
 void test_event_write(void)
@@ -507,10 +544,13 @@ void test_event_write(void)
     event_loop_init(&loop);
 
     event_sock_t *sock = event_sock_create(&loop);
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock, "result of sock_create cannot return null");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(NULL, sock,
+                                  "result of sock_create cannot return null");
 
     // set fake functions
-    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *, struct timeval *) = { select_with_read_on_s1_fake, select_with_write_on_s2_fake };
+    int (*select_fakes[])(int, fd_set *, fd_set *, fd_set *,
+                          struct timeval *) = { select_with_read_on_s1_fake,
+                                                select_with_write_on_s2_fake };
     SET_CUSTOM_FAKE_SEQ(select, select_fakes, 2);
 
     // The call to socket should return the server socket value
@@ -520,16 +560,17 @@ void test_event_write(void)
     accept_fake.return_val = 2;
 
     // buffer responses
-    cbuf_peek_fake.custom_fake = test_cbuf_peek;
-    cbuf_pop_fake.custom_fake = test_cbuf_pop;
-    cbuf_len_fake.custom_fake = test_cbuf_len;
-    cbuf_maxlen_fake.custom_fake = test_cbuf_maxlen;
-    cbuf_push_fake.custom_fake = test_cbuf_push;
-    cbuf_end_fake.custom_fake = test_cbuf_end;
+    cbuf_peek_fake.custom_fake      = test_cbuf_peek;
+    cbuf_pop_fake.custom_fake       = test_cbuf_pop;
+    cbuf_len_fake.custom_fake       = test_cbuf_len;
+    cbuf_maxlen_fake.custom_fake    = test_cbuf_maxlen;
+    cbuf_push_fake.custom_fake      = test_cbuf_push;
+    cbuf_end_fake.custom_fake       = test_cbuf_end;
     cbuf_has_ended_fake.custom_fake = test_cbuf_has_ended;
 
     // read "Hello, World!" on first read and nothing after
-    ssize_t (*send_fakes[])(int, const void *, size_t, int) = { send_hello, send_world };
+    ssize_t (*send_fakes[])(int, const void *, size_t, int) = { send_hello,
+                                                                send_world };
     SET_CUSTOM_FAKE_SEQ(send, send_fakes, 2);
 
     // configure sock as server socket
@@ -539,7 +580,8 @@ void test_event_write(void)
     event_loop(&loop);
 
     TEST_ASSERT_EQUAL(3, select_fake.call_count);
-    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "all sockets should be unused after loop finish");
+    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop),
+                              "all sockets should be unused after loop finish");
 }
 //////////////////////////////////////////////////////////////////////////
 // test_event_sock_create
@@ -551,14 +593,17 @@ void test_event_sock_create(void)
 
     event_loop_init(&loop);
 
-    TEST_ASSERT_EQUAL_MESSAGE(EVENT_MAX_SOCKETS, event_sock_unused(&loop), "unused sockets should equal EVENT_MAX_SOCKETS after loop creation");
+    TEST_ASSERT_EQUAL_MESSAGE(
+      EVENT_MAX_SOCKETS, event_sock_unused(&loop),
+      "unused sockets should equal EVENT_MAX_SOCKETS after loop creation");
     for (int i = 0; i < EVENT_MAX_SOCKETS; i++) {
         event_sock_create(&loop);
     }
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, event_sock_unused(&loop), "only EVENT_MAX_SOCKETS can be created with event_sock_create");
+    TEST_ASSERT_EQUAL_MESSAGE(
+      0, event_sock_unused(&loop),
+      "only EVENT_MAX_SOCKETS can be created with event_sock_create");
 }
-
 
 int main(void)
 {
