@@ -115,10 +115,11 @@ summary
 *.orig
 *.co
 
-# Binaries
-two
-
 # Temporary files
 *.log
 *.pid
+summary.txt
+
+# Compilation data
 compile_commands.json
+.clangd
