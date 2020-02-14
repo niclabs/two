@@ -6,8 +6,5 @@ AlwaysBreakAfterReturnType: None
 AlwaysBreakAfterDefinitionReturnType: None
 AlignConsecutiveMacros: 'true'
 AlignConsecutiveAssignments: 'true'
-AllowAllArgumentsOnNextLine: 'false'
-BinPackArguments: 'true'
-BinPackParameters: 'true'
 
 ...
