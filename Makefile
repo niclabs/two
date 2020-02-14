@@ -42,7 +42,7 @@ h2spec-post:
 $(H2SPEC_ALL): /usr/local/bin/h2spec ./bin/basic
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi 
 	@(./bin/basic $(H2SPEC_PORT) 2> server.log & echo $$! > server.pid) && sleep 0.3 && \
-		(h2spec $@ -p $(H2SPEC_PORT) -o 10 > h2spec.log && rm h2spec.log); \
+		(h2spec $@ -p $(H2SPEC_PORT) > h2spec.log && rm h2spec.log); \
 		TOTAL=$$(awk '{print $$1 + 1}' summary.txt); \
 		FAILURES=$$(awk '{print $$2}' summary.txt); \
 		echo -n "$@: "; \
