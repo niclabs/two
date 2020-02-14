@@ -111,8 +111,6 @@ uint32_t hpack_decoder_read_bits_from_bytes(uint16_t current_bit_pointer,
     return code;
 }
 
-#if (INCLUDE_HUFFMAN_COMPRESSION)
-
 /*
  * Function: hpack_decoder_check_huffman_padding
  * Checks if the last byte has correct padding
@@ -215,9 +213,6 @@ int32_t hpack_decoder_decode_huffman_word(char *str, uint8_t *encoded_string,
     return hpack_decoder_check_huffman_padding(bits_left, encoded_string,
                                                encoded_string_size);
 }
-#endif
-
-#if (INCLUDE_HUFFMAN_COMPRESSION)
 
 /*
  * Function: hpack_decoder_decode_huffman_string
@@ -258,7 +253,6 @@ int32_t hpack_decoder_decode_huffman_string(char *str, uint32_t str_length,
     }
     return encoded_str_length + str_length_size;
 }
-#endif
 
 /*
  * Function: hpack_decoder_decode_non_huffman_string
@@ -303,13 +297,8 @@ int32_t hpack_decoder_decode_string(char *str, uint32_t str_length,
                                     uint8_t huffman_bit)
 {
     if (huffman_bit) {
-#if (INCLUDE_HUFFMAN_COMPRESSION)
         return hpack_decoder_decode_huffman_string(
           str, str_length, encoded_buffer, encoded_buffer_length);
-#else
-        ERROR("Not implemented: Cannot decode a huffman compressed header");
-        return INTERNAL_ERROR;
-#endif
     } else {
         return hpack_decoder_decode_non_huffman_string(
           str, str_length, encoded_buffer, encoded_buffer_length);

@@ -2,21 +2,19 @@
 // Created by gabriel on 19-07-19.
 //
 
-#include "unit.h"
 #include "fff.h"
 #include "hpack/huffman.h"
+#include "unit.h"
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
 extern const hpack_huffman_tree_t huffman_tree;
-#endif
 DEFINE_FFF_GLOBALS;
 
 /*helper function*/
 void pad_code(uint32_t *code, uint8_t length)
 {
     uint8_t number_of_padding_bits = 30 - length;
-    uint32_t padding = (1 << (number_of_padding_bits)) - 1;
-    uint32_t result = *code;
+    uint32_t padding               = (1 << (number_of_padding_bits)) - 1;
+    uint32_t result                = *code;
 
     result <<= number_of_padding_bits;
     result |= padding;
@@ -32,7 +30,6 @@ void setUp(void)
     FFF_RESET_HISTORY();
 }
 
-#if(INCLUDE_HUFFMAN_COMPRESSION)
 void test_hpack_huffman_encode_random(void)
 {
     int8_t rs = -1;
@@ -96,7 +93,6 @@ void test_hpack_huffman_encode_random(void)
        TEST_ASSERT_EQUAL(0x3fffffff, result.code);
        TEST_ASSERT_EQUAL(30, result.length);
        TEST_ASSERT_EQUAL(0, rs);*/
-
 }
 
 /*Test uniqueness of codes*/
@@ -138,16 +134,8 @@ void test_hpack_huffman_decode_random(void)
 {
     int8_t rs = -1;
     huffman_encoded_word_t encoded_word;
-    uint32_t codes[] = { 0x1ff8,
-                         0x15,
-                         0x17,
-                         0x66,
-                         0xfc,
-                         0x3fffe1,
-                         0x7fffee,
-                         0x3ffffe6,
-                         0x3ffffe7,
-                         0x7ffffed };
+    uint32_t codes[]  = { 0x1ff8,   0x15,     0x17,      0x66,      0xfc,
+                         0x3fffe1, 0x7fffee, 0x3ffffe6, 0x3ffffe7, 0x7ffffed };
     uint8_t lengths[] = { 13, 6, 6, 7, 8, 22, 23, 26, 26, 27 };
 
     for (int i = 0; i < 10; i++) {
@@ -157,10 +145,10 @@ void test_hpack_huffman_decode_random(void)
     uint8_t expected_result[] = { 0, 37, 46, 75, 88, 181, 182, 210, 213, 251 };
 
     for (int i = 0; i < 10; i++) {
-        encoded_word.code = codes[i];
+        encoded_word.code   = codes[i];
         encoded_word.length = lengths[i];
-        uint8_t sym = 0;
-        rs = hpack_huffman_decode(&encoded_word, &sym);
+        uint8_t sym         = 0;
+        rs                  = hpack_huffman_decode(&encoded_word, &sym);
         TEST_ASSERT_EQUAL(lengths[i], rs);
         TEST_ASSERT_EQUAL(expected_result[i], sym);
     }
@@ -180,7 +168,6 @@ void test_hpack_huffman_decode_twice(void)
     rs = hpack_huffman_decode(&encoded_word, &sym2);
     TEST_ASSERT_EQUAL(encoded_word.length, rs);
     TEST_ASSERT_EQUAL(sym1, sym2);
-
 }
 
 /*Test if symbol is not found by the decoder*/
@@ -208,11 +195,9 @@ void test_hpack_huffman_encode_then_decode(void)
         TEST_ASSERT_EQUAL(i, sym);
     }
 }
-#endif
 int main(void)
 {
     UNITY_BEGIN();
-#if(INCLUDE_HUFFMAN_COMPRESSION)
     UNIT_TEST(test_hpack_huffman_encode_random);
     UNIT_TEST(test_hpack_huffman_encode_unique);
     UNIT_TEST(test_hpack_huffman_encode_twice);
@@ -222,6 +207,5 @@ int main(void)
     UNIT_TEST(test_hpack_huffman_decode_not_found);
 
     UNIT_TEST(test_hpack_huffman_encode_then_decode);
-#endif
     return UNITY_END();
 }

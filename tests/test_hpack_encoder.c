@@ -530,7 +530,7 @@ void test_encode_literal_header_field_new_name_error(void)
                                          value_to_encode,
                                          encoded_string,
                                          HTTP2_STREAM_BUF_SIZE);
-    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(-2, rc); // string to large for buffer
     char name_to_encode2[10];
     for (int i = 0; i < 10; i++) {
         name_to_encode2[i] = 'w';
@@ -540,7 +540,7 @@ void test_encode_literal_header_field_new_name_error(void)
                                      value_to_encode,
                                      encoded_string,
                                      HTTP2_STREAM_BUF_SIZE);
-    TEST_ASSERT_EQUAL(-1, rc);
+    TEST_ASSERT_EQUAL(-2, rc); // string to large for buffer
 }
 
 void test_hpack_encoder_encode_test1(void)

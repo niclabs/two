@@ -5,7 +5,6 @@
 
 #define LOG_MODULE LOG_MODULE_HPACK
 
-#if (INCLUDE_HUFFMAN_COMPRESSION)
 /*
  * This is a implementation of a compact huffman tree using the algorithm in
  * Compact Data Structures A Practical Approach(2016) By G. Navarro
@@ -65,16 +64,6 @@ static const hpack_huffman_tree_t huffman_tree = {
            1073741820 }
 };
 
-/*
- * Function: hpack_huffman_encode
- * encodes the given symbol using the encoded representation stored in the
- * huffman_tree Input:
- *      -> *huffman_tree: Pointer to the huffman tree storing the encoded
- * symbols
- *      -> *result: Pointer to struct to save the result of the encoding
- *      -> sym: Symbol to encode
- * Output: 0 if it can encode the given symbol, -1 otherwise
- */
 int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
 {
     if (huffman_tree.L_inverse[sym] >=
@@ -97,16 +86,6 @@ int8_t hpack_huffman_encode(huffman_encoded_word_t *result, uint8_t sym)
     return -1;
 }
 
-/*
- * Function: hpack_huffman_decode
- * Decodes the given encoded word and stores the result in sym
- * Input:
- *      -> *encoded: Struct containing encoded word
- *      -> *sym: Byte to store result
- * Output:
- *      Returns the number of bits read if successful, if it cannot find the
- * symbol it returns -1
- */
 int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
 {
     uint8_t length = 30;
@@ -129,5 +108,3 @@ int8_t hpack_huffman_decode(huffman_encoded_word_t *encoded, uint8_t *sym)
     }
     return -1;
 }
-
-#endif
