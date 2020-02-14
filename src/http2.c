@@ -391,12 +391,11 @@ int handle_goaway_frame(http2_context_t *ctx, frame_header_t header,
         http2_error(ctx, HTTP2_FRAME_SIZE_ERROR);
         return -1;
     }
-    uint32_t last_stream_id = bytes_to_uint32_31(payload);
+    uint32_t last_stream_id = buffer_get_u31(payload);
 
     // log goaway frame
     DEBUG("     - last_stream_id: %u", (unsigned int)last_stream_id);
-    DEBUG("     - error_code: 0x%x",
-          (unsigned int)bytes_to_uint32(payload + 4));
+    DEBUG("     - error_code: 0x%x", (unsigned int)buffer_get_u32(payload + 4));
     // if sent goaway, close connection immediately
     if (ctx->flags & HTTP2_FLAGS_GOAWAY_SENT) {
         http2_close_immediate(ctx);
@@ -575,7 +574,7 @@ int handle_window_update_frame(http2_context_t *ctx, frame_header_t header,
         return -1;
     }
 
-    uint32_t window_size_increment = bytes_to_uint32_31(payload);
+    uint32_t window_size_increment = buffer_get_u31(payload);
     DEBUG("     - window_size_increment: %u",
           (unsigned int)window_size_increment);
     if (window_size_increment == 0) {
@@ -909,7 +908,7 @@ int handle_rst_stream_frame(http2_context_t *ctx, frame_header_t header,
         return -1;
     }
 
-    DEBUG("     - error_code: 0x%x", (unsigned int)bytes_to_uint32(payload));
+    DEBUG("     - error_code: 0x%x", (unsigned int)buffer_get_u32(payload));
 
     // close the stream
     ctx->stream.state = HTTP2_STREAM_CLOSED;

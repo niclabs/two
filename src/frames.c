@@ -32,14 +32,13 @@ static uint8_t frame_bytes[FRAME_MAX_SIZE];
  */
 int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
 {
-    uint32_24_to_byte_array(frame_header->length,
-                            byte_array); // length 24 bits -> bytes [0,2]
-    byte_array[3] = (uint8_t)frame_header->type;  // type 8    -> bytes [3]
-    byte_array[4] = (uint8_t)frame_header->flags; // flags 8   -> bytes[4]
-    uint32_31_to_byte_array(frame_header->stream_id,
-                            byte_array + 5); // length 31 -> bytes[5,8]
-    byte_array[5] = byte_array[5] | (frame_header->reserved
-                                     << (uint8_t)7); // reserved 1 -> bytes[5]
+    buffer_put_u24(byte_array, frame_header->length);
+    buffer_put_u8(byte_array + 3, frame_header->type);
+    buffer_put_u8(byte_array + 4, frame_header->flags);
+    buffer_put_u31(byte_array + 5, frame_header->stream_id);
+
+    // set reserved bit to 1
+    byte_array[5] |= 0x80;
 
     return 9;
 }
@@ -52,20 +51,10 @@ void frame_parse_header(frame_header_t *header, uint8_t *data,
     // cleanup memory first
     memset(header, 0, sizeof(frame_header_t));
 
-    // read header length
-    header->length |= (data[2]);
-    header->length |= (data[1] << 8);
-    header->length |= (data[0] << 16);
-
-    // read type and flags
-    header->type  = data[3];
-    header->flags = data[4];
-
-    // unset the first bit of the id
-    header->stream_id |= (data[5] & 0x7F) << 24;
-    header->stream_id |= data[6] << 16;
-    header->stream_id |= data[7] << 8;
-    header->stream_id |= data[8] << 0;
+    header->length    = buffer_get_u24(data);
+    header->type      = buffer_get_u8(data + 3);
+    header->flags     = buffer_get_u8(data + 4);
+    header->stream_id = buffer_get_u31(data + 5);
 }
 
 int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack,
@@ -111,10 +100,10 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code,
     int frame_size = frame_header_to_bytes(&header, frame_bytes);
 
     /*We put the payload on the buffer*/
-    uint32_31_to_byte_array(last_open_stream_id, frame_bytes + frame_size);
+    buffer_put_u31(frame_bytes + frame_size, last_open_stream_id);
     frame_size += 4;
 
-    uint32_to_byte_array(error_code, frame_bytes + frame_size);
+    buffer_put_u32(frame_bytes + frame_size, error_code);
     frame_size += 4;
 
     return event_write(socket, frame_size, frame_bytes, cb);
@@ -143,11 +132,11 @@ int send_settings_frame(event_sock_t *socket, int ack,
     // write payload
     for (int i = 0; i < count && !ack; i++) {
         uint16_t identifier = ids[i];
-        uint16_to_byte_array(identifier, frame_bytes + frame_size);
+        buffer_put_u16(frame_bytes + frame_size, identifier);
         frame_size += 2;
 
         uint32_t value = settings_values[i];
-        uint32_to_byte_array(value, frame_bytes + frame_size);
+        buffer_put_u32(frame_bytes + frame_size, value);
         frame_size += 4;
     }
 
@@ -206,7 +195,7 @@ int send_window_update_frame(event_sock_t *socket,
     int frame_size = frame_header_to_bytes(&header, frame_bytes);
 
     /*Then we put the payload*/
-    uint32_31_to_byte_array(window_size_increment, frame_bytes + frame_size);
+    buffer_put_u31(frame_bytes + frame_size, window_size_increment);
     frame_size += header.length;
 
     // write to the socket
@@ -231,7 +220,7 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code,
     int frame_size = frame_header_to_bytes(&header, frame_bytes);
 
     /*Then we put the payload*/
-    uint32_to_byte_array(error_code, frame_bytes + frame_size);
+    buffer_put_u32(frame_bytes + frame_size, error_code);
     frame_size += header.length;
 
     // write to the socket
