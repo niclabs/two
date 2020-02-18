@@ -173,7 +173,7 @@ typedef struct event_sock
 typedef struct event_loop
 {
     // list of active sockets
-    event_sock_t *polling;
+    event_sock_t *reserved;
 
     // static memory
     LL(event_sock_t, sockets, EVENT_MAX_SOCKETS);
@@ -205,7 +205,9 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb);
 // of the library
 //
 // event_read_cb will be called on new data
-void event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize,
+void event_read_start(event_sock_t *sock,
+                      uint8_t *buf,
+                      unsigned int bufsize,
                       event_read_cb cb);
 
 // Update the notification callback for read operations in the given socket
@@ -229,11 +231,14 @@ void event_write_enable(event_sock_t *sock, uint8_t *buf, unsigned int bufsize);
 
 // Write to the output buffer, will notify the callback when all bytes are
 // written
-int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes,
+int event_write(event_sock_t *sock,
+                unsigned int size,
+                uint8_t *bytes,
                 event_write_cb cb);
 
 // Notify the callback on elapsed time
-event_t *event_timer(event_sock_t *sock, unsigned int millis,
+event_t *event_timer(event_sock_t *sock,
+                     unsigned int millis,
                      event_timer_cb cb);
 
 // Reset the given timer (will fail if called event other than a timer)

@@ -146,7 +146,8 @@ void event_sock_handle_read(event_sock_t *sock, event_t *event)
     }
 }
 
-void event_sock_handle_write(event_sock_t *sock, event_t *event,
+void event_sock_handle_write(event_sock_t *sock,
+                             event_t *event,
                              unsigned int written)
 {
     // notify the waiting write operatinons
@@ -237,14 +238,13 @@ void event_loop_timers(event_loop_t *loop)
     gettimeofday(&now, NULL);
 
     // for each socket and event, check if elapsed time has been reached
-    for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
+    for (event_sock_t *sock = loop->reserved; sock != NULL; sock = sock->next) {
         event_t *event = sock->events;
         while (event != NULL) {
             if (event->type != EVENT_TIMER_TYPE) {
                 event = event->next;
                 continue;
             }
-
             struct timeval diff;
 
             // Get time difference
@@ -261,7 +261,10 @@ void event_loop_timers(event_loop_t *loop)
                     LL_DELETE(event, sock->events);
 
                     // move event to loop unused list
-                    LL_PUSH(event, loop->events);
+                    event = LL_PUSH(event, loop->events);
+
+                    // go to next iteration
+                    continue;
                 }
             }
             event = event->next;
@@ -288,10 +291,11 @@ void event_loop_poll(event_loop_t *loop, int millis)
     for (int i = 0; i < loop->nfds; i++) {
         event_sock_t *sock;
         if (FD_ISSET(i, &loop->active_fds)) {
-            sock = event_sock_find(loop->polling, i);
+            sock = event_sock_find(loop->reserved, i);
         } else {
             continue;
         }
+        assert(sock != NULL);
 
         // check read operations
         if (FD_ISSET(i, &read_fds)) {
@@ -299,7 +303,7 @@ void event_loop_poll(event_loop_t *loop, int millis)
                 // read into sock buffer if any
                 event_sock_read(sock,
                                 event_find(sock->events, EVENT_READ_TYPE));
-            } else {
+            } else if (sock->state == EVENT_SOCK_LISTENING) {
                 event_sock_connect(
                   sock, event_find(sock->events, EVENT_CONNECTION_TYPE));
             }
@@ -315,7 +319,7 @@ void event_loop_poll(event_loop_t *loop, int millis)
 
 void event_loop_pending(event_loop_t *loop)
 {
-    for (event_sock_t *sock = loop->polling; sock != NULL; sock = sock->next) {
+    for (event_sock_t *sock = loop->reserved; sock != NULL; sock = sock->next) {
         event_t *event = event_find(sock->events, EVENT_READ_TYPE);
         if (event != NULL) {
             event_sock_handle_read(sock, event);
@@ -390,7 +394,7 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
         if (sock == NULL) { // new client connection
             DEBUG("new client connection");
             event_sock_t *server =
-              LL_FIND(loop->polling,
+              LL_FIND(loop->reserved,
                       LL_ELEM(event_sock_t)->state == EVENT_SOCK_LISTENING &&
                         UIP_HTONS(LL_ELEM(event_sock_t)->descriptor) ==
                           uip_conn->lport);
@@ -464,7 +468,7 @@ void event_sock_handle_event(event_loop_t *loop, void *data)
 
 void event_loop_close(event_loop_t *loop)
 {
-    event_sock_t *curr = loop->polling;
+    event_sock_t *curr = loop->reserved;
     event_sock_t *prev = NULL;
 
 #ifndef CONTIKI
@@ -477,7 +481,7 @@ void event_loop_close(event_loop_t *loop)
         if (curr->state == EVENT_SOCK_CLOSING &&
             (we == NULL || we->data.write.queue == NULL)) {
 #ifndef CONTIKI
-            // prevent sock to be used in polling
+            // prevent sock to be used in reserved
             FD_CLR(curr->descriptor, &loop->active_fds);
 
             // notify the client of socket closing
@@ -515,10 +519,10 @@ void event_loop_close(event_loop_t *loop)
             // Move curr socket to unused list
             event_sock_t *next = LL_PUSH(curr, loop->sockets);
 
-            // remove the socket from the polling list
+            // remove the socket from the reserved list
             // and move the socket back to the unused list
             if (prev == NULL) {
-                loop->polling = next;
+                loop->reserved = next;
             } else {
                 prev->next = next;
             }
@@ -551,7 +555,7 @@ void event_loop_close(event_loop_t *loop)
 
 int event_loop_is_alive(event_loop_t *loop)
 {
-    return loop->polling != NULL;
+    return loop->reserved != NULL;
 }
 
 // Public methods
@@ -572,8 +576,8 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
 
     // allow address reuse to prevent "address already in use" errors
     int option = 1;
-    setsockopt(sock->descriptor, SOL_SOCKET, SO_REUSEADDR, &option,
-               sizeof(option));
+    setsockopt(
+      sock->descriptor, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     /* Struct sockaddr_in6 needed for binding. Family defined for ipv6. */
     struct sockaddr_in6 sin6;
@@ -609,9 +613,6 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     // update sock state
     sock->state = EVENT_SOCK_LISTENING;
 
-    // add socket to polling queue
-    LL_PUSH(sock, loop->polling);
-
     // add event event to socket
     event_t *event = event_find_free(loop, sock);
     assert(event != NULL);
@@ -625,7 +626,9 @@ int event_listen(event_sock_t *sock, uint16_t port, event_connection_cb cb)
     return 0;
 }
 
-void event_read_start(event_sock_t *sock, uint8_t *buf, unsigned int bufsize,
+void event_read_start(event_sock_t *sock,
+                      uint8_t *buf,
+                      unsigned int bufsize,
                       event_read_cb cb)
 {
     // check socket status
@@ -741,7 +744,9 @@ void event_write_enable(event_sock_t *sock, uint8_t *buf, unsigned int bufsize)
     cbuf_init(&event->data.write.buf, buf, bufsize);
 }
 
-int event_write(event_sock_t *sock, unsigned int size, uint8_t *bytes,
+int event_write(event_sock_t *sock,
+                unsigned int size,
+                uint8_t *bytes,
                 event_write_cb cb)
 {
     // check socket status
@@ -791,11 +796,6 @@ event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
     assert(sock->loop != NULL);
     assert(cb != NULL);
 
-    // 0 == infinite
-    if (millis == 0) {
-        return NULL;
-    }
-
     // Get a new event
     event_t *event = event_find_free(sock->loop, sock);
     assert(event != NULL);
@@ -809,8 +809,10 @@ event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
     // get start time
     gettimeofday(&event->data.timer.start, NULL);
 #else
-    ctimer_set(&event->data.timer.ctimer, (millis * CLOCK_SECOND) / 1000,
-               event_sock_handle_timer, event);
+    ctimer_set(&event->data.timer.ctimer,
+               (millis * CLOCK_SECOND) / 1000,
+               event_sock_handle_timer,
+               event);
 #endif
 
     return event;
@@ -893,9 +895,6 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     // set client state
     client->state = EVENT_SOCK_CONNECTED;
 
-    // add socket to polling list
-    LL_PUSH(client, loop->polling);
-
     return 0;
 }
 
@@ -959,8 +958,12 @@ event_sock_t *event_sock_create(event_loop_t *loop)
     memset(sock, 0, sizeof(event_sock_t));
 
     // assign sock variables
-    sock->loop  = loop;
-    sock->state = EVENT_SOCK_CLOSED;
+    sock->loop       = loop;
+    sock->state      = EVENT_SOCK_CLOSED;
+    sock->descriptor = -1;
+
+    // add socket to reserved list
+    LL_PUSH(sock, loop->reserved);
 
     return sock;
 }
