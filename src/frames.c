@@ -43,9 +43,11 @@ int frame_header_to_bytes(frame_header_t *frame_header, uint8_t *byte_array)
     return 9;
 }
 
-void frame_parse_header(frame_header_t *header, uint8_t *data,
+void frame_parse_header(frame_header_t *header,
+                        uint8_t *data,
                         unsigned int size)
 {
+    (void)size;
     assert(size >= 9);
 
     // cleanup memory first
@@ -57,7 +59,9 @@ void frame_parse_header(frame_header_t *header, uint8_t *data,
     header->stream_id = buffer_get_u31(data + 5);
 }
 
-int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack,
+int send_ping_frame(event_sock_t *socket,
+                    uint8_t *opaque_data,
+                    int ack,
                     event_write_cb cb)
 {
     // reset the reserved memory
@@ -82,8 +86,10 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack,
     return event_write(socket, frame_size, frame_bytes, cb);
 }
 
-int send_goaway_frame(event_sock_t *socket, uint32_t error_code,
-                      uint32_t last_open_stream_id, event_write_cb cb)
+int send_goaway_frame(event_sock_t *socket,
+                      uint32_t error_code,
+                      uint32_t last_open_stream_id,
+                      event_write_cb cb)
 {
     // reset the reserved memory
     memset(frame_bytes, 0, FRAME_MAX_SIZE);
@@ -109,8 +115,10 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code,
     return event_write(socket, frame_size, frame_bytes, cb);
 }
 
-int send_settings_frame(event_sock_t *socket, int ack,
-                        uint32_t settings_values[], event_write_cb cb)
+int send_settings_frame(event_sock_t *socket,
+                        int ack,
+                        uint32_t settings_values[],
+                        event_write_cb cb)
 {
     // reset the reserved memory
     memset(frame_bytes, 0, FRAME_MAX_SIZE);
@@ -144,17 +152,20 @@ int send_settings_frame(event_sock_t *socket, int ack,
     return event_write(socket, frame_size, frame_bytes, cb);
 }
 
-int send_headers_frame(event_sock_t *socket, header_list_t *headers_list,
-                       hpack_dynamic_table_t *dynamic_table, uint32_t stream_id,
-                       uint8_t end_stream, event_write_cb cb)
+int send_headers_frame(event_sock_t *socket,
+                       header_list_t *headers_list,
+                       hpack_dynamic_table_t *dynamic_table,
+                       uint32_t stream_id,
+                       uint8_t end_stream,
+                       event_write_cb cb)
 {
     // reset the reserved memory
     memset(frame_bytes, 0, FRAME_MAX_SIZE);
 
     // try to encode hpack into the buffer, leaving
     // space for the frame header
-    int encoded_size = hpack_encode(dynamic_table, headers_list,
-                                    frame_bytes + 9, FRAME_MAX_SIZE - 9);
+    int encoded_size = hpack_encode(
+      dynamic_table, headers_list, frame_bytes + 9, FRAME_MAX_SIZE - 9);
 
     if (encoded_size < 0) {
         return encoded_size;
@@ -177,7 +188,8 @@ int send_headers_frame(event_sock_t *socket, header_list_t *headers_list,
 }
 
 int send_window_update_frame(event_sock_t *socket,
-                             uint8_t window_size_increment, uint32_t stream_id,
+                             uint32_t window_size_increment,
+                             uint32_t stream_id,
                              event_write_cb cb)
 {
     // reset the reserved memory
@@ -202,8 +214,10 @@ int send_window_update_frame(event_sock_t *socket,
     return event_write(socket, frame_size, frame_bytes, cb);
 }
 
-int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code,
-                          uint32_t stream_id, event_write_cb cb)
+int send_rst_stream_frame(event_sock_t *socket,
+                          uint32_t error_code,
+                          uint32_t stream_id,
+                          event_write_cb cb)
 {
     // reset the reserved memory
     memset(frame_bytes, 0, FRAME_MAX_SIZE);
@@ -227,8 +241,12 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code,
     return event_write(socket, frame_size, frame_bytes, cb);
 }
 
-int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size,
-                    uint32_t stream_id, uint8_t end_stream, event_write_cb cb)
+int send_data_frame(event_sock_t *socket,
+                    uint8_t *data,
+                    uint32_t size,
+                    uint32_t stream_id,
+                    uint8_t end_stream,
+                    event_write_cb cb)
 {
     // reset the reserved memory
     memset(frame_bytes, 0, FRAME_MAX_SIZE);

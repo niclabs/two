@@ -47,7 +47,8 @@ typedef struct frame_header
     uint32_t stream_id : 31;
 } frame_header_t; // 72 bits-> 9 bytes
 
-void frame_parse_header(frame_header_t *header, uint8_t *data,
+void frame_parse_header(frame_header_t *header,
+                        uint8_t *data,
                         unsigned int size);
 
 /*
@@ -55,7 +56,9 @@ void frame_parse_header(frame_header_t *header, uint8_t *data,
  * Queues a write of a ping frame to the socket
  * Return the actual number of bytes queued
  */
-int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack,
+int send_ping_frame(event_sock_t *socket,
+                    uint8_t *opaque_data,
+                    int ack,
                     event_write_cb cb);
 
 /*
@@ -63,8 +66,10 @@ int send_ping_frame(event_sock_t *socket, uint8_t *opaque_data, int ack,
  * Queues a write of a goaway frame to the socket
  * Return the actual number of bytes queued
  */
-int send_goaway_frame(event_sock_t *socket, uint32_t error_code,
-                      uint32_t last_open_stream_id, event_write_cb cb);
+int send_goaway_frame(event_sock_t *socket,
+                      uint32_t error_code,
+                      uint32_t last_open_stream_id,
+                      event_write_cb cb);
 
 /*
  * Function: send_settings_frame
@@ -74,8 +79,10 @@ int send_goaway_frame(event_sock_t *socket, uint32_t error_code,
  *
  * Return the actual number of bytes queued
  */
-int send_settings_frame(event_sock_t *socket, int ack,
-                        uint32_t settings_values[], event_write_cb cb);
+int send_settings_frame(event_sock_t *socket,
+                        int ack,
+                        uint32_t settings_values[],
+                        event_write_cb cb);
 
 /*
  * Function: send_headers_frame
@@ -88,9 +95,12 @@ int send_settings_frame(event_sock_t *socket, int ack,
  *        ->end_stream: boolean that indicates if END_STREAM_FLAG must be set
  *        ->cb: function to call on successful data send
  * Output: actual number of bytes queued*/
-int send_headers_frame(event_sock_t *socket, header_list_t *headers_list,
-                       hpack_dynamic_table_t *dynamic_table, uint32_t stream_id,
-                       uint8_t end_stream, event_write_cb cb);
+int send_headers_frame(event_sock_t *socket,
+                       header_list_t *headers_list,
+                       hpack_dynamic_table_t *dynamic_table,
+                       uint32_t stream_id,
+                       uint8_t end_stream,
+                       event_write_cb cb);
 /*
  * Function: send_window_update_frame
  * Queues a write of a window_update frame to the socket.
@@ -102,7 +112,8 @@ int send_headers_frame(event_sock_t *socket, header_list_t *headers_list,
  * Output: actual number of bytes queued
  */
 int send_window_update_frame(event_sock_t *socket,
-                             uint8_t window_size_increment, uint32_t stream_id,
+                             uint32_t window_size_increment,
+                             uint32_t stream_id,
                              event_write_cb cb);
 
 /*
@@ -114,8 +125,10 @@ int send_window_update_frame(event_sock_t *socket,
  *        -> cb: function to call when data is sent
  * Output: actual number of bytes queued
  */
-int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code,
-                          uint32_t stream_id, event_write_cb cb);
+int send_rst_stream_frame(event_sock_t *socket,
+                          uint32_t error_code,
+                          uint32_t stream_id,
+                          event_write_cb cb);
 
 /*
  * Function: send_data_frame
@@ -128,6 +141,10 @@ int send_rst_stream_frame(event_sock_t *socket, uint32_t error_code,
  *        -> cb: function to call when data is sent
  * Output: actual number of bytes queued
  */
-int send_data_frame(event_sock_t *socket, uint8_t *data, uint32_t size,
-                    uint32_t stream_id, uint8_t end_stream, event_write_cb cb);
+int send_data_frame(event_sock_t *socket,
+                    uint8_t *data,
+                    uint32_t size,
+                    uint32_t stream_id,
+                    uint8_t end_stream,
+                    event_write_cb cb);
 #endif // TWO_FRAMES_V3_H
