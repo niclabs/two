@@ -21,8 +21,8 @@ before_install:
 
 jobs:
   include:
-    #- stage: test
-    #  script: $SH "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
+    - stage: test
+      script: $SH "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
     - stage: http/2 conformance testing
       script: $SH "H2SPEC_SKIP=http2/6.9.2/1 make h2spec"
 
