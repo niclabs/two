@@ -225,7 +225,8 @@ void on_settings_sent(event_sock_t *sock, int status)
     ctx->flags |= HTTP2_FLAGS_WAITING_SETTINGS_ACK;
 
     // set ack timer
-    ctx->timer = event_timer(sock, HTTP2_SETTINGS_WAIT, on_settings_timeout);
+    ctx->timer =
+      event_timer_set(sock, HTTP2_SETTINGS_WAIT, on_settings_timeout);
 }
 
 // update remote settings from settings payload

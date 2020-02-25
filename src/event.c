@@ -789,7 +789,9 @@ int event_write(event_sock_t *sock,
     return to_write;
 }
 
-event_t *event_timer(event_sock_t *sock, unsigned int millis, event_timer_cb cb)
+event_t *event_timer_set(event_sock_t *sock,
+                         unsigned int millis,
+                         event_timer_cb cb)
 {
     // check socket status
     assert(sock != NULL);

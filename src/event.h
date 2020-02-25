@@ -237,9 +237,9 @@ int event_write(event_sock_t *sock,
                 event_write_cb cb);
 
 // Notify the callback on elapsed time
-event_t *event_timer(event_sock_t *sock,
-                     unsigned int millis,
-                     event_timer_cb cb);
+event_t *event_timer_set(event_sock_t *sock,
+                         unsigned int millis,
+                         event_timer_cb cb);
 
 // Reset the given timer (will fail if called event other than a timer)
 void event_timer_reset(event_t *timer);

@@ -385,7 +385,7 @@ void test_event_listen_no_sockets_available(void)
         event_sock_t *client = event_sock_create(&loop);
         // Set a timeout to close the socket immediately
         TEST_ASSERT_NOT_EQUAL(
-          NULL, event_timer(client, 0, test_event_listen_timeout));
+          NULL, event_timer_set(client, 0, test_event_listen_timeout));
     }
 
     // start loop
