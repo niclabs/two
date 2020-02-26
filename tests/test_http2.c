@@ -173,7 +173,7 @@ void parse_header(frame_header_t *header, uint8_t *data, unsigned int size)
     header->stream_id = read_u31(data + 5);
 }
 
-void test_handle_good_preface(void)
+void test_waiting_for_preface_ok(void)
 {
     event_sock_t client;
     http2_new_client(&client);
@@ -195,7 +195,7 @@ void test_handle_good_preface(void)
     http2_on_client_close(&client);
 }
 
-void test_handle_bad_preface(void)
+void test_waiting_for_preface_bad_preface(void)
 {
     event_sock_t client;
     http2_new_client(&client);
@@ -222,7 +222,7 @@ void test_handle_bad_preface(void)
     http2_on_client_close(&client);
 }
 
-void test_receive_settings(void)
+void test_waiting_for_settings_ok(void)
 {
     event_sock_t client;
     http2_context_t *ctx = http2_new_client(&client);
@@ -286,12 +286,63 @@ void test_receive_settings(void)
     http2_on_client_close(&client);
 }
 
+void test_waiting_for_settings_receive_ping(void)
+{
+    event_sock_t client;
+    http2_new_client(&client);
+
+    // use custom header parsing function
+    frame_parse_header_fake.custom_fake = parse_header;
+
+    // prepare settings frame
+    uint8_t buf[9 + 8] = { // header length 8 for ping
+                           0,
+                           0,
+                           8,
+                           // frame type
+                           FRAME_PING_TYPE,
+                           // no flags
+                           0,
+                           // stream id 0 (with reserved bit)
+                           0x80,
+                           0,
+                           0,
+                           0,
+                           // opaque data
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0
+    };
+
+    // the method consumed all bytes
+    TEST_ASSERT_EQUAL(17, waiting_for_settings(&client, 17, buf));
+
+    // the server never sends settings ack
+    TEST_ASSERT_EQUAL(0, send_settings_frame_fake.call_count);
+
+    // the server must send protocol error and stop receiving
+    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+    TEST_ASSERT_EQUAL(1, send_goaway_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, send_goaway_frame_fake.arg0_val);
+    TEST_ASSERT_EQUAL(HTTP2_PROTOCOL_ERROR, send_goaway_frame_fake.arg1_val);
+
+    // close client
+    http2_on_client_close(&client);
+}
+
 int main(void)
 
 {
     UNITY_BEGIN();
-    UNIT_TEST(test_handle_good_preface);
-    UNIT_TEST(test_handle_bad_preface);
-    UNIT_TEST(test_receive_settings);
+    UNIT_TEST(test_waiting_for_preface_ok);
+    UNIT_TEST(test_waiting_for_preface_bad_preface);
+    UNIT_TEST(test_waiting_for_settings_ok);
+    UNIT_TEST(test_waiting_for_settings_receive_ping);
     return UNITY_END();
 }
