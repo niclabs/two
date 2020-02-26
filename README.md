@@ -11,7 +11,7 @@ constant definitions.
 ## Features
 
 * HTTP/2 spec conformant. It passes most [h2spec tests](https://github.com/summerwind/h2spec) within the limitations below.
-* 1.5K of RAM needed per client.
+* 1.5K of RAM needed per client, including input and output buffers (it can be reduced).
 * Fully configurable using C language define directives.
 * Supports [HPACK compression](https://httpwg.org/specs/rfc7541.html).
 * Compatible with the [Contiki NG](http://contiki-ng.org/) operating system.
