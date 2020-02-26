@@ -22,7 +22,7 @@ before_install:
 jobs:
   include:
     - stage: unit tests
-      script: $SH "QUIET=0 make test"  && $SH "bash <(curl -s https://codecov.io/bash)"
+      script: $SH "QUIET=0 make test"  && docker exec -t embeddable bash <(curl -s https://codecov.io/bash)
     - stage: http/2 conformance testing
       script: $SH "H2SPEC_SKIP=http2/6.9.2/1 make h2spec"
 
