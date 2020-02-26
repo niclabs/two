@@ -22,9 +22,9 @@ before_install:
 jobs:
   include:
     - stage: unit tests
-      script: docker exec -t embeddable bash -c "QUIET=0 make test && bash <(curl -s https://codecov.io/bash)"
+      script: $SH "QUIET=0 make test"  && $SH "bash <(curl -s https://codecov.io/bash)"
     - stage: http/2 conformance testing
-      script: docker exec -t embeddable bash -c "H2SPEC_SKIP=http2/6.9.2/1 make h2spec"
+      script: $SH "H2SPEC_SKIP=http2/6.9.2/1 make h2spec"
 
 # Environment variables
 env:
@@ -32,3 +32,4 @@ env:
   global:
     - DOCKER_IMG='niclabs/embeddable:minimal'
     - TWO_HOST_PATH=`pwd`
+    - SH='docker exec -t embeddable bash -c'
