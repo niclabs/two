@@ -12,14 +12,14 @@ PROJECT_SOURCEFILES=two.c \
 					cbuf.c \
 					event.c \
 					header_list.c \
-					utils.c \
+					buffer.c \
 					frames.c \
 					hpack.c \
 					decoder.c \
 					encoder.c \
 					huffman.c \
 					tables.c \
-					hpack_utils.c \
+					utils.c \
 					http2.c
 
 #Default contiki target

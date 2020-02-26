@@ -862,8 +862,6 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     assert(server->state == EVENT_SOCK_LISTENING);
     assert(client->state == EVENT_SOCK_CLOSED);
 
-    event_loop_t *loop = client->loop;
-
 #ifdef CONTIKI
     // Check that a new connection has been established
     assert(server->uip_conn != NULL);
@@ -878,6 +876,7 @@ int event_accept(event_sock_t *server, event_sock_t *client)
     // use same port for client
     client->descriptor = server->descriptor;
 #else
+    event_loop_t *loop = client->loop;
     int clifd = accept(server->descriptor, NULL, NULL);
     if (clifd < 0) {
         ERROR("Failed to accept new client");
