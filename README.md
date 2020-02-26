@@ -3,7 +3,25 @@
 
 # two: HTTP/2 for constrained devices
 
-Experimental HTTP/2 server/client library, using static memory allocation only, aimed at use in [constrained devices](https://tools.ietf.org/html/rfc7228).
+Experimental HTTP/2 server and library, aimed at use in [constrained devices](https://tools.ietf.org/html/rfc7228). 
+The implementation uses a single thread for handling clients, and each client requires around 1.5K of static RAM, in the base configuration 
+(without [HPACK dynamic table](https://httpwg.org/specs/rfc7541.html#dynamic.table)). This can be further reduced by manipulating various buffer sizes through 
+constant definitions. 
+
+## Features
+
+* HTTP/2 spec conformant. It passes most [h2spec tests](https://github.com/summerwind/h2spec) within the limitations below.
+* 1.5K of RAM needed per client.
+* Fully configurable using C language define directives.
+* Supports [HPACK compression](https://httpwg.org/specs/rfc7541.html).
+* Compatible with the [Contiki NG](http://contiki-ng.org/) operating system.
+
+## Limitations
+
+* [Prior HTTP/2 knowledge](https://httpwg.org/specs/rfc7540.html#known-http) in assumed by the server. Connection upgrade is not implemented for now.
+* Single [HTTP/2 stream](https://httpwg.org/specs/rfc7540.html#StreamsLayer) support only. This also means no [stream priority](https://httpwg.org/specs/rfc7540.html#StreamPriority), and no [server push](https://httpwg.org/specs/rfc7540.html#PushResources).
+* Maximum effective frame size is limited to 512 bytes by default (configurable). In practice, this only affects handling of [HEADERS](https://httpwg.org/specs/rfc7540.html#HEADERS) frames, since [DATA](https://httpwg.org/specs/rfc7540.html#DATA) frame can be limited through the [flow control](https://httpwg.org/specs/rfc7540.html#FlowControl) window. Reception of a HEADERS frame larger than 512 bytes results in a FLOW_CONTROL_ERROR response.
+* No HTTPS support (for now).
 
 ## Why
 
@@ -24,46 +42,104 @@ Unlike HTTP/1.X, [HTTP/2 is suitable fo many IoT applications](https://www.ietf.
 
 We believe usage of HTTP/2 in constrained devices for Internet of Things applications should be further studied, however to date, no implementations are available for embedded devices.
 
-## Implementation details
-
-1. Prior version knowledge is assumed. Server replies with HTTP/2 connection preface. Connection upgrade and HTTP/1.1 are not supported at the moment.
-2. SETTINGS, HEADERS, CONTINUATION, DATA, WINDOW_UPDATE and GO_AWAY frame support is implemented
-3. Header compression with HPACK is optionally supported and configurable.
-
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
 ### Dependencies
 
-The project is designed to have no external dependencies other than gcc and libc, you willa also need `make` to build, and we are working on [Contiki OS](http://www.contiki-os.org) support. 
-Internally and for testing in Travis, we use a [Docker image with basic support for embedded programming](https://github.com/niclabs/docker/tree/master/embeddable) that you can download as well.
+The project is designed to have no external dependencies other than gcc and libc, you will also need `make` to build, and [Contiki NG](https://github.com/contiki-ng/contiki-ng/wiki) if building for embedded targets. 
+Internally and for testing in Travis, we use a [Docker image with embedded toolchain support](https://hub.docker.com/r/niclabs/embeddable) that you can install as well.
 
 ### Installing
 
-Clone the repo with:
-
+Clone the repo:
 ```{bash}
-git clone https://github.com/niclabs/two.git
+$ git clone https://github.com/niclabs/two.git
 ```
 
-If all your dependencies are working as intended, you can compile the project with:
-
+If all your dependencies are working as intended, you can compile the library by running .
 ```{bash}
-make
+$ cd two
+$ make
+```
+
+This will also compile a basic server executable (under `bin/`), implemented under `examples/basic/`. 
+The following command will run the server in the port 8888
+```{bash}
+$ bin/basic 8888
+[INFO] Starting HTTP/2 server in port 888
+```
+
+and it can be tested using curl
+```{bash}
+$ curl --http2-prior-knowledge http://localhost:8888
+Hello, World!!!
 ```
 
 ### Compiling inside Docker
 
-If you decided to use our docker image linked in the [dependencies](#dependencies) section, go to the project's directory in the terminal and execute the `embeddable` command.
-
-Then you can compile the project normally:
-
+If you decided to use our docker image linked in the [dependencies](#dependencies) section, you will have to clone the repository first
 ```{bash}
-make
+$ git clone https://github.com/niclabs/two.git
 ```
 
-## Running the tests
+Then go to the project's directory in the terminal and execute the `embeddable` command.
+```{bash}
+$ cd two
+$ embeddable
+```
+You should see a `user@<docker hash>:work` prompt.
+
+
+Then you can compile the project normally
+```{bash}
+user@hash:work $ make
+```
+
+### Building for Contiki targets
+
+The easiest way to build for Contiki targets is by using the [Contiki NG docker image](https://github.com/contiki-ng/contiki-ng/wiki/Docker), or our [embeddable docker image](https://hub.docker.com/r/niclabs/embeddable) if working with ARM targets.
+Otherwise you can find other installation methods in the [Contiki NG wiki](https://github.com/contiki-ng/contiki-ng/wiki). A basic server example for this platform can be found in `examples/contiki`.
+To build for the Contiki native platform, do
+```{bash}
+$ cd examples/contiki
+$ make
+```
+
+This should generate a server.native executable file. To run, do
+```{bash}
+$ sudo ./server.native
+opened tun device ``/dev/tun0''
+tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
+        inet 172.17.0.2  netmask 255.255.255.255  destination 172.17.0.2
+        inet6 fe80::190e:7a78:e345:7872  prefixlen 64  scopeid 0x20<link>
+        inet6 fd00::1  prefixlen 64  scopeid 0x0<global>
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+[INFO: Main      ] Starting Contiki-NG-release/v4.4-dirty
+[INFO: Main      ] - Routing: RPL Lite
+[INFO: Main      ] - Net: tun6
+[INFO: Main      ] - MAC: nullmac
+[INFO: Main      ] - 802.15.4 PANID: 0xabcd
+[INFO: Main      ] - 802.15.4 Default channel: 26
+[INFO: Main      ] Node ID: 1800
+[INFO: Main      ] Link-layer address: 0102.0304.0506.0708
+[INFO: Main      ] Tentative link-local IPv6 address: fe80::302:304:506:708
+[INFO: Native    ] Added global IPv6 address fd00::302:304:506:708
+[INFO] Starting HTTP/2 server in port 8888
+```
+Notice that you need the `sudo` command to create the tun device required to access the Contiki network stack, accessible through the given global IPv6 address. To perform a request, on another terminal do
+```{bash}
+$ curl --http2-prior-knowledge http://[fd00::302:304:506:708]:8888
+Hello, World!!!
+```
+
+## Testing
 
 To run the automated unit tests for the project you can do:
 
@@ -73,18 +149,14 @@ make distclean && make test
 
 The output should end with an `OK`.
 
-## Built With
+If you have the [h2spec](https://github.com/summerwind/h2spec) tool installed (or are running inside docker) you can run conformance tests using
+```{bash}
+make h2spec
+```
 
-* [Travis](https://travis-ci.com/) - Continuous integration
-* [ZenHub](https://www.zenhub.com/) - Issue and TODO tracking and metrics
+## Configuration options
 
-<!-- ## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us. -->
-
-## Versioning
-
-We use [GitHub](https://github.com/) for versioning. For the versions available, see the [tags on this repository](https://github.com/niclabs/two/tags).
+TODO: see [two-conf.h](src/two-conf.h) for now.
 
 ## Authors
 
@@ -103,7 +175,3 @@ See the list of [contributors](https://github.com/your/project/contributors) who
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to [the source of this README template](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2#file-readme-template-md)
