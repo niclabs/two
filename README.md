@@ -1,4 +1,5 @@
 [![Development Build Status](https://travis-ci.com/niclabs/two.svg?branch=develop)](https://travis-ci.com/niclabs/two)
+[![codecov](https://codecov.io/gh/niclabs/two/branch/develop/graph/badge.svg)](https://codecov.io/gh/niclabs/two)
 
 # two: HTTP/2 for constrained devices
 
