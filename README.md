@@ -4,15 +4,15 @@
 # two: HTTP/2 for constrained devices
 
 Experimental HTTP/2 server and library, aimed at use in [constrained devices](https://tools.ietf.org/html/rfc7228). 
-The implementation uses a single thread for handling clients, and each client requires around 1.5K of static RAM, in the base configuration 
-(without [HPACK dynamic table](https://httpwg.org/specs/rfc7541.html#dynamic.table)). This can be further reduced by manipulating various buffer sizes through 
-constant definitions. 
+The implementation uses a single thread for handling clients, and each client requires around 1.5K of static RAM, 
+in the base configuration (without [HPACK dynamic table](https://httpwg.org/specs/rfc7541.html#dynamic.table)). 
+This can be further reduced by manipulating various buffer sizes through constant definitions. 
 
 ## Features
 
 * HTTP/2 spec conformant. It passes most [h2spec tests](https://github.com/summerwind/h2spec) within the limitations below.
 * 1.5K of RAM needed per client, including input and output buffers (it can be reduced).
-* Fully configurable using C language define directives.
+* Fully [configurable](#configuration-macros) using C language macros.
 * Supports [HPACK compression](https://httpwg.org/specs/rfc7541.html).
 * Compatible with the [Contiki NG](http://contiki-ng.org/) operating system.
 
@@ -21,6 +21,7 @@ constant definitions.
 * [Prior HTTP/2 knowledge](https://httpwg.org/specs/rfc7540.html#known-http) in assumed by the server. Connection upgrade is not implemented for now.
 * Single [HTTP/2 stream](https://httpwg.org/specs/rfc7540.html#StreamsLayer) support only. This also means no [stream priority](https://httpwg.org/specs/rfc7540.html#StreamPriority), and no [server push](https://httpwg.org/specs/rfc7540.html#PushResources).
 * Maximum effective frame size is limited to 512 bytes by default (configurable). In practice, this only affects handling of [HEADERS](https://httpwg.org/specs/rfc7540.html#HEADERS) frames, since [DATA](https://httpwg.org/specs/rfc7540.html#DATA) frame size can be limited through the [flow control](https://httpwg.org/specs/rfc7540.html#FlowControl) window. Reception of a HEADERS frame larger than 512 bytes results in a [FLOW_CONTROL_ERROR](https://httpwg.org/specs/rfc7540.html#ErrorCodes) response.
+* Only GET method is supported.
 * No HTTPS support (for now).
 
 ## Why
@@ -142,7 +143,6 @@ Hello, World!!!
 ## Testing
 
 To run the automated unit tests for the project you can do:
-
 ```{bash}
 make distclean && make test
 ```
@@ -154,9 +154,32 @@ If you have the [h2spec](https://github.com/summerwind/h2spec) tool installed (o
 make h2spec
 ```
 
-## Configuration options
+## Configuration macros
 
-TODO: see [two-conf.h](src/two-conf.h) for now.
+Configuration macros for the server are defined in [two-conf.h](src/two-conf.h). To override, you can define a new header file "my-config.h"
+and addding `-DPROJECT_CONF_H=\"my-config.h\"` to compilation CFLAGS
+```{bash}
+$ cd two
+$ CFLAGS=-DPROJECT_CONF_H=\"my-config.h\" make
+```
+
+The following configuration macros are defined
+* _CONFIG_HTTP2_HEADER_TABLE_SIZE_, maximum value for the dynamic hpack header table. Setting this to zero disables use of the dynamic table for HPACK. This setting affects the size of static memory used by client.
+* _CONFIG_HTTP2_MAX_CONCURRNET_STREAMS_, maximum number of concurrent streams alloed by HTTP/2. It cannot be larger than 0.
+* _CONFIG_HTTP2_INITIAL_WINDOW_SIZE_, initial value for HTTP/2 window size. This value cannot be larger than the read buffer size.
+* _CONFIG_HTTP2_MAX_FRAME_SIZE_, initial value for SETTINGS_MAX_FRAME_SIZE. It has no effect on the size of the allocation buffers, the effective max frame size is given by the setting _CONFIG_HTTP2_SOCK_READ_SIZE_.
+* _CONFIG_HTTP2_MAX_HEADER_LIST_SIZE_, initial value for SETTINGS_MAX_HEADER_LIST_SIZE. It effectively sets the maximum number of decompressed bytes for the header list (see [header_list](src/header_list.h)). This setting has no impact on the static memory used by the implementation, however the value must be chosen carefully, since it have an effect on the stack size.
+* _CONFIG_HTTP2_SETTINGS_WAIT_, maximum time in milliseconds tom wait for the remote endpoint to reply to a settings frame (300 by default).
+* _CONFIG_HTTP2_SOCK_READ_SIZE_, size for the socket read buffer (512 bytes by default). This effectively limits the maximum frame size that can be received. Modifications to this value alter the total static memory used by the implementation.
+* _CONFIG_HTTP2_SOCK_WRITE_SIZE_, size for the socker write buffer (512 bytes by default). Modifications to this value alter the total static memory used by the implementation. 
+* _CONFIG_HTTP2_STREAM_BUF_SIZE_, set the maximum total data that can be received by a stream. This the total header block size that can be sent in HEADERS and CONTINUATION frames, and also the total data size that can be send by a HTTP response. This settings affects the static memory used by client.
+* _CONFIG_HTTP2_MAX_CLIENTS_, maximum number of concurrent clients allowed by the server.
+* _CONFIG_TWO_MAX_RESOURCES_, sets the maximum number of resource paths supported by the server. The default is 4.
+
+The approximate size of the memory used per server client can be calculated as
+```
+CONFIG_HTTP2_HEADER_TABLE_SIZE + CONFIG_HTTP2_SOCK_READ_SIZE + CONFIG_HTTP2_STREAM_BUF_SIZE + CONFIG_HTTP2_SOCK_WRITE_SIZE
+```
 
 ## Authors
 
