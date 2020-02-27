@@ -231,10 +231,10 @@ void test_waiting_for_settings_ok(void)
     frame_parse_header_fake.custom_fake = parse_header;
 
     // prepare settings frame
-    uint8_t buf[9 + 12] = { // header length 12
+    uint8_t buf[9 + 36] = { // header length 12
                             0,
                             0,
-                            6 + 6,
+                            6 * 6,
                             // frame type settings
                             FRAME_SETTINGS_TYPE,
                             // no flags
@@ -247,11 +247,27 @@ void test_waiting_for_settings_ok(void)
                             // settings id = header table size
                             0,
                             0x1,
-                            // setting value = 128
+                            // setting value = 77
                             0,
                             0,
                             0,
                             77,
+                            // settings id = enable push
+                            0,
+                            0x2,
+                            // settings value = 1
+                            0,
+                            0,
+                            0,
+                            0,
+                            // settings id = max concurrent streams
+                            0,
+                            0x3,
+                            // settings value = 5
+                            0,
+                            0,
+                            0,
+                            5,
                             // settings id = initial window size
                             0,
                             0x4,
@@ -259,16 +275,36 @@ void test_waiting_for_settings_ok(void)
                             0,
                             0,
                             0,
-                            127
+                            127,
+                            // settings id = max frame size
+                            0,
+                            0x5,
+                            // settings value = 16385
+                            0,
+                            0,
+                            0x40,
+                            0x01,
+                            // settings id = max header list size
+                            0,
+                            0x6,
+                            // settings value = 256
+                            0,
+                            0,
+                            0x01,
+                            0
 
     };
 
     // the method consumed all bytes
-    TEST_ASSERT_EQUAL(21, waiting_for_settings(&client, 21, buf));
+    TEST_ASSERT_EQUAL(45, waiting_for_settings(&client, 45, buf));
 
-    // the server updates the client context settings
-    ctx->settings.header_table_size   = 77;
-    ctx->settings.initial_window_size = 127;
+    // check that the server updated the client context settings
+    TEST_ASSERT_EQUAL(77, ctx->settings.header_table_size);
+    TEST_ASSERT_EQUAL(0, ctx->settings.enable_push);
+    TEST_ASSERT_EQUAL(5, ctx->settings.max_concurrent_streams);
+    TEST_ASSERT_EQUAL(127, ctx->settings.initial_window_size);
+    TEST_ASSERT_EQUAL(16385, ctx->settings.max_frame_size);
+    TEST_ASSERT_EQUAL(256, ctx->settings.max_header_list_size);
 
     // the server updates the dynamic table size
     TEST_ASSERT_EQUAL(1, hpack_dynamic_change_max_size_fake.call_count);
