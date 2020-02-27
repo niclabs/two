@@ -11,13 +11,6 @@
 #include "header_list.h"
 #include "hpack/hpack.h"
 
-/*Definition of max buffer size*/
-#ifdef CONFIG_MAX_BUFFER_SIZE
-#define FRAMES_MAX_BUFFER_SIZE (CONFIG_MAX_BUFFER_SIZE)
-#else
-#define FRAMES_MAX_BUFFER_SIZE 256
-#endif
-
 #define FRAME_FLAGS_NONE        (0x0)
 #define FRAME_FLAGS_ACK         (0x1)
 #define FRAME_FLAGS_END_STREAM  (0x1)
