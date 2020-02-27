@@ -10,7 +10,7 @@ This can be further reduced through [configuration macros](#configuration-macros
 
 ## Features
 
-* HTTP/2 spec conformant. It passes most [h2spec tests](https://github.com/summerwind/h2spec) within the limitations below.
+* HTTP/2 spec conformant. It passes most [h2spec tests](https://github.com/summerwind/h2spec) within the limitations below (see [h2spec.conf](h2spec.conf) for more information).
 * 1.5K of RAM needed per client, including input and output buffers (it can be reduced).
 * Fully [configurable](#configuration-macros) using C language macros.
 * Supports [HPACK compression](https://httpwg.org/specs/rfc7541.html).
@@ -176,7 +176,7 @@ The following configuration macros are defined
 * _CONFIG_HTTP2_MAX_CLIENTS_, maximum number of concurrent clients allowed by the server.
 * _CONFIG_TWO_MAX_RESOURCES_, sets the maximum number of resource paths supported by the server. The default is 4.
 
-The approximate size of the memory used per server client can be calculated as
+The approximate size of the memory used per client can be calculated as
 ```
 CONFIG_HTTP2_HEADER_TABLE_SIZE + CONFIG_HTTP2_SOCK_READ_SIZE + CONFIG_HTTP2_STREAM_BUF_SIZE + CONFIG_HTTP2_SOCK_WRITE_SIZE
 ```
