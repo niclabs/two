@@ -150,7 +150,7 @@
 #endif
 
 /**
- * HPACK module log level (info by default)
+ * HPACK module log level (off by default)
  */
 #ifdef CONFIG_LOG_LEVEL_HPACK
 #define LOG_LEVEL_HPACK (CONFIG_LOG_LEVEL_HPACK)
