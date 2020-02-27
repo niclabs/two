@@ -1,7 +1,7 @@
 [![Development Build Status](https://travis-ci.com/niclabs/two.svg?branch=develop)](https://travis-ci.com/niclabs/two)
 [![codecov](https://codecov.io/gh/niclabs/two/branch/develop/graph/badge.svg)](https://codecov.io/gh/niclabs/two)
 
-# two: HTTP/2 for constrained devices
+# two: HTTP/2 for constrained IoT devices
 
 Experimental HTTP/2 server and library, aimed at use in [constrained devices](https://tools.ietf.org/html/rfc7228). 
 The implementation uses a single thread for handling clients, and each client requires around 1.5K of static RAM, 
@@ -18,10 +18,10 @@ This can be further reduced by manipulating various buffer sizes through constan
 
 ## Limitations
 
+* Only HTTP GET method is supported.
 * [Prior HTTP/2 knowledge](https://httpwg.org/specs/rfc7540.html#known-http) in assumed by the server. Connection upgrade is not implemented for now.
 * Single [HTTP/2 stream](https://httpwg.org/specs/rfc7540.html#StreamsLayer) support only. This also means no [stream priority](https://httpwg.org/specs/rfc7540.html#StreamPriority), and no [server push](https://httpwg.org/specs/rfc7540.html#PushResources).
 * Maximum effective frame size is limited to 512 bytes by default (configurable). In practice, this only affects handling of [HEADERS](https://httpwg.org/specs/rfc7540.html#HEADERS) frames, since [DATA](https://httpwg.org/specs/rfc7540.html#DATA) frame size can be limited through the [flow control](https://httpwg.org/specs/rfc7540.html#FlowControl) window. Reception of a HEADERS frame larger than 512 bytes results in a [FLOW_CONTROL_ERROR](https://httpwg.org/specs/rfc7540.html#ErrorCodes) response.
-* Only GET method is supported.
 * No HTTPS support (for now).
 
 ## Why
