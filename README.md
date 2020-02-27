@@ -165,7 +165,7 @@ $ CFLAGS=-DPROJECT_CONF_H=\"my-config.h\" make
 
 The following configuration macros are defined
 * _CONFIG_HTTP2_HEADER_TABLE_SIZE_, maximum value for the dynamic hpack header table. Setting this to zero disables use of the dynamic table for HPACK. This setting affects the size of static memory used by client.
-* _CONFIG_HTTP2_MAX_CONCURRNET_STREAMS_, maximum number of concurrent streams alloed by HTTP/2. It cannot be larger than 0.
+* _CONFIG_HTTP2_MAX_CONCURRENT_STREAMS_, maximum number of concurrent streams alloed by HTTP/2. It cannot be larger than 0.
 * _CONFIG_HTTP2_INITIAL_WINDOW_SIZE_, initial value for HTTP/2 window size. This value cannot be larger than the read buffer size.
 * _CONFIG_HTTP2_MAX_FRAME_SIZE_, initial value for SETTINGS_MAX_FRAME_SIZE. It has no effect on the size of the allocation buffers, the effective max frame size is given by the setting _CONFIG_HTTP2_SOCK_READ_SIZE_.
 * _CONFIG_HTTP2_MAX_HEADER_LIST_SIZE_, initial value for SETTINGS_MAX_HEADER_LIST_SIZE. It effectively sets the maximum number of decompressed bytes for the header list (see [header_list](src/header_list.h)). This setting has no impact on the static memory used by the implementation, however the value must be chosen carefully, since it have an effect on the stack size.
@@ -174,7 +174,7 @@ The following configuration macros are defined
 * _CONFIG_HTTP2_SOCK_WRITE_SIZE_, size for the socker write buffer (512 bytes by default). Modifications to this value alter the total static memory used by the implementation. 
 * _CONFIG_HTTP2_STREAM_BUF_SIZE_, set the maximum total data that can be received by a stream. This the total header block size that can be sent in HEADERS and CONTINUATION frames, and also the total data size that can be send by a HTTP response. This settings affects the static memory used by client.
 * _CONFIG_HTTP2_MAX_CLIENTS_, maximum number of concurrent clients allowed by the server.
-* _CONFIG_TWO_MAX_RESOURCES_, sets the maximum number of resource paths supported by the server. The default is 4.
+* _CONFIG_TWO_MAX_RESOURCES_, sets the maximum number of [resource paths](src/two.h) supported by the server. The default is 4.
 
 The approximate size of the memory used per client can be calculated as
 ```
