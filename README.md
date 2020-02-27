@@ -4,9 +4,9 @@
 # two: HTTP/2 for constrained IoT devices
 
 Experimental HTTP/2 server and library, aimed at use in [constrained devices](https://tools.ietf.org/html/rfc7228). 
-The implementation uses a single thread for handling clients, and each client requires around 1.5K of static RAM, 
+The implementation uses a single thread for handling clients, and each client requires around 1.5K of static RAM 
 in the base configuration (without [HPACK dynamic table](https://httpwg.org/specs/rfc7541.html#dynamic.table)). 
-This can be further reduced by manipulating various buffer sizes through constant definitions. 
+This can be further reduced through [configuration macros](#configuration-macros).
 
 ## Features
 
