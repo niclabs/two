@@ -174,7 +174,7 @@ The following configuration macros are defined
 * _CONFIG_HTTP2_SOCK_WRITE_SIZE_, size for the socker write buffer (512 bytes by default). Modifications to this value alter the total static memory used by the implementation. 
 * _CONFIG_HTTP2_STREAM_BUF_SIZE_, set the maximum total data that can be received by a stream. This the total header block size that can be sent in HEADERS and CONTINUATION frames, and also the total data size that can be send by a HTTP response. This settings affects the static memory used by client.
 * _CONFIG_HTTP2_MAX_CLIENTS_, maximum number of concurrent clients allowed by the server.
-* _CONFIG_TWO_MAX_RESOURCES_, sets the maximum number of [resource paths](src/two.h#L_57) supported by the server. The default is 4.
+* _CONFIG_TWO_MAX_RESOURCES_, sets the maximum number of [resource paths](src/two.h#L57) supported by the server. The default is 4.
 
 The approximate size of the memory used per client can be calculated as
 ```
