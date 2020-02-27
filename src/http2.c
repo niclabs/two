@@ -272,11 +272,11 @@ int update_settings(http2_context_t *ctx, uint8_t *data, int length)
                 break;
             case HTTP2_SETTINGS_ENABLE_PUSH:
                 DEBUG("     - enable_push: %u", (unsigned int)value);
-                ctx->settings.enable_push = value;
                 if (value != 0 && value != 1) {
                     http2_error(ctx, HTTP2_PROTOCOL_ERROR);
                     return 0;
                 }
+                ctx->settings.enable_push = value;
                 break;
             case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
                 ctx->settings.max_concurrent_streams = value;
