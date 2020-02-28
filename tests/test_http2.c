@@ -787,6 +787,51 @@ void test_recv_unexpected_settings_ack(void)
     http2_on_client_close(&client);
 }
 
+void test_recv_settings_ack_with_non_zero_size(void)
+{
+    event_sock_t client;
+    http2_new_client(&client);
+
+    // use custom header parsing function
+    frame_parse_header_fake.custom_fake = parse_header;
+
+    // prepare settings frame
+    uint8_t buf[9 + 6] = { // header length 12
+                           0,
+                           0,
+                           6,
+                           // frame type settings
+                           FRAME_SETTINGS_TYPE,
+                           //  flags ack
+                           FRAME_FLAGS_ACK,
+                           // stream id 0 (with reserved bit)
+                           0x80,
+                           0,
+                           0,
+                           0,
+                           // settings id = initial window size
+                           0,
+                           0x4,
+                           // settings value = 255
+                           0,
+                           0,
+                           0,
+                           255
+    };
+
+    // the method consumed all bytes
+    TEST_ASSERT_EQUAL(15, receiving(&client, 15, buf));
+
+    // not waiting for an ack so do not call event_timer_stop
+    TEST_ASSERT_EQUAL(0, event_timer_stop_fake.call_count);
+
+    // the server must send flow control error and stop receiving
+    test_http2_error(&client, HTTP2_FRAME_SIZE_ERROR);
+
+    // close client
+    http2_on_client_close(&client);
+}
+
 void test_recv_settings_ack(void)
 {
     event_sock_t client;
@@ -850,6 +895,7 @@ int main(void)
     UNIT_TEST(test_recv_settings_initial_window_size_too_large);
     UNIT_TEST(test_recv_settings_with_unknown_identifier);
     UNIT_TEST(test_recv_settings_with_non_zero_stream_id);
+    UNIT_TEST(test_recv_settings_ack_with_non_zero_size);
     UNIT_TEST(test_recv_settings_with_bad_size);
     UNIT_TEST(test_recv_unexpected_settings_ack);
     UNIT_TEST(test_recv_settings_ack);
