@@ -175,6 +175,27 @@ void parse_header(frame_header_t *header, uint8_t *data, unsigned int size)
     header->stream_id = read_u31(data + 5);
 }
 
+void test_http2_error(event_sock_t *client, http2_error_t error)
+{
+    // check that client stops reading
+    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
+    TEST_ASSERT_EQUAL(client, event_read_stop_fake.arg0_val);
+
+    // check that the server sends goaway with given error code
+    TEST_ASSERT_EQUAL(1, send_goaway_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(client, send_goaway_frame_fake.arg0_val);
+    TEST_ASSERT_EQUAL(error, send_goaway_frame_fake.arg1_val);
+}
+
+void test_http2_close_immediate(int count, event_sock_t *client)
+{
+    // event read stop and event close should be called
+    TEST_ASSERT_EQUAL(count + 1, event_close_fake.call_count);
+    TEST_ASSERT_EQUAL(client, event_close_fake.arg0_val);
+    TEST_ASSERT_EQUAL(count + 1, event_read_stop_fake.call_count);
+    TEST_ASSERT_EQUAL(client, event_read_stop_fake.arg0_val);
+}
+
 void test_remote_endpoint_closed(void)
 {
 
@@ -183,27 +204,15 @@ void test_remote_endpoint_closed(void)
 
     // test remote close on waiting for preface
     TEST_ASSERT_EQUAL(0, waiting_for_preface(&client, 0, NULL));
-    // event read stop and event close should be called
-    TEST_ASSERT_EQUAL(1, event_close_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_close_fake.arg0_val);
-    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+    test_http2_close_immediate(0, &client);
 
     // test remote close on waiting for settings
     TEST_ASSERT_EQUAL(0, waiting_for_settings(&client, 0, NULL));
-    // event read stop and event close should be called
-    TEST_ASSERT_EQUAL(2, event_close_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_close_fake.arg0_val);
-    TEST_ASSERT_EQUAL(2, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+    test_http2_close_immediate(1, &client);
 
     // test remote close while receiving
     TEST_ASSERT_EQUAL(0, receiving(&client, 0, NULL));
-    // event read stop and event close should be called
-    TEST_ASSERT_EQUAL(3, event_close_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_close_fake.arg0_val);
-    TEST_ASSERT_EQUAL(3, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+    test_http2_close_immediate(2, &client);
 
     // close client
     http2_on_client_close(&client);
@@ -257,10 +266,7 @@ void test_recv_a_bad_preface(void)
     TEST_ASSERT_EQUAL(24, waiting_for_preface(&client, 24, buf));
 
     // on bad preface the server must close the client
-    TEST_ASSERT_EQUAL(1, event_close_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_close_fake.arg0_val);
-    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+    test_http2_close_immediate(0, &client);
 
     // the server must not send settings
     TEST_ASSERT_EQUAL(0, send_settings_frame_fake.call_count);
@@ -413,11 +419,7 @@ void test_recv_ping_while_waiting_for_settings(void)
     TEST_ASSERT_EQUAL(0, send_settings_frame_fake.call_count);
 
     // the server must send protocol error and stop receiving
-    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
-    TEST_ASSERT_EQUAL(1, send_goaway_frame_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, send_goaway_frame_fake.arg0_val);
-    TEST_ASSERT_EQUAL(HTTP2_PROTOCOL_ERROR, send_goaway_frame_fake.arg1_val);
+    test_http2_error(&client, HTTP2_PROTOCOL_ERROR);
 
     // close client
     http2_on_client_close(&client);
@@ -466,11 +468,7 @@ void test_recv_settings_max_frame_size_too_small(void)
     TEST_ASSERT_EQUAL(16384, ctx->settings.max_frame_size);
 
     // the server must send protocol error and stop receiving
-    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
-    TEST_ASSERT_EQUAL(1, send_goaway_frame_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, send_goaway_frame_fake.arg0_val);
-    TEST_ASSERT_EQUAL(HTTP2_PROTOCOL_ERROR, send_goaway_frame_fake.arg1_val);
+    test_http2_error(&client, HTTP2_PROTOCOL_ERROR);
 
     // close client
     http2_on_client_close(&client);
@@ -519,11 +517,7 @@ void test_recv_settings_max_frame_size_too_large(void)
     TEST_ASSERT_EQUAL(16384, ctx->settings.max_frame_size);
 
     // the server must send protocol error and stop receiving
-    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
-    TEST_ASSERT_EQUAL(1, send_goaway_frame_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, send_goaway_frame_fake.arg0_val);
-    TEST_ASSERT_EQUAL(HTTP2_PROTOCOL_ERROR, send_goaway_frame_fake.arg1_val);
+    test_http2_error(&client, HTTP2_PROTOCOL_ERROR);
 
     // close client
     http2_on_client_close(&client);
@@ -552,7 +546,7 @@ void test_recv_settings_enable_push_wrong_value(void)
                            0,
                            0,
                            0,
-                           // settings id = max frame size
+                           // settings id = enable push
                            0,
                            0x2,
                            // settings value = 2
@@ -572,11 +566,7 @@ void test_recv_settings_enable_push_wrong_value(void)
     TEST_ASSERT_EQUAL(1, ctx->settings.enable_push);
 
     // the server must send protocol error and stop receiving
-    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
-    TEST_ASSERT_EQUAL(1, send_goaway_frame_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, send_goaway_frame_fake.arg0_val);
-    TEST_ASSERT_EQUAL(HTTP2_PROTOCOL_ERROR, send_goaway_frame_fake.arg1_val);
+    test_http2_error(&client, HTTP2_PROTOCOL_ERROR);
 
     // close client
     http2_on_client_close(&client);
@@ -604,7 +594,7 @@ void test_recv_settings_initial_window_size_too_large(void)
                            0,
                            0,
                            0,
-                           // settings id = max frame size
+                           // settings id = initial_window_size
                            0,
                            0x4,
                            // settings value = 2^31
@@ -623,13 +613,8 @@ void test_recv_settings_initial_window_size_too_large(void)
     // check that the server maintains max fram size
     TEST_ASSERT_EQUAL(65535, ctx->settings.initial_window_size);
 
-    // the server must send protocol error and stop receiving
-    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
-    TEST_ASSERT_EQUAL(1, send_goaway_frame_fake.call_count);
-    TEST_ASSERT_EQUAL(&client, send_goaway_frame_fake.arg0_val);
-    TEST_ASSERT_EQUAL(HTTP2_FLOW_CONTROL_ERROR,
-                      send_goaway_frame_fake.arg1_val);
+    // the server must send flow control error and stop receiving
+    test_http2_error(&client, HTTP2_FLOW_CONTROL_ERROR);
 
     // close client
     http2_on_client_close(&client);
@@ -681,6 +666,171 @@ void test_recv_settings_with_unknown_identifier(void)
     http2_on_client_close(&client);
 }
 
+void test_recv_settings_with_non_zero_stream_id(void)
+{
+    event_sock_t client;
+    http2_context_t *ctx = http2_new_client(&client);
+
+    // use custom header parsing function
+    frame_parse_header_fake.custom_fake = parse_header;
+
+    // prepare settings frame
+    uint8_t buf[9 + 6] = { // header length 12
+                           0,
+                           0,
+                           6 * 1,
+                           // frame type settings
+                           FRAME_SETTINGS_TYPE,
+                           // no flags
+                           0,
+                           // stream id 1 (with reserved bit)
+                           0x80,
+                           0,
+                           0,
+                           1,
+                           // settings id = initial window size
+                           0,
+                           0x4,
+                           // settings value = 255
+                           0,
+                           0,
+                           0,
+                           255
+    };
+
+    // the method consumed all bytes
+    TEST_ASSERT_EQUAL(15, receiving(&client, 15, buf));
+
+    // the server never sends settings ack
+    TEST_ASSERT_EQUAL(0, send_settings_frame_fake.call_count);
+
+    // check that the server maintains max fram size
+    TEST_ASSERT_EQUAL(65535, ctx->settings.initial_window_size);
+
+    // the server must send flow control error and stop receiving
+    test_http2_error(&client, HTTP2_PROTOCOL_ERROR);
+
+    // close client
+    http2_on_client_close(&client);
+}
+
+void test_recv_settings_with_bad_size(void)
+{
+    event_sock_t client;
+    http2_new_client(&client);
+
+    // use custom header parsing function
+    frame_parse_header_fake.custom_fake = parse_header;
+
+    // prepare settings frame
+    uint8_t buf[9 + 1] = { // header length 12
+                           0,
+                           0,
+                           1,
+                           // frame type settings
+                           FRAME_SETTINGS_TYPE,
+                           // no flags
+                           0,
+                           // stream id 0 (with reserved bit)
+                           0x80,
+                           0,
+                           0,
+                           0,
+                           // garbage
+                           75
+    };
+
+    // the method consumed all bytes
+    TEST_ASSERT_EQUAL(10, receiving(&client, 10, buf));
+
+    // the server never sends settings ack
+    TEST_ASSERT_EQUAL(0, send_settings_frame_fake.call_count);
+
+    // the server must send flow control error and stop receiving
+    test_http2_error(&client, HTTP2_FRAME_SIZE_ERROR);
+
+    // close client
+    http2_on_client_close(&client);
+}
+
+void test_recv_unexpected_settings_ack(void)
+{
+    event_sock_t client;
+    http2_new_client(&client);
+
+    // use custom header parsing function
+    frame_parse_header_fake.custom_fake = parse_header;
+
+    // prepare settings frame
+    uint8_t buf[9] = { // header length 12
+                       0,
+                       0,
+                       0,
+                       // frame type settings
+                       FRAME_SETTINGS_TYPE,
+                       //  flags ack
+                       FRAME_FLAGS_ACK,
+                       // stream id 0 (with reserved bit)
+                       0x80,
+                       0,
+                       0,
+                       0
+    };
+
+    // the method consumed all bytes
+    TEST_ASSERT_EQUAL(9, receiving(&client, 9, buf));
+
+    // not waiting for an ack so do not call event_timer_stop
+    TEST_ASSERT_EQUAL(0, event_timer_stop_fake.call_count);
+
+    // close client
+    http2_on_client_close(&client);
+}
+
+void test_recv_settings_ack(void)
+{
+    event_sock_t client;
+    http2_new_client(&client);
+
+    uint8_t *buf = (uint8_t *)"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+
+    // "send" preface to trigger the server sending settings
+    TEST_ASSERT_EQUAL(24, waiting_for_preface(&client, 24, buf));
+
+    // simulate write callback call
+    // TODO: it does not hurt if the server sets the timer immediately after
+    // calling event_write and it prevents having to do this in testing
+    on_settings_sent(&client, 0);
+
+    // use custom header parsing function
+    frame_parse_header_fake.custom_fake = parse_header;
+
+    // prepare response
+    uint8_t res[9] = { // header length 12
+                       0,
+                       0,
+                       0,
+                       // frame type settings
+                       FRAME_SETTINGS_TYPE,
+                       //  flags ack
+                       FRAME_FLAGS_ACK,
+                       // stream id 0 (with reserved bit)
+                       0x80,
+                       0,
+                       0,
+                       0
+    };
+
+    // the method consumed all bytes
+    TEST_ASSERT_EQUAL(9, receiving(&client, 9, res));
+
+    // the server should stop the ACK timer
+    TEST_ASSERT_EQUAL(1, event_timer_stop_fake.call_count);
+
+    // close client
+    http2_on_client_close(&client);
+}
+
 int main(void)
 
 {
@@ -699,5 +849,9 @@ int main(void)
     UNIT_TEST(test_recv_settings_enable_push_wrong_value);
     UNIT_TEST(test_recv_settings_initial_window_size_too_large);
     UNIT_TEST(test_recv_settings_with_unknown_identifier);
+    UNIT_TEST(test_recv_settings_with_non_zero_stream_id);
+    UNIT_TEST(test_recv_settings_with_bad_size);
+    UNIT_TEST(test_recv_unexpected_settings_ack);
+    UNIT_TEST(test_recv_settings_ack);
     return UNITY_END();
 }
