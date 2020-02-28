@@ -175,6 +175,40 @@ void parse_header(frame_header_t *header, uint8_t *data, unsigned int size)
     header->stream_id = read_u31(data + 5);
 }
 
+void test_remote_endpoint_closed(void)
+{
+
+    event_sock_t client;
+    http2_new_client(&client);
+
+    // test remote close on waiting for preface
+    TEST_ASSERT_EQUAL(0, waiting_for_preface(&client, 0, NULL));
+    // event read stop and event close should be called
+    TEST_ASSERT_EQUAL(1, event_close_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, event_close_fake.arg0_val);
+    TEST_ASSERT_EQUAL(1, event_read_stop_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+
+    // test remote close on waiting for settings
+    TEST_ASSERT_EQUAL(0, waiting_for_settings(&client, 0, NULL));
+    // event read stop and event close should be called
+    TEST_ASSERT_EQUAL(2, event_close_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, event_close_fake.arg0_val);
+    TEST_ASSERT_EQUAL(2, event_read_stop_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+
+    // test remote close while receiving
+    TEST_ASSERT_EQUAL(0, receiving(&client, 0, NULL));
+    // event read stop and event close should be called
+    TEST_ASSERT_EQUAL(3, event_close_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, event_close_fake.arg0_val);
+    TEST_ASSERT_EQUAL(3, event_read_stop_fake.call_count);
+    TEST_ASSERT_EQUAL(&client, event_read_stop_fake.arg0_val);
+
+    // close client
+    http2_on_client_close(&client);
+}
+
 void test_recv_a_correct_preface(void)
 {
     event_sock_t client;
@@ -658,6 +692,7 @@ int main(void)
     // settings tests
     UNIT_TEST(test_settings_sent);
     UNIT_TEST(test_recv_settings);
+    UNIT_TEST(test_remote_endpoint_closed);
     UNIT_TEST(test_recv_ping_while_waiting_for_settings);
     UNIT_TEST(test_recv_settings_max_frame_size_too_small);
     UNIT_TEST(test_recv_settings_max_frame_size_too_large);
