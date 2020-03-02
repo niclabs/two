@@ -181,7 +181,7 @@ The approximate size of the memory used per client can be calculated as
 CONFIG_HTTP2_HEADER_TABLE_SIZE + CONFIG_HTTP2_SOCK_READ_SIZE + CONFIG_HTTP2_STREAM_BUF_SIZE + CONFIG_HTTP2_SOCK_WRITE_SIZE
 ```
 
-## Creating a server with code
+## Server API
 
 A simple server API is defined in [two.h](src/two.h). All it is needed to run a server is to register one or more resources
 and then call [two_server_start()](src/two.h#L31), as shown by the code below.
@@ -200,7 +200,10 @@ int hello(char * method, char * uri, char * response, unsigned int maxlen)
 }
 
 int main() {
+    // GET /hello requests will call the hello callback
     two_register_resource("GET", "/hello", "text/plain", hello);
+
+    // start the server on port 8888
     two_server_start(8888);
 }
 ```
