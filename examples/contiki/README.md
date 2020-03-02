@@ -95,7 +95,7 @@ tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
 
 If everything worked correctly, you should see a pair of IPv6 addresses (if not, try rebooting the device),
 this means the device has an IP address and it can receive connections. To test, try to ping the global IPv6 address
-(starting with fd00::).
+(starting with `fd00::`).
 ```
 examples/contiki $ ping6 fd00::212:4b00:194a:5233
 PING fd00::212:4b00:194a:5233(fd00::212:4b00:194a:5233) 56 data bytes
@@ -104,7 +104,7 @@ PING fd00::212:4b00:194a:5233(fd00::212:4b00:194a:5233) 56 data bytes
 64 bytes from fd00::212:4b00:194a:5233: icmp_seq=3 ttl=64 time=39.6 ms
 ```
 
-If ping works, you can now run h2spec tests agains the embedded device using
+If ping works, you can now run h2spec tests against the embedded device using
 ```{bash}
 examples/contiki $ TARGET=zoul H2SPEC_ADDR=fd00::212:4b00:194a:5233 make h2spec
 ------------------------------
