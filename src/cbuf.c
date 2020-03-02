@@ -4,7 +4,7 @@
 #include "logging.h"
 #include "macros.h"
 
-void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen)
+void cbuf_init(cbuf_t *cbuf, uint8_t *buf, int maxlen)
 {
     cbuf->ptr    = buf;
     cbuf->head   = 0;
@@ -14,7 +14,7 @@ void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen)
     cbuf->state  = CBUF_OPEN;
 }
 
-int cbuf_push(cbuf_t *cbuf, void *src, int len)
+int cbuf_push(cbuf_t *cbuf, uint8_t *src, int len)
 {
     int bytes = 0;
     while (len > 0 && cbuf->len < cbuf->maxlen && cbuf->state == CBUF_OPEN) {
@@ -41,7 +41,7 @@ int cbuf_push(cbuf_t *cbuf, void *src, int len)
     return bytes;
 }
 
-int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
+int cbuf_pop(cbuf_t *cbuf, uint8_t *dst, int len)
 {
     int bytes = 0;
 
@@ -73,7 +73,7 @@ int cbuf_pop(cbuf_t *cbuf, void *dst, int len)
     return bytes;
 }
 
-int cbuf_peek(cbuf_t *cbuf, void *dst, int len)
+int cbuf_peek(cbuf_t *cbuf, uint8_t *dst, int len)
 {
     int bytes   = 0;
     int cbuflen = cbuf->len;

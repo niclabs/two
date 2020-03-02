@@ -25,10 +25,10 @@ FAKE_VALUE_FUNC(int,
                 struct timeval *);
 FAKE_VALUE_FUNC(ssize_t, recv, int, void *, size_t, int);
 FAKE_VALUE_FUNC(ssize_t, send, int, const void *, size_t, int);
-FAKE_VOID_FUNC(cbuf_init, cbuf_t *, void *, int);
-FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, void *, int);
-FAKE_VALUE_FUNC(int, cbuf_peek, cbuf_t *, void *, int);
-FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, void *, int);
+FAKE_VOID_FUNC(cbuf_init, cbuf_t *, uint8_t *, int);
+FAKE_VALUE_FUNC(int, cbuf_push, cbuf_t *, uint8_t *, int);
+FAKE_VALUE_FUNC(int, cbuf_peek, cbuf_t *, uint8_t *, int);
+FAKE_VALUE_FUNC(int, cbuf_pop, cbuf_t *, uint8_t *, int);
 FAKE_VALUE_FUNC(int, cbuf_len, cbuf_t *);
 FAKE_VALUE_FUNC(int, cbuf_maxlen, cbuf_t *);
 FAKE_VOID_FUNC(cbuf_end, cbuf_t *);
@@ -227,7 +227,7 @@ int test_cbuf_maxlen(cbuf_t *cbuf)
     return 32;
 }
 
-int test_cbuf_pop(cbuf_t *cb, void *dst, int size)
+int test_cbuf_pop(cbuf_t *cb, uint8_t *dst, int size)
 {
     TEST_ASSERT_GREATER_OR_EQUAL(size, fake_cbuf_len);
 
@@ -240,7 +240,7 @@ int test_cbuf_pop(cbuf_t *cb, void *dst, int size)
     return size;
 }
 
-int test_cbuf_push(cbuf_t *cb, void *dst, int size)
+int test_cbuf_push(cbuf_t *cb, uint8_t *dst, int size)
 {
     if (size > 0 && !fake_cbuf_ended) {
         fake_cbuf_len += size;
@@ -249,7 +249,7 @@ int test_cbuf_push(cbuf_t *cb, void *dst, int size)
     return 0;
 }
 
-int test_cbuf_peek(cbuf_t *cb, void *dst, int size)
+int test_cbuf_peek(cbuf_t *cb, uint8_t *dst, int size)
 {
     TEST_ASSERT_GREATER_OR_EQUAL(size, fake_cbuf_len);
 

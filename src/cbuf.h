@@ -20,7 +20,7 @@
 
 typedef struct
 {
-    void *ptr;
+    uint8_t *ptr;
     int maxlen;
     int len;
 
@@ -40,23 +40,23 @@ typedef struct
  * Initialize circular buffer with the specified
  * memory pointer and length
  */
-void cbuf_init(cbuf_t *cbuf, void *buf, int maxlen);
+void cbuf_init(cbuf_t *cbuf, uint8_t *buf, int maxlen);
 
 /**
  * Push data to the end of the circular buffer
  */
-int cbuf_push(cbuf_t *cbuf, void *src, int len);
+int cbuf_push(cbuf_t *cbuf, uint8_t *src, int len);
 
 /**
  * Pop data from the beginning of the circular buffer
  */
-int cbuf_pop(cbuf_t *cbuf, void *dst, int len);
+int cbuf_pop(cbuf_t *cbuf, uint8_t *dst, int len);
 
 /**
  * Peek data from the circular buffer without altering
  * the read pointer
  */
-int cbuf_peek(cbuf_t *cbuf, void *dst, int len);
+int cbuf_peek(cbuf_t *cbuf, uint8_t *dst, int len);
 
 /**
  * Return available read size
