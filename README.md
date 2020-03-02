@@ -211,8 +211,15 @@ int main() {
 A resource binds an action to a server [path](https://tools.ietf.org/html/rfc3986#section-3.3).
 The action is defined through a callback, and can be anything (returning a static message, returning a reading from a sensor, etc.). However,
 the callback must not block. Since the server is single-threaded, blocking the callback will prevent the server from
-interacting with other clients. The content type of a resource response is defined when registering the resource, and supported
+interacting with other clients. 
+
+The content type of a resource response is defined when registering the resource, and supported
 content types are defined in [content_type.h](src/content_type.h).
+
+
+## More examples
+
+See [examples](examples/).
 
 ## Authors
 
