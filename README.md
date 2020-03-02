@@ -181,6 +181,36 @@ The approximate size of the memory used per client can be calculated as
 CONFIG_HTTP2_HEADER_TABLE_SIZE + CONFIG_HTTP2_SOCK_READ_SIZE + CONFIG_HTTP2_STREAM_BUF_SIZE + CONFIG_HTTP2_SOCK_WRITE_SIZE
 ```
 
+## Creating a server with code
+
+A simple server API is defined in [two.h](src/two.h). All it is needed to run a server is to register one or more resources
+and then call [two_server_start()](src/two.h#L31), as shown by the code below.
+
+```{c}
+#include "two.h"
+
+int hello(char * method, char * uri, char * response, unsigned int maxlen) 
+{
+    // copy response data to the provided buffer, the response size
+    // cannot be larger than maxlen
+    strcpy(response, "Hello, World!!!");
+
+    // return content length or -1 for an error
+    return 15;
+}
+
+int main() {
+    two_register_resource("GET", "/hello", "text/plain", hello);
+    two_server_start(8888);
+}
+```
+
+A resource binds an action to a server [path](https://tools.ietf.org/html/rfc3986#section-3.3).
+The action is defined through a callback, and can be anything (returning a static message, returning a reading from a sensor, etc.). However,
+the callback must not block. Since the server is single-threaded, blocking the callback will prevent the server from
+interacting with other clients. The content type of a resource response is defined when registering the resource, and supported
+content types are defined in [content_type.h](src/content_type.h).
+
 ## Authors
 
 * **Sandra Céspedes** - *Mastermind behind the project* - [webpage](https://www.cec.uchile.cl/~scespedes/)
