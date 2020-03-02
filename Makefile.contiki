@@ -30,15 +30,25 @@ TARGET ?= native
 # files
 CFLAGS += -I$(TWO_SRC)
 
-# Include shell module by default
+ifneq ($(BORDER_ROUTER),)
+MODULES += os/services/rpl-border-router
+else
+# Include shell module by default if not a BR
 ifeq ($(DISABLE_SHELL),)
 MODULES += os/services/shell
+endif
 endif
 
 # Use newlib for ARM based targets
 # (save memory)
 ifneq ($(filter $(TARGET),zoul openmote iotlab cc2538dk nrf52dk),)
 LDFLAGS += -specs=nano.specs
+endif
+
+# Add connect-router target if PORT is defined
+ifneq ($(PORT),)
+connect-router: $(PORT) $(CONTIKI)/tools/serial-io/tunslip6
+	sudo $(CONTIKI)/tools/serial-io/tunslip6 -s $(PORT) fd00::1/64
 endif
 
 # Begin h2spec targets
