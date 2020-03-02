@@ -21,12 +21,7 @@ int hello_world(char *method, char *uri, char *response, unsigned int maxlen)
     (void)method;
     (void)uri;
 
-    char *msg = "Hello, World!!!";
-    int len   = MIN(strlen(msg), maxlen);
-
-    // Copy the response
-    memcpy(response, msg, len);
-    return len;
+    return snprintf(response, maxlen, "Hello, World!!!\n");
 }
 
 int main(int argc, char **argv)
