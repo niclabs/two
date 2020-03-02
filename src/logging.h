@@ -26,12 +26,12 @@
 #include "two-conf.h"
 
 // Log levels
-#define LOG_LEVEL_DEBUG (1)
-#define LOG_LEVEL_INFO  (2)
+#define LOG_LEVEL_DEBUG (5)
+#define LOG_LEVEL_INFO  (4)
 #define LOG_LEVEL_WARN  (3)
-#define LOG_LEVEL_ERROR (4)
-#define LOG_LEVEL_FATAL (5)
-#define LOG_LEVEL_OFF   (6)
+#define LOG_LEVEL_ERROR (2)
+#define LOG_LEVEL_FATAL (1)
+#define LOG_LEVEL_OFF   (0)
 
 // Log modules
 #define LOG_MODULE_EVENT EVENT
@@ -63,7 +63,7 @@
 // If LOG_MODULE is defined use LOG_LEVEL_<module>
 // unless ENABLE_DEBUG is defined
 // otherwise use LOG_LEVEL
-#if defined(LOG_MODULE) && !defined(ENABLE_DEBUG)
+#if defined(LOG_MODULE)
 #define __LOG_CONCAT0(x, y) x##y
 #define __LOG_CONCAT1(x, y) __LOG_CONCAT0(x, y)
 #define __LOG_LEVEL(module) __LOG_CONCAT1(LOG_LEVEL_, module)
@@ -72,7 +72,7 @@
 #endif
 
 // Condition to check if logging is enabled
-#define SHOULD_LOG(level, module) level >= __LOG_LEVEL(module)
+#define SHOULD_LOG(level, module) level <= __LOG_LEVEL(module)
 
 #ifdef CONTIKI
 #define LOG_EXIT(code) process_exit(PROCESS_CURRENT())
@@ -82,19 +82,17 @@
 #define LOG_PRINT(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-#if defined(ENABLE_DEBUG)
-#undef LOG_LEVEL
-#define LOG_LEVEL (LOG_LEVEL_DEBUG)
-#endif
-
 #ifndef LOG_LEVEL
 #define LOG_LEVEL (LOG_LEVEL_ERROR)
 #endif
 
 #if SHOULD_LOG(LOG_LEVEL_DEBUG, LOG_MODULE)
 #define LOG(level, func, file, line, msg, ...)                                 \
-    LOG_PRINT("[" #level "] " msg "; at %s:%d in %s()\n", ##__VA_ARGS__, file, \
-              line, func)
+    LOG_PRINT("[" #level "] " msg "; at %s:%d in %s()\n",                      \
+              ##__VA_ARGS__,                                                   \
+              file,                                                            \
+              line,                                                            \
+              func)
 #else
 #define LOG(level, func, file, line, msg, ...)                                 \
     LOG_PRINT("[" #level "] " msg "\n", ##__VA_ARGS__)
@@ -126,8 +124,13 @@
 #define ERROR(msg, ...)                                                        \
     do {                                                                       \
         if (errno > 0) {                                                       \
-            LOG(ERROR, __func__, __FILE__, __LINE__, msg " (%s)",              \
-                ##__VA_ARGS__, strerror(errno));                               \
+            LOG(ERROR,                                                         \
+                __func__,                                                      \
+                __FILE__,                                                      \
+                __LINE__,                                                      \
+                msg " (%s)",                                                   \
+                ##__VA_ARGS__,                                                 \
+                strerror(errno));                                              \
         } else {                                                               \
             LOG(ERROR, __func__, __FILE__, __LINE__, msg, ##__VA_ARGS__);      \
         }                                                                      \
@@ -141,8 +144,13 @@
 #define FATAL(msg, ...)                                                        \
     do {                                                                       \
         if (errno > 0) {                                                       \
-            LOG(FATAL, __func__, __FILE__, __LINE__, msg " (%s)",              \
-                ##__VA_ARGS__, strerror(errno));                               \
+            LOG(FATAL,                                                         \
+                __func__,                                                      \
+                __FILE__,                                                      \
+                __LINE__,                                                      \
+                msg " (%s)",                                                   \
+                ##__VA_ARGS__,                                                 \
+                strerror(errno));                                              \
         } else {                                                               \
             LOG(FATAL, __func__, __FILE__, __LINE__, msg, ##__VA_ARGS__);      \
         }                                                                      \
