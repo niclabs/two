@@ -3,11 +3,13 @@
 This example defines a basic HTTP/2 server to run on embedded target using [Contiki-NG](https://github.com/contiki-ng/contiki-ng/).
 
 The easiest way to build for Contiki targets is by using the [Contiki NG docker image](https://github.com/contiki-ng/contiki-ng/wiki/Docker), or our [embeddable docker image](https://hub.docker.com/r/niclabs/embeddable) if working with ARM targets.
+
+For building for a specific 
 Otherwise you can find other installation methods in the [Contiki NG wiki](https://github.com/contiki-ng/contiki-ng/wiki). A basic server example for this platform can be found in `examples/contiki`.
 
 ```{bash}
 $ cd examples/contiki
-$ make
+examples/contiki $ make
 ```
 
 This should generate a `server.native executable` file. To run, do
@@ -42,10 +44,52 @@ $ curl --http2-prior-knowledge http://[fd00::302:304:506:708]:8888
 Hello, World!!!
 ```
 
+For building for a specific [Contiki-NG platform](https://github.com/contiki-ng/contiki-ng/wiki#the-contiki-ng-platforms), you need to set the TARGET environment variable. For instance, for the zoul platform.
+```{bash}
+examples/contiki $ TARGET=zoul make
+```
+To flash the firmware, set PORT with the serial device for the board.
+```{bash}
+examples/contiki $ TARGET=zoul PORT=/dev/ttyUSB0 make server.upload
+Flashing /dev/ttyUSB0
+Opening port /dev/ttyUSB0, baud 460800
+Reading data from build/zoul/remote-revb/server.bin
+Cannot auto-detect firmware filetype: Assuming .bin
+Connecting to target...
+...
+```
+By default, Contiki-NG builds are compiled with shell support. To connect to the device
+```{bash}
+examples/contiki $ TARGET=zoul PORT=/dev/ttyUSB0 make login
+connecting to /dev/ttyUSB0 [OK]
+
+#0012.4b00.194a.5233> help
+Available commands:
+'> help': Shows this help
+'> reboot': Reboot the board by watchdog_reboot()
+'> log module level': Sets log level (0--4) for a given module (or "all"). For module "mac", level 4 also enables per-slot logging.
+'> mac-addr': Shows the node's MAC address
+'> ip-addr': Shows all IPv6 addresses
+'> ip-nbr': Shows all IPv6 neighbors
+'> ping addr': Pings the IPv6 address 'addr'
+'> routes': Shows the route entries
+'> rpl-set-root 0/1 [prefix]': Sets node as root (1) or not (0). A /64 prefix can be optionally specified.
+'> rpl-local-repair': Triggers a RPL local repair
+'> rpl-refresh-routes': Refreshes all routes through a DTSN increment
+'> rpl-status': Shows a summary of the current RPL state
+'> rpl-nbr': Shows the RPL neighbor table
+'> rpl-global-repair': Triggers a RPL global repair
+#0012.4b00.194a.5233>
+```
+
+If the device is configured as part of a [RPL network](https://github.com/contiki-ng/contiki-ng/wiki/Tutorial:-IPv6-ping), you can connect to the server using its global IPv6 address (given by the `ip-addr` command).
+
+To connect to the server through a [SLIP connection](https://en.wikipedia.org/wiki/Serial_Line_Internet_Protocol), see instructions for testing with h2spec below.
+
 ## Testing
 
 It is possible to run the suite of [h2spec](https://github.com/summerwind/h2spec) tests against Contiki NG targets. 
-For running against a native target, it suffices to run `make h2spec` inside the current folder.
+For running against a native target, it suffices to run `make h2spec` inside the `examples/contiki` folder.
 
 For running against an embedded target, you will need to configure the device to act as a [RPL border router](https://github.com/contiki-ng/contiki-ng/wiki/Tutorial:-RPL-border-router)
 (or use two devices connected through wireless link). This will let the device obtain an IPv6 address to test against.
@@ -96,7 +140,7 @@ tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
 If everything worked correctly, you should see a pair of IPv6 addresses (if not, try rebooting the device),
 this means the device has an IP address and it can receive connections. To test, try to ping the global IPv6 address
 (starting with `fd00::`).
-```
+```{bash}
 examples/contiki $ ping6 fd00::212:4b00:194a:5233
 PING fd00::212:4b00:194a:5233(fd00::212:4b00:194a:5233) 56 data bytes
 64 bytes from fd00::212:4b00:194a:5233: icmp_seq=1 ttl=64 time=41.0 ms
@@ -104,7 +148,13 @@ PING fd00::212:4b00:194a:5233(fd00::212:4b00:194a:5233) 56 data bytes
 64 bytes from fd00::212:4b00:194a:5233: icmp_seq=3 ttl=64 time=39.6 ms
 ```
 
-If ping works, you can now run h2spec tests against the embedded device using
+Check that the HTTP/2 server is receiving connections
+```{bash}
+examples/contiki $ curl --http2-prior-knowledge http://[fd00::212:4b00:194a:5233]:8888
+Hello, World!!!
+```
+
+If ping and curl work, you can now run h2spec tests against the embedded device using
 ```{bash}
 examples/contiki $ TARGET=zoul H2SPEC_ADDR=fd00::212:4b00:194a:5233 make h2spec
 ------------------------------

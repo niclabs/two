@@ -5,7 +5,7 @@ The implementation uses a single thread for handling clients, and each client re
 in the base configuration (without [HPACK dynamic table](https://httpwg.org/specs/rfc7541.html#dynamic.table)). 
 This can be further reduced through [configuration macros](#configuration-macros).
 
-## Status
+## Project Status
 
 | branch | build status | coverage |
 |--------|--------------|----------|
@@ -102,47 +102,9 @@ Then you can compile the project normally
 user@hash:work $ make
 ```
 
-### Building for Contiki targets
+### Building for embedded targets
 
-The easiest way to build for Contiki targets is by using the [Contiki NG docker image](https://github.com/contiki-ng/contiki-ng/wiki/Docker), or our [embeddable docker image](https://hub.docker.com/r/niclabs/embeddable) if working with ARM targets.
-Otherwise you can find other installation methods in the [Contiki NG wiki](https://github.com/contiki-ng/contiki-ng/wiki). A basic server example for this platform can be found in `examples/contiki`.
-To build for the Contiki native platform, do
-```{bash}
-$ cd examples/contiki
-$ make
-```
-
-This should generate a server.native executable file. To run, do
-```{bash}
-$ sudo ./server.native
-opened tun device ``/dev/tun0''
-tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
-        inet 172.17.0.2  netmask 255.255.255.255  destination 172.17.0.2
-        inet6 fe80::190e:7a78:e345:7872  prefixlen 64  scopeid 0x20<link>
-        inet6 fd00::1  prefixlen 64  scopeid 0x0<global>
-        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
-        RX packets 0  bytes 0 (0.0 B)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 0  bytes 0 (0.0 B)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-[INFO: Main      ] Starting Contiki-NG-release/v4.4-dirty
-[INFO: Main      ] - Routing: RPL Lite
-[INFO: Main      ] - Net: tun6
-[INFO: Main      ] - MAC: nullmac
-[INFO: Main      ] - 802.15.4 PANID: 0xabcd
-[INFO: Main      ] - 802.15.4 Default channel: 26
-[INFO: Main      ] Node ID: 1800
-[INFO: Main      ] Link-layer address: 0102.0304.0506.0708
-[INFO: Main      ] Tentative link-local IPv6 address: fe80::302:304:506:708
-[INFO: Native    ] Added global IPv6 address fd00::302:304:506:708
-[INFO] Starting HTTP/2 server in port 8888
-```
-Notice that you need the `sudo` command to create the tun device required to access the Contiki network stack, accessible through the given global IPv6 address. To perform a request, on another terminal do
-```{bash}
-$ curl --http2-prior-knowledge http://[fd00::302:304:506:708]:8888
-Hello, World!!!
-```
+See [contiki](examples/contiki/).
 
 ## Testing
 
@@ -168,17 +130,17 @@ $ CFLAGS=-DPROJECT_CONF_H=\"my-config.h\" make
 ```
 
 The following configuration macros are defined
-* _CONFIG_HTTP2_HEADER_TABLE_SIZE_, maximum value for the dynamic hpack header table. Setting this to zero disables use of the dynamic table for HPACK. This setting affects the size of static memory used by client.
-* _CONFIG_HTTP2_MAX_CONCURRENT_STREAMS_, maximum number of concurrent streams alloed by HTTP/2. It cannot be larger than 0.
-* _CONFIG_HTTP2_INITIAL_WINDOW_SIZE_, initial value for HTTP/2 window size. This value cannot be larger than the read buffer size.
-* _CONFIG_HTTP2_MAX_FRAME_SIZE_, initial value for SETTINGS_MAX_FRAME_SIZE. It has no effect on the size of the allocation buffers, the effective max frame size is given by the setting _CONFIG_HTTP2_SOCK_READ_SIZE_.
-* _CONFIG_HTTP2_MAX_HEADER_LIST_SIZE_, initial value for SETTINGS_MAX_HEADER_LIST_SIZE. It effectively sets the maximum number of decompressed bytes for the header list (see [header_list](src/header_list.h)). This setting has no impact on the static memory used by the implementation, however the value must be chosen carefully, since it have an effect on the stack size.
-* _CONFIG_HTTP2_SETTINGS_WAIT_, maximum time in milliseconds tom wait for the remote endpoint to reply to a settings frame (300 by default).
-* _CONFIG_HTTP2_SOCK_READ_SIZE_, size for the socket read buffer (512 bytes by default). This effectively limits the maximum frame size that can be received. Modifications to this value alter the total static memory used by the implementation.
-* _CONFIG_HTTP2_SOCK_WRITE_SIZE_, size for the socker write buffer (512 bytes by default). Modifications to this value alter the total static memory used by the implementation. 
-* _CONFIG_HTTP2_STREAM_BUF_SIZE_, set the maximum total data that can be received by a stream. This the total header block size that can be sent in HEADERS and CONTINUATION frames, and also the total data size that can be send by a HTTP response. This settings affects the static memory used by client.
-* _CONFIG_HTTP2_MAX_CLIENTS_, maximum number of concurrent clients allowed by the server.
-* _CONFIG_TWO_MAX_RESOURCES_, sets the maximum number of [resource paths](src/two.h#L57) supported by the server. The default is 4.
+* `CONFIG_HTTP2_HEADER_TABLE_SIZE`, maximum value for the dynamic hpack header table. Setting this to zero disables use of the dynamic table for HPACK. This setting affects the size of static memory used by client.
+* `CONFIG_HTTP2_MAX_CONCURRENT_STREAMS`, maximum number of concurrent streams alloed by HTTP/2. It cannot be larger than 0.
+* `CONFIG_HTTP2_INITIAL_WINDOW_SIZE`, initial value for HTTP/2 window size. This value cannot be larger than the read buffer size.
+* `CONFIG_HTTP2_MAX_FRAME_SIZE`, initial value for SETTINGS_MAX_FRAME_SIZE. It has no effect on the size of the allocation buffers, the effective max frame size is given by the setting `CONFIG_HTTP2_SOCK_READ_SIZE`.
+* `CONFIG_HTTP2_MAX_HEADER_LIST_SIZE`, initial value for SETTINGS_MAX_HEADER_LIST_SIZE. It effectively sets the maximum number of decompressed bytes for the header list (see [header_list](src/header_list.h)). This setting has no impact on the static memory used by the implementation, however the value must be chosen carefully, since it have an effect on the stack size.
+* `CONFIG_HTTP2_SETTINGS_WAIT`, maximum time in milliseconds tom wait for the remote endpoint to reply to a settings frame (300 by default).
+* `CONFIG_HTTP2_SOCK_READ_SIZE`, size for the socket read buffer (512 bytes by default). This effectively limits the maximum frame size that can be received. Modifications to this value alter the total static memory used by the implementation.
+* `CONFIG_HTTP2_SOCK_WRITE_SIZE`, size for the socker write buffer (512 bytes by default). Modifications to this value alter the total static memory used by the implementation. 
+* `CONFIG_HTTP2_STREAM_BUF_SIZE`, set the maximum total data that can be received by a stream. This the total header block size that can be sent in HEADERS and CONTINUATION frames, and also the total data size that can be send by a HTTP response. This settings affects the static memory used by client.
+* `CONFIG_HTTP2_MAX_CLIENTS`, maximum number of concurrent clients allowed by the server.
+* `CONFIG_TWO_MAX_RESOURCES`, sets the maximum number of [resource paths](src/two.h#L57) supported by the server. The default is 4.
 
 The approximate size of the memory used per client can be calculated as
 ```
