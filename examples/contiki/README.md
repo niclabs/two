@@ -1,4 +1,4 @@
-# Example HTTP/2 server
+# HTTP/2 server on Contiki-NG
 
 This example defines a basic HTTP/2 server to run on embedded target using [Contiki-NG](https://github.com/contiki-ng/contiki-ng/).
 

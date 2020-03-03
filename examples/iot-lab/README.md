@@ -115,7 +115,8 @@ PING 2001:660:5307:3116::b080(2001:660:5307:3116::b080) 56 data bytes
 64 bytes from 2001:660:5307:3116::b080: icmp_seq=2 ttl=64 time=6.77 ms
 ```
 
-And to test the HTTP/2 endpoints
+## Test the HTTP/2 endpoints
+
 ```{bash}
 grenoble $ curl --http2-prior-knowledge http://[2001:660:5307:3116::b080]:8888
 Hello, World!!!
