@@ -1,4 +1,4 @@
-# TWO: examples
+# two HTTP/2 server: examples
 
 * [basic](basic/) provides an example for a basic HTTP/2 server for linux targets using the library
 * [contiki](contiki/) provides an example for running a basic HTTP/2 server on an embedded device using [Contiki-NG](https://github.com/contiki-ng/contiki-ng/).
