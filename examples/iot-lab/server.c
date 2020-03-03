@@ -46,7 +46,7 @@ PROCESS_THREAD(example_server_process, ev, data)
 {
     PROCESS_BEGIN();
 
-    int port = 8888;
+    int port = 80;
 
 #ifdef CONTIKI_TARGET_NATIVE
     signal(SIGINT, cleanup);

@@ -120,8 +120,8 @@ You should also be able to reach the device if you are in a IPv6 enabled network
 ## Test the HTTP/2 endpoints
 
 ```{bash}
-grenoble $ curl --http2-prior-knowledge http://[2001:660:5307:3116::b080]:8888
+grenoble $ curl --http2-prior-knowledge http://[2001:660:5307:3116::b080]
 Hello, World!!!
-grenoble $ curl --http2-prior-knowledge http://[2001:660:5307:3116::b080]:8888/light
+grenoble $ curl --http2-prior-knowledge http://[2001:660:5307:3116::b080]/light
 Light sensor reading: 3000
 ```
