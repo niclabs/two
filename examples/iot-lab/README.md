@@ -106,7 +106,7 @@ tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
 ```
 
 In this case the device was assigned the `2001:660:5307:3116::b080` global IPv6 address. From another ssh session now try pinging
-the device.
+the device. 
 
 ```{bash}
 grenoble $ ping6 2001:660:5307:3116::b080
@@ -114,6 +114,8 @@ PING 2001:660:5307:3116::b080(2001:660:5307:3116::b080) 56 data bytes
 64 bytes from 2001:660:5307:3116::b080: icmp_seq=1 ttl=64 time=6.80 ms
 64 bytes from 2001:660:5307:3116::b080: icmp_seq=2 ttl=64 time=6.77 ms
 ```
+
+You should also be able to reach the device if you are in a IPv6 enabled network.
 
 ## Test the HTTP/2 endpoints
 
