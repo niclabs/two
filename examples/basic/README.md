@@ -1,4 +1,4 @@
-# two HTTP/2 server: basic server
+# HTTP/2 basic server on linux
 
 This folder contains a basic server example for running on linux targets. 
 
