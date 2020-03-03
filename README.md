@@ -1,16 +1,16 @@
-master:
-[![Build Status](https://travis-ci.com/niclabs/two.svg?branch=master)](https://travis-ci.com/niclabs/two)
-[![codecov](https://codecov.io/gh/niclabs/two/branch/master/graph/badge.svg)](https://codecov.io/gh/niclabs/two)
-develop:
-[![Build Status](https://travis-ci.com/niclabs/two.svg?branch=develop)](https://travis-ci.com/niclabs/two)
-[![codecov](https://codecov.io/gh/niclabs/two/branch/develop/graph/badge.svg)](https://codecov.io/gh/niclabs/two)
-
 # two: HTTP/2 for constrained IoT devices
 
 Experimental HTTP/2 server and library, aimed at use in [constrained devices](https://tools.ietf.org/html/rfc7228). 
 The implementation uses a single thread for handling clients, and each client requires around 1.5K of static RAM 
 in the base configuration (without [HPACK dynamic table](https://httpwg.org/specs/rfc7541.html#dynamic.table)). 
 This can be further reduced through [configuration macros](#configuration-macros).
+
+## Status
+
+| branch | build status | coverage |
+|--------|--------------|----------|
+| master | [![Build Status](https://travis-ci.com/niclabs/two.svg?branch=master)](https://travis-ci.com/niclabs/two) | [![codecov](https://codecov.io/gh/niclabs/two/branch/master/graph/badge.svg)](https://codecov.io/gh/niclabs/two) |
+| develop | [![Build Status](https://travis-ci.com/niclabs/two.svg?branch=develop)](https://travis-ci.com/niclabs/two) | [![codecov](https://codecov.io/gh/niclabs/two/branch/develop/graph/badge.svg)](https://codecov.io/gh/niclabs/two) |
 
 ## Features
 
