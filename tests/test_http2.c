@@ -175,6 +175,19 @@ void parse_header(frame_header_t *header, uint8_t *data, unsigned int size)
     header->stream_id = read_u31(data + 5);
 }
 
+char *test_header_list_get(header_list_t *header_list, const char *name)
+{
+    static char *headers[3] = { "GET", "/", "http" };
+    if (strcmp(name, ":method") == 0) {
+        return headers[0];
+    } else if (strcmp(name, ":path") == 0) {
+        return headers[1];
+    } else if (strcmp(name, ":scheme") == 0) {
+        return headers[2];
+    }
+    return NULL;
+}
+
 void test_http2_error(event_sock_t *client, http2_error_t error)
 {
     // check that client stops reading
@@ -876,6 +889,52 @@ void test_recv_settings_ack(void)
     http2_on_client_close(&client);
 }
 
+void test_handle_get_request(void)
+{
+    event_sock_t client;
+    http2_new_client(&client);
+
+    // use custom header parsing function
+    frame_parse_header_fake.custom_fake = parse_header;
+
+    // use custom haeder_list get
+    header_list_get_fake.custom_fake  = test_header_list_get;
+    header_list_count_fake.return_val = 2;
+
+    // prepare headers with end_headers and end stream
+    uint8_t headers[9 + 1] = { // header length 12
+                               0,
+                               0,
+                               1,
+                               // frame type settings
+                               FRAME_HEADERS_TYPE,
+                               // only header frame and it finishes the request
+                               FRAME_FLAGS_END_HEADERS | FRAME_FLAGS_END_STREAM,
+                               // stream id 1 (with reserved bit)
+                               0x80,
+                               0,
+                               0,
+                               1,
+                               // garbage
+                               75
+    };
+
+    // pass data to receiving
+    TEST_ASSERT_EQUAL(10, receiving(&client, 10, headers));
+
+    // check that http api is called
+    TEST_ASSERT_EQUAL(1, http_handle_request_fake.call_count);
+
+    // check that headers frame is sent
+    TEST_ASSERT_EQUAL(1, send_headers_frame_fake.call_count);
+    TEST_ASSERT_EQUAL(1, send_headers_frame_fake.arg3_val); // stream_id == 1
+    TEST_ASSERT_EQUAL(
+      1, send_headers_frame_fake.arg4_val); // no data so the stream is closing
+
+    // close client
+    http2_on_client_close(&client);
+}
+
 int main(void)
 
 {
@@ -899,5 +958,6 @@ int main(void)
     UNIT_TEST(test_recv_settings_with_bad_size);
     UNIT_TEST(test_recv_unexpected_settings_ack);
     UNIT_TEST(test_recv_settings_ack);
+    UNIT_TEST(test_handle_get_request);
     return UNITY_END();
 }
