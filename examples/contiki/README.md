@@ -12,7 +12,7 @@ $ cd examples/contiki
 examples/contiki $ make
 ```
 
-This should generate a `server.native executable` file. To run, do
+This should generate a `server.native` executable file. To run, do
 ```{bash}
 $ sudo ./server.native
 opened tun device ``/dev/tun0''
