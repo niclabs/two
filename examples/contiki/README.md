@@ -96,7 +96,7 @@ For running against an embedded target, you will need to configure the device to
 
 For this, you will need to set the local environment variable BORDER_ROUTER.
 ```{bash}
-examples/contiki $ TARGET=zoul BORDER_ROUTER=1 make
+examples/contiki $ TARGET=zoul BORDER_ROUTER=1 make clean all
 examples/contiki $ TARGET=zoul PORT=/dev/ttyUSB0 BORDER_ROUTER=1 make server.upload
 Flashing /dev/ttyUSB0
 Opening port /dev/ttyUSB0, baud 460800
@@ -137,11 +137,32 @@ tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
 [INFO: BR        ]   fe80::212:4b00:194a:5233
 ```
 
-If everything worked correctly, you should see a pair of IPv6 addresses (if not, try rebooting the device),
+If everything worked correctly, you should see a pair of IPv6 addresses after 'Waiting for prefix' (if not, try rebooting the device),
 this means the device has an IP address and it can receive connections. To test, try to ping the global IPv6 address
 (starting with `fd00::`).
 ```{bash}
 examples/contiki $ ping6 fd00::212:4b00:194a:5233
+PING fd00::212:4b00:194a:5233(fd00::212:4b00:194a:5233) 56 data bytes
+64 bytes from fd00::212:4b00:194a:5233: icmp_seq=1 ttl=64 time=41.0 ms
+64 bytes from fd00::212:4b00:194a:5233: icmp_seq=2 ttl=64 time=30.0 ms
+64 bytes from fd00::212:4b00:194a:5233: icmp_seq=3 ttl=64 time=39.6 ms
+```
+
+If you are using docker, you must connect to the running instance on another terminal to test. First list the running
+instances.
+```{bash}
+CONTAINER ID        IMAGE                COMMAND                  CREATED             STATUS              PORTS               NAMES
+host $ docker ps
+4ad3d887fec3        niclabs/embeddable   "/sbin/tini -- entry…"   3 days ago          Up 3 days                               nervous_swirles
+```
+Run a new shell inside the instance
+```{bash}
+host $ docker exec -ti nervous_swirles bash
+user@id:work $
+```
+Ping the device
+```{bash}
+user@id:work $ ping6 fd00::212:4b00:194a:5233
 PING fd00::212:4b00:194a:5233(fd00::212:4b00:194a:5233) 56 data bytes
 64 bytes from fd00::212:4b00:194a:5233: icmp_seq=1 ttl=64 time=41.0 ms
 64 bytes from fd00::212:4b00:194a:5233: icmp_seq=2 ttl=64 time=30.0 ms
@@ -165,3 +186,7 @@ generic/2: PASS
 generic/3.1: PASS
 ...
 ```
+
+Note that the set of passing tests for Contiki-NG is smaller than the set for linux targets. This is due to
+a more limited configuration for the embedded targets, mainly disabling the HPACK dynamic table and limiting the 
+number of clients to at most 1 for memory considerations. See h2spec.conf for more details on the tests.

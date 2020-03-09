@@ -104,7 +104,7 @@ user@hash:work $ make
 
 ### Building for embedded targets
 
-See [contiki](examples/contiki/).
+See [contiki](examples/contiki/) and [IoT-Lab](examples/iot-lab/).
 
 ## Testing
 
