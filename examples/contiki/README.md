@@ -189,4 +189,4 @@ generic/3.1: PASS
 
 Note that the set of passing tests for Contiki-NG is smaller than the set for linux targets. This is due to
 a more limited configuration for the embedded targets, mainly disabling the HPACK dynamic table and limiting the 
-number of clients to at most 1 for memory considerations. See h2spec.conf for more details on the tests.
+number of clients to at most 1 for memory considerations. See [h2spec.conf](h2spec.conf) for more details on the tests.
