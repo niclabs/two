@@ -112,7 +112,7 @@ else
 # we are testing a remote target
 
 # Specs to skip on embedded targets (frame size too large)
-H2SPEC_SKIP = http2/4.2/1 http2/4.2/2 http2/4.2/3 http2/6.10/1
+H2SPEC_SKIP = generic/5/14 generic/5/15 http2/4.2/1 http2/4.2/2 http2/4.2/3 http2/6.5.3/1 http2/6.9.1/1 http2/6.9.2/1 http2/6.9.2/2 http2/6.10/1
 
 $(H2SPEC_ALL): /usr/local/bin/h2spec
 	@if ! test -f summary.txt; then echo "0 0" > summary.txt; fi
